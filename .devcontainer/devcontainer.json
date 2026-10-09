@@ -8,7 +8,8 @@
 		"sha256:5bfb879ef51ef1a1dcf06851614b687a5ecfab6f4a18b1e188fce0c9740638f2"
 	],
 	"mounts": [
-		"type=volume,source=anchorage-tools-5bfb879ef51ef1a1dcf06851614b687a5ecfab6f4a18b1e188fce0c9740638f2,target=/opt/anchorage,readonly,volume-nocopy"
+		"type=volume,source=anchorage-tools-5bfb879ef51ef1a1dcf06851614b687a5ecfab6f4a18b1e188fce0c9740638f2,target=/opt/anchorage,readonly,volume-nocopy",
+		"type=volume,source=anchorage-home-${devcontainerId},target=/home/vscode"
 	],
 	"containerEnv": {
 		"DISABLE_UPDATES": "1",

@@ -91,7 +91,9 @@ the host's Docker image store. Rebuild the devcontainer to activate the mount.
 When selecting another bundle, update both the image ID in `initializeCommand`
 and the matching volume name in `.devcontainer/devcontainer.json`. Credentials
 remain in the container user's home directory; the shared tool volume stores
-executables only.
+executables only. A separate writable volume, `anchorage-home-${devcontainerId}`,
+persists `/home/vscode` across rebuilds and keeps each devcontainer's user state
+separate. Docker seeds a new home volume from the image's existing home directory.
 
 ```sh
 make run
