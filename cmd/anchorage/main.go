@@ -1,7 +1,9 @@
 package main
 
-import "fmt"
+import "os"
 
 func main() {
-	fmt.Println("Anchorage — AI-native Docker development environments")
+	if err := newRootCommand().Execute(); err != nil {
+		os.Exit(1)
+	}
 }
