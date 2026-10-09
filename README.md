@@ -3,8 +3,9 @@
 Anchorage is an early-stage project for a lightweight, AI-native development
 environment built on Docker, inspired by GitHub Codespaces.
 
-The first proof of concept will provide Codex, Claude Code, and Google
-Antigravity (`agy`) inside development containers through a shared tool volume.
+The first proof of concept will provide Codex, Claude Code, Google Antigravity
+(`agy`), and GitHub CLI (`gh`) inside development containers through a shared
+tool volume. GitHub CLI will support repository, issue, and pull request workflows.
 
 ## Planned proof of concept
 
