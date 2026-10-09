@@ -18,7 +18,8 @@ help:
 	  'make clean             Remove the built binary'
 	@printf '%s\n' 'make tools-build       Build the local OCI tool bundle'
 	@printf '%s\n' 'make tools-volume      Initialize a versioned tool volume' \
-	  'make tools-smoke       Test shared read-only tool execution'
+	  'make tools-smoke       Test shared read-only tool execution' \
+	  'make tools-test        Test native package extraction'
 
 tools-build:
 	docker build -t $(TOOLS_IMAGE) oci
