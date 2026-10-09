@@ -1,0 +1,5 @@
+*
+!Dockerfile
+!tools.lock.json
+!install.py
+!init-volume.sh
