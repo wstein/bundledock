@@ -28,16 +28,18 @@ The repository includes a Go devcontainer configuration. Open it with an editor
 that supports development containers, or use a local Go 1.24 or newer toolchain.
 
 ```sh
-go run ./cmd/anchorage
-go run ./cmd/anchorage --help
-go run ./cmd/anchorage --version
-go test ./cmd/...
-go vet ./cmd/...
-go build -o /tmp/anchorage ./cmd/anchorage
+make run
+make run ARGS="--help"
+make run ARGS="--version"
+make check
+make build
 ```
 
 The CLI uses [Cobra](https://github.com/spf13/cobra) and currently provides help
 and a development version identifier. Environment management commands are planned.
+
+Make targets are thin wrappers around Go commands. Run `make help` for available
+targets. Builds write `bin/anchorage`; `make clean` removes the binary.
 
 Checks target `cmd` explicitly because the CrewBook submodule contains Go
 evaluation fixtures that are not Anchorage packages.
