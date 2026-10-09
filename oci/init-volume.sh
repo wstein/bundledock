@@ -13,6 +13,7 @@ fi
 trap 'rmdir "$target/.initializing"' EXIT
 if test -f "$target/.ready"; then
     cmp "$source/manifest.json" "$target/manifest.json"
+    cmp "$source/SHA256SUMS" "$target/SHA256SUMS"
     (cd "$target" && sha256sum -c SHA256SUMS)
     exit 0
 fi
