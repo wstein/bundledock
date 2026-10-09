@@ -2,8 +2,10 @@ GO ?= go
 GOFMT ?= gofmt
 PACKAGES := ./cmd/...
 BINARY := bin/anchorage
+TOOLS_IMAGE ?= anchorage/tools:poc
+TOOLS_CONSUMER ?= mcr.microsoft.com/devcontainers/go:2-1.27-trixie
 
-.PHONY: help build run test vet fmt check clean
+.PHONY: help build run test vet fmt check clean tools-build tools-volume tools-smoke
 
 help:
 	@printf '%s\n' \
@@ -14,6 +16,18 @@ help:
 	  'make fmt               Format Go source' \
 	  'make check             Check formatting, tests, and vet' \
 	  'make clean             Remove the built binary'
+	@printf '%s\n' 'make tools-build       Build the local OCI tool bundle'
+	@printf '%s\n' 'make tools-volume      Initialize a versioned tool volume' \
+	  'make tools-smoke       Test shared read-only tool execution'
+
+tools-build:
+	docker build -t $(TOOLS_IMAGE) oci
+
+tools-volume:
+	sh oci/volume.sh "$(TOOLS_IMAGE)"
+
+tools-smoke:
+	sh oci/smoke.sh "$(TOOLS_IMAGE)" "$(TOOLS_CONSUMER)"
 
 build:
 	$(GO) build -o $(BINARY) ./cmd/anchorage

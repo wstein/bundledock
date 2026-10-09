@@ -7,7 +7,7 @@ The first proof of concept will provide Codex, Claude Code, Google Antigravity
 (`agy`), and GitHub CLI (`gh`) inside development containers through a shared
 tool volume. GitHub CLI will support repository, issue, and pull request workflows.
 
-## Planned proof of concept
+## Proof of concept
 
 - Package pinned CLI versions and their required runtimes as an OCI tool bundle.
 - Initialize a versioned Docker volume from the bundle and mount it read-only
@@ -20,8 +20,65 @@ Start with a Debian/glibc container baseline and platform-specific Linux
 artifacts. Validate actual CLI execution and authentication, concurrent use by
 two containers, and upgrade and rollback behavior.
 
-The tool bundle, registry integration, volume initialization, and CLI
-installation are planned; they are not implemented yet.
+The local OCI bundle and volume initializer are implemented. Registry publication,
+authenticated agent tasks, and integration into the Anchorage CLI are still planned.
+
+## OCI tool bundle
+
+Docker must be running. Build the bundle for the Docker host's architecture:
+
+```sh
+make tools-build
+make tools-smoke
+make tools-volume
+```
+
+`oci/tools.lock.json` pins vendor artifact URLs and checksums for Linux `amd64`
+and `arm64`. The bundle contains Codex (including native helpers), Claude Code,
+Antigravity, and GitHub CLI. Builds verify every download. The Debian base image
+is pinned by digest; Debian packages still come from its current package repositories.
+
+| Tool | Pinned version |
+| --- | --- |
+| Codex | 0.162.1 |
+| Claude Code | 2.1.296 |
+| Antigravity | 1.3.2 |
+| GitHub CLI | 2.102.0 |
+
+Native binaries and Codex helpers currently occupy about 847 MB uncompressed on
+ARM64. The volume is shared across workspaces on the same Docker host.
+The initial local build and smoke tests were run on Linux ARM64; AMD64 downloads
+are pinned but have not yet been built or runtime-verified.
+
+`tools-volume` prints a volume name derived from the resolved image ID. It copies
+the tools once and verifies their checksums on subsequent calls. Incomplete,
+nonempty, or mismatched volumes are rejected. Upgrades create a new image and
+volume; rollback selects the previous image. Volumes are local to each Docker host.
+
+Mount the printed volume into a compatible development container:
+
+```sh
+docker run --rm -it \
+  --mount type=volume,src=<printed-volume-name>,dst=/opt/anchorage,readonly,volume-nocopy \
+  --env DISABLE_UPDATES=1 --env DISABLE_AUTOUPDATER=1 \
+  mcr.microsoft.com/devcontainers/go:2-1.27-trixie \
+  sh -c 'export PATH="/opt/anchorage/bin:$PATH"; exec bash'
+```
+
+The mount path must be `/opt/anchorage`. Keep authentication and writable tool
+state in the user's home directory or separate private volumes. No credentials
+are included in the image. The read-only mount prevents tools from updating the
+shared executables; Claude updates are also disabled with environment variables.
+
+The smoke test executes all four version commands as a non-root user in two
+concurrent containers with networking disabled. It checks repeat initialization,
+read-only mounts, and rejection of changed, incomplete, or locked volumes. This verifies executable
+startup, not authentication, model requests, or agent sandbox behavior.
+
+The supported initial consumer baseline is the Debian Trixie Go devcontainer.
+Other images must supply compatible system libraries, Git, and CA certificates;
+mounting this volume does not install those dependencies. Override `TOOLS_IMAGE`
+or `TOOLS_CONSUMER` when invoking Make to select another image or test consumer.
 
 ## Development
 
@@ -49,6 +106,7 @@ evaluation fixtures that are not Anchorage packages.
 
 - `cmd/anchorage`: Go CLI entry point.
 - `.devcontainer`: development container configuration.
+- `oci`: tool bundle, artifact lock, volume initializer, and smoke test.
 - `crewbook`: pinned CrewBook workflow submodule.
 
 To clone with the workflow resources:
