@@ -46,7 +46,7 @@ is pinned by digest; Debian packages still come from its current package reposit
 | Antigravity | 1.3.2 |
 | GitHub CLI | 2.102.0 |
 
-Native binaries and Codex helpers currently occupy about 847 MB uncompressed on
+Native binaries and complete Codex runtime assets occupy about 864 MiB uncompressed on
 ARM64. The volume is shared across workspaces on the same Docker host.
 The initial local build and smoke tests were run on Linux ARM64; AMD64 downloads
 are pinned but have not yet been built or runtime-verified.
