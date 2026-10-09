@@ -85,6 +85,14 @@ or `TOOLS_CONSUMER` when invoking Make to select another image or test consumer.
 The repository includes a Go devcontainer configuration. Open it with an editor
 that supports development containers, or use a local Go 1.24 or newer toolchain.
 
+The devcontainer pins the current local tool image by ID and initializes its
+read-only volume on the host before starting. This image must already exist in
+the host's Docker image store. Rebuild the devcontainer to activate the mount.
+When selecting another bundle, update both the image ID in `initializeCommand`
+and the matching volume name in `.devcontainer/devcontainer.json`. Credentials
+remain in the container user's home directory; the shared tool volume stores
+executables only.
+
 ```sh
 make run
 make run ARGS="--help"
