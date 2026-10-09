@@ -29,6 +29,7 @@ Docker must be running. Build the bundle for the Docker host's architecture:
 
 ```sh
 make tools-build
+make tools-test
 make tools-smoke
 make tools-volume
 ```
@@ -71,7 +72,8 @@ are included in the image. The read-only mount prevents tools from updating the
 shared executables; Claude updates are also disabled with environment variables.
 
 The smoke test executes all four version commands as a non-root user in two
-concurrent containers with networking disabled. It checks repeat initialization,
+concurrent containers with networking disabled. It also starts and stops Codex's
+local daemon to verify its complete native package is usable. It checks repeat initialization,
 read-only mounts, and rejection of changed, incomplete, or locked volumes. This verifies executable
 startup, not authentication, model requests, or agent sandbox behavior.
 

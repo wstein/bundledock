@@ -5,7 +5,7 @@ BINARY := bin/anchorage
 TOOLS_IMAGE ?= anchorage/tools:poc
 TOOLS_CONSUMER ?= mcr.microsoft.com/devcontainers/go:2-1.27-trixie
 
-.PHONY: help build run test vet fmt check clean tools-build tools-volume tools-smoke
+.PHONY: help build run test vet fmt check clean tools-build tools-volume tools-smoke tools-test
 
 help:
 	@printf '%s\n' \
@@ -22,6 +22,9 @@ help:
 
 tools-build:
 	docker build -t $(TOOLS_IMAGE) oci
+
+tools-test:
+	python3 -B -m unittest discover -s oci -p 'test_*.py'
 
 tools-volume:
 	sh oci/volume.sh "$(TOOLS_IMAGE)"

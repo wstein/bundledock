@@ -20,6 +20,9 @@ check() {
             test -f /opt/anchorage/.ready
             export PATH="/opt/anchorage/bin:$PATH"
             codex --version
+            timeout 45 codex app-server daemon start
+            codex app-server daemon version
+            codex app-server daemon stop
             claude --version
             agy --version
             gh --version

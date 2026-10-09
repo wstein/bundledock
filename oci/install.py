@@ -9,6 +9,8 @@ import tarfile
 import tempfile
 import urllib.request
 
+from package import extract_codex
+
 root = Path('/opt/anchorage')
 root.joinpath('bin').mkdir(parents=True)
 lock_path = Path('/build/tools.lock.json')
@@ -34,14 +36,14 @@ for tool, spec in tools.items():
             shutil.copyfile(payload, root / 'bin' / tool)
         else:
             with tarfile.open(payload, 'r:gz') as archive:
+                if tool == 'codex':
+                    extract_codex(archive, root)
+                    continue
                 for member in archive.getmembers():
                     if not member.isfile():
                         continue
                     name = Path(member.name).name
-                    # Codex's package includes its native helper executables.
-                    if tool == 'codex' and (name == 'codex' or name == 'bwrap' or name.startswith('codex-')):
-                        target = root / 'bin' / name
-                    elif tool == 'gh' and name == 'gh':
+                    if tool == 'gh' and name == 'gh':
                         target = root / 'bin' / 'gh'
                     elif tool == 'agy' and name == 'antigravity':
                         target = root / 'bin' / 'agy'
