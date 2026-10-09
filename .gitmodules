@@ -1,0 +1,3 @@
+[submodule "crewbook"]
+	path = crewbook
+	url = https://github.com/wstein/crewbook/
