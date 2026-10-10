@@ -75,6 +75,11 @@ func openRoot(t *testing.T) (*os.Root, string) {
 func fixture(t *testing.T) (map[string][]byte, map[string]Spec, *httptest.Server) {
 	t.Helper()
 	payloads := map[string][]byte{
+		"typos":    archive(t, member{"./typos", "typos executable", 0755, 0}, member{"./LICENSE-MIT", "typos mit", 0644, 0}, member{"./LICENSE-APACHE", "typos apache", 0644, 0}),
+		"lychee":   archive(t, member{"lychee-x86_64-unknown-linux-musl/lychee", "lychee executable", 0755, 0}),
+		"gitleaks": archive(t, member{"gitleaks", "gitleaks executable", 0755, 0}, member{"LICENSE", "gitleaks license", 0644, 0}),
+		"trivy":    archive(t, member{"trivy", "trivy executable", 0755, 0}, member{"LICENSE", "trivy license", 0644, 0}),
+		"syft":     archive(t, member{"syft", "syft executable", 0755, 0}, member{"LICENSE", "syft license", 0644, 0}),
 		"nu":       archive(t, member{"nu-0.116.1/nu", "nu executable", 0755, 0}),
 		"tmux":     archive(t, member{"tmux", "tmux executable", 0755, 0}),
 		"fish":     xzArchive(t, member{"fish", "fish executable", 0755, 0}),
@@ -147,6 +152,29 @@ func TestVendorBuildBothArchitectures(t *testing.T) {
 				"licenses/fd/LICENSE-MIT": {"fd mit", 0644}, "licenses/fd/LICENSE-APACHE": {"fd apache", 0644},
 				"bin/claude": {"claude executable", 0755}, "bin/gh": {"github cli", 0755}, "bin/agy": {"antigravity cli", 0755}, "bin/codex": {"codex cli", 0755},
 				"bin/codex-code-mode-host": {"host", 0755}, "codex-path/rg": {"rg", 0755}, "codex-resources/bwrap": {"bwrap", 0755}, "codex-resources/voice/lib/example.so": {"shared library", 0644}, "codex-package.json": {`{"entrypoint":"bin/codex"}`, 0644},
+			}
+
+			for _, name := range []string{"typos", "lychee", "gitleaks", "trivy", "syft"} {
+				want["bin/"+name] = struct {
+					data string
+					mode os.FileMode
+				}{name + " executable", 0755}
+			}
+			for file, content := range map[string]string{"typos/LICENSE-MIT": "typos mit", "typos/LICENSE-APACHE": "typos apache", "gitleaks/LICENSE": "gitleaks license", "trivy/LICENSE": "trivy license", "syft/LICENSE": "syft license"} {
+				want["licenses/"+file] = struct {
+					data string
+					mode os.FileMode
+				}{content, 0644}
+			}
+			for _, file := range []string{"LICENSE-MIT", "LICENSE-APACHE"} {
+				content, err := os.ReadFile("../../oci/licenses/lychee/" + file)
+				if err != nil {
+					t.Fatal(err)
+				}
+				want["licenses/lychee/"+file] = struct {
+					data string
+					mode os.FileMode
+				}{string(content), 0644}
 			}
 			for name, w := range want {
 				p := filepath.Join(first, name)

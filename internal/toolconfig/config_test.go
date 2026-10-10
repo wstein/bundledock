@@ -35,7 +35,7 @@ func TestRepositoryIdentityAndBothArchitectures(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(c.Catalog.Packages) != 15 {
+	if len(c.Catalog.Packages) != 20 {
 		t.Fatal("catalog incomplete")
 	}
 	if err := c.Validate(); err != nil {
@@ -192,6 +192,32 @@ func TestLoadInputsAllowsNarrowTmuxRanges(t *testing.T) {
 			}
 			if _, err := LoadInputs(dir); err != nil {
 				t.Fatalf("valid desired input rejected: %v", err)
+			}
+		})
+	}
+}
+
+func TestQualitySecurityCatalogPins(t *testing.T) {
+	c, err := Load("../..")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct{ name, version string }{
+		{"typos", "v1.51.1"}, {"lychee", "lychee-v0.24.2"}, {"gitleaks", "v8.30.1"}, {"trivy", "v0.75.0"}, {"syft", "v1.54.1"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			p := c.Catalog.Packages[tc.name]
+			if p.Install.Kind != "tar.gz" || p.Install.Members[tc.name] != "bin/"+tc.name {
+				t.Fatal("missing executable recipe")
+			}
+			if len(p.Notices)+len(p.Install.ArchiveNotices) == 0 {
+				t.Fatal("missing license notices")
+			}
+			for _, arch := range []string{"amd64", "arm64"} {
+				pin := c.Lock.Platforms[arch][tc.name]
+				if pin.Version != tc.version || len(pin.SHA256) != 64 {
+					t.Fatalf("missing verified %s pin", arch)
+				}
 			}
 		})
 	}

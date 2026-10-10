@@ -381,6 +381,145 @@
         "oci/licenses/tmux/SOURCE"
       ],
       "tag_prefix": "v"
+    },
+    "typos": {
+      "provider": "github",
+      "repository": "crate-ci/typos",
+      "tag_prefix": "v",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "x86_64",
+        "arm64": "aarch64"
+      },
+      "asset": "typos-v{version}-{arch}-unknown-linux-musl.tar.gz",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "tar.gz",
+        "members": {
+          "typos": "bin/typos"
+        },
+        "archive_notices": [
+          "LICENSE-MIT",
+          "LICENSE-APACHE"
+        ]
+      },
+      "notices": [
+        "oci/licenses/typos/SOURCE"
+      ]
+    },
+    "lychee": {
+      "provider": "github",
+      "repository": "lycheeverse/lychee",
+      "tag_prefix": "lychee-v",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "x86_64",
+        "arm64": "aarch64"
+      },
+      "asset": "lychee-{arch}-unknown-linux-musl.tar.gz",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "tar.gz",
+        "members": {
+          "lychee": "bin/lychee"
+        }
+      },
+      "sidecar": "{asset}.sha256",
+      "notices": [
+        "oci/licenses/lychee/LICENSE-MIT",
+        "oci/licenses/lychee/LICENSE-APACHE",
+        "oci/licenses/lychee/SOURCE"
+      ]
+    },
+    "gitleaks": {
+      "provider": "github",
+      "repository": "gitleaks/gitleaks",
+      "tag_prefix": "v",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "x64",
+        "arm64": "arm64"
+      },
+      "asset": "gitleaks_{version}_linux_{arch}.tar.gz",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "tar.gz",
+        "members": {
+          "gitleaks": "bin/gitleaks"
+        },
+        "archive_notices": [
+          "LICENSE"
+        ]
+      },
+      "sidecar": "gitleaks_{version}_checksums.txt",
+      "notices": [
+        "oci/licenses/gitleaks/SOURCE"
+      ]
+    },
+    "trivy": {
+      "provider": "github",
+      "repository": "aquasecurity/trivy",
+      "tag_prefix": "v",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "64bit",
+        "arm64": "ARM64"
+      },
+      "asset": "trivy_{version}_Linux-{arch}.tar.gz",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "tar.gz",
+        "members": {
+          "trivy": "bin/trivy"
+        },
+        "archive_notices": [
+          "LICENSE"
+        ]
+      },
+      "sidecar": "trivy_{version}_checksums.txt",
+      "notices": [
+        "oci/licenses/trivy/SOURCE"
+      ]
+    },
+    "syft": {
+      "provider": "github",
+      "repository": "anchore/syft",
+      "tag_prefix": "v",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "amd64",
+        "arm64": "arm64"
+      },
+      "asset": "syft_{version}_linux_{arch}.tar.gz",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "tar.gz",
+        "members": {
+          "syft": "bin/syft"
+        },
+        "archive_notices": [
+          "LICENSE"
+        ]
+      },
+      "sidecar": "syft_{version}_checksums.txt",
+      "notices": [
+        "oci/licenses/syft/SOURCE"
+      ]
     }
   }
 }
