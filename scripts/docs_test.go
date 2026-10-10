@@ -12,6 +12,9 @@ import (
 )
 
 func TestDocsBuild(t *testing.T) {
+	if os.Getenv("BUNDLEDOCK_DOCS_TEST") != "1" {
+		t.Skip("host Hugo integration check; run make docs-test to enable")
+	}
 	root, err := filepath.Abs("..")
 	if err != nil {
 		t.Fatal(err)

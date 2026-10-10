@@ -48,7 +48,9 @@ targets. Builds write `bin/bundledock`; `make clean` removes the binary.
 Run `make docs` to build the static documentation into ignored `public/`, or
 `make docs-serve` to preview it at `http://localhost:1313/`. `make docs-test`
 builds the site and checks guide content, local links and fragments, project
-subpath URLs, and unchanged brand assets. The README and these four guides are
+subpath URLs, and unchanged brand assets. Generic Go test runs skip these host
+integration checks; `make docs-test` explicitly enables them with
+`BUNDLEDOCK_DOCS_TEST=1`. The README and these four guides are
 mounted directly by Hugo; edit the original Markdown to update both views.
 
 The docs wrapper downloads only the official stable prebuilt Hugo 0.167.0 for

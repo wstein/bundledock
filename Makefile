@@ -78,4 +78,4 @@ docs-serve:
 	bash scripts/hugo.sh server --bind 127.0.0.1
 
 docs-test:
-	$(GO) test ./scripts -count=1
+	BUNDLEDOCK_DOCS_TEST=1 $(GO) test ./scripts -count=1

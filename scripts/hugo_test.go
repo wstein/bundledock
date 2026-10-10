@@ -9,6 +9,9 @@ import (
 )
 
 func TestHugoRejectsCorruptCachedArchive(t *testing.T) {
+	if os.Getenv("BUNDLEDOCK_DOCS_TEST") != "1" {
+		t.Skip("host Hugo integration check; run make docs-test to enable")
+	}
 	cache := t.TempDir()
 	// Both supported platform names are populated, so this test never downloads.
 	for _, arch := range []string{"amd64", "arm64"} {
