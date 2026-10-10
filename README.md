@@ -55,12 +55,12 @@ The bundle pins 22 tools, with these companion commands:
 
 | Use | Tools |
 | --- | --- |
-| Agents and GitHub | Codex, Claude Code, Antigravity (`agy`), GitHub CLI (`gh`) |
-| Search and structured data | ripgrep (`rg`), fd (`fd`, `fdfind`), ast-grep, jq, yq |
-| Python environments | uv and uvx |
-| Shells and terminal workspaces | [Herdr](https://github.com/herdrdev/herdr), Fish, Starship, Nushell (`nu`), tmux |
-| Quality and security | typos, lychee, Gitleaks, Trivy, Syft |
-| Process monitoring | bottom (`btm`), btop |
+| Agents and GitHub | [Codex](https://github.com/openai/codex), [Claude Code](https://github.com/anthropics/claude-code), [Antigravity (`agy`)](https://github.com/google-antigravity/antigravity-cli), [GitHub CLI (`gh`)](https://github.com/cli/cli) |
+| Search and structured data | [ripgrep (`rg`)](https://github.com/BurntSushi/ripgrep), [fd (`fd`, `fdfind`)](https://github.com/sharkdp/fd), [ast-grep](https://github.com/ast-grep/ast-grep), [jq](https://github.com/jqlang/jq), [yq](https://github.com/mikefarah/yq) |
+| Python environments | [uv and uvx](https://github.com/astral-sh/uv) |
+| Shells and terminal workspaces | [Herdr](https://github.com/herdrdev/herdr), [Fish](https://github.com/fish-shell/fish-shell), [Starship](https://github.com/starship/starship), [Nushell (`nu`)](https://github.com/nushell/nushell), [tmux](https://github.com/tmux/tmux-builds) |
+| Quality and security | [typos](https://github.com/crate-ci/typos), [lychee](https://github.com/lycheeverse/lychee), [Gitleaks](https://github.com/gitleaks/gitleaks), [Trivy](https://github.com/aquasecurity/trivy), [Syft](https://github.com/anchore/syft) |
+| Process monitoring | [bottom (`btm`)](https://github.com/ClementTsang/bottom), [btop](https://github.com/aristocratos/btop) |
 
 See [pinned versions and upgrades](docs/tools.md). Codex includes its native
 helpers; optional voice resources are omitted.
