@@ -177,7 +177,7 @@ func execute(args []string) error {
 			if err != nil {
 				return err
 			}
-			_, err = fmt.Fprintf(f, "Published `%s`\n\nVersion tag: `%s`; stable verified at the same registry digest.\n\nLock SHA256: `%s`.\n", result.Reference, meta.Tag, meta.LockSHA256)
+			_, err = fmt.Fprintf(f, "Published `%s`\n\nVersion tag: `%s`; stable and latest verified at the same registry digest.\n\nLock SHA256: `%s`.\n", result.Reference, meta.Tag, meta.LockSHA256)
 			closeErr := f.Close()
 			if err != nil {
 				return err

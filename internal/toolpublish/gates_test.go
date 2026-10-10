@@ -303,7 +303,7 @@ func TestPromotionRequiresBothArchitecturesAndRegistryBinding(t *testing.T) {
 			creates = append(creates, c)
 		}
 	}
-	if len(creates) != 2 || creates[0][5] != m.Image+":"+m.Tag || creates[1][5] != m.Image+":stable" || creates[1][6] != result.Reference {
+	if len(creates) != 3 || creates[0][5] != m.Image+":"+m.Tag || creates[1][5] != m.Image+":stable" || creates[1][6] != result.Reference || creates[2][5] != m.Image+":latest" || creates[2][6] != result.Reference {
 		t.Fatalf("incorrect promotion: %+v %v", result, creates)
 	}
 }
@@ -316,8 +316,8 @@ func TestBadPublishedIndexPreventsStable(t *testing.T) {
 		t.Fatal("invalid published platform index promoted")
 	}
 	for _, c := range f.calls {
-		if prefix(c, "docker", "buildx", "imagetools", "create") && c[5] == m.Image+":stable" {
-			t.Fatal("invalid index updated stable")
+		if prefix(c, "docker", "buildx", "imagetools", "create") && (c[5] == m.Image+":stable" || c[5] == m.Image+":latest") {
+			t.Fatal("invalid index updated a mutable alias")
 		}
 	}
 }
@@ -419,6 +419,62 @@ func TestUnavailableVersionCheckPreventsRegistryWrites(t *testing.T) {
 					if prefix(c, "docker", "tag") || prefix(c, "docker", "push") || prefix(c, "docker", "buildx", "imagetools", "create") {
 						t.Errorf("failed check allowed mutation: %v", c)
 					}
+				}
+			})
+		}
+	}
+}
+
+func TestPromotionPublishesLatestAtTheVerifiedDigest(t *testing.T) {
+	m, lock := fixture(t)
+	receipts, f := publishedFixtures(t, m, lock)
+	// Mutable aliases can already exist; only the dated version is collision-gated.
+	f.remote[m.Image+":stable"] = map[string]string{"digest": "old"}
+	f.remote[m.Image+":latest"] = map[string]string{"digest": "old"}
+	result, err := f.adapter().Promote(m, lock, receipts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var creates [][]string
+	for _, c := range f.calls {
+		if prefix(c, "docker", "buildx", "imagetools", "create") {
+			creates = append(creates, c)
+		}
+	}
+	if len(creates) != 3 {
+		t.Fatalf("expected version, stable and latest: %v", creates)
+	}
+	for i, alias := range []string{"stable", "latest"} {
+		if !reflect.DeepEqual(creates[i+1], []string{"docker", "buildx", "imagetools", "create", "--tag", m.Image + ":" + alias, result.Reference}) {
+			t.Errorf("alias %s differs from verified digest: %v", alias, creates[i+1])
+		}
+	}
+}
+
+func TestAliasFailureDoesNotReportSuccessfulPublication(t *testing.T) {
+	for _, alias := range []string{"stable", "latest"} {
+		for _, failure := range []string{"create", "inspect", "digest"} {
+			t.Run(alias+"/"+failure, func(t *testing.T) {
+				m, lock := fixture(t)
+				receipts, f := publishedFixtures(t, m, lock)
+				a := f.adapter()
+				a.Run = func(args ...string) ([]byte, error) {
+					if prefix(args, "docker", "buildx", "imagetools", "create") && args[5] == m.Image+":"+alias && failure == "create" {
+						return nil, errors.New("alias write failed")
+					}
+					if prefix(args, "docker", "buildx", "imagetools", "inspect") && args[len(args)-1] == m.Image+":"+alias {
+						if failure == "inspect" {
+							return nil, errors.New("alias verification failed")
+						}
+						if failure == "digest" {
+							return json.Marshal(map[string]string{"digest": "sha256:" + strings.Repeat("e", 64)})
+						}
+					}
+					return f.run(args...)
+				}
+				result, err := a.Promote(m, lock, receipts)
+				if err == nil || result.Reference != "" {
+					t.Fatalf("alias failure reported successful publication: %+v %v", result, err)
 				}
 			})
 		}

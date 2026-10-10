@@ -42,7 +42,7 @@ a robot username from that namespace.
 After setting these values, start **Publish toolbox** manually from
 the default branch and watch the resolver, both native jobs, and promotion in
 [Actions](https://github.com/wstein/bundledock/actions/workflows/bundledock-toolbox.yml).
-A successful run publishes a dated run-attempt tag and `stable`; inspect its
+A successful run publishes a dated run-attempt tag, `stable` and `latest`; inspect its
 summary and artifacts for the immutable digest before choosing a deployment.
 Configuring these values also allows the Monday schedule to publish subsequent
 updates. No registry publication has been verified until a configured run succeeds.
@@ -75,7 +75,11 @@ A native job pushes its exact tested image to `staging-<run-tag>-<architecture>`
 If either architecture fails, final promotion is skipped. Once both pass, the
 adapter verifies each remote registry manifest references its smoked image config,
 creates the two-platform manifest and verifies its platform digests before updating
-`stable`. The UTC version tag is
+`stable` and `latest` to that verified digest. An untagged pull such as
+`docker pull quay.io/bundledock/toolbox` resolves to `:latest`. Explicit `:stable`
+and digest references remain available. Alias updates are sequential, so a later
+failure can leave an earlier tag updated. Success is reported only after both
+aliases have been verified against the version digest. The UTC version tag is
 `YYYY.MM.DD-b<github.run_number>.<github.run_attempt>`, for example
 `2026.10.10-b12.4`. The run number distinguishes normal runs and the attempt
 counter distinguishes reruns. Missing, malformed or nonpositive counters are
@@ -85,7 +89,7 @@ Workflow recreation can restart its run counter. Before each staging push and
 again before creating the final version index, an authenticated Quay manifest
 check requires HTTP 404 for the version tag. An existing tag, authentication
 failure or network error aborts that operation without updating the version or
-`stable`; start a fresh workflow run to obtain another tag. Robot credentials
+either mutable alias; start a fresh workflow run to obtain another tag. Robot credentials
 remain available only after native smoke passes. This is a collision check,
 not an atomic reservation: registry-enforced immutability requires separate Quay
 configuration, and unrelated registry writers must be controlled separately.

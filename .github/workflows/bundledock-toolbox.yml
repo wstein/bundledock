@@ -138,7 +138,7 @@ jobs:
           REPOSITORY_USERNAME: ${{ vars.REPOSITORY_USERNAME }}
           REPOSITORY_TOKEN: ${{ secrets.REPOSITORY_TOKEN }}
         run: printf '%s' "$REPOSITORY_TOKEN" | docker login quay.io --username "$REPOSITORY_USERNAME" --password-stdin
-      - name: Verify both platform manifests and promote version and stable
+      - name: Verify both platform manifests and promote version, stable and latest
         env:
           REPOSITORY_USERNAME: ${{ vars.REPOSITORY_USERNAME }}
           REPOSITORY_TOKEN: ${{ secrets.REPOSITORY_TOKEN }}

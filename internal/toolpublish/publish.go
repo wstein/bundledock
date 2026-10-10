@@ -361,15 +361,20 @@ func (a Adapter) Promote(m Metadata, lock string, receipts []Receipt) (Publicati
 	if len(expected) != 0 {
 		return result, fmt.Errorf("published index omits tested platform")
 	}
-	if _, err = a.Run("docker", "buildx", "imagetools", "create", "--tag", m.Image+":stable", ref); err != nil {
-		return result, err
+
+	// Alias updates are sequential; a later failure cannot roll back earlier tags.
+	for _, alias := range []string{"stable", "latest"} {
+		if _, err = a.Run("docker", "buildx", "imagetools", "create", "--tag", m.Image+":"+alias, ref); err != nil {
+			return result, fmt.Errorf("update %s alias: %w", alias, err)
+		}
+		aliasDigest, inspectErr := a.remoteDigest(m.Image + ":" + alias)
+		if inspectErr != nil {
+			return result, fmt.Errorf("verify %s alias: %w", alias, inspectErr)
+		}
+		if aliasDigest != versionDigest {
+			return result, fmt.Errorf("%s registry digest differs from versioned index", alias)
+		}
 	}
-	stableDigest, err := a.remoteDigest(m.Image + ":stable")
-	if err != nil {
-		return result, err
-	}
-	if stableDigest != versionDigest {
-		return result, fmt.Errorf("stable registry digest differs from versioned index")
-	}
+
 	return Publication{Metadata: m, Digest: versionDigest, Reference: ref, Platforms: receipts}, nil
 }
