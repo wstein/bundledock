@@ -121,16 +121,18 @@ func githubNextPage(raw, repository string) (string, error) {
 	}
 	query, err := url.ParseQuery(u.RawQuery)
 	page, pageErr := strconv.Atoi(query.Get("page"))
-	if err != nil || pageErr != nil || page < 1 || len(query) != 2 || len(query["page"]) != 1 || len(query["per_page"]) != 1 || query.Get("per_page") != "100" {
+	if err != nil || pageErr != nil || page < 1 || len(query) != 2 || len(query["page"]) != 1 || len(query["per_page"]) != 1 || query.Get("per_page") != "20" {
 		return "", fmt.Errorf("unsafe GitHub pagination URL")
 	}
 	// GitHub emits numeric repository aliases in Link headers. Carry only the
 	// page number onto the configured repository, never follow a foreign ID.
-	return "https://api.github.com" + path + "?per_page=100&page=" + strconv.Itoa(page), nil
+	return "https://api.github.com" + path + "?per_page=20&page=" + strconv.Itoa(page), nil
 }
 
 func (r resolver) github(ctx context.Context, p toolconfig.Package, c toolconfig.Constraint) (release, error) {
-	next := "https://api.github.com/repos/" + p.Repository + "/releases?per_page=100&page=1"
+	next := "https://api.github.com/repos/" + p.Repository + "/releases?per_page=20&page=1"
+	// Limit each response to 20 releases and 8 MiB, and discovery to 100 pages
+	// (at most 2,000 releases). Exceeding either bound fails without a lock write.
 	seen := map[string]bool{}
 	var best release
 	var bestVersion toolconfig.Version

@@ -157,7 +157,7 @@ func TestAllProvidersPaginationRangesAndVerification(t *testing.T) {
 			p := c.Catalog.Packages[n]
 			v := fixtureReleaseVersion(p, versions[n])
 			if r.URL.Query().Get("page") == "1" {
-				w.Header().Set("Link", `<https://api.github.com`+r.URL.Path+`?per_page=100&page=2>; rel="next"`)
+				w.Header().Set("Link", `<https://api.github.com`+r.URL.Path+`?per_page=20&page=2>; rel="next"`)
 				json.NewEncoder(w).Encode([]any{map[string]any{"tag_name": p.TagPrefix + "999.0.0"}, map[string]any{"tag_name": p.TagPrefix + v + "-rc.1"}, map[string]any{"tag_name": p.TagPrefix + v, "draft": true}})
 				return
 			}
