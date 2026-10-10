@@ -53,10 +53,10 @@ func ReadLock(r io.Reader, arch string) (map[string]Spec, error) {
 	if !ok {
 		return nil, fmt.Errorf("missing architecture %q", arch)
 	}
-	if len(tools) != 7 {
-		return nil, fmt.Errorf("lock must contain codex, claude, gh, agy, jq, rg and fd")
+	if len(tools) != 8 {
+		return nil, fmt.Errorf("lock must contain codex, claude, gh, agy, jq, rg, fd and sqlite3")
 	}
-	for _, name := range []string{"codex", "claude", "gh", "agy", "jq", "rg", "fd"} {
+	for _, name := range []string{"codex", "claude", "gh", "agy", "jq", "rg", "fd", "sqlite3"} {
 		spec, ok := tools[name]
 		if !ok || spec.Version == "" {
 			return nil, fmt.Errorf("missing tool/version %s", name)
@@ -90,6 +90,7 @@ func checksum(spec Spec) (hash.Hash, string, error) {
 }
 
 // Build downloads each artifact to a temporary file, verifies it, then extracts.
+// SQLite must already be compiled for arch at destination/bin/sqlite3.
 // A failed build leaves its incomplete output for inspection; use a fresh directory.
 func Build(ctx context.Context, client *http.Client, tools map[string]Spec, arch, destination string, output io.Writer) error {
 	if client == nil {
@@ -103,6 +104,21 @@ func Build(ctx context.Context, client *http.Client, tools map[string]Spec, arch
 		return err
 	}
 	defer root.Close()
+	sqlite, err := OpenFile(root, "bin/sqlite3")
+	if err != nil {
+		return fmt.Errorf("compiled SQLite: %w", err)
+	}
+	info, err := sqlite.Stat()
+	closeErr := sqlite.Close()
+	if err != nil {
+		return err
+	}
+	if closeErr != nil {
+		return closeErr
+	}
+	if info.Mode().Perm()&0111 == 0 || info.Size() == 0 {
+		return fmt.Errorf("compiled SQLite must be a nonempty executable")
+	}
 	for _, name := range []string{"agy", "claude", "codex", "fd", "gh", "jq", "rg"} {
 		spec := tools[name]
 		fmt.Fprintln(output, "Installing", name, spec.Version)
@@ -148,6 +164,13 @@ func install(ctx context.Context, client *http.Client, root *os.Root, name strin
 	}
 	if _, err := payload.Seek(0, io.SeekStart); err != nil {
 		return err
+	}
+	if name == "sqlite3" {
+		info, err := payload.Stat()
+		if err != nil {
+			return err
+		}
+		return extractSQLiteSource(root, payload, info.Size())
 	}
 	if name == "claude" || name == "jq" {
 		return WriteFile(root, "bin/"+name, payload, 0755)

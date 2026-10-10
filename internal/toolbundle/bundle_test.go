@@ -2,6 +2,7 @@ package toolbundle
 
 import (
 	"archive/tar"
+	"archive/zip"
 	"bytes"
 	"compress/gzip"
 	"context"
@@ -71,13 +72,14 @@ func openRoot(t *testing.T) (*os.Root, string) {
 func fixture(t *testing.T) (map[string][]byte, map[string]Spec, *httptest.Server) {
 	t.Helper()
 	payloads := map[string][]byte{
-		"claude": []byte("claude executable"),
-		"jq":     []byte("jq executable"),
-		"rg":     archive(t, member{"ripgrep-1/rg", "ripgrep executable", 0755, 0}, member{"ripgrep-1/LICENSE-MIT", "rg license", 0644, 0}, member{"ripgrep-1/UNLICENSE", "rg public domain", 0644, 0}, member{"ripgrep-1/COPYING", "rg copying", 0644, 0}),
-		"fd":     archive(t, member{"fd-1/fd", "fd executable", 0755, 0}, member{"fd-1/LICENSE-MIT", "fd mit", 0644, 0}, member{"fd-1/LICENSE-APACHE", "fd apache", 0644, 0}),
-		"gh":     archive(t, member{"gh_1/bin/gh", "github cli", 0755, 0}, member{"gh_1/share/man/gh.1", "manual", 0644, 0}),
-		"agy":    archive(t, member{"bundle/antigravity", "antigravity cli", 0755, 0}),
-		"codex":  archive(t, member{"bin/codex", "codex cli", 0755, 0}, member{"codex-package.json", `{"entrypoint":"bin/codex"}`, 0644, 0}, member{"bin/codex-code-mode-host", "host", 0755, 0}, member{"codex-path/rg", "rg", 0755, 0}, member{"codex-resources/bwrap", "bwrap", 0755, 0}, member{"codex-resources/voice/lib/example.so", "shared library", 0644, 0}, member{"empty/", "", 0755, tar.TypeDir}),
+		"sqlite3": sqliteArchive(t, member{"sqlite/sqlite3.c", "sqlite source", 0644, 0}, member{"sqlite/shell.c", "shell source", 0644, 0}, member{"sqlite/sqlite3.h", "sqlite header", 0644, 0}, member{"sqlite/sqlite3ext.h", "extension header", 0644, 0}),
+		"claude":  []byte("claude executable"),
+		"jq":      []byte("jq executable"),
+		"rg":      archive(t, member{"ripgrep-1/rg", "ripgrep executable", 0755, 0}, member{"ripgrep-1/LICENSE-MIT", "rg license", 0644, 0}, member{"ripgrep-1/UNLICENSE", "rg public domain", 0644, 0}, member{"ripgrep-1/COPYING", "rg copying", 0644, 0}),
+		"fd":      archive(t, member{"fd-1/fd", "fd executable", 0755, 0}, member{"fd-1/LICENSE-MIT", "fd mit", 0644, 0}, member{"fd-1/LICENSE-APACHE", "fd apache", 0644, 0}),
+		"gh":      archive(t, member{"gh_1/bin/gh", "github cli", 0755, 0}, member{"gh_1/share/man/gh.1", "manual", 0644, 0}),
+		"agy":     archive(t, member{"bundle/antigravity", "antigravity cli", 0755, 0}),
+		"codex":   archive(t, member{"bin/codex", "codex cli", 0755, 0}, member{"codex-package.json", `{"entrypoint":"bin/codex"}`, 0644, 0}, member{"bin/codex-code-mode-host", "host", 0755, 0}, member{"codex-path/rg", "rg", 0755, 0}, member{"codex-resources/bwrap", "bwrap", 0755, 0}, member{"codex-resources/voice/lib/example.so", "shared library", 0644, 0}, member{"empty/", "", 0755, tar.TypeDir}),
 	}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if data, ok := payloads[strings.TrimPrefix(r.URL.Path, "/")]; ok {
@@ -116,6 +118,14 @@ func TestVendorBuildBothArchitectures(t *testing.T) {
 			first := t.TempDir()
 			second := t.TempDir()
 			for _, dst := range []string{first, second} {
+				root, err := os.OpenRoot(dst)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if err := WriteFile(root, "bin/sqlite3", strings.NewReader("compiled sqlite"), 0755); err != nil {
+					t.Fatal(err)
+				}
+				root.Close()
 				if err := Build(context.Background(), server.Client(), specs, arch, dst, io.Discard); err != nil {
 					t.Fatal(err)
 				}
@@ -124,7 +134,8 @@ func TestVendorBuildBothArchitectures(t *testing.T) {
 				data string
 				mode os.FileMode
 			}{
-				"bin/jq": {"jq executable", 0755}, "bin/rg": {"ripgrep executable", 0755}, "bin/fd": {"fd executable", 0755}, "bin/fdfind": {"fd executable", 0755},
+				"bin/sqlite3": {"compiled sqlite", 0755},
+				"bin/jq":      {"jq executable", 0755}, "bin/rg": {"ripgrep executable", 0755}, "bin/fd": {"fd executable", 0755}, "bin/fdfind": {"fd executable", 0755},
 				"licenses/rg/LICENSE-MIT": {"rg license", 0644}, "licenses/rg/UNLICENSE": {"rg public domain", 0644}, "licenses/rg/COPYING": {"rg copying", 0644},
 				"licenses/fd/LICENSE-MIT": {"fd mit", 0644}, "licenses/fd/LICENSE-APACHE": {"fd apache", 0644},
 				"bin/claude": {"claude executable", 0755}, "bin/gh": {"github cli", 0755}, "bin/agy": {"antigravity cli", 0755}, "bin/codex": {"codex cli", 0755},
@@ -312,6 +323,107 @@ func TestDestinationLinksCannotEscape(t *testing.T) {
 			entries, _ := os.ReadDir(outside)
 			if len(entries) != 0 {
 				t.Fatal("wrote outside root")
+			}
+		})
+	}
+}
+
+func sqliteArchive(t *testing.T, members ...member) []byte {
+	t.Helper()
+	var b bytes.Buffer
+	w := zip.NewWriter(&b)
+	for _, m := range members {
+		h := &zip.FileHeader{Name: m.name, Method: zip.Deflate}
+		mode := os.FileMode(m.mode)
+		if m.kind == tar.TypeSymlink {
+			mode |= os.ModeSymlink
+		}
+		h.SetMode(mode)
+		f, err := w.CreateHeader(h)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := io.WriteString(f, m.data); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := w.Close(); err != nil {
+		t.Fatal(err)
+	}
+	return b.Bytes()
+}
+
+func TestSQLiteSourceVerifiedExtraction(t *testing.T) {
+	payloads, tools, server := fixture(t)
+	root, sourceDir := openRoot(t)
+	if err := PrepareSQLiteSource(context.Background(), server.Client(), tools["sqlite3"], sourceDir); err != nil {
+		t.Fatal(err)
+	}
+	for name, want := range map[string]string{"sqlite3.c": "sqlite source", "shell.c": "shell source", "sqlite3.h": "sqlite header", "sqlite3ext.h": "extension header"} {
+		f, err := OpenFile(root, name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		got, err := io.ReadAll(f)
+		f.Close()
+		if err != nil || string(got) != want {
+			t.Fatalf("%s=%q err=%v", name, got, err)
+		}
+	}
+	// ZIP parsing must never happen before the source checksum has been verified.
+	payloads["sqlite3"] = []byte("unverified invalid zip")
+	root, _ = openRoot(t)
+	if err := install(context.Background(), server.Client(), root, "sqlite3", tools["sqlite3"]); err == nil || !strings.Contains(err.Error(), "checksum mismatch") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestSQLiteSourceSafety(t *testing.T) {
+	good := []member{{"sqlite/sqlite3.c", "source", 0644, 0}, {"sqlite/shell.c", "shell", 0644, 0}, {"sqlite/sqlite3.h", "header", 0644, 0}, {"sqlite/sqlite3ext.h", "header", 0644, 0}}
+	for _, test := range []struct {
+		name  string
+		extra member
+	}{
+		{"parent", member{"../escape", "x", 0644, 0}},
+		{"absolute", member{"/escape", "x", 0644, 0}},
+		{"symlink", member{"unselected", "x", 0644, tar.TypeSymlink}},
+		{"duplicate path", good[0]},
+		{"duplicate basename", member{"other/sqlite3.c", "x", 0644, 0}},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			payload := sqliteArchive(t, append(good, test.extra)...)
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.Write(payload) }))
+			defer server.Close()
+			sum := sha256.Sum256(payload)
+			root, _ := openRoot(t)
+			if err := install(context.Background(), server.Client(), root, "sqlite3", Spec{URL: server.URL, SHA256: fmt.Sprintf("%x", sum)}); err == nil {
+				t.Fatal("accepted unsafe SQLite source archive")
+			}
+		})
+	}
+}
+
+func TestBuildRequiresCompiledSQLite(t *testing.T) {
+	_, tools, server := fixture(t)
+	for _, test := range []struct {
+		name string
+		mode os.FileMode
+		data string
+	}{
+		{"missing", 0, ""}, {"nonexecutable", 0644, "binary"}, {"empty", 0755, ""},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			root, dst := openRoot(t)
+			if test.mode != 0 {
+				if err := WriteFile(root, "bin/sqlite3", strings.NewReader(test.data), test.mode); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if err := Build(context.Background(), server.Client(), tools, "arm64", dst, io.Discard); err == nil {
+				t.Fatal("accepted absent or unusable compiled SQLite")
+			}
+			if _, err := root.Stat("manifest.json"); !os.IsNotExist(err) {
+				t.Fatalf("manifest published before SQLite compilation: %v", err)
 			}
 		})
 	}
