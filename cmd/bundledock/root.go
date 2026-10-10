@@ -2,11 +2,13 @@ package main
 
 import "github.com/spf13/cobra"
 
+var version = "dev"
+
 func newRootCommand() *cobra.Command {
 	root := &cobra.Command{
 		Use:          "bundledock",
 		Short:        "Build and manage OCI bundles",
-		Version:      "dev",
+		Version:      version,
 		Args:         cobra.NoArgs,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {

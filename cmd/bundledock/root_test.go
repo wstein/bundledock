@@ -45,3 +45,19 @@ func TestToolsVolumeHelpDefaultImage(t *testing.T) {
 		t.Fatalf("volume help has an unexpected default image: %q", output.String())
 	}
 }
+
+func TestBundleDockInjectedVersion(t *testing.T) {
+	original := version
+	t.Cleanup(func() { version = original })
+	version = "local-test"
+	var output bytes.Buffer
+	cmd := newRootCommand()
+	cmd.SetOut(&output)
+	cmd.SetArgs([]string{"--version"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if got, want := output.String(), "bundledock version local-test\n"; got != want {
+		t.Fatalf("version output = %q, want %q", got, want)
+	}
+}
