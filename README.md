@@ -2,6 +2,11 @@
 
 ![BundleDock — Build and ship OCI bundles.](assets/banner.svg)
 
+[![Go 1.24 or newer](https://img.shields.io/badge/Go-1.24%2B-00ADD8?logo=go&logoColor=white)](go.mod)
+[![Linux amd64 and arm64](https://img.shields.io/badge/Linux-amd64%20%7C%20arm64-0b2545?logo=linux&logoColor=white)](tools.lock.json)
+[![OCI toolbox](https://img.shields.io/badge/OCI-toolbox-5eead4?labelColor=0b2545)](oci/Dockerfile)
+[![Pinned tool catalog](https://img.shields.io/badge/tools-pinned-5eead4?labelColor=0b2545)](tools.packages.json)
+
 BundleDock builds an OCI toolbox of pinned development CLIs and their required
 runtimes for shared, read-only use in Linux containers. The toolbox supplies
 common utilities alongside stock language images, such as Go or Rust images,
