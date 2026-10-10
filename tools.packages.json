@@ -47,7 +47,7 @@
       "sidecar": "gh_{version}_checksums.txt"
     },
     "agy": {
-      "provider": "github",
+      "provider": "antigravity",
       "repository": "google-antigravity/antigravity-cli",
       "normalization": "semver",
       "architectures": {
@@ -57,7 +57,8 @@
       "asset": "agy_cli_linux_{arch}.tar.gz",
       "allowed_hosts": [
         "github.com",
-        "storage.googleapis.com"
+        "storage.googleapis.com",
+        "antigravity-cli-auto-updater-974169037036.us-central1.run.app"
       ],
       "verification": "official-or-download",
       "install": {
@@ -65,7 +66,8 @@
         "members": {
           "antigravity": "bin/agy"
         }
-      }
+      },
+      "metadata_url": "https://antigravity-cli-auto-updater-974169037036.us-central1.run.app"
     },
     "jq": {
       "provider": "github",

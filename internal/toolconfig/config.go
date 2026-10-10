@@ -96,7 +96,13 @@ func (c *Config) Bind() {
 	c.Lock.DesiredDigest = c.DesiredDigest()
 	c.Lock.CatalogDigest = c.CatalogDigest()
 }
-func Load(directory string) (*Config, error) {
+func Load(directory string) (*Config, error) { return load(directory, true) }
+
+// LoadForUpgrade permits changed desired inputs; the newly resolved lock must pass Validate.
+func LoadForUpgrade(directory string) (*Config, error) { return load(directory, false) }
+
+// LoadInputs validates trusted declarative inputs independently of an existing lock.
+func LoadInputs(directory string) (*Config, error) {
 	c := new(Config)
 	f, err := os.Open(filepath.Join(directory, "tools.txt"))
 	if err != nil {
@@ -107,21 +113,49 @@ func Load(directory string) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	for _, file := range []struct {
-		name  string
-		value any
-	}{{"tools.packages.json", &c.Catalog}, {"tools.lock.json", &c.Lock}} {
-		f, err := os.Open(filepath.Join(directory, file.name))
-		if err != nil {
-			return nil, err
+	f, err = os.Open(filepath.Join(directory, "tools.packages.json"))
+	if err != nil {
+		return nil, err
+	}
+	err = Decode(f, &c.Catalog)
+	f.Close()
+	if err != nil {
+		return nil, err
+	}
+	// Validate recipe grammar with synthetic pins; no URLs are fetched or executed.
+	probe := *c
+	probe.Lock = Lock{Platforms: map[string]map[string]Spec{"amd64": {}, "arm64": {}}}
+	for n, p := range c.Catalog.Packages {
+		host := "invalid"
+		if len(p.AllowedHosts) > 0 {
+			host = p.AllowedHosts[0]
 		}
-		err = Decode(f, file.value)
-		f.Close()
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", file.name, err)
+		s := Spec{Version: p.TagPrefix + c.Desired[n].Lower.String(), URL: "https://" + host + "/", SHA256: strings.Repeat("0", 64), Verification: "tls-download-sha256"}
+		for _, a := range []string{"amd64", "arm64"} {
+			probe.Lock.Platforms[a][n] = s
 		}
 	}
-	if err := c.Validate(); err != nil {
+	probe.Bind()
+	if err := probe.Validate(); err != nil {
+		return nil, err
+	}
+	return c, nil
+}
+func load(directory string, strict bool) (*Config, error) {
+	c, err := LoadInputs(directory)
+	if err != nil {
+		return nil, err
+	}
+	f, err := os.Open(filepath.Join(directory, "tools.lock.json"))
+	if err != nil {
+		return nil, err
+	}
+	err = Decode(f, &c.Lock)
+	f.Close()
+	if err != nil {
+		return nil, err
+	}
+	if err := c.validate(strict); err != nil {
 		return nil, err
 	}
 	return c, nil
@@ -174,11 +208,12 @@ func (p Package) Version(tag string) (string, error) {
 	_, err := ParseVersion(v)
 	return v, err
 }
-func (c Config) Validate() error {
+func (c Config) Validate() error { return c.validate(true) }
+func (c Config) validate(strict bool) error {
 	if c.Catalog.Schema != 1 || c.Lock.Schema != 2 {
 		return fmt.Errorf("unsupported catalog/lock schema")
 	}
-	if c.Lock.DesiredDigest != c.DesiredDigest() || c.Lock.CatalogDigest != c.CatalogDigest() {
+	if strict && (c.Lock.DesiredDigest != c.DesiredDigest() || c.Lock.CatalogDigest != c.CatalogDigest()) {
 		return fmt.Errorf("tools.lock.json identity differs from tools.txt or tools.packages.json; run anchorage tools upgrade (desired %s/%s catalog %s/%s)", c.Lock.DesiredDigest, c.DesiredDigest(), c.Lock.CatalogDigest, c.CatalogDigest())
 	}
 	if len(c.Desired) != len(c.Catalog.Packages) || len(c.Lock.Platforms) != 2 {
@@ -193,7 +228,7 @@ func (c Config) Validate() error {
 			return fmt.Errorf("unknown normalization for %s", name)
 		}
 		switch p.Provider {
-		case "github", "claude":
+		case "github", "claude", "antigravity":
 			if !repositoryName.MatchString(p.Repository) {
 				return fmt.Errorf("invalid repository for %s", name)
 			}
@@ -272,7 +307,7 @@ func (c Config) Validate() error {
 				return err
 			}
 			v, err := p.Version(s.Version)
-			if err != nil || !constraint.Contains(v) {
+			if err != nil || strict && !constraint.Contains(v) {
 				return fmt.Errorf("%s/%s version %q outside desired range", arch, name, s.Version)
 			}
 			if first != "" && first != v {

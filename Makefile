@@ -25,7 +25,7 @@ tools-build:
 	docker build -f oci/Dockerfile -t $(TOOLS_IMAGE) .
 
 tools-test:
-	$(GO) test ./internal/toolconfig ./internal/toolbundle ./internal/toolvolume ./internal/dockercli
+	$(GO) test ./cmd/anchorage ./internal/toolmanager ./internal/toolconfig ./internal/toolbundle ./internal/toolvolume ./internal/dockercli
 
 tools-volume:
 	sh oci/volume.sh "$(TOOLS_IMAGE)"

@@ -1,8 +1,14 @@
 package main
 
 import (
+	"anchorage/internal/toolconfig"
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -37,6 +43,95 @@ func TestToolsRejectsUnexpectedArguments(t *testing.T) {
 		cmd.SetArgs(args)
 		if err := cmd.Execute(); err == nil {
 			t.Fatalf("accepted args %#v", args)
+		}
+	}
+}
+
+func TestToolsUpgradeCommandHTTP(t *testing.T) {
+	dir := t.TempDir()
+	for _, n := range []string{"tools.txt", "tools.packages.json", "tools.lock.json"} {
+		b, err := os.ReadFile(filepath.Join("../..", n))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(dir, n), b, 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	old, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(dir); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := os.Chdir(old); err != nil {
+			t.Error(err)
+		}
+	})
+	payload := []byte("CLI fixture")
+	sum := fmt.Sprintf("sha256:%x", sha256.Sum256(payload))
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, "/repos/") {
+			fmt.Fprintf(w, `[{"tag_name":"v2.103.0","assets":[{"name":"gh_2.103.0_linux_amd64.tar.gz","browser_download_url":"https://github.com/cli/amd64","digest":"%s"},{"name":"gh_2.103.0_linux_arm64.tar.gz","browser_download_url":"https://github.com/cli/arm64","digest":"%s"}]}]`, sum, sum)
+			return
+		}
+		w.Write(payload)
+	}))
+	defer server.Close()
+	base, _ := url.Parse(server.URL)
+	client := &http.Client{Transport: upgradeTestTransport{base, server.Client().Transport}}
+	cmd := newRootCommand()
+	cmd.RemoveCommand(cmd.Commands()[0])
+	cmd.AddCommand(newToolsCommandWithClient(client))
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{"tools", "upgrade", "gh"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if out.String() != "gh v2.103.0\n" {
+		t.Fatalf("output %q", out.String())
+	}
+	if _, err := toolconfig.Load(dir); err != nil {
+		t.Fatal(err)
+	}
+}
+
+type upgradeTestTransport struct {
+	base      *url.URL
+	transport http.RoundTripper
+}
+
+func (f upgradeTestTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+	clone := r.Clone(r.Context())
+	u := *r.URL
+	u.Scheme = f.base.Scheme
+	u.Host = f.base.Host
+	clone.URL = &u
+	return f.transport.RoundTrip(clone)
+}
+func TestToolsCommandSurface(t *testing.T) {
+	cmd := newToolsCommand()
+	var names []string
+	for _, c := range cmd.Commands() {
+		names = append(names, c.Name())
+		if len(c.Aliases) > 0 {
+			t.Fatalf("unexpected aliases %v", c.Aliases)
+		}
+	}
+	if strings.Join(names, ",") != "upgrade,volume" {
+		t.Fatalf("unexpected commands %v", names)
+	}
+	for _, args := range [][]string{{"tools", "upgrade", "gh", "codex"}, {"tools", "update"}, {"tools", "list"}, {"tools", "check"}, {"tools", "build"}, {"tools", "use"}, {"tools", "upgrade", "--unknown"}} {
+		c := newRootCommand()
+		c.SetOut(&bytes.Buffer{})
+		c.SetErr(&bytes.Buffer{})
+		c.SetArgs(args)
+		if err := c.Execute(); err == nil {
+			t.Fatalf("accepted %v", args)
 		}
 	}
 }
