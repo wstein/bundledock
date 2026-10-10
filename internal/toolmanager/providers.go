@@ -15,6 +15,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -58,6 +59,11 @@ func (r resolver) get(ctx context.Context, raw string) (*http.Response, error) {
 		return nil, err
 	}
 	req.Header.Set("User-Agent", "anchorage-tools")
+	if req.URL.Scheme == "https" && req.URL.Host == "api.github.com" {
+		if token := strings.TrimSpace(os.Getenv("GITHUB_TOKEN")); token != "" {
+			req.Header.Set("Authorization", "Bearer "+token)
+		}
+	}
 	client := *r.client
 	previousRedirect := client.CheckRedirect
 	client.CheckRedirect = func(next *http.Request, via []*http.Request) error {

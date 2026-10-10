@@ -81,7 +81,10 @@ compile command. Review catalog edits as build inputs. A catalog change requires
 an upgrade of all tools so preserved pins cannot acquire a different recipe silently.
 
 Upgrades fetch fresh release metadata and select the numerically newest stable
-version within each requirement. GitHub release history is paginated. Claude and
+version within each requirement. GitHub release history is paginated. Optional `GITHUB_TOKEN` authentication is
+sent only to `api.github.com`; artifact and other provider requests never receive
+it. HTTP errors, including API rate limits, abort with the request URL and status.
+Claude and
 Antigravity combine official current manifests with historical GitHub releases.
 SQLite uses official release chronology dates and compact archive naming, including
 historical releases and backports. The chosen version must supply both architectures;

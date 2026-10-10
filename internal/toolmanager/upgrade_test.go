@@ -616,3 +616,24 @@ func TestTargetedUpgradeRequiresUnchangedCatalog(t *testing.T) {
 type failedWriter struct{}
 
 func (failedWriter) Write([]byte) (int, error) { return 0, fmt.Errorf("output unavailable") }
+
+func TestGitHubAuthenticationIsScopedToAPIHost(t *testing.T) {
+	t.Setenv("GITHUB_TOKEN", "fixture-secret")
+	client := fixtureClient(t, func(w http.ResponseWriter, r *http.Request) {
+		want := ""
+		if r.URL.Path == "/api-fixture" {
+			want = "Bearer fixture-secret"
+		}
+		if r.Header.Get("Authorization") != want {
+			t.Errorf("incorrect authentication scope for %s", r.URL.Path)
+		}
+		fmt.Fprint(w, "[]")
+	})
+	for _, raw := range []string{"https://api.github.com/api-fixture", "https://github.com/artifact", "https://downloads.claude.ai/claude", "https://storage.googleapis.com/antigravity", "https://www.sqlite.org/archive"} {
+		resp, err := (resolver{client: client}).get(context.Background(), raw)
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp.Body.Close()
+	}
+}
