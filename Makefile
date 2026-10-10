@@ -1,6 +1,6 @@
 GO ?= go
 GOFMT ?= gofmt
-PACKAGES := ./cmd/...
+PACKAGES := ./cmd/... ./internal/...
 BINARY := bin/anchorage
 TOOLS_IMAGE ?= anchorage/tools:poc
 TOOLS_CONSUMER ?= mcr.microsoft.com/devcontainers/go:2-1.27-trixie
@@ -22,10 +22,10 @@ help:
 	  'make tools-test        Test native package extraction'
 
 tools-build:
-	docker build -t $(TOOLS_IMAGE) oci
+	docker build -f oci/Dockerfile -t $(TOOLS_IMAGE) .
 
 tools-test:
-	python3 -B -m unittest discover -s oci -p 'test_*.py'
+	$(GO) test ./internal/toolbundle ./internal/toolvolume ./internal/dockercli
 
 tools-volume:
 	sh oci/volume.sh "$(TOOLS_IMAGE)"
@@ -49,7 +49,7 @@ fmt:
 	$(GO) fmt $(PACKAGES)
 
 check:
-	@test -z "$$($(GOFMT) -l cmd)" || { echo 'Go source needs formatting; run make fmt'; exit 1; }
+	@test -z "$$($(GOFMT) -l cmd internal)" || { echo 'Go source needs formatting; run make fmt'; exit 1; }
 	$(MAKE) test vet
 
 clean:

@@ -20,8 +20,9 @@ Start with a Debian/glibc container baseline and platform-specific Linux
 artifacts. Validate actual CLI execution and authentication, concurrent use by
 two containers, and upgrade and rollback behavior.
 
-The local OCI bundle and volume initializer are implemented. Registry publication,
-authenticated agent tasks, and integration into the Anchorage CLI are still planned.
+The local OCI bundle and volume initializer are implemented. Registry publication
+and authenticated agent tasks are still planned. The Anchorage CLI can initialize
+and verify the shared tool volume.
 
 ## OCI tool bundle
 
@@ -32,6 +33,8 @@ make tools-build
 make tools-test
 make tools-smoke
 make tools-volume
+# Or, with a local Go toolchain:
+make run ARGS="tools volume --image anchorage/tools:poc"
 ```
 
 `oci/tools.lock.json` pins vendor artifact URLs and checksums for Linux `amd64`
@@ -49,12 +52,19 @@ is pinned by digest; Debian packages still come from its current package reposit
 Native binaries and complete Codex runtime assets occupy about 864 MiB uncompressed on
 ARM64. The volume is shared across workspaces on the same Docker host.
 The initial local build and smoke tests were run on Linux ARM64; AMD64 downloads
-are pinned but have not yet been built or runtime-verified.
+are pinned but have not yet been built or runtime-verified. The Go port has been
+verified with local HTTP/archive fixtures for both architectures; its Docker build
+and runtime smoke test still need a Docker host. Before adopting the new bundle,
+run `make tools-build tools-smoke` on each supported architecture.
 
 `tools-volume` prints a volume name derived from the resolved image ID. It copies
 the tools once and verifies their checksums on subsequent calls. Incomplete,
 nonempty, or mismatched volumes are rejected. Upgrades create a new image and
 volume; rollback selects the previous image. Volumes are local to each Docker host.
+The Go builder emits deterministic metadata, with its own JSON serialization; it
+does not guarantee byte compatibility with legacy Python-built manifests. Build a
+new image and use its image-derived volume instead of reusing a legacy volume.
+Initialization never removes an existing lock or retries a partial nonempty volume.
 
 Mount the printed volume into a compatible development container:
 
@@ -82,12 +92,19 @@ Other images must supply compatible system libraries, Git, and CA certificates;
 mounting this volume does not install those dependencies. Override `TOOLS_IMAGE`
 or `TOOLS_CONSUMER` when invoking Make to select another image or test consumer.
 
+The OCI build uses the repository root as context with `oci/Dockerfile.dockerignore`
+limiting it to the builder/initializer sources and artifact lock. Go compilation
+and artifact downloads run on `BUILDPLATFORM`; only the initializer is cross-compiled
+for `TARGETARCH`. The image needs no Python or shell initializer.
+`oci/volume.sh` remains a small Docker-only host adapter so the devcontainer can
+initialize before a Go toolchain or Anchorage binary is available on the host.
+
 ## Development
 
 The repository includes a Go devcontainer configuration. Open it with an editor
 that supports development containers, or use a local Go 1.24 or newer toolchain.
 The devcontainer sets `GOFLAGS=-trimpath` so Go builds omit local filesystem paths.
-Make inherits `GOFLAGS`.
+Make inherits `GOFLAGS`; OCI build commands also pass `-trimpath` explicitly.
 
 The devcontainer pins the current local tool image by ID and initializes its
 read-only volume on the host before starting. This image must already exist in
@@ -107,20 +124,25 @@ make check
 make build
 ```
 
-The CLI uses [Cobra](https://github.com/spf13/cobra) and currently provides help
-and a development version identifier. Environment management commands are planned.
+The CLI uses [Cobra](https://github.com/spf13/cobra) and currently provides help,
+a development version identifier, and `anchorage tools volume --image <image>`.
+The volume command uses the host Docker CLI, resolves the image once to its immutable
+ID, and runs the initializer with networking disabled. Environment management
+commands are planned.
 
 Make targets are thin wrappers around Go commands. Run `make help` for available
 targets. Builds write `bin/anchorage`; `make clean` removes the binary.
 
-Checks target `cmd` explicitly because the CrewBook submodule contains Go
-evaluation fixtures that are not Anchorage packages.
+Checks target `cmd` and `internal` explicitly because the CrewBook submodule
+contains Go evaluation fixtures that are not Anchorage packages.
 
 ## Repository layout
 
 - `cmd/anchorage`: Go CLI entry point.
 - `.devcontainer`: development container configuration.
-- `oci`: tool bundle, artifact lock, volume initializer, and smoke test.
+- `cmd/tools-bundle`, `cmd/tools-init`: standard-library OCI build and initialization commands.
+- `internal`: bundle downloads/extraction, volume validation, and host Docker adapter.
+- `oci`: Dockerfile, artifact lock, Docker-only host adapter, and smoke test.
 - `crewbook`: pinned CrewBook workflow submodule.
 
 To clone with the workflow resources:

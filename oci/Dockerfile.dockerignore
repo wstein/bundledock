@@ -1,0 +1,14 @@
+**
+!go.mod
+!cmd
+!cmd/tools-bundle
+!cmd/tools-bundle/**
+!cmd/tools-init
+!cmd/tools-init/**
+!internal
+!internal/toolbundle
+!internal/toolbundle/**
+!internal/toolvolume
+!internal/toolvolume/**
+!oci
+!oci/tools.lock.json
