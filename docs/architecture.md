@@ -5,9 +5,13 @@
 ## Toolbox carrier
 
 Builds verify every download. The final image uses `scratch` and contains only the bundle and its
-statically compiled volume initializer. Compiler and download stages retain their
-existing bases; the download stage's Debian base is pinned by digest and its CA
-certificates come from current Debian package repositories.
+statically compiled volume initializer. Build-only stages use digest-pinned
+multi-platform official Alpine images: Go 1.24 for compilation and Alpine 3.23
+for downloads. The download stage installs only CA certificates from Alpine's
+package repositories; the static Go builder handles HTTPS downloads, checksum
+verification and archive extraction without adding curl, tar or a C compiler.
+Alpine is a build dependency, independent of the consumer's Debian runtime
+libraries and compatibility requirements below.
 
 The image is a carrier for volume initialization. Direct execution of packaged
 tools inside the carrier is unsupported: the consumer supplies its shell, Git,
