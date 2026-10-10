@@ -37,6 +37,13 @@ ID, and runs the initializer with networking disabled.
 Make targets are thin wrappers around Go commands. Run `make help` for available
 targets. Builds write `bin/bundledock`; `make clean` removes the binary.
 
+### Release review
+
+Before the next release, review every item in the local TODO list and its
+supporting evidence. Resolve unfinished or blocked items, or obtain an explicit
+user decision to defer each one, before creating a release tag or publishing.
+Keep the local TODO list untracked.
+
 ### Local CLI artifacts
 
 `make release VERSION=dev RELEASE_DIR=dist/cli` builds BundleDock's own CLI for

@@ -15,6 +15,11 @@ security fix is not yet available in an official stable prebuilt release, wait
 for that release and record the remaining findings in existing documentation.
 This does not restrict compiling BundleDock's own CLI, builder, or initializer.
 
+Before the next release, review every item in the local TODO list and its
+supporting evidence. Resolve unfinished or blocked items, or obtain an explicit
+user decision to defer each one, before creating a release tag or publishing.
+Keep the local TODO list untracked.
+
 Make multiple atomic, focused commits using Conventional Commits.
 Keep each commit limited to one logical change.
 
