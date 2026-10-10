@@ -1,3 +1,6 @@
 [submodule "crewbook"]
 	path = crewbook
 	url = https://github.com/wstein/crewbook/
+[submodule "workharbor"]
+	path = workharbor
+	url = https://github.com/wstein/workharbor
