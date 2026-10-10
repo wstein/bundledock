@@ -4,7 +4,8 @@
 
 ## Development
 
-Use a local Go 1.24 or newer toolchain. The Anchorage umbrella provides an
+Use the patched build toolchain in [`.go-version`](../.go-version) for local
+builds and checks. The module retains Go 1.24 source compatibility. The Anchorage umbrella provides an
 optional consumer devcontainer; its integration and pinned image are maintained
 there. Make inherits `GOFLAGS`; OCI build commands pass `-trimpath` explicitly.
 

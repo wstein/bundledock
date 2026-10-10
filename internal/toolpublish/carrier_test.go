@@ -20,7 +20,7 @@ func TestBuildStagesUseMinimalAlpineBases(t *testing.T) {
 	}
 	compiler, downloads, builder := stages[0], stages[1], stages[2]
 	for _, stage := range []struct{ name, body, base string }{
-		{"compiler", compiler, "FROM --platform=$BUILDPLATFORM golang:1.24-alpine@sha256:"},
+		{"compiler", compiler, "FROM --platform=$BUILDPLATFORM golang:1.27.2-alpine@sha256:"},
 		{"downloads", "FROM " + downloads, "FROM --platform=$BUILDPLATFORM alpine:3.23@sha256:"},
 	} {
 		if !strings.Contains(stage.body, stage.base) {

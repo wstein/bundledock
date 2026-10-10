@@ -61,3 +61,30 @@ func TestPublicationWorkflowRepositoryConfiguration(t *testing.T) {
 		t.Fatalf("expected native and promotion logins, got %d", logins)
 	}
 }
+
+func TestWorkflowsUsePatchedBuildToolchain(t *testing.T) {
+	version, err := os.ReadFile("../../.go-version")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.TrimSpace(string(version)) != "1.27.2" {
+		t.Fatal("build toolchain must use the verified patched Go release")
+	}
+	dockerfile, err := os.ReadFile("../../oci/Dockerfile")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(dockerfile), "golang:"+strings.TrimSpace(string(version))+"-alpine@sha256:") {
+		t.Fatal("OCI compiler must match the CI toolchain")
+	}
+	for _, name := range []string{"ci.yml", "bundledock-toolbox.yml"} {
+		data, err := os.ReadFile("../../.github/workflows/" + name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		workflow := string(data)
+		if strings.Count(workflow, "uses: actions/setup-go@") != strings.Count(workflow, "go-version-file: .go-version") || strings.Contains(workflow, "go-version-file: go.mod") {
+			t.Errorf("%s must use the shared patched compiler version for every Go setup", name)
+		}
+	}
+}
