@@ -74,6 +74,11 @@ The bundle pins 23 tools, with these companion commands:
 See [pinned versions and upgrades](docs/tools.md). Codex includes its native
 helpers; optional voice resources are omitted.
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution and verification guidance.
+Participation in the BundleDock community follows our [Code of Conduct](CODE_OF_CONDUCT.md).
+
 ## Next steps
 
 - [Upgrade tools](docs/tools.md#upgrade-the-lock): edit desired ranges, resolve a lock, rebuild, and initialize a new volume.

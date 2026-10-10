@@ -6,6 +6,9 @@ consumer devcontainer integration. Read [AGENTS.md](AGENTS.md) before changing
 this repository, and see [development and verification](docs/development.md)
 for setup and recorded coverage.
 
+Participation in the BundleDock community follows our [Code of Conduct](CODE_OF_CONDUCT.md),
+which includes the private reporting contact and enforcement process.
+
 ## Make a focused change
 
 For a bug, provide a minimal reproduction, expected and actual behavior, the
