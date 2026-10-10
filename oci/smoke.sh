@@ -21,6 +21,11 @@ check() {
         --env HOME=/home/bundledock --env DISABLE_UPDATES=1 --env DISABLE_AUTOUPDATER=1 \
         --entrypoint /bin/sh "$consumer" -ec '
             test -f /opt/workharbor/.ready
+            test ! -e /opt/workharbor/codex-resources/voice
+            test -f /opt/workharbor/codex-package.json
+            for helper in bin/codex-code-mode-host codex-path/rg codex-resources/bwrap codex-resources/zsh/bin/zsh; do
+                test -x "/opt/workharbor/$helper"
+            done
             export PATH="/opt/workharbor/bin:$PATH"
             codex --version
             timeout 45 codex app-server daemon start
@@ -97,21 +102,21 @@ test "$result" = 0
 
 # A changed manifest must be rejected, not overwritten by initialization.
 docker run --rm --network none --entrypoint /bin/sh \
-    --mount "type=volume,src=$volume,dst=/bundle,volume-nocopy" "$image" \
+    --mount "type=volume,src=$volume,dst=/bundle,volume-nocopy" "$consumer" \
     -ec 'printf "invalid\n" > /bundle/manifest.json'
 if docker run --rm --network none --mount "type=volume,src=$volume,dst=/bundle,volume-nocopy" "$image"; then
     echo 'Unexpected success for a mismatched volume' >&2
     exit 1
 fi
 docker run --rm --network none --entrypoint /bin/sh \
-    --mount "type=volume,src=$volume,dst=/bundle,volume-nocopy" "$image" \
+    --mount "type=volume,src=$volume,dst=/bundle,volume-nocopy" "$consumer" \
     -ec 'rm /bundle/.ready'
 if docker run --rm --network none --mount "type=volume,src=$volume,dst=/bundle,volume-nocopy" "$image"; then
     echo 'Unexpected success for an incomplete volume' >&2
     exit 1
 fi
 docker run --rm --network none --entrypoint /bin/sh \
-    --mount "type=volume,src=$volume,dst=/bundle,volume-nocopy" "$image" \
+    --mount "type=volume,src=$volume,dst=/bundle,volume-nocopy" "$consumer" \
     -ec 'mkdir /bundle/.initializing'
 if docker run --rm --network none --mount "type=volume,src=$volume,dst=/bundle,volume-nocopy" "$image"; then
     echo 'Unexpected success for a locked volume' >&2

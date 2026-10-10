@@ -8,14 +8,14 @@
 [![OCI toolbox](https://img.shields.io/badge/OCI-toolbox-5eead4?labelColor=0b2545)](oci/Dockerfile)
 [![Pinned tool catalog](https://img.shields.io/badge/tools-pinned-5eead4?labelColor=0b2545)](tools.packages.json)
 
-BundleDock builds an OCI toolbox of pinned development CLIs and their required
-runtimes for shared, read-only use in Linux containers. The toolbox supplies
+BundleDock builds an OCI toolbox of pinned development CLIs and packaged
+runtime assets for shared, read-only use in Linux containers. The toolbox supplies
 common utilities alongside stock language images, such as Go or Rust images,
 which provide their own language toolchains.
 
 ## Proof of concept
 
-- Package pinned CLI versions and their required runtimes as an OCI tool bundle.
+- Package pinned CLI versions and their runtime assets as an OCI tool bundle.
 - Initialize a versioned Docker volume from the bundle and mount it read-only
   into development containers.
 - Keep credentials, configuration, caches, and session state separate from the
@@ -48,7 +48,19 @@ and `arm64`. The bundle contains twenty-two tools: Codex (including native helpe
 Antigravity, GitHub CLI, jq, ripgrep, fd, ast-grep, Mike Farah yq, uv
 (with uvx), and [Herdr](https://github.com/herdrdev/herdr) for terminal workspaces
 and agent sessions, plus the Fish shell and Starship prompt, with Nushell and tmux available as alternatives, and typos, lychee, Gitleaks, Trivy, and Syft for quality and security checks, plus bottom (`btm`) and btop for process and system monitoring. Builds verify every
-download. The Debian base image is pinned by digest; Debian packages still come from its current package repositories.
+download. The final image uses `scratch` and contains only the bundle and its
+statically compiled volume initializer. Compiler and download stages retain their
+existing bases; the download stage's Debian base is pinned by digest and its CA
+certificates come from current Debian package repositories.
+
+The image is a carrier for volume initialization. Direct execution of packaged
+tools inside the carrier is unsupported: the consumer supplies its shell, Git,
+CA certificates, terminfo and compatible system libraries, including libstdc++,
+libgcc, libatomic and libsecret when required. The supported Debian Trixie Go
+consumer remains unchanged. The initializer uses an absolute entrypoint and
+only source/target filesystem access; it needs no shell, network or temporary
+directory. Smoke mutation probes run in the consumer, while repeat and rejected
+initialization still use the carrier's initializer.
 
 | Tool | Pinned version |
 | --- | --- |
