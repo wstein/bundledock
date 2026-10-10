@@ -71,7 +71,6 @@ adapter tests without building an OCI image.
 - `internal`: package catalog, upstream resolution, bundle extraction, volume validation, and Docker adapters.
 - `bundles/toolbox/`: Dockerfile, smoke/volume adapters, licenses and bundle inputs.
 - `bundles/toolbox/{tools.txt,tools.packages.json,tools.lock.json}`: desired versions, trusted recipes, and verified pins.
-- `oci`: Dockerfile, Docker-only host adapter, smoke test, and upstream license notices.
 - `.github/workflows/ci.yml`: pull request and push checks plus native locked-toolbox smoke.
 - `.github/workflows/bundledock-toolbox.yml`: weekly two-platform publication workflow.
 - `assets`, `brand`: approved brand assets, licensed font sources, and generation provenance.
