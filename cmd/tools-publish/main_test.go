@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"bundledock/internal/toolpublish"
 )
@@ -18,7 +19,7 @@ func TestResolveOnceAndKeepExactArtifactBytes(t *testing.T) {
 	if err := os.WriteFile("tools.lock.json", initial, 0600); err != nil {
 		t.Fatal(err)
 	}
-	meta, err := toolpublish.NewMetadata("tools.lock.json", "quay.io/example/toolbox", "2026.10.10-123-1", strings.Repeat("a", 40), "https://github.com/example/repo", "2026-10-10T03:17:00Z")
+	meta, err := toolpublish.NewMetadata("tools.lock.json", "quay.io/example/toolbox", "2026.10.10-b12.1", strings.Repeat("a", 40), "https://github.com/example/repo", "2026-10-10T03:17:00Z", "38069722044")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -62,7 +63,7 @@ func TestFailedResolveCreatesNoArtifact(t *testing.T) {
 	if err := os.WriteFile("tools.lock.json", []byte("{}"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	meta, err := toolpublish.NewMetadata("tools.lock.json", "quay.io/example/toolbox", "2026.10.10-123-1", strings.Repeat("a", 40), "https://github.com/example/repo", "2026-10-10T03:17:00Z")
+	meta, err := toolpublish.NewMetadata("tools.lock.json", "quay.io/example/toolbox", "2026.10.10-b12.1", strings.Repeat("a", 40), "https://github.com/example/repo", "2026-10-10T03:17:00Z", "38069722044")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -89,13 +90,41 @@ func TestJSONOutputEndsWithNewline(t *testing.T) {
 }
 
 func TestArtifactRunIdentityRejectsPartialReruns(t *testing.T) {
-	meta := toolpublish.Metadata{Tag: "2026.10.10-123-1", Commit: strings.Repeat("a", 40)}
-	if err := artifactIdentity(meta, "123", "1", meta.Commit); err != nil {
+	meta := toolpublish.Metadata{Tag: "2026.10.10-b12.4", RunID: "38069722044", Commit: strings.Repeat("a", 40)}
+	if err := artifactIdentity(meta, meta.RunID, "12", "4", meta.Commit); err != nil {
 		t.Fatal(err)
 	}
-	for _, run := range []struct{ id, attempt, commit string }{{"123", "2", meta.Commit}, {"124", "1", meta.Commit}, {"123", "1", strings.Repeat("b", 40)}} {
-		if err := artifactIdentity(meta, run.id, run.attempt, run.commit); err == nil {
-			t.Fatal("accepted artifact from another run, attempt or revision")
+	for _, run := range []struct{ id, number, attempt, commit string }{
+		{meta.RunID, "12", "5", meta.Commit}, {meta.RunID, "13", "4", meta.Commit},
+		{"38069722045", "12", "4", meta.Commit}, {meta.RunID, "12", "4", strings.Repeat("b", 40)},
+		{"", "12", "4", meta.Commit}, {meta.RunID, "", "4", meta.Commit}, {meta.RunID, "12", "", meta.Commit},
+	} {
+		if err := artifactIdentity(meta, run.id, run.number, run.attempt, run.commit); err == nil {
+			t.Fatalf("accepted foreign identity: %+v", run)
+		}
+	}
+}
+
+func TestResolveRejectsInvalidRunCountersBeforeResolving(t *testing.T) {
+	for _, name := range []string{"GITHUB_RUN_NUMBER", "GITHUB_RUN_ATTEMPT"} {
+		for _, value := range []string{"", "0", "-1", "01", "+1", "1.2", "abc", " 1"} {
+			t.Run(name+"="+value, func(t *testing.T) {
+				t.Chdir(t.TempDir())
+				t.Setenv("REPOSITORY_URL", "quay.io/example")
+				t.Setenv("GITHUB_RUN_ID", "38069722044")
+				t.Setenv("GITHUB_RUN_NUMBER", "12")
+				t.Setenv("GITHUB_RUN_ATTEMPT", "4")
+				t.Setenv("GITHUB_SHA", strings.Repeat("a", 40))
+				t.Setenv("GITHUB_SERVER_URL", "https://github.com")
+				t.Setenv("GITHUB_REPOSITORY", "example/repo")
+				t.Setenv(name, value)
+				if err := execute([]string{"resolve"}); err == nil || !strings.Contains(err.Error(), "tag") {
+					t.Fatalf("expected tag rejection before resolver, got %v", err)
+				}
+				if _, err := os.Stat("resolved"); !os.IsNotExist(err) {
+					t.Fatalf("created invalid artifact: %v", err)
+				}
+			})
 		}
 	}
 }
@@ -115,7 +144,8 @@ func TestResolveUsesRepositoryURL(t *testing.T) {
 			t.Setenv("PATH", dir+":"+os.Getenv("PATH"))
 			t.Setenv("REPOSITORY_URL", prefix)
 			t.Setenv("QUAY_IMAGE", "quay.io/obsolete/bundledock-toolbox")
-			t.Setenv("GITHUB_RUN_ID", "123")
+			t.Setenv("GITHUB_RUN_ID", "38069722044")
+			t.Setenv("GITHUB_RUN_NUMBER", "12")
 			t.Setenv("GITHUB_RUN_ATTEMPT", "1")
 			t.Setenv("GITHUB_SHA", strings.Repeat("a", 40))
 			t.Setenv("GITHUB_SERVER_URL", "https://github.com")
@@ -126,6 +156,9 @@ func TestResolveUsesRepositoryURL(t *testing.T) {
 			var meta toolpublish.Metadata
 			if err := readJSON("resolved/provenance.json", &meta); err != nil {
 				t.Fatal(err)
+			}
+			if meta.Tag != time.Now().UTC().Format("2006.01.02")+"-b12.1" || meta.RunID != "38069722044" {
+				t.Fatalf("wrong run provenance: %+v", meta)
 			}
 			if meta.Image != "quay.io/bundledock/toolbox" {
 				t.Fatalf("resolved wrong publication destination: %s", meta.Image)

@@ -65,8 +65,8 @@ func resolve(directory string, meta toolpublish.Metadata, runner func(...string)
 	return writeJSON(filepath.Join(directory, "provenance.json"), meta)
 }
 
-func artifactIdentity(meta toolpublish.Metadata, id, attempt, commit string) error {
-	if id == "" || attempt == "" || !strings.HasSuffix(meta.Tag, "-"+id+"-"+attempt) || meta.Commit != commit {
+func artifactIdentity(meta toolpublish.Metadata, id, number, attempt, commit string) error {
+	if id == "" || number == "" || attempt == "" || meta.RunID != id || !strings.HasSuffix(meta.Tag, "-b"+number+"."+attempt) || meta.Commit != commit {
 		return fmt.Errorf("artifact belongs to another run, attempt or revision; re-run all jobs")
 	}
 	return nil
@@ -95,8 +95,8 @@ func execute(args []string) error {
 			return err
 		}
 		now := time.Now().UTC()
-		tag := now.Format("2006.01.02") + "-" + os.Getenv("GITHUB_RUN_ID") + "-" + os.Getenv("GITHUB_RUN_ATTEMPT")
-		meta, err := toolpublish.NewMetadata("tools.lock.json", image, tag, os.Getenv("GITHUB_SHA"), os.Getenv("GITHUB_SERVER_URL")+"/"+os.Getenv("GITHUB_REPOSITORY"), now.Format("2006-01-02T15:04:05Z"))
+		tag := now.Format("2006.01.02") + "-b" + os.Getenv("GITHUB_RUN_NUMBER") + "." + os.Getenv("GITHUB_RUN_ATTEMPT")
+		meta, err := toolpublish.NewMetadata("tools.lock.json", image, tag, os.Getenv("GITHUB_SHA"), os.Getenv("GITHUB_SERVER_URL")+"/"+os.Getenv("GITHUB_REPOSITORY"), now.Format("2006-01-02T15:04:05Z"), os.Getenv("GITHUB_RUN_ID"))
 		if err != nil {
 			return err
 		}
@@ -106,7 +106,7 @@ func execute(args []string) error {
 	if err := readJSON(provenance, &meta); err != nil {
 		return err
 	}
-	if err := artifactIdentity(meta, os.Getenv("GITHUB_RUN_ID"), os.Getenv("GITHUB_RUN_ATTEMPT"), os.Getenv("GITHUB_SHA")); err != nil {
+	if err := artifactIdentity(meta, os.Getenv("GITHUB_RUN_ID"), os.Getenv("GITHUB_RUN_NUMBER"), os.Getenv("GITHUB_RUN_ATTEMPT"), os.Getenv("GITHUB_SHA")); err != nil {
 		return err
 	}
 	adapter := toolpublish.Adapter{Run: run}

@@ -105,7 +105,7 @@ func fixture(t *testing.T) (Metadata, string) {
 	if err := os.WriteFile(lock, []byte(`{"platforms":{"amd64":{"gh":{"version":"v1.2.3"}},"arm64":{"gh":{"version":"v1.2.3"}}}}`), 0600); err != nil {
 		t.Fatal(err)
 	}
-	m, err := NewMetadata(lock, "quay.io/example/toolbox", "2026.10.10-123-1", strings.Repeat("f", 40), "https://github.com/example/repo", "2026-10-10T03:17:00Z")
+	m, err := NewMetadata(lock, "quay.io/example/toolbox", "2026.10.10-b12.1", strings.Repeat("f", 40), "https://github.com/example/repo", "2026-10-10T03:17:00Z", "38069722044")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -158,6 +158,9 @@ func TestBuildSmokeThenPushExactImage(t *testing.T) {
 	}
 	if builds != 1 || !exactTag {
 		t.Fatalf("must push original smoked image without rebuild: %v", f.calls)
+	}
+	if f.labels["io.bundledock.github.run-id"] != m.RunID {
+		t.Fatal("missing full GitHub run ID provenance")
 	}
 	if f.labels["io.bundledock.tools.versions"] != `{"gh":"v1.2.3"}` || f.labels["org.opencontainers.image.title"] != "bundledock-toolbox" {
 		t.Fatal("missing tool versions/title provenance")
@@ -312,7 +315,7 @@ func TestBadPublishedIndexPreventsStable(t *testing.T) {
 func TestDestinationValidation(t *testing.T) {
 	_, lock := fixture(t)
 	for _, image := range []string{"", "docker.io/example/toolbox", "quay.io/example/tools", "quay.io/example/toolbox:stable", "quay.io/example/toolbox;echo hi", "quay.io/example/workharbor-tools", "quay.io/example/bundledock-tools", "quay.io/example/bundledock-toolbox", "quay.io/example/toolbox/", "https://quay.io/example/toolbox", "quay.io/example/toolbox@sha256:" + strings.Repeat("a", 64)} {
-		if _, err := NewMetadata(lock, image, "2026.10.10-123-1", strings.Repeat("f", 40), "https://github.com/example/repo", "2026-10-10T03:17:00Z"); err == nil {
+		if _, err := NewMetadata(lock, image, "2026.10.10-b12.1", strings.Repeat("f", 40), "https://github.com/example/repo", "2026-10-10T03:17:00Z", "38069722044"); err == nil {
 			t.Fatalf("accepted invalid destination %q", image)
 		}
 	}
@@ -320,7 +323,24 @@ func TestDestinationValidation(t *testing.T) {
 
 func TestBundleDockDestinationAccepted(t *testing.T) {
 	_, lock := fixture(t)
-	if _, err := NewMetadata(lock, "quay.io/example/toolbox", "2026.10.10-123-1", strings.Repeat("f", 40), "https://github.com/example/repo", "2026-10-10T03:17:00Z"); err != nil {
+	if _, err := NewMetadata(lock, "quay.io/example/toolbox", "2026.10.10-b12.1", strings.Repeat("f", 40), "https://github.com/example/repo", "2026-10-10T03:17:00Z", "38069722044"); err != nil {
 		t.Fatalf("rejected BundleDock destination: %v", err)
+	}
+}
+
+func TestShortVersionTags(t *testing.T) {
+	lock := filepath.Join(t.TempDir(), "lock.json")
+	if err := os.WriteFile(lock, []byte("{}"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	for _, tag := range []string{"2026.10.10-b12.4", "2026.10.10-b13.4", "2026.10.10-b12.5"} {
+		if _, err := NewMetadata(lock, "quay.io/example/toolbox", tag, strings.Repeat("f", 40), "https://github.com/example/repo", "2026-10-10T03:17:00Z", "38069722044"); err != nil {
+			t.Errorf("valid distinct tag %s: %v", tag, err)
+		}
+	}
+	for _, tag := range []string{"2026.10.10-38069722044-4", "2026.10.10-b0.4", "2026.10.10-b12.0", "2026.10.10-b01.4", "2026.10.10-b12.-1", "2026.10.10-b12.abc"} {
+		if _, err := NewMetadata(lock, "quay.io/example/toolbox", tag, strings.Repeat("f", 40), "https://github.com/example/repo", "2026-10-10T03:17:00Z", "38069722044"); err == nil {
+			t.Errorf("accepted invalid tag %s", tag)
+		}
 	}
 }
