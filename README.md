@@ -6,6 +6,7 @@
 [![Go 1.24 or newer](https://img.shields.io/badge/Go-1.24%2B-00ADD8?logo=go&logoColor=white)](go.mod)
 [![Linux amd64 and arm64](https://img.shields.io/badge/Linux-amd64%20%7C%20arm64-0b2545?logo=linux&logoColor=white)](tools.lock.json)
 [![OCI toolbox](https://img.shields.io/badge/OCI-toolbox-5eead4?labelColor=0b2545)](oci/Dockerfile)
+[![Quay toolbox](https://quay.io/repository/bundledock/toolbox/status)](https://quay.io/repository/bundledock/toolbox)
 [![Pinned tool catalog](https://img.shields.io/badge/tools-pinned-5eead4?labelColor=0b2545)](tools.packages.json)
 
 BundleDock builds an OCI toolbox of pinned development CLIs and packaged
