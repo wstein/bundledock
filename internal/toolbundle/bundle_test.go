@@ -72,6 +72,7 @@ func openRoot(t *testing.T) (*os.Root, string) {
 func fixture(t *testing.T) (map[string][]byte, map[string]Spec, *httptest.Server) {
 	t.Helper()
 	payloads := map[string][]byte{
+		"uv":       archive(t, member{"uv-1/uv", "uv executable", 0755, 0}, member{"uv-1/uvx", "uvx executable", 0755, 0}),
 		"ast-grep": sqliteArchive(t, member{"ast-grep", "ast-grep executable", 0755, 0}, member{"sg", "unwanted alias", 0755, 0}),
 		"sqlite3":  sqliteArchive(t, member{"sqlite/sqlite3.c", "sqlite source", 0644, 0}, member{"sqlite/shell.c", "shell source", 0644, 0}, member{"sqlite/sqlite3.h", "sqlite header", 0644, 0}, member{"sqlite/sqlite3ext.h", "extension header", 0644, 0}),
 		"claude":   []byte("claude executable"),
@@ -136,6 +137,7 @@ func TestVendorBuildBothArchitectures(t *testing.T) {
 				data string
 				mode os.FileMode
 			}{
+				"bin/uv": {"uv executable", 0755}, "bin/uvx": {"uvx executable", 0755},
 				"bin/ast-grep": {"ast-grep executable", 0755},
 				"bin/sqlite3":  {"compiled sqlite", 0755},
 				"bin/yq":       {"yq executable", 0755},
@@ -460,6 +462,24 @@ func TestAstGrepVerifiedZIP(t *testing.T) {
 		server.Close()
 		if err == nil {
 			t.Fatal("accepted missing/unsafe/ambiguous/nonexecutable ast-grep archive")
+		}
+	}
+}
+
+func TestUVCompanionSafety(t *testing.T) {
+	root, _ := openRoot(t)
+	if err := Extract(root, "uv", bytes.NewReader(archive(t, member{"uv/uv", "uv", 0755, 0}, member{"uv/uvx", "uvx", 0755, 0}))); err != nil {
+		t.Fatal(err)
+	}
+	for _, members := range [][]member{
+		{{"uv/uv", "missing uvx", 0755, 0}},
+		{{"uv/uv", "uv", 0755, 0}, {"uv/uvx", "not executable", 0644, 0}},
+		{{"uv/uv", "uv", 0755, 0}, {"uv/uvx", "uvx", 0755, 0}, {"other/uvx", "ambiguous", 0755, 0}},
+		{{"uv/uv", "uv", 0755, 0}, {"uv/uvx", "uvx", 0755, 0}, {"unselected", "link", 0644, tar.TypeSymlink}},
+	} {
+		root, _ := openRoot(t)
+		if err := Extract(root, "uv", bytes.NewReader(archive(t, members...))); err == nil {
+			t.Fatal("accepted missing/unsafe/ambiguous/nonexecutable uv companion")
 		}
 	}
 }

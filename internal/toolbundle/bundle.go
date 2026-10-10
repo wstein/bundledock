@@ -53,10 +53,10 @@ func ReadLock(r io.Reader, arch string) (map[string]Spec, error) {
 	if !ok {
 		return nil, fmt.Errorf("missing architecture %q", arch)
 	}
-	if len(tools) != 10 {
-		return nil, fmt.Errorf("lock must contain codex, claude, gh, agy, jq, rg, fd, sqlite3, ast-grep and yq")
+	if len(tools) != 11 {
+		return nil, fmt.Errorf("lock must contain codex, claude, gh, agy, jq, rg, fd, sqlite3, ast-grep, yq and uv")
 	}
-	for _, name := range []string{"codex", "claude", "gh", "agy", "jq", "rg", "fd", "sqlite3", "ast-grep", "yq"} {
+	for _, name := range []string{"codex", "claude", "gh", "agy", "jq", "rg", "fd", "sqlite3", "ast-grep", "yq", "uv"} {
 		spec, ok := tools[name]
 		if !ok || spec.Version == "" {
 			return nil, fmt.Errorf("missing tool/version %s", name)
@@ -119,7 +119,7 @@ func Build(ctx context.Context, client *http.Client, tools map[string]Spec, arch
 	if info.Mode().Perm()&0111 == 0 || info.Size() == 0 {
 		return fmt.Errorf("compiled SQLite must be a nonempty executable")
 	}
-	for _, name := range []string{"agy", "ast-grep", "claude", "codex", "fd", "gh", "jq", "rg", "yq"} {
+	for _, name := range []string{"agy", "ast-grep", "claude", "codex", "fd", "gh", "jq", "rg", "uv", "yq"} {
 		spec := tools[name]
 		fmt.Fprintln(output, "Installing", name, spec.Version)
 		if err := install(ctx, client, root, name, spec); err != nil {
@@ -185,7 +185,7 @@ func install(ctx context.Context, client *http.Client, root *os.Root, name strin
 // fd is also installed as fdfind, using a regular file for shared-volume integrity.
 // Every archive entry is validated, including entries not selected for installation.
 func Extract(root *os.Root, tool string, source io.Reader) error {
-	if tool != "codex" && tool != "gh" && tool != "agy" && tool != "rg" && tool != "fd" {
+	if tool != "codex" && tool != "gh" && tool != "agy" && tool != "rg" && tool != "fd" && tool != "uv" {
 		return fmt.Errorf("unsupported archive tool %q", tool)
 	}
 	gz, err := gzip.NewReader(source)
@@ -229,8 +229,11 @@ func Extract(root *os.Root, tool string, source io.Reader) error {
 			if tool == "agy" {
 				executable = "antigravity"
 			}
-			if path.Base(name) == executable {
+			if path.Base(name) == executable || tool == "uv" && path.Base(name) == "uvx" {
 				target = "bin/" + tool
+				if tool == "uv" {
+					target = "bin/" + path.Base(name)
+				}
 				count++
 				if entry.Mode&0111 == 0 {
 					return fmt.Errorf("%s entrypoint is not executable", tool)
@@ -258,8 +261,12 @@ func Extract(root *os.Root, tool string, source io.Reader) error {
 	if _, err := io.Copy(io.Discard, gz); err != nil {
 		return err
 	}
-	if count != 1 {
-		return fmt.Errorf("expected one %s executable, found %d", tool, count)
+	expected := 1
+	if tool == "uv" {
+		expected = 2
+	}
+	if count != expected {
+		return fmt.Errorf("expected %d %s executable(s), found %d", expected, tool, count)
 	}
 	if tool == "fd" {
 		f, err := OpenFile(root, "bin/fd")

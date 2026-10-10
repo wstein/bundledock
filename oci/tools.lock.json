@@ -51,6 +51,11 @@
         "version": "4.54.1",
         "url": "https://github.com/mikefarah/yq/releases/download/v4.54.1/yq_linux_amd64",
         "sha256": "8e34fc298390875de416e6a4afcb8cabeceb25d9aa8506c1a2f9353cf702ea5f"
+      },
+      "uv": {
+        "version": "0.13.0",
+        "url": "https://github.com/astral-sh/uv/releases/download/0.13.0/uv-x86_64-unknown-linux-musl.tar.gz",
+        "sha256": "b0828fc4cdc47d65951e94b5f0a15a5364420e8dcd88723f3b21e7a2eb30bbc3"
       }
     },
     "arm64": {
@@ -103,6 +108,11 @@
         "version": "4.54.1",
         "url": "https://github.com/mikefarah/yq/releases/download/v4.54.1/yq_linux_arm64",
         "sha256": "189088da0c6429ec5178dfaab1a114805f6cab0b61b165ab236efedf1d57a71b"
+      },
+      "uv": {
+        "version": "0.13.0",
+        "url": "https://github.com/astral-sh/uv/releases/download/0.13.0/uv-aarch64-unknown-linux-musl.tar.gz",
+        "sha256": "281ca6cf43f4e26e35474839ad4861be86de42af2682f74134460f5b2071b96d"
       }
     }
   }
