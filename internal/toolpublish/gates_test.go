@@ -112,7 +112,7 @@ func (f *fakeDocker) run(args ...string) ([]byte, error) {
 func fixture(t *testing.T) (Metadata, string) {
 	t.Helper()
 	lock := filepath.Join(t.TempDir(), "tools.lock.json")
-	if err := os.WriteFile(lock, []byte(`{"platforms":{"amd64":{"gh":{"version":"v1.2.3"}},"arm64":{"gh":{"version":"v1.2.3"}}}}`), 0600); err != nil {
+	if err := os.WriteFile(lock, []byte(`{"schema":2,"platforms":{"amd64":{"gh":{"version":"v1.2.3","url":"https://github.com/example/amd64","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","verification":"tls-download-sha256"}},"arm64":{"gh":{"version":"v1.2.3","url":"https://github.com/example/arm64","sha256":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","verification":"tls-download-sha256"}}}}`), 0600); err != nil {
 		t.Fatal(err)
 	}
 	m, err := NewMetadata(lock, "quay.io/example/toolbox", "2026.10.10-b12.1", strings.Repeat("f", 40), "https://github.com/example/repo", "2026-10-10T03:17:00Z", "38069722044")
@@ -171,6 +171,17 @@ func TestBuildSmokeThenPushExactImage(t *testing.T) {
 	}
 	if f.labels["io.bundledock.github.run-id"] != m.RunID {
 		t.Fatal("missing full GitHub run ID provenance")
+	}
+	b, err := os.ReadFile(lock)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := ToolDigest(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if f.labels[platformsLabel] != want {
+		t.Fatal("missing durable published tool/asset baseline")
 	}
 	if f.labels["io.bundledock.tools.versions"] != `{"gh":"v1.2.3"}` || f.labels["org.opencontainers.image.title"] != "bundledock-toolbox" {
 		t.Fatal("missing tool versions/title provenance")

@@ -123,11 +123,16 @@ func labels(m Metadata, lock, arch string) (map[string]string, error) {
 	if err != nil {
 		return nil, err
 	}
+	semantic, err := ToolDigest(b)
+	if err != nil {
+		return nil, err
+	}
 	return map[string]string{
 		"org.opencontainers.image.title": "bundledock-toolbox", "org.opencontainers.image.source": m.Source,
 		"org.opencontainers.image.revision": m.Commit, "org.opencontainers.image.created": m.Created,
 		"org.opencontainers.image.version": m.Tag, "io.bundledock.tools.lock-sha256": m.LockSHA256,
 		"io.bundledock.tools.versions": string(encoded), "io.bundledock.github.run-id": m.RunID,
+		platformsLabel: semantic,
 	}, nil
 }
 
