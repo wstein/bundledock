@@ -1,5 +1,6 @@
 #!/bin/sh
 set -eu
+script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 image=${1:-bundledock-toolbox:poc}
 consumer=${2:-mcr.microsoft.com/devcontainers/go:2-1.27-trixie}
 image=$(docker image inspect --format '{{.Id}}' "$image")
@@ -15,6 +16,7 @@ check() {
     docker run --rm --network none --user 1000:1000 \
         --tmpfs /home/bundledock:exec,uid=1000,gid=1000,mode=0700 \
         --mount "type=volume,src=$volume,dst=/opt/workharbor,readonly,volume-nocopy" \
+        --mount "type=bind,src=$script_dir/quality-security-smoke.sh,dst=/quality-security-smoke.sh,readonly" \
         --env HOME=/home/bundledock --env DISABLE_UPDATES=1 --env DISABLE_AUTOUPDATER=1 \
         --entrypoint /bin/sh "$consumer" -ec '
             test -f /opt/workharbor/.ready
@@ -75,6 +77,7 @@ check() {
             uv --version
             uvx --version
             test "$(uv --offline cache dir)" = "$UV_CACHE_DIR"
+            sh /quality-security-smoke.sh
             if touch /opt/workharbor/write-test 2>/dev/null; then
                 echo "Unexpected write to tool volume" >&2
                 exit 1
