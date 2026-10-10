@@ -16,6 +16,9 @@ Build one toolbox, share it across your development containers, and keep tool
 versions consistent without adding common utilities to every language image.
 BundleDock is a proof of concept for Linux AMD64 and ARM64.
 
+**[Documentation](https://wstein.github.io/bundledock/)** — quick start and guides
+for using, maintaining, and publishing the toolbox.
+
 ## Quick start
 
 You need Docker running and a local clone of this repository. Obtain the user's
@@ -73,12 +76,16 @@ helpers; optional voice resources are omitted.
 See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution and verification guidance.
 Participation in the BundleDock community follows our [Code of Conduct](CODE_OF_CONDUCT.md).
 
-## Next steps
+## Documentation
 
-- [Upgrade tools](docs/tools.md#upgrade-the-lock): edit desired ranges, resolve a lock, rebuild, and initialize a new volume.
-- [Understand the bundle](docs/architecture.md): shared volumes, rollback, runtime dependencies, and measured voice savings.
-- [Develop and verify](docs/development.md): CLI commands, checks, smoke coverage, and revision-specific evidence.
-- [Publish to Quay](docs/publication.md): configure the repository namespace and robot account, then manually approve an exact `main` SHA and run **Publish toolbox** to publish `quay.io/bundledock/toolbox`.
+Browse the [documentation site](https://wstein.github.io/bundledock/) or read the
+Markdown sources in this repository:
+
+- [CLI and quick start](https://wstein.github.io/bundledock/cli/) ([source](README.md)): build the toolbox and use its shared volume.
+- [Tool catalog and upgrades](https://wstein.github.io/bundledock/guides/tools/) ([source](docs/tools.md)): pinned versions and lock updates.
+- [Architecture](https://wstein.github.io/bundledock/guides/architecture/) ([source](docs/architecture.md)): shared volumes, rollback, and consumer requirements.
+- [Development and verification](https://wstein.github.io/bundledock/guides/development/) ([source](docs/development.md)): CLI commands, checks, and recorded coverage.
+- [Publication](https://wstein.github.io/bundledock/guides/publication/) ([source](docs/publication.md)): Quay setup and manual approval of an exact `main` SHA.
 
 The [CI workflow](.github/workflows/ci.yml) runs formatting, source tests and vet
 on pushes and pull requests. Artifact, image, release and documentation builds
