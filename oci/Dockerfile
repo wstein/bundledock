@@ -33,7 +33,7 @@ RUN mkdir /out && cc -Os -DSQLITE_THREADSAFE=1 shell.c sqlite3.c \
 
 FROM downloads AS builder
 ARG TARGETARCH
-COPY --from=sqlite-compiler /out/sqlite3 /opt/anchorage/bin/sqlite3
+COPY --from=sqlite-compiler /out/sqlite3 /opt/workharbor/bin/sqlite3
 # Write metadata only after the compiled executable is in the final tree.
 RUN tools-bundle -arch "${TARGETARCH}"
 
@@ -41,7 +41,7 @@ FROM debian:trixie-slim@sha256:a29215f6a35e51e22adffa17f89e9d2ef06214e64a2bad10d
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates git libstdc++6 libgcc-s1 libatomic1 libsecret-1-0 \
     && rm -rf /var/lib/apt/lists/*
-COPY --from=builder /opt/anchorage /opt/anchorage
+COPY --from=builder /opt/workharbor /opt/workharbor
 COPY --from=compiler /out/init-volume /usr/local/bin/init-volume
-ENV PATH="/opt/anchorage/bin:${PATH}" DISABLE_UPDATES=1 DISABLE_AUTOUPDATER=1
+ENV PATH="/opt/workharbor/bin:${PATH}" DISABLE_UPDATES=1 DISABLE_AUTOUPDATER=1
 ENTRYPOINT ["/usr/local/bin/init-volume"]

@@ -3,12 +3,16 @@ package main
 
 import (
 	"anchorage/internal/toolvolume"
+	"flag"
 	"fmt"
 	"os"
 )
 
 func main() {
-	if err := toolvolume.Initialize("/opt/anchorage", "/bundle", os.Stdout); err != nil {
+	source := flag.String("source", "/opt/workharbor", "bundle directory in the image")
+	target := flag.String("target", "/bundle", "mounted tool volume directory")
+	flag.Parse()
+	if err := toolvolume.Initialize(*source, *target, os.Stdout); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}

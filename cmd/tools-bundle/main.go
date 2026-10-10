@@ -14,7 +14,7 @@ func main() {
 	arch := flag.String("arch", "", "target architecture (amd64 or arm64)")
 	directory := flag.String("directory", "/build", "directory containing tools.txt, tools.packages.json and tools.lock.json")
 	sqliteSource := flag.String("sqlite-source", "", "download verified SQLite build sources to this directory instead of building the bundle")
-	destination := flag.String("destination", "/opt/anchorage", "bundle directory")
+	destination := flag.String("destination", "/opt/workharbor", "bundle directory")
 	flag.Parse()
 	if err := run(*arch, *directory, *destination, *sqliteSource); err != nil {
 		fmt.Fprintln(os.Stderr, err)
