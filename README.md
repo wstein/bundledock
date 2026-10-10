@@ -61,18 +61,29 @@ download. The Debian base image is pinned by digest; Debian packages still come 
 | Fish (`fish`) | 4.9.3 |
 | Starship (`starship`) | 1.26.0 |
 
-Fish and Starship are opt-in. After rebuilding the tools image and reinitializing
-its volume, run `fish` to enter an interactive shell. Inside Fish, initialize the
-prompt for the current session:
+The devcontainer uses Fish for interactive VS Code terminals and offers separate
+Herdr and Bash profiles. Select Herdr from the terminal profile menu or run
+`herdr` in the workspace directory. In interactive Fish, `herd` runs
+`exec herdr`, forwarding arguments and replacing the current shell. New Herdr configs select Fish for interactive
+panes; existing user settings take precedence. Starship uses its default prompt.
+No custom Starship theme or plugin manager is installed.
 
-```fish
-starship init fish | source
-```
+On container creation, `.devcontainer/setup.sh` seeds a guarded Starship snippet
+at `~/.config/fish/conf.d/anchorage-starship.fish` and a minimal Herdr config at
+`~/.config/herdr/config.toml`. Existing files are preserved, including changes
+made after the first setup. `XDG_CONFIG_HOME` is respected. Run
+`sh .devcontainer/setup.sh` inside the container to apply setup to an existing home.
 
-To keep that prompt, add the same line to `$HOME/.config/fish/config.fish` in
-your writable home directory. Keep Starship configuration and cache there too;
-`STARSHIP_CONFIG` and `STARSHIP_CACHE` can select other writable locations. The
-bundle does not change the default/login shell or write user configuration.
+The current Debian devcontainer keeps `SHELL=/bin/bash` and explicitly selects
+Bash for VS Code automation. Fish is limited to interactive use; the login shell
+is unchanged. An Alpine variant should select `/bin/ash` for agent and automation
+shells. Alpine runtime compatibility is not established by this Debian setup.
+
+Configuration, history, caches, and Herdr session state live in the writable home
+volume. Sessions can survive client detachment while the container runs; running
+processes do not survive container recreation. To customize the prompt, create
+`~/.config/starship.toml`; `STARSHIP_CONFIG` and `STARSHIP_CACHE` can select other
+writable locations. Fonts are configured in the client terminal.
 
 Run upgrades from the repository root:
 
