@@ -3,11 +3,9 @@ GOFMT ?= gofmt
 PACKAGES := ./cmd/... ./internal/...
 BINARY := bin/anchorage
 TOOLS_IMAGE ?= anchorage/tools:poc
-PYTHON_IMAGE ?= anchorage/python:3.15.0
-PYTHON_CONSUMER ?= debian:trixie-slim@sha256:a29215f6a35e51e22adffa17f89e9d2ef06214e64a2bad10d765c46aea49f11f
 TOOLS_CONSUMER ?= mcr.microsoft.com/devcontainers/go:2-1.27-trixie
 
-.PHONY: help build run test vet fmt check clean tools-build tools-volume tools-smoke tools-test python-build python-volume python-smoke python-test
+.PHONY: help build run test vet fmt check clean tools-build tools-volume tools-smoke tools-test
 
 help:
 	@printf '%s\n' \
@@ -22,23 +20,6 @@ help:
 	@printf '%s\n' 'make tools-volume      Initialize a versioned tool volume' \
 	  'make tools-smoke       Test shared read-only tool execution' \
 	  'make tools-test        Test native package extraction'
-
-	@printf '%s\n' 'make python-build      Build the separate Python OCI bundle' \
-	  'make python-volume     Initialize a versioned Python volume' \
-	  'make python-smoke      Test shared read-only Python execution' \
-	  'make python-test       Test Python extraction and initializer'
-
-python-build:
-	docker build -f oci/python/Dockerfile -t $(PYTHON_IMAGE) .
-
-python-test:
-	$(GO) test ./internal/toolbundle ./internal/toolvolume ./cmd/tools-init ./cmd/python-bundle
-
-python-volume:
-	sh oci/python/volume.sh "$(PYTHON_IMAGE)"
-
-python-smoke:
-	sh oci/python/smoke.sh "$(PYTHON_IMAGE)" "$(PYTHON_CONSUMER)"
 
 tools-build:
 	docker build -f oci/Dockerfile -t $(TOOLS_IMAGE) .
