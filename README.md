@@ -41,8 +41,8 @@ make run ARGS="tools volume --image anchorage/tools:poc"
 and `arm64`. The bundle contains Codex (including native helpers), Claude Code,
 Antigravity, GitHub CLI, SQLite, jq, ripgrep, fd, ast-grep, Mike Farah yq, uv
 (with uvx), and [Herdr](https://github.com/herdrdev/herdr) for terminal workspaces
-and agent sessions. Builds verify every download. The Debian base image
-is pinned by digest; Debian packages still come from its current package repositories.
+and agent sessions, plus the Fish shell and Starship prompt. Builds verify every
+download. The Debian base image is pinned by digest; Debian packages still come from its current package repositories.
 
 | Tool | Pinned version |
 | --- | --- |
@@ -58,6 +58,21 @@ is pinned by digest; Debian packages still come from its current package reposit
 | Mike Farah yq (`yq`) | 4.54.1 |
 | uv (`uv`, `uvx`) | 0.13.0 |
 | Herdr (`herdr`) | 0.9.3 |
+| Fish (`fish`) | 4.9.3 |
+| Starship (`starship`) | 1.26.0 |
+
+Fish and Starship are opt-in. After rebuilding the tools image and reinitializing
+its volume, run `fish` to enter an interactive shell. Inside Fish, initialize the
+prompt for the current session:
+
+```fish
+starship init fish | source
+```
+
+To keep that prompt, add the same line to `$HOME/.config/fish/config.fish` in
+your writable home directory. Keep Starship configuration and cache there too;
+`STARSHIP_CONFIG` and `STARSHIP_CACHE` can select other writable locations. The
+bundle does not change the default/login shell or write user configuration.
 
 Run upgrades from the repository root:
 
@@ -90,7 +105,6 @@ request dictionary memory beyond these limits, so the production installer
 verifies the exact trusted upstream checksum before decoding; these limits do
 not make the decoder suitable for arbitrary untrusted archives. Decoder notices
 are retained in `oci/licenses/xz`.
-
 
 Upgrades fetch fresh release metadata and select the numerically newest stable
 version within each requirement. GitHub release history is paginated. Optional `GITHUB_TOKEN` authentication is
@@ -216,10 +230,12 @@ Keep authentication and writable tool state in the user's home directory or
 separate private volumes. No credentials are included in the image. The read-only mount prevents tools from updating the
 shared executables; Claude updates are also disabled with environment variables.
 
-The smoke test executes all twelve tools and the `fdfind` and `uvx` companions
+The smoke test executes all fourteen tools and the `fdfind` and `uvx` companions
 as a non-root user in two concurrent containers with networking disabled. It checks
 a SQLite query, JSON and YAML processing, text search, file discovery, and Go syntax
-search. uv uses a writable cache under each consumer's home; managed Python downloads
+search. Fish checks a pipeline, arithmetic, embedded functions and completions;
+Starship renders a minimal prompt and initializes within Fish using only writable
+consumer home state. uv uses a writable cache under each consumer's home; managed Python downloads
 are disabled, and its cache command runs offline. It also starts and stops Codex's
 local daemon to verify its complete native package is usable. It checks repeat initialization,
 read-only mounts, and rejection of changed, incomplete, or locked volumes. This verifies executable
@@ -243,7 +259,11 @@ source files and build dependencies are excluded from the final tool tree.
 Cross-platform image builds need target execution support for that compile stage.
 The image needs no Python or shell initializer.
 
-jq, ripgrep, fd, yq, and uv use upstream static binaries. SQLite and ast-grep use
+jq, ripgrep, fd, yq, uv, Fish, and Starship use upstream static binaries.
+Fish uses the official standalone archive with embedded functions and completions;
+its [tagged source](https://github.com/fish-shell/fish-shell/blob/4.9.3/src/autoload.rs)
+embeds `share`, so no external runtime data directory is required. External manual
+pages and local HTML documentation from a full Fish installation are omitted. SQLite and ast-grep use
 the compatible Debian consumer libraries. `fd` and `fdfind` are identical regular
 files so the volume needs no symlinks. ast-grep's `sg` alias is excluded to preserve
 consumer commands. Upstream notices are included under `/opt/workharbor/licenses`.

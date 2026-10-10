@@ -27,6 +27,16 @@ check() {
             agy --version
             gh --version
             herdr --version
+            fish --version
+            test "$(fish --no-config -c "math \"6*7\"")" = 42
+            fish --no-config -c "printf \"%s\\n\" \"{\\\"answer\\\":42}\" | jq -e \".answer == 42\""
+            fish --no-config -c "type -q fish_prompt; and complete -C \"fish --no\" | string match --quiet \"*--no-config*\""
+            starship --version
+            export TERM=xterm-256color
+            export STARSHIP_CONFIG="$HOME/starship.toml" STARSHIP_CACHE="$HOME/.cache/starship"
+            printf "%s\n" "add_newline = false" "format = \"\$character\"" "[character]" "success_symbol = \">\"" > "$STARSHIP_CONFIG"
+            test "$(starship prompt --path "$HOME" --status 0)" = "> "
+            fish --no-config -c "starship init fish | source; functions -q fish_prompt"
             sqlite3 --version
             test "$(sqlite3 :memory: "SELECT 6 * 7;")" = 42
             jq --version

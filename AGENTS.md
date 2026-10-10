@@ -24,6 +24,8 @@ still pins an older image, so do not assume these commands exist in a running se
 | Manage Python environments and run Python tools | `uv` and `uvx`. |
 | Agent and GitHub workflows | `codex`, `claude`, `agy`, and `gh`. |
 | Manage terminal workspaces and agent sessions | `herdr`. |
+| Use an optional interactive shell | `fish`. |
+| Customize a shell prompt | `starship`. |
 
 Keep HOME, caches, and virtual environments in writable locations outside the
 read-only `/opt/workharbor` tool bundle.
