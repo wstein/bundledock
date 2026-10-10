@@ -31,6 +31,29 @@ check() {
             test "$(fish --no-config -c "math \"6*7\"")" = 42
             fish --no-config -c "printf \"%s\\n\" \"{\\\"answer\\\":42}\" | jq -e \".answer == 42\""
             fish --no-config -c "type -q fish_prompt; and complete -C \"fish --no\" | string match --quiet \"*--no-config*\""
+            nu --version
+            test "$(nu --no-config-file --no-history -c "[{answer: 41} {answer: 42}] | where answer > 41 | get answer | first")" = 42
+            /opt/workharbor/bin/bash --noprofile --norc --version
+            expected_bash=$(jq -r .tools.bash.version /opt/workharbor/manifest.json)
+            test "$(/opt/workharbor/bin/bash --noprofile --norc -c "printf %s \"\$BASH_VERSION\"")" = "${expected_bash}(1)-release"
+            /opt/workharbor/bin/bash --noprofile --norc -c "set -euo pipefail; declare -A answer=([value]=42); test \"\${answer[value]}\" = 42; printf \"%s\\n\" 42 | { read -r value; test \"\$value\" = 42; }"
+            tmux -V
+            export TERM=xterm-256color
+            tmux_socket="$HOME/tool-smoke-tmux.sock"
+            trap "tmux -S \"$tmux_socket\" kill-server 2>/dev/null || :" EXIT
+            tmux -S "$tmux_socket" -f /dev/null start-server \; \
+                set-option -g default-shell /opt/workharbor/bin/bash \; \
+                new-session -d -s bundledock-smoke "exec /opt/workharbor/bin/bash --noprofile --norc -c \"printf 42 > $HOME/tmux-answer; exec sleep 30\""
+            test "$(tmux -S "$tmux_socket" show-options -gv default-shell)" = /opt/workharbor/bin/bash
+            attempts=0
+            until test -f "$HOME/tmux-answer"; do
+                attempts=$((attempts + 1))
+                test "$attempts" -lt 50
+                sleep 0.1
+            done
+            test "$(cat "$HOME/tmux-answer")" = 42
+            tmux -S "$tmux_socket" kill-server
+            trap - EXIT
             starship --version
             export TERM=xterm-256color
             export STARSHIP_CONFIG="$HOME/starship.toml" STARSHIP_CACHE="$HOME/.cache/starship"

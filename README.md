@@ -38,7 +38,7 @@ make run ARGS="tools volume --image workharbor-tools:poc"
 and `arm64`. The bundle contains Codex (including native helpers), Claude Code,
 Antigravity, GitHub CLI, SQLite, jq, ripgrep, fd, ast-grep, Mike Farah yq, uv
 (with uvx), and [Herdr](https://github.com/herdrdev/herdr) for terminal workspaces
-and agent sessions, plus the Fish shell and Starship prompt, with Nushell and tmux available as alternatives. Builds verify every
+and agent sessions, plus the Fish shell and Starship prompt, with Nushell, tmux, and a modern Bash available as alternatives. Builds verify every
 download. The Debian base image is pinned by digest; Debian packages still come from its current package repositories.
 
 | Tool | Pinned version |
@@ -59,13 +59,17 @@ download. The Debian base image is pinned by digest; Debian packages still come 
 | Starship (`starship`) | 1.26.0 |
 | Nushell (`nu`) | 0.116.1 |
 | tmux (`tmux`) | 3.7c (official static builds) |
+| GNU Bash (`bash`) | 5.3.20 |
 
-Nushell and tmux are opt-in commands. tmux uses the latest published stable
+Nushell, tmux, and bundled Bash are opt-in commands. tmux uses the latest published stable
 [official static build](https://github.com/tmux/tmux-builds/releases/tag/v3.7c),
 3.7c, while the upstream source release is 3.8. Its provider resolves that static
 build feed; release suffixes compare numerically (`3.7a` = `3.7.1`, `3.7c` =
 `3.7.3`, `3.8` = `3.8.0`) while lock versions and asset URLs retain the upstream tag.
-No plugins or user configuration are installed for either alternative.
+No plugins or user configuration are installed for these alternatives. For Bash
+scripts or AI automation, invoke `/opt/workharbor/bin/bash --noprofile --norc`
+explicitly. `/bin/bash`, the login shell, VS Code shell profiles, and the existing
+Fish, Herdr, and Starship setup keep their current settings.
 
 The devcontainer uses Fish for interactive VS Code terminals and offers separate
 Herdr and Bash profiles. Select Herdr from the terminal profile menu or run
@@ -109,9 +113,12 @@ installed tools.
 `tools.packages.json` is the trusted declarative package catalog. It names upstream
 providers, repositories, tag prefixes, platform aliases, asset templates, supported
 raw/tar/ZIP extraction, executable members, regular-file aliases, notices, and the
-built-in `sqlite-source` compiler kind. Recipes cannot execute shell commands.
-Both upgrade and build validate this catalog; the Dockerfile owns the fixed SQLite
-compile command. Review catalog edits as build inputs. A catalog change requires
+built-in `sqlite-source` and `bash-source` compiler kinds. Recipes cannot execute
+shell commands. Both upgrade and build validate this catalog; the Dockerfile owns
+the fixed compile commands. Bash's recipe is restricted to the official GNU base
+archive and an ordered, contiguous patch series; `patches` in each lock spec pins
+all patch URLs and SHA256 values. The effective version includes the patch level:
+5.3 plus `bash53-001` through `bash53-020` produces 5.3.20. Review catalog edits as build inputs. A catalog change requires
 an upgrade of all tools so preserved pins cannot acquire a different recipe silently.
 
 The native builder supports `tar.xz` with the checksum-pinned pure Go
@@ -130,7 +137,9 @@ it. HTTP errors, including API rate limits, abort with the request URL and statu
 Claude and
 Antigravity combine official current manifests with historical GitHub releases.
 SQLite uses official release chronology dates and compact archive naming, including
-historical releases and backports. The chosen version must supply both architectures;
+historical releases and backports. GNU Bash enumerates official base archives and
+patch indexes, selecting the newest effective patched version within its range;
+new patches are discovered on every upgrade. The chosen version must supply both architectures;
 missing assets, metadata errors, or checksum failures abort without selecting an
 older version. All selected downloads are hashed and verified before the lock is
 replaced atomically. A failed resolution leaves the previous lock bytes unchanged;
@@ -247,10 +256,13 @@ Keep authentication and writable tool state in the user's home directory or
 separate private volumes. No credentials are included in the image. The read-only mount prevents tools from updating the
 shared executables; Claude updates are also disabled with environment variables.
 
-The smoke test executes all sixteen tools and the `fdfind` and `uvx` companions
+The smoke test executes all seventeen tools and the `fdfind` and `uvx` companions
 as a non-root user in two concurrent containers with networking disabled. It checks
 a SQLite query, JSON and YAML processing, text search, file discovery, and Go syntax
 search. Fish checks a pipeline, arithmetic, embedded functions and completions;
+Nushell processes structured records; Bash verifies its patch version, pipeline,
+and associative arrays with startup files disabled. A headless tmux server uses
+an isolated socket and the bundled Bash explicitly, then removes its session.
 Starship renders a minimal prompt and initializes within Fish using only writable
 consumer home state. uv uses a writable cache under each consumer's home; managed Python downloads
 are disabled, and its cache command runs offline. It also starts and stops Codex's
@@ -273,10 +285,25 @@ a separate build-only directory and compiled in a target-platform Debian stage,
 without readline or other optional libraries. Its default extension loading and
 thread safety remain enabled. Final manifest/checksums include the compiled CLI;
 source files and build dependencies are excluded from the final tool tree.
+Bash's GNU base and every ordered patch are checksum-verified before extraction.
+A separate target-platform stage applies the patches and compiles Bash statically
+with its bundled readline and Debian's static terminal library; Bison regenerates
+the parser when required by source timestamps. Normal readline
+features remain enabled. The final manifest contains the base/patch provenance,
+compiled Bash, and license notices for Bash, ncurses, glibc, and GCC runtime. GNU signatures are not
+verified; these source pins record SHA256 from official HTTPS downloads.
 Cross-platform image builds need target execution support for that compile stage.
 The image needs no Python or shell initializer.
 
-jq, ripgrep, fd, yq, uv, Fish, and Starship use upstream static binaries.
+jq, ripgrep, fd, yq, uv, Fish, Starship, Nushell, and tmux use upstream static binaries.
+Only Nushell's `nu` executable is installed; its optional plugins are omitted.
+Bash and tmux terminal features require the consumer's terminfo database, such as
+Debian's `ncurses-base`; keep `TERM` appropriate for the terminal. Static Bash still follows libc's normal system data and name-service
+configuration. The linker warns that account/group enumeration and network
+lookups can need shared glibc/NSS modules matching the build's glibc version;
+keep the Debian Trixie consumer libraries for those features. Absence of ELF
+shared dependencies does not establish compatibility with Alpine or arbitrary
+consumer images.
 Fish uses the official standalone archive with embedded functions and completions;
 its [tagged source](https://github.com/fish-shell/fish-shell/blob/4.9.3/src/autoload.rs)
 embeds `share`, so no external runtime data directory is required. External manual

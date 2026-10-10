@@ -27,6 +27,7 @@ still pins an older image, so do not assume these commands exist in a running se
 | Use the preferred interactive shell | `fish`. |
 | Use an alternative structured shell | `nu` (Nushell). |
 | Use an alternative terminal multiplexer | `tmux`. |
+| Run modern Bash explicitly for automation | `/opt/workharbor/bin/bash --noprofile --norc`. |
 | Customize a shell prompt | `starship`. |
 
 Keep HOME, caches, and virtual environments in writable locations outside the

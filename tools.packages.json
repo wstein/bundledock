@@ -431,6 +431,9 @@
       },
       "notices": [
         "oci/licenses/bash/COPYING",
+        "oci/licenses/bash/COPYRIGHT.gcc-runtime",
+        "oci/licenses/bash/COPYRIGHT.glibc",
+        "oci/licenses/bash/COPYRIGHT.ncurses",
         "oci/licenses/bash/SOURCE"
       ]
     }

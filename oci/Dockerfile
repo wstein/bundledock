@@ -20,7 +20,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
 COPY --from=compiler /out/tools-bundle /usr/local/bin/tools-bundle
 COPY tools.txt tools.packages.json tools.lock.json /build/
 COPY oci/licenses /build/oci/licenses
-RUN tools-bundle -arch "${TARGETARCH}" -sqlite-source /build/sqlite
+RUN tools-bundle -arch "${TARGETARCH}" -sqlite-source /build/sqlite \
+    && tools-bundle -arch "${TARGETARCH}" -bash-source /build/bash
 
 # Compile against the target consumer baseline, with SQLite's normal extension
 # loading and thread safety. No readline, zlib, or other optional runtime is used.
@@ -32,15 +33,28 @@ WORKDIR /build/sqlite
 RUN mkdir /out && cc -Os -DSQLITE_THREADSAFE=1 shell.c sqlite3.c \
     -lm -ldl -lpthread -o /out/sqlite3
 
+# Keep normal Bash/readline features, linking libc and terminal support statically.
+# The catalog supplies verified data only; all build commands are fixed here.
+FROM debian:trixie-slim@sha256:a29215f6a35e51e22adffa17f89e9d2ef06214e64a2bad10d765c46aea49f11f AS bash-compiler
+RUN apt-get update && apt-get install -y --no-install-recommends gcc libc6-dev make patch bison libncurses-dev \
+    && rm -rf /var/lib/apt/lists/*
+COPY --from=downloads /build/bash /build/bash
+WORKDIR /build/bash/source
+RUN for patchfile in /build/bash/patches/*; do [ -f "$patchfile" ] || continue; patch --batch -p0 < "$patchfile" || exit 1; done \
+    && ./configure --enable-static-link --without-bash-malloc --prefix=/opt/workharbor \
+    && make -j2 bash \
+    && mkdir /out && cp bash /out/bash
+
 FROM downloads AS builder
 ARG TARGETARCH
 COPY --from=sqlite-compiler /out/sqlite3 /opt/workharbor/bin/sqlite3
+COPY --from=bash-compiler /out/bash /opt/workharbor/bin/bash
 # Write metadata only after the compiled executable is in the final tree.
 RUN tools-bundle -arch "${TARGETARCH}"
 
 FROM debian:trixie-slim@sha256:a29215f6a35e51e22adffa17f89e9d2ef06214e64a2bad10d765c46aea49f11f
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates git libstdc++6 libgcc-s1 libatomic1 libsecret-1-0 \
+    ca-certificates git ncurses-base libstdc++6 libgcc-s1 libatomic1 libsecret-1-0 \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /opt/workharbor /opt/workharbor
 COPY --from=compiler /out/init-volume /usr/local/bin/init-volume
