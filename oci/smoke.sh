@@ -26,6 +26,27 @@ check() {
             claude --version
             agy --version
             gh --version
+            sqlite3 --version
+            test "$(sqlite3 :memory: "SELECT 6 * 7;")" = 42
+            jq --version
+            printf "%s\n" "{\"answer\":42}" | jq -e ".answer == 42"
+            rg --version
+            printf "%s\n" "anchorage smoke" > "$HOME/tool-smoke.txt"
+            rg -qx "anchorage smoke" "$HOME/tool-smoke.txt"
+            fd --version
+            fdfind --version
+            test "$(fd --type f --max-depth 1 "^tool-smoke[.]txt$" "$HOME")" = "$HOME/tool-smoke.txt"
+            test "$(fdfind --type f --max-depth 1 "^tool-smoke[.]txt$" "$HOME")" = "$HOME/tool-smoke.txt"
+            ast-grep --version
+            printf "%s\n" "package main" "func main() {" "println(42)" "}" > "$HOME/tool-smoke.go"
+            test "$(ast-grep run --lang go --pattern "func main() { println(42) }" --files-with-matches "$HOME/tool-smoke.go")" = "$HOME/tool-smoke.go"
+            yq --version
+            printf "%s\n" "answer: 42" | yq -e ".answer == 42"
+            export UV_CACHE_DIR="$HOME/.cache/uv" UV_PYTHON_DOWNLOADS=never
+            mkdir -p "$UV_CACHE_DIR"
+            uv --version
+            uvx --version
+            test "$(uv --offline cache dir)" = "$UV_CACHE_DIR"
             if touch /opt/anchorage/write-test 2>/dev/null; then
                 echo "Unexpected write to tool volume" >&2
                 exit 1

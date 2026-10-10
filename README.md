@@ -39,7 +39,8 @@ make run ARGS="tools volume --image anchorage/tools:poc"
 
 `oci/tools.lock.json` pins vendor artifact URLs and checksums for Linux `amd64`
 and `arm64`. The bundle contains Codex (including native helpers), Claude Code,
-Antigravity, and GitHub CLI. Builds verify every download. The Debian base image
+Antigravity, GitHub CLI, SQLite, jq, ripgrep, fd, ast-grep, Mike Farah yq, and uv
+(with uvx). Builds verify every download. The Debian base image
 is pinned by digest; Debian packages still come from its current package repositories.
 
 | Tool | Pinned version |
@@ -48,13 +49,23 @@ is pinned by digest; Debian packages still come from its current package reposit
 | Claude Code | 2.1.296 |
 | Antigravity | 1.3.2 |
 | GitHub CLI | 2.102.0 |
+| SQLite (`sqlite3`) | 3.54.0 |
+| jq | 1.8.2 |
+| ripgrep (`rg`) | 15.2.0 |
+| fd (`fd`, `fdfind`) | 10.5.0 |
+| ast-grep (`ast-grep`) | 0.45.3 |
+| Mike Farah yq (`yq`) | 4.54.1 |
+| uv (`uv`, `uvx`) | 0.13.0 |
 
-Native binaries and complete Codex runtime assets occupy about 864 MiB uncompressed on
-ARM64. The volume is shared across workspaces on the same Docker host.
+The original four agent tools and complete Codex assets occupied about 864 MiB
+uncompressed on ARM64; the added utilities increase that size. The volume is shared across workspaces on the same Docker host.
 The initial local build and smoke tests were run on Linux ARM64; AMD64 downloads
 are pinned but have not yet been built or runtime-verified. The Go port has been
 verified with local HTTP/archive fixtures for both architectures; its Docker build
-and runtime smoke test still need a Docker host. Before adopting the new bundle,
+and runtime smoke test still need a Docker host. The additional utilities have
+been exercised natively on ARM64, including SQLite source compilation, queries,
+syntax search, and offline uv cache selection; their Docker smoke test and AMD64
+execution remain unverified. Before adopting the new bundle,
 run `make tools-build tools-smoke` on each supported architecture.
 
 `tools-volume` prints a volume name derived from the resolved image ID. It copies
@@ -81,8 +92,11 @@ state in the user's home directory or separate private volumes. No credentials
 are included in the image. The read-only mount prevents tools from updating the
 shared executables; Claude updates are also disabled with environment variables.
 
-The smoke test executes all four version commands as a non-root user in two
-concurrent containers with networking disabled. It also starts and stops Codex's
+The smoke test executes all eleven tools and the `fdfind` and `uvx` companions
+as a non-root user in two concurrent containers with networking disabled. It checks
+a SQLite query, JSON and YAML processing, text search, file discovery, and Go syntax
+search. uv uses a writable cache under each consumer's home; managed Python downloads
+are disabled, and its cache command runs offline. It also starts and stops Codex's
 local daemon to verify its complete native package is usable. It checks repeat initialization,
 read-only mounts, and rejection of changed, incomplete, or locked volumes. This verifies executable
 startup, not authentication, model requests, or agent sandbox behavior.
@@ -94,8 +108,21 @@ or `TOOLS_CONSUMER` when invoking Make to select another image or test consumer.
 
 The OCI build uses the repository root as context with `oci/Dockerfile.dockerignore`
 limiting it to the builder/initializer sources and artifact lock. Go compilation
-and artifact downloads run on `BUILDPLATFORM`; only the initializer is cross-compiled
-for `TARGETARCH`. The image needs no Python or shell initializer.
+and artifact downloads run on `BUILDPLATFORM`; the initializer is cross-compiled
+for `TARGETARCH`. SQLite's checksum-pinned official amalgamation is extracted into
+a separate build-only directory and compiled in a target-platform Debian stage,
+without readline or other optional libraries. Its default extension loading and
+thread safety remain enabled. Final manifest/checksums include the compiled CLI;
+source files and build dependencies are excluded from the final tool tree.
+Cross-platform image builds need target execution support for that compile stage.
+The image needs no Python or shell initializer.
+
+jq, ripgrep, fd, yq, and uv use upstream static binaries. SQLite and ast-grep use
+the compatible Debian consumer libraries. `fd` and `fdfind` are identical regular
+files so the volume needs no symlinks. ast-grep's `sg` alias is excluded to preserve
+consumer commands. Upstream notices are included under `/opt/anchorage/licenses`.
+uv packages no Python runtime or Python packages; keep its cache, environments,
+and any intentionally installed runtimes outside the shared tool volume.
 `oci/volume.sh` remains a small Docker-only host adapter so the devcontainer can
 initialize before a Go toolchain or Anchorage binary is available on the host.
 
