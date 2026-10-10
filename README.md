@@ -415,6 +415,6 @@ ownership cleanup commits. All original shared commits and their SHAs remain
 in its ancestry; history was not filtered or squashed. The original shared
 history therefore includes former umbrella paths and submodule references.
 
-The intended standalone URL is `https://github.com/wstein/bundledock`. This
-extraction is local and unpublished; that URL is not yet a verified clone source.
-No remote creation, push, or registry publication is part of the extraction.
+The standalone repository is [github.com/wstein/bundledock](https://github.com/wstein/bundledock).
+GitHub source publication is separate from Quay image publication and consumer
+activation.
