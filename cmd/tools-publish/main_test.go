@@ -18,7 +18,7 @@ func TestResolveOnceAndKeepExactArtifactBytes(t *testing.T) {
 	if err := os.WriteFile("tools.lock.json", initial, 0600); err != nil {
 		t.Fatal(err)
 	}
-	meta, err := toolpublish.NewMetadata("tools.lock.json", "quay.io/example/bundledock-toolbox", "2026.10.10-123-1", strings.Repeat("a", 40), "https://github.com/example/repo", "2026-10-10T03:17:00Z")
+	meta, err := toolpublish.NewMetadata("tools.lock.json", "quay.io/example/toolbox", "2026.10.10-123-1", strings.Repeat("a", 40), "https://github.com/example/repo", "2026-10-10T03:17:00Z")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -62,7 +62,7 @@ func TestFailedResolveCreatesNoArtifact(t *testing.T) {
 	if err := os.WriteFile("tools.lock.json", []byte("{}"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	meta, err := toolpublish.NewMetadata("tools.lock.json", "quay.io/example/bundledock-toolbox", "2026.10.10-123-1", strings.Repeat("a", 40), "https://github.com/example/repo", "2026-10-10T03:17:00Z")
+	meta, err := toolpublish.NewMetadata("tools.lock.json", "quay.io/example/toolbox", "2026.10.10-123-1", strings.Repeat("a", 40), "https://github.com/example/repo", "2026-10-10T03:17:00Z")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -97,5 +97,39 @@ func TestArtifactRunIdentityRejectsPartialReruns(t *testing.T) {
 		if err := artifactIdentity(meta, run.id, run.attempt, run.commit); err == nil {
 			t.Fatal("accepted artifact from another run, attempt or revision")
 		}
+	}
+}
+
+func TestResolveUsesRepositoryURL(t *testing.T) {
+	for _, prefix := range []string{"quay.io/bundledock", "quay.io/bundledock/"} {
+		t.Run(prefix, func(t *testing.T) {
+			dir := t.TempDir()
+			t.Chdir(dir)
+			if err := os.WriteFile("tools.lock.json", []byte("{}\n"), 0600); err != nil {
+				t.Fatal(err)
+			}
+			// Exercise execute's real environment adapter without resolving upstreams.
+			if err := os.WriteFile("go", []byte("#!/bin/sh\n[ \"$*\" = 'run ./cmd/bundledock tools upgrade' ]\n"), 0700); err != nil {
+				t.Fatal(err)
+			}
+			t.Setenv("PATH", dir+":"+os.Getenv("PATH"))
+			t.Setenv("REPOSITORY_URL", prefix)
+			t.Setenv("QUAY_IMAGE", "quay.io/obsolete/bundledock-toolbox")
+			t.Setenv("GITHUB_RUN_ID", "123")
+			t.Setenv("GITHUB_RUN_ATTEMPT", "1")
+			t.Setenv("GITHUB_SHA", strings.Repeat("a", 40))
+			t.Setenv("GITHUB_SERVER_URL", "https://github.com")
+			t.Setenv("GITHUB_REPOSITORY", "wstein/bundledock")
+			if err := execute([]string{"resolve"}); err != nil {
+				t.Fatal(err)
+			}
+			var meta toolpublish.Metadata
+			if err := readJSON("resolved/provenance.json", &meta); err != nil {
+				t.Fatal(err)
+			}
+			if meta.Image != "quay.io/bundledock/toolbox" {
+				t.Fatalf("resolved wrong publication destination: %s", meta.Image)
+			}
+		})
 	}
 }

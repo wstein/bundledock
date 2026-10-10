@@ -90,9 +90,13 @@ func execute(args []string) error {
 	lock := filepath.Join(*directory, "tools.lock.json")
 	provenance := filepath.Join(*directory, "provenance.json")
 	if args[0] == "resolve" {
+		image, err := toolpublish.RepositoryImage(os.Getenv("REPOSITORY_URL"))
+		if err != nil {
+			return err
+		}
 		now := time.Now().UTC()
 		tag := now.Format("2006.01.02") + "-" + os.Getenv("GITHUB_RUN_ID") + "-" + os.Getenv("GITHUB_RUN_ATTEMPT")
-		meta, err := toolpublish.NewMetadata("tools.lock.json", os.Getenv("QUAY_IMAGE"), tag, os.Getenv("GITHUB_SHA"), os.Getenv("GITHUB_SERVER_URL")+"/"+os.Getenv("GITHUB_REPOSITORY"), now.Format("2006-01-02T15:04:05Z"))
+		meta, err := toolpublish.NewMetadata("tools.lock.json", image, tag, os.Getenv("GITHUB_SHA"), os.Getenv("GITHUB_SERVER_URL")+"/"+os.Getenv("GITHUB_REPOSITORY"), now.Format("2006-01-02T15:04:05Z"))
 		if err != nil {
 			return err
 		}

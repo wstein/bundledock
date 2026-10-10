@@ -105,7 +105,7 @@ func fixture(t *testing.T) (Metadata, string) {
 	if err := os.WriteFile(lock, []byte(`{"platforms":{"amd64":{"gh":{"version":"v1.2.3"}},"arm64":{"gh":{"version":"v1.2.3"}}}}`), 0600); err != nil {
 		t.Fatal(err)
 	}
-	m, err := NewMetadata(lock, "quay.io/example/bundledock-toolbox", "2026.10.10-123-1", strings.Repeat("f", 40), "https://github.com/example/repo", "2026-10-10T03:17:00Z")
+	m, err := NewMetadata(lock, "quay.io/example/toolbox", "2026.10.10-123-1", strings.Repeat("f", 40), "https://github.com/example/repo", "2026-10-10T03:17:00Z")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -311,7 +311,7 @@ func TestBadPublishedIndexPreventsStable(t *testing.T) {
 
 func TestDestinationValidation(t *testing.T) {
 	_, lock := fixture(t)
-	for _, image := range []string{"", "docker.io/example/bundledock-toolbox", "quay.io/example/tools", "quay.io/example/bundledock-toolbox:stable", "quay.io/example/bundledock-toolbox;echo hi", "quay.io/example/workharbor-tools", "quay.io/example/bundledock-tools"} {
+	for _, image := range []string{"", "docker.io/example/toolbox", "quay.io/example/tools", "quay.io/example/toolbox:stable", "quay.io/example/toolbox;echo hi", "quay.io/example/workharbor-tools", "quay.io/example/bundledock-tools", "quay.io/example/bundledock-toolbox", "quay.io/example/toolbox/", "https://quay.io/example/toolbox", "quay.io/example/toolbox@sha256:" + strings.Repeat("a", 64)} {
 		if _, err := NewMetadata(lock, image, "2026.10.10-123-1", strings.Repeat("f", 40), "https://github.com/example/repo", "2026-10-10T03:17:00Z"); err == nil {
 			t.Fatalf("accepted invalid destination %q", image)
 		}
@@ -320,7 +320,7 @@ func TestDestinationValidation(t *testing.T) {
 
 func TestBundleDockDestinationAccepted(t *testing.T) {
 	_, lock := fixture(t)
-	if _, err := NewMetadata(lock, "quay.io/example/bundledock-toolbox", "2026.10.10-123-1", strings.Repeat("f", 40), "https://github.com/example/repo", "2026-10-10T03:17:00Z"); err != nil {
+	if _, err := NewMetadata(lock, "quay.io/example/toolbox", "2026.10.10-123-1", strings.Repeat("f", 40), "https://github.com/example/repo", "2026-10-10T03:17:00Z"); err != nil {
 		t.Fatalf("rejected BundleDock destination: %v", err)
 	}
 }

@@ -1,4 +1,4 @@
-name: Publish bundledock-toolbox
+name: Publish toolbox
 
 on:
   schedule:
@@ -35,7 +35,7 @@ jobs:
         run: go build -o "$RUNNER_TEMP/tools-publish" ./cmd/tools-publish
       - name: Resolve all tools once
         env:
-          QUAY_IMAGE: ${{ vars.QUAY_IMAGE }}
+          REPOSITORY_URL: ${{ vars.REPOSITORY_URL }}
           # Manager sends this read-only token only to api.github.com.
           GITHUB_TOKEN: ${{ github.token }}
         run: '"$RUNNER_TEMP/tools-publish" resolve'
@@ -80,9 +80,9 @@ jobs:
         run: '"$RUNNER_TEMP/tools-publish" build --architecture "$ARCHITECTURE"'
       - name: Log in to Quay after native smoke passes
         env:
-          QUAY_USERNAME: ${{ secrets.QUAY_USERNAME }}
-          QUAY_PASSWORD: ${{ secrets.QUAY_PASSWORD }}
-        run: printf '%s' "$QUAY_PASSWORD" | docker login quay.io --username "$QUAY_USERNAME" --password-stdin
+          REPOSITORY_USERNAME: ${{ vars.REPOSITORY_USERNAME }}
+          REPOSITORY_TOKEN: ${{ secrets.REPOSITORY_TOKEN }}
+        run: printf '%s' "$REPOSITORY_TOKEN" | docker login quay.io --username "$REPOSITORY_USERNAME" --password-stdin
       - name: Push the exact smoked image to its run staging tag
         env:
           ARCHITECTURE: ${{ matrix.architecture }}
@@ -133,9 +133,9 @@ jobs:
         run: '"$RUNNER_TEMP/tools-publish" newest'
       - name: Log in to Quay
         env:
-          QUAY_USERNAME: ${{ secrets.QUAY_USERNAME }}
-          QUAY_PASSWORD: ${{ secrets.QUAY_PASSWORD }}
-        run: printf '%s' "$QUAY_PASSWORD" | docker login quay.io --username "$QUAY_USERNAME" --password-stdin
+          REPOSITORY_USERNAME: ${{ vars.REPOSITORY_USERNAME }}
+          REPOSITORY_TOKEN: ${{ secrets.REPOSITORY_TOKEN }}
+        run: printf '%s' "$REPOSITORY_TOKEN" | docker login quay.io --username "$REPOSITORY_USERNAME" --password-stdin
       - name: Verify both platform manifests and promote version and stable
         run: '"$RUNNER_TEMP/tools-publish" promote'
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

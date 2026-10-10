@@ -9,6 +9,7 @@ import (
 	"os"
 	"regexp"
 	"runtime"
+	"strings"
 	"time"
 )
 
@@ -41,10 +42,20 @@ type Adapter struct {
 	Architecture string
 }
 
-var imagePattern = regexp.MustCompile(`^quay\.io/[a-z0-9]+(?:[._-][a-z0-9]+)*/bundledock-toolbox$`)
+var imagePattern = regexp.MustCompile(`^quay\.io/[a-z0-9]+(?:[._-][a-z0-9]+)*/toolbox$`)
 var tagPattern = regexp.MustCompile(`^\d{4}\.\d{2}\.\d{2}-[1-9]\d*-[1-9]\d*$`)
 var commitPattern = regexp.MustCompile(`^[a-f0-9]{40}$`)
 var digestPattern = regexp.MustCompile(`^sha256:[a-f0-9]{64}$`)
+
+// RepositoryImage accepts a Quay namespace prefix with one optional trailing
+// slash. The publication repository is always toolbox; tags come from the run.
+func RepositoryImage(prefix string) (string, error) {
+	image := strings.TrimSuffix(prefix, "/") + "/toolbox"
+	if !imagePattern.MatchString(image) {
+		return "", fmt.Errorf("REPOSITORY_URL must be quay.io/<namespace> with an optional trailing slash")
+	}
+	return image, nil
+}
 
 func HashFile(path string) (string, error) {
 	b, err := os.ReadFile(path)
@@ -58,7 +69,7 @@ func HashFile(path string) (string, error) {
 func NewMetadata(lock, image, tag, commit, source, created string) (Metadata, error) {
 	m := Metadata{Image: image, Tag: tag, Commit: commit, Source: source, Created: created}
 	if !imagePattern.MatchString(image) {
-		return m, fmt.Errorf("QUAY_IMAGE must be quay.io/<namespace>/bundledock-toolbox")
+		return m, fmt.Errorf("publication image must be quay.io/<namespace>/toolbox")
 	}
 	if !tagPattern.MatchString(tag) || !commitPattern.MatchString(commit) {
 		return m, fmt.Errorf("invalid date/run/attempt tag or source commit")
