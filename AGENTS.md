@@ -9,6 +9,12 @@ Run Docker build and smoke checks when Docker is available; report platform
 coverage and unavailable checks accurately. Do not publish images or push Git
 changes without explicit authorization.
 
+Third-party tools must use official stable prebuilt releases. Never build them
+from source or silently patch their binaries or embedded dependencies. If a
+security fix is not yet available in an official stable prebuilt release, wait
+for that release and record the remaining findings in existing documentation.
+This does not restrict compiling BundleDock's own CLI, builder, or initializer.
+
 Make multiple atomic, focused commits using Conventional Commits.
 Keep each commit limited to one logical change.
 

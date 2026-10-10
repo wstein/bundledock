@@ -63,6 +63,11 @@ for `ubuntu-24.04` (AMD64) and `ubuntu-24.04-arm` (ARM64).
 One resolver runs `bundledock tools upgrade` for all tools, then uploads the exact
 lock bytes and shared source commit, UTC build time, lock SHA256, run tag and full
 GitHub run ID (`run_id`).
+The resolver uses official stable prebuilt releases; it does not rebuild tools
+from source or patch embedded dependencies. A successful publication does not
+establish that upstream binaries are free of known vulnerabilities. Review the
+[remaining embedded dependency findings](development.md#embedded-dependency-findings)
+and wait for patched stable releases to remediate them.
 It never commits or pushes the resulting lock. Both native jobs consume that
 artifact, build `oci/Dockerfile` once, explicitly pull the consumer baseline and
 run `oci/smoke.sh` against the resulting local image ID. OCI labels include the

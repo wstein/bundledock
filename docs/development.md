@@ -5,7 +5,9 @@
 ## Development
 
 Use the patched build toolchain in [`.go-version`](../.go-version) for local
-builds and checks. The module retains Go 1.24 source compatibility. The Anchorage umbrella provides an
+builds and checks of BundleDock's own programs. Refreshing that compiler does
+not update dependencies or Go runtime code embedded in downloaded third-party
+binaries. The module retains Go 1.24 source compatibility. The Anchorage umbrella provides an
 optional consumer devcontainer; its integration and pinned image are maintained
 there. Make inherits `GOFLAGS`; OCI build commands pass `-trimpath` explicitly.
 
@@ -154,6 +156,32 @@ BUNDLEDOCK_ARCHIVE_DIR=/path/to/archives \
 BUNDLEDOCK_SMOKE_PATH=/path/to/bin \
 go test ./internal/toolbundle -run 'TestQualitySecurity' -count=1
 ```
+
+### Embedded dependency findings
+
+Third-party tools use official stable prebuilt releases under the
+[repository policy](../AGENTS.md). Wait for a patched stable upstream release;
+do not rebuild the tools from source or patch their binaries or dependencies.
+
+The 2026-10-10 inspection of Go build information in both official AMD64 and
+ARM64 archives confirmed the following dependencies in the locked releases:
+
+| Tool | Embedded dependencies with reported findings |
+| --- | --- |
+| Gitleaks 8.30.1 | `golang.org/x/crypto` v0.35.0, `github.com/ulikunitz/xz` v0.5.12, `github.com/nwaples/rardecode/v2` v2.1.0 |
+| Syft 1.54.1 | `golang.org/x/net` v0.59.0 |
+| Trivy 0.75.0 | `golang.org/x/net` v0.59.0 |
+
+The official latest stable releases checked on that date were still these
+versions; no patched stable prebuilt release was available. Build information
+confirms the embedded dependency versions, not an independent validation of
+every reported vulnerability or its exploitability. These remain open findings;
+archive checksum verification and smoke success do not resolve them.
+
+Recheck when an official stable release ships updated dependencies, then resolve
+and verify its official archives on both supported architectures before updating
+the lock. A BundleDock compiler refresh alone cannot remediate these downloaded
+binaries.
 
 ## Smoke coverage
 
