@@ -31,3 +31,17 @@ func TestBundleDockCommandIdentity(t *testing.T) {
 		})
 	}
 }
+
+func TestToolsVolumeHelpDefaultImage(t *testing.T) {
+	var output bytes.Buffer
+	cmd := newRootCommand()
+	cmd.SetOut(&output)
+	cmd.SetErr(&output)
+	cmd.SetArgs([]string{"tools", "volume", "--help"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(output.String(), `default "workharbor-tools:poc"`) {
+		t.Fatalf("volume help has an unexpected default image: %q", output.String())
+	}
+}

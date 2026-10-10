@@ -27,7 +27,7 @@ func TestInitializerDefaultsAndRelocatedBundle(t *testing.T) {
 			t.Skip("requires /bin/sh: ", err)
 		}
 		parent := t.TempDir()
-		source := filepath.Join(parent, "opt", "anchorage")
+		source := filepath.Join(parent, "opt", "bundledock")
 		target := filepath.Join(parent, "bundle")
 		mounted := filepath.Join(parent, "opt", "workharbor")
 		for _, dir := range []string{source, target} {
