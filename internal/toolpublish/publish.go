@@ -1,0 +1,348 @@
+// Package toolpublish gates OCI publication on native smoke-test evidence.
+package toolpublish
+
+import (
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"os"
+	"regexp"
+	"runtime"
+	"time"
+)
+
+type Metadata struct {
+	Image      string `json:"image"`
+	Tag        string `json:"tag"`
+	Commit     string `json:"commit"`
+	Source     string `json:"source"`
+	Created    string `json:"created"`
+	LockSHA256 string `json:"lock_sha256"`
+}
+
+type Receipt struct {
+	Metadata
+	Architecture string `json:"architecture"`
+	ImageID      string `json:"image_id"`
+	Smoked       bool   `json:"smoked"`
+	Digest       string `json:"digest,omitempty"`
+}
+
+type Publication struct {
+	Metadata
+	Digest    string    `json:"digest"`
+	Reference string    `json:"reference"`
+	Platforms []Receipt `json:"platforms"`
+}
+
+type Adapter struct {
+	Run          func(...string) ([]byte, error)
+	Architecture string
+}
+
+var imagePattern = regexp.MustCompile(`^quay\.io/[a-z0-9]+(?:[._-][a-z0-9]+)*/workharbor-tools$`)
+var tagPattern = regexp.MustCompile(`^\d{4}\.\d{2}\.\d{2}-[1-9]\d*-[1-9]\d*$`)
+var commitPattern = regexp.MustCompile(`^[a-f0-9]{40}$`)
+var digestPattern = regexp.MustCompile(`^sha256:[a-f0-9]{64}$`)
+
+func HashFile(path string) (string, error) {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+	sum := sha256.Sum256(b)
+	return hex.EncodeToString(sum[:]), nil
+}
+
+func NewMetadata(lock, image, tag, commit, source, created string) (Metadata, error) {
+	m := Metadata{Image: image, Tag: tag, Commit: commit, Source: source, Created: created}
+	if !imagePattern.MatchString(image) {
+		return m, fmt.Errorf("QUAY_IMAGE must be quay.io/<namespace>/workharbor-tools")
+	}
+	if !tagPattern.MatchString(tag) || !commitPattern.MatchString(commit) {
+		return m, fmt.Errorf("invalid date/run/attempt tag or source commit")
+	}
+	if _, err := time.Parse("2006-01-02T15:04:05Z", created); err != nil {
+		return m, err
+	}
+	if len(source) < 9 || source[:8] != "https://" {
+		return m, fmt.Errorf("HTTPS source provenance required")
+	}
+	var err error
+	m.LockSHA256, err = HashFile(lock)
+	return m, err
+}
+
+func validate(m Metadata, lock string) error {
+	expected, err := NewMetadata(lock, m.Image, m.Tag, m.Commit, m.Source, m.Created)
+	if err != nil {
+		return err
+	}
+	if expected != m {
+		return fmt.Errorf("resolved lock/provenance mismatch")
+	}
+	return nil
+}
+
+func labels(m Metadata, lock, arch string) (map[string]string, error) {
+	var pins struct {
+		Platforms map[string]map[string]struct {
+			Version string `json:"version"`
+		} `json:"platforms"`
+	}
+	b, err := os.ReadFile(lock)
+	if err != nil {
+		return nil, err
+	}
+	if err = json.Unmarshal(b, &pins); err != nil {
+		return nil, err
+	}
+	versions := map[string]string{}
+	for name, pin := range pins.Platforms[arch] {
+		versions[name] = pin.Version
+	}
+	if len(versions) == 0 {
+		return nil, fmt.Errorf("lock has no tools for %s", arch)
+	}
+	encoded, err := json.Marshal(versions)
+	if err != nil {
+		return nil, err
+	}
+	return map[string]string{
+		"org.opencontainers.image.title": "workharbor-tools", "org.opencontainers.image.source": m.Source,
+		"org.opencontainers.image.revision": m.Commit, "org.opencontainers.image.created": m.Created,
+		"org.opencontainers.image.version": m.Tag, "io.workharbor.tools.lock-sha256": m.LockSHA256,
+		"io.workharbor.tools.versions": string(encoded),
+	}, nil
+}
+
+func (a Adapter) json(out any, args ...string) error {
+	b, err := a.Run(args...)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(b, out)
+}
+
+func (a Adapter) inspectLocal(m Metadata, lock, arch, ref string) (string, error) {
+	var images []struct {
+		ID           string `json:"Id"`
+		Architecture string
+		Os           string
+		Config       struct{ Labels map[string]string }
+	}
+	if err := a.json(&images, "docker", "image", "inspect", ref); err != nil {
+		return "", err
+	}
+	if len(images) != 1 {
+		return "", fmt.Errorf("expected exactly one local image")
+	}
+	info := images[0]
+	if info.Architecture != arch || info.Os != "linux" {
+		return "", fmt.Errorf("image platform mismatch")
+	}
+	want, err := labels(m, lock, arch)
+	if err != nil {
+		return "", err
+	}
+	for k, v := range want {
+		if info.Config.Labels[k] != v {
+			return "", fmt.Errorf("image provenance label mismatch: %s", k)
+		}
+	}
+	if !digestPattern.MatchString(info.ID) {
+		return "", fmt.Errorf("invalid local image ID")
+	}
+	return info.ID, nil
+}
+
+// Smoke pulls the consumer before smoke.sh disables networking; the tool image
+// argument is an immutable local config ID, never a mutable build tag.
+func (a Adapter) Smoke(id, consumer string) error {
+	if _, err := a.Run("docker", "pull", consumer); err != nil {
+		return err
+	}
+	_, err := a.Run("sh", "oci/smoke.sh", id, consumer)
+	return err
+}
+
+func (a Adapter) Build(m Metadata, lock, arch, consumer string) (Receipt, error) {
+	var r Receipt
+	if err := validate(m, lock); err != nil {
+		return r, err
+	}
+	native := a.Architecture
+	if native == "" {
+		native = runtime.GOARCH
+	}
+	if runtime.GOOS != "linux" || native != arch || (arch != "amd64" && arch != "arm64") {
+		return r, fmt.Errorf("native Linux architecture required")
+	}
+	args := []string{"docker", "build", "--pull", "--platform", "linux/" + arch, "-f", "oci/Dockerfile", "-t", "workharbor-tools:build-" + m.Tag + "-" + arch}
+	imageLabels, err := labels(m, lock, arch)
+	if err != nil {
+		return r, err
+	}
+	for k, v := range imageLabels {
+		args = append(args, "--label", k+"="+v)
+	}
+	if _, err = a.Run(append(args, ".")...); err != nil {
+		return r, err
+	}
+	id, err := a.inspectLocal(m, lock, arch, args[8])
+	if err != nil {
+		return r, err
+	}
+	if err = a.Smoke(id, consumer); err != nil {
+		return r, err
+	}
+	return Receipt{Metadata: m, Architecture: arch, ImageID: id, Smoked: true}, nil
+}
+
+func validateReceipt(m Metadata, r Receipt) error {
+	if r.Metadata != m || !r.Smoked || !digestPattern.MatchString(r.ImageID) || (r.Architecture != "amd64" && r.Architecture != "arm64") {
+		return fmt.Errorf("receipt provenance, platform or smoke mismatch")
+	}
+	return nil
+}
+
+func (a Adapter) remoteDigest(ref string) (string, error) {
+	var descriptor struct {
+		Digest string `json:"digest"`
+	}
+	// Registry manifest digests differ from Docker's local config image IDs.
+	if err := a.json(&descriptor, "docker", "buildx", "imagetools", "inspect", "--format", "{{json .Manifest}}", ref); err != nil {
+		return "", err
+	}
+	if !digestPattern.MatchString(descriptor.Digest) {
+		return "", fmt.Errorf("invalid registry manifest digest")
+	}
+	return descriptor.Digest, nil
+}
+
+func (a Adapter) verifyRemote(m Metadata, r Receipt) (string, error) {
+	if !digestPattern.MatchString(r.Digest) {
+		return "", fmt.Errorf("invalid receipt registry digest")
+	}
+	ref := m.Image + "@" + r.Digest
+	var manifest struct {
+		Config struct {
+			Digest string `json:"digest"`
+		} `json:"config"`
+	}
+	if err := a.json(&manifest, "docker", "buildx", "imagetools", "inspect", "--raw", ref); err != nil {
+		return "", err
+	}
+	if manifest.Config.Digest != r.ImageID {
+		return "", fmt.Errorf("registry manifest does not reference the smoked image config")
+	}
+	return ref, nil
+}
+
+func (a Adapter) Push(m Metadata, lock string, r Receipt) (Receipt, error) {
+	var empty Receipt
+	if err := validate(m, lock); err != nil {
+		return empty, err
+	}
+	if err := validateReceipt(m, r); err != nil {
+		return empty, err
+	}
+	id, err := a.inspectLocal(m, lock, r.Architecture, r.ImageID)
+	if err != nil {
+		return empty, err
+	}
+	if id != r.ImageID {
+		return empty, fmt.Errorf("smoked local image changed")
+	}
+	staging := m.Image + ":staging-" + m.Tag + "-" + r.Architecture
+	if _, err = a.Run("docker", "tag", id, staging); err != nil {
+		return empty, err
+	}
+	if _, err = a.Run("docker", "push", staging); err != nil {
+		return empty, err
+	}
+	r.Digest, err = a.remoteDigest(staging)
+	if err != nil {
+		return empty, err
+	}
+	if _, err = a.verifyRemote(m, r); err != nil {
+		return empty, err
+	}
+	return r, nil
+}
+
+func (a Adapter) Promote(m Metadata, lock string, receipts []Receipt) (Publication, error) {
+	var result Publication
+	if err := validate(m, lock); err != nil {
+		return result, err
+	}
+	seen := map[string]bool{}
+	if len(receipts) != 2 {
+		return result, fmt.Errorf("both native architectures must pass before promotion")
+	}
+	for _, r := range receipts {
+		if err := validateReceipt(m, r); err != nil {
+			return result, err
+		}
+		seen[r.Architecture] = true
+	}
+	if !seen["amd64"] || !seen["arm64"] {
+		return result, fmt.Errorf("both native architectures must pass before promotion")
+	}
+	args := []string{"docker", "buildx", "imagetools", "create", "--tag", m.Image + ":" + m.Tag}
+	for _, r := range receipts {
+		ref, err := a.verifyRemote(m, r)
+		if err != nil {
+			return result, err
+		}
+		args = append(args, ref)
+	}
+	if _, err := a.Run(args...); err != nil {
+		return result, err
+	}
+	versionDigest, err := a.remoteDigest(m.Image + ":" + m.Tag)
+	if err != nil {
+		return result, err
+	}
+	var index struct {
+		Manifests []struct {
+			Digest   string `json:"digest"`
+			Platform struct {
+				OS           string `json:"os"`
+				Architecture string `json:"architecture"`
+			} `json:"platform"`
+		} `json:"manifests"`
+	}
+	ref := m.Image + "@" + versionDigest
+	if err = a.json(&index, "docker", "buildx", "imagetools", "inspect", "--raw", ref); err != nil {
+		return result, err
+	}
+	expected := map[string]string{}
+	for _, r := range receipts {
+		expected[r.Architecture] = r.Digest
+	}
+	if len(index.Manifests) != 2 {
+		return result, fmt.Errorf("published index must contain exactly two tested platforms")
+	}
+	for _, manifest := range index.Manifests {
+		if manifest.Platform.OS != "linux" || expected[manifest.Platform.Architecture] != manifest.Digest {
+			return result, fmt.Errorf("published index contains untested platform digest")
+		}
+		delete(expected, manifest.Platform.Architecture)
+	}
+	if len(expected) != 0 {
+		return result, fmt.Errorf("published index omits tested platform")
+	}
+	if _, err = a.Run("docker", "buildx", "imagetools", "create", "--tag", m.Image+":stable", ref); err != nil {
+		return result, err
+	}
+	stableDigest, err := a.remoteDigest(m.Image + ":stable")
+	if err != nil {
+		return result, err
+	}
+	if stableDigest != versionDigest {
+		return result, fmt.Errorf("stable registry digest differs from versioned index")
+	}
+	return Publication{Metadata: m, Digest: versionDigest, Reference: ref, Platforms: receipts}, nil
+}
