@@ -1,0 +1,6 @@
+Upstream: https://github.com/gohugoio/hugo
+License: Apache-2.0
+Pinned release: v0.167.0 (standard, not extended)
+License source: LICENSE in the official release archives
+Release: https://github.com/gohugoio/hugo/releases/tag/v0.167.0
+Checksums: https://github.com/gohugoio/hugo/releases/download/v0.167.0/hugo_0.167.0_checksums.txt

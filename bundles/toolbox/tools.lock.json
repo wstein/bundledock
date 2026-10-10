@@ -1,7 +1,7 @@
 {
   "schema": 2,
-  "desired_digest": "364d20d992c070034ef11793a0e5c6e70fbd4208725f1af437b18624f9b26534",
-  "catalog_digest": "2fb8d829f23013d37ce7732bff42babb179c3c95358609784fad9dfc299f8530",
+  "desired_digest": "78447b2b4d14f460b58d82c291e475d00ba393bb0db81321815d3a7ed0a939cf",
+  "catalog_digest": "beab025c2ae74040aaacb4145031f411cf0d58a7933e37816d49df11045f8b2e",
   "platforms": {
     "amd64": {
       "agy": {
@@ -69,6 +69,12 @@
         "url": "https://github.com/herdrdev/herdr/releases/download/v0.9.3/herdr-linux-x86_64",
         "sha256": "18a8dc65f1c2fa485884344356dea1cfd911c6f06cf46fa78e193f4087f4dba7",
         "verification": "tls-download-sha256"
+      },
+      "hugo": {
+        "version": "v0.167.0",
+        "url": "https://github.com/gohugoio/hugo/releases/download/v0.167.0/hugo_0.167.0_linux-amd64.tar.gz",
+        "sha256": "4d84519b9f619e6d4c3fb45a50157abeabeb724f859c60605f44c23def6e1169",
+        "verification": "publisher-sha256"
       },
       "jq": {
         "version": "1.8.2",
@@ -203,6 +209,12 @@
         "url": "https://github.com/herdrdev/herdr/releases/download/v0.9.3/herdr-linux-aarch64",
         "sha256": "4de7aa3e25678812e92960de64f7c2aaa1bca1f0f80a3c5e559837e231e1f5c0",
         "verification": "tls-download-sha256"
+      },
+      "hugo": {
+        "version": "v0.167.0",
+        "url": "https://github.com/gohugoio/hugo/releases/download/v0.167.0/hugo_0.167.0_linux-arm64.tar.gz",
+        "sha256": "d0dd0d1ed249842525a93413e10ca1ef6f3b63311ee1695b16a0ce488142cec1",
+        "verification": "publisher-sha256"
       },
       "jq": {
         "version": "1.8.2",

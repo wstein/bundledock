@@ -75,6 +75,7 @@ func openRoot(t *testing.T) (*os.Root, string) {
 func fixture(t *testing.T) (map[string][]byte, map[string]Spec, *httptest.Server) {
 	t.Helper()
 	payloads := map[string][]byte{
+		"hugo":     archive(t, member{"hugo", "hugo executable", 0755, 0}, member{"LICENSE", "hugo license", 0644, 0}),
 		"typos":    archive(t, member{"./typos", "typos executable", 0755, 0}, member{"./LICENSE-MIT", "typos mit", 0644, 0}, member{"./LICENSE-APACHE", "typos apache", 0644, 0}),
 		"lychee":   archive(t, member{"lychee-x86_64-unknown-linux-musl/lychee", "lychee executable", 0755, 0}),
 		"gitleaks": archive(t, member{"gitleaks", "gitleaks executable", 0755, 0}, member{"LICENSE", "gitleaks license", 0644, 0}),
@@ -141,6 +142,7 @@ func TestVendorBuildBothArchitectures(t *testing.T) {
 				data string
 				mode os.FileMode
 			}{
+				"bin/hugo": {"hugo executable", 0755}, "licenses/hugo/LICENSE": {"hugo license", 0644},
 				"bin/btm": {"bottom executable", 0755}, "bin/btop": {"btop executable", 0755},
 				"licenses/btop/LICENSE": {"btop license", 0644},
 				"bin/nu":                {"nu executable", 0755}, "bin/tmux": {"tmux executable", 0755},
