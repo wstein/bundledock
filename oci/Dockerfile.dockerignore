@@ -12,3 +12,5 @@
 !internal/toolvolume/**
 !oci
 !oci/tools.lock.json
+!oci/licenses
+!oci/licenses/**

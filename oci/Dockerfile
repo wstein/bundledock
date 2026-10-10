@@ -17,6 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
     && rm -rf /var/lib/apt/lists/*
 COPY --from=compiler /out/tools-bundle /usr/local/bin/tools-bundle
 COPY oci/tools.lock.json /build/tools.lock.json
+COPY oci/licenses /opt/anchorage/licenses
 RUN tools-bundle -arch "${TARGETARCH}"
 
 FROM debian:trixie-slim@sha256:a29215f6a35e51e22adffa17f89e9d2ef06214e64a2bad10d765c46aea49f11f

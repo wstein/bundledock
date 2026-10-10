@@ -53,10 +53,10 @@ func ReadLock(r io.Reader, arch string) (map[string]Spec, error) {
 	if !ok {
 		return nil, fmt.Errorf("missing architecture %q", arch)
 	}
-	if len(tools) != 4 {
-		return nil, fmt.Errorf("lock must contain codex, claude, gh and agy")
+	if len(tools) != 7 {
+		return nil, fmt.Errorf("lock must contain codex, claude, gh, agy, jq, rg and fd")
 	}
-	for _, name := range []string{"codex", "claude", "gh", "agy"} {
+	for _, name := range []string{"codex", "claude", "gh", "agy", "jq", "rg", "fd"} {
 		spec, ok := tools[name]
 		if !ok || spec.Version == "" {
 			return nil, fmt.Errorf("missing tool/version %s", name)
@@ -103,7 +103,7 @@ func Build(ctx context.Context, client *http.Client, tools map[string]Spec, arch
 		return err
 	}
 	defer root.Close()
-	for _, name := range []string{"agy", "claude", "codex", "gh"} {
+	for _, name := range []string{"agy", "claude", "codex", "fd", "gh", "jq", "rg"} {
 		spec := tools[name]
 		fmt.Fprintln(output, "Installing", name, spec.Version)
 		if err := install(ctx, client, root, name, spec); err != nil {
@@ -149,16 +149,17 @@ func install(ctx context.Context, client *http.Client, root *os.Root, name strin
 	if _, err := payload.Seek(0, io.SeekStart); err != nil {
 		return err
 	}
-	if name == "claude" {
-		return WriteFile(root, "bin/claude", payload, 0755)
+	if name == "claude" || name == "jq" {
+		return WriteFile(root, "bin/"+name, payload, 0755)
 	}
 	return Extract(root, name, payload)
 }
 
-// Extract preserves all Codex resources; gh/agy select one executable by basename.
+// Extract preserves all Codex resources; other tools select one executable by basename.
+// fd is also installed as fdfind, using a regular file for shared-volume integrity.
 // Every archive entry is validated, including entries not selected for installation.
 func Extract(root *os.Root, tool string, source io.Reader) error {
-	if tool != "codex" && tool != "gh" && tool != "agy" {
+	if tool != "codex" && tool != "gh" && tool != "agy" && tool != "rg" && tool != "fd" {
 		return fmt.Errorf("unsupported archive tool %q", tool)
 	}
 	gz, err := gzip.NewReader(source)
@@ -198,15 +199,21 @@ func Extract(root *os.Root, tool string, source io.Reader) error {
 		}
 		target := name
 		if tool != "codex" {
-			executable := "gh"
+			executable := tool
 			if tool == "agy" {
 				executable = "antigravity"
 			}
-			if path.Base(name) != executable {
+			if path.Base(name) == executable {
+				target = "bin/" + tool
+				count++
+				if entry.Mode&0111 == 0 {
+					return fmt.Errorf("%s entrypoint is not executable", tool)
+				}
+			} else if (tool == "rg" || tool == "fd") && isLicense(path.Base(name)) {
+				target = "licenses/" + tool + "/" + path.Base(name)
+			} else {
 				continue
 			}
-			target = "bin/" + tool
-			count++
 		} else if name == "bin/codex" {
 			count++
 			if entry.Mode&0111 == 0 {
@@ -214,7 +221,7 @@ func Extract(root *os.Root, tool string, source io.Reader) error {
 			}
 		}
 		mode := fs.FileMode(0644)
-		if tool != "codex" || entry.Mode&0111 != 0 {
+		if strings.HasPrefix(target, "bin/") || tool == "codex" && entry.Mode&0111 != 0 {
 			mode = 0755
 		}
 		if err := WriteFile(root, target, archive, mode); err != nil {
@@ -228,7 +235,19 @@ func Extract(root *os.Root, tool string, source io.Reader) error {
 	if count != 1 {
 		return fmt.Errorf("expected one %s executable, found %d", tool, count)
 	}
+	if tool == "fd" {
+		f, err := OpenFile(root, "bin/fd")
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+		return WriteFile(root, "bin/fdfind", f, 0755)
+	}
 	return nil
+}
+
+func isLicense(name string) bool {
+	return name == "LICENSE-MIT" || name == "LICENSE-APACHE" || name == "UNLICENSE" || name == "COPYING"
 }
 
 func WriteManifest(root *os.Root, arch string, tools map[string]Spec) error {
