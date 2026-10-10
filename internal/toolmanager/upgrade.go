@@ -44,9 +44,23 @@ func Upgrade(ctx context.Context, client *http.Client, directory, tool string, o
 		if err != nil {
 			return err
 		}
-		c, err = toolconfig.LoadForUpgrade(directory)
-		if err != nil {
-			return err
+		if tool != "" {
+			c, err = toolconfig.LoadForUpgrade(directory)
+			if err != nil {
+				return fmt.Errorf("targeted upgrade requires an unchanged package inventory; run anchorage tools upgrade: %w", err)
+			}
+			if c.Lock.CatalogDigest != c.CatalogDigest() {
+				return fmt.Errorf("package catalog changed; run anchorage tools upgrade without a tool")
+			}
+		} else {
+			var previous toolconfig.Lock
+			if err := toolconfig.Decode(bytes.NewReader(before), &previous); err != nil {
+				return err
+			}
+			if previous.Schema != 2 {
+				return fmt.Errorf("unsupported lock schema %d", previous.Schema)
+			}
+			c.Lock = toolconfig.Lock{Platforms: map[string]map[string]toolconfig.Spec{"amd64": {}, "arm64": {}}}
 		}
 	}
 	if client == nil {
@@ -116,10 +130,16 @@ func Upgrade(ctx context.Context, client *http.Client, directory, tool string, o
 		if closeErr != nil {
 			return closeErr
 		}
+		if _, err := io.Copy(output, &report); err != nil {
+			return err
+		}
 		if err := os.Rename(temporary.Name(), lockPath); err != nil {
 			return err
 		}
+	} else {
+		if _, err := io.Copy(output, &report); err != nil {
+			return err
+		}
 	}
-	_, err = io.Copy(output, &report)
-	return err
+	return nil
 }

@@ -24,10 +24,27 @@ var errNoRelease = errors.New("no matching GitHub release")
 
 type resolver struct{ client *http.Client }
 type asset struct {
-	Name   string `json:"name"`
-	URL    string `json:"browser_download_url"`
-	Digest string `json:"digest"`
+	Name          string `json:"name"`
+	URL           string `json:"browser_download_url"`
+	Digest        string `json:"digest,omitempty"`
+	DigestPresent bool   `json:"-"`
 }
+
+func (a *asset) UnmarshalJSON(data []byte) error {
+	type plain asset
+	var v plain
+	if err := json.Unmarshal(data, &v); err != nil {
+		return err
+	}
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(data, &fields); err != nil {
+		return err
+	}
+	_, v.DigestPresent = fields["digest"]
+	*a = asset(v)
+	return nil
+}
+
 type release struct {
 	Tag        string  `json:"tag_name"`
 	Draft      bool    `json:"draft"`
@@ -41,7 +58,24 @@ func (r resolver) get(ctx context.Context, raw string) (*http.Response, error) {
 		return nil, err
 	}
 	req.Header.Set("User-Agent", "anchorage-tools")
-	resp, err := r.client.Do(req)
+	client := *r.client
+	previousRedirect := client.CheckRedirect
+	client.CheckRedirect = func(next *http.Request, via []*http.Request) error {
+		if len(via) >= 10 {
+			return fmt.Errorf("too many upstream redirects")
+		}
+		origin := via[0].URL.Hostname()
+		host := next.URL.Hostname()
+		officialCDN := origin == "github.com" && (host == "release-assets.githubusercontent.com" || host == "objects.githubusercontent.com")
+		if next.URL.Scheme != "https" || next.URL.User != nil || next.URL.Port() != "" || host != origin && !officialCDN {
+			return fmt.Errorf("unsafe upstream redirect")
+		}
+		if previousRedirect != nil {
+			return previousRedirect(next, via)
+		}
+		return nil
+	}
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -218,12 +252,28 @@ func (r resolver) resolve(ctx context.Context, p toolconfig.Package, c toolconfi
 		return r.sqlite(ctx, p, c)
 	}
 	rel, err := r.github(ctx, p, c)
-	if err != nil {
+	if err != nil && !(p.Provider == "claude" && errors.Is(err, errNoRelease)) {
 		return nil, err
 	}
 	version, _ := p.Version(rel.Tag)
 	specs := map[string]toolconfig.Spec{}
 	if p.Provider == "claude" {
+		latest, _, err := r.metadata(ctx, p.BaseURL+"/latest")
+		if err != nil {
+			return nil, err
+		}
+		current := strings.TrimSpace(string(latest))
+		v, err := toolconfig.ParseVersion(current)
+		if err != nil {
+			return nil, err
+		}
+		old, _ := toolconfig.ParseVersion(version)
+		if c.Contains(current) && (version == "" || v.Compare(old) > 0) {
+			version = current
+		}
+		if version == "" {
+			return nil, fmt.Errorf("no stable Claude release satisfies %s", c.String())
+		}
 		b, _, err := r.metadata(ctx, p.BaseURL+"/"+version+"/manifest.json")
 		if err != nil {
 			return nil, err
@@ -267,11 +317,15 @@ func (r resolver) githubAssets(ctx context.Context, p toolconfig.Package, rel re
 			return nil, err
 		}
 		expected := ""
-		if a.Digest != "" {
+		if a.DigestPresent || a.Digest != "" {
 			if !strings.HasPrefix(a.Digest, "sha256:") {
 				return nil, fmt.Errorf("unsupported asset digest %q", a.Digest)
 			}
 			expected = strings.TrimPrefix(a.Digest, "sha256:")
+			decoded, err := hex.DecodeString(expected)
+			if err != nil || len(decoded) != 32 {
+				return nil, fmt.Errorf("invalid published asset digest")
+			}
 		} else if p.Sidecar != "" {
 			sidecar := strings.ReplaceAll(expand(p.Sidecar, version, p.Architectures[arch], "", ""), "{asset}", name)
 			for _, sa := range rel.Assets {
@@ -361,7 +415,14 @@ func (r resolver) sqlite(ctx context.Context, p toolconfig.Package, c toolconfig
 		if err != nil {
 			return nil, err
 		}
-		if len(record) >= 5 && record[1] == best && record[2] == relative {
+		if len(record) >= 3 && record[1] == best && record[2] == relative {
+			if len(record) < 5 {
+				return nil, fmt.Errorf("incomplete SQLite publisher metadata")
+			}
+			decoded, err := hex.DecodeString(record[4])
+			if err != nil || len(decoded) != 32 {
+				return nil, fmt.Errorf("invalid SQLite publisher checksum")
+			}
 			if expected != "" {
 				return nil, fmt.Errorf("ambiguous SQLite metadata")
 			}
@@ -414,7 +475,14 @@ func (r resolver) antigravity(ctx context.Context, p toolconfig.Package, c toolc
 	if best == "" {
 		return nil, fmt.Errorf("no stable Antigravity release satisfies %s", c.String())
 	}
-	if best == rel.Tag {
+	completeCurrent := true
+	for _, arch := range []string{"amd64", "arm64"} {
+		m := manifests[arch]
+		if m.Version != best || m.URL == "" || m.SHA512 == "" {
+			completeCurrent = false
+		}
+	}
+	if best == rel.Tag && !completeCurrent {
 		return r.githubAssets(ctx, p, rel)
 	}
 	specs := map[string]toolconfig.Spec{}

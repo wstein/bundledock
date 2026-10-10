@@ -9,6 +9,7 @@ import (
 	"crypto/sha512"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -71,7 +72,7 @@ func releases(t *testing.T, assets []map[string]string) []byte {
 func TestSingleUpgradeBothArchitecturesAndAtomicFailure(t *testing.T) {
 	payload := []byte("verified binary")
 	sum := fmt.Sprintf("sha256:%x", sha256.Sum256(payload))
-	for _, failure := range []string{"", "missing-arm64", "checksum", "http"} {
+	for _, failure := range []string{"", "missing-arm64", "checksum", "http", "output"} {
 		t.Run(failure, func(t *testing.T) {
 			dir := checkout(t)
 			before := readLock(t, dir)
@@ -95,7 +96,11 @@ func TestSingleUpgradeBothArchitecturesAndAtomicFailure(t *testing.T) {
 				}
 				w.Write(payload)
 			})
-			err := Upgrade(context.Background(), client, dir, "gh", &bytes.Buffer{})
+			var output io.Writer = &bytes.Buffer{}
+			if failure == "output" {
+				output = failedWriter{}
+			}
+			err := Upgrade(context.Background(), client, dir, "gh", output)
 			if failure != "" {
 				if err == nil {
 					t.Fatal("expected failure")
@@ -355,6 +360,10 @@ func TestChangedDesiredAndBootstrap(t *testing.T) {
 					json.NewEncoder(w).Encode(map[string]string{"version": "1.3.2"})
 					return
 				}
+				if strings.HasSuffix(r.URL.Path, "/latest") {
+					fmt.Fprint(w, "2.1.296")
+					return
+				}
 				if strings.HasSuffix(r.URL.Path, "manifest.json") {
 					sum := fmt.Sprintf("%x", sha256.Sum256([]byte("binary")))
 					fmt.Fprintf(w, `{"platforms":{"linux-x64":{"checksum":"%s"},"linux-arm64":{"checksum":"%s"}}}`, sum, sum)
@@ -382,3 +391,228 @@ func TestChangedDesiredAndBootstrap(t *testing.T) {
 		})
 	}
 }
+
+func TestClaudeCurrentReleaseIsDiscovered(t *testing.T) {
+	dir := checkout(t)
+	payload := []byte("current claude")
+	sum := fmt.Sprintf("%x", sha256.Sum256(payload))
+	client := fixtureClient(t, func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case strings.HasPrefix(r.URL.Path, "/repos/"):
+			json.NewEncoder(w).Encode([]release{{Tag: "v2.1.296"}})
+		case strings.HasSuffix(r.URL.Path, "/latest"):
+			fmt.Fprint(w, "2.1.297\n")
+		case strings.HasSuffix(r.URL.Path, "/manifest.json"):
+			fmt.Fprintf(w, `{"version":"2.1.297","platforms":{"linux-x64":{"checksum":"%s"},"linux-arm64":{"checksum":"%s"}}}`, sum, sum)
+		default:
+			w.Write(payload)
+		}
+	})
+	if err := Upgrade(context.Background(), client, dir, "claude", &bytes.Buffer{}); err != nil {
+		t.Fatal(err)
+	}
+	c, err := toolconfig.Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c.Lock.Platforms["arm64"]["claude"].Version != "2.1.297" {
+		t.Fatal("current release omitted")
+	}
+}
+func TestMetadataErrorsLeaveLockUnchanged(t *testing.T) {
+	for _, kind := range []string{"malformed", "truncated", "pagination", "no-match", "prerelease", "invalid-digest", "redirect"} {
+		t.Run(kind, func(t *testing.T) {
+			dir := checkout(t)
+			before := readLock(t, dir)
+			client := fixtureClient(t, func(w http.ResponseWriter, r *http.Request) {
+				switch kind {
+				case "malformed":
+					fmt.Fprint(w, "{")
+				case "truncated":
+					w.Header().Set("Content-Length", "99")
+					fmt.Fprint(w, "[]")
+				case "pagination":
+					w.Header().Set("Link", `<https://evil.example/releases>; rel="next"`)
+					fmt.Fprint(w, "[]")
+				case "no-match":
+					fmt.Fprint(w, `[{"tag_name":"v999.0.0"}]`)
+				case "prerelease":
+					fmt.Fprint(w, `[{"tag_name":"v2.103.0","prerelease":true},{"tag_name":"v2.104.0-rc.1"}]`)
+				case "invalid-digest":
+					fmt.Fprint(w, `[{"tag_name":"v2.103.0","assets":[{"name":"gh_2.103.0_linux_amd64.tar.gz","browser_download_url":"https://github.com/asset","digest":"sha256:no"}]}]`)
+				case "redirect":
+					http.Redirect(w, r, "http://evil.example/artifact", http.StatusFound)
+				}
+			})
+			if err := Upgrade(context.Background(), client, dir, "gh", &bytes.Buffer{}); err == nil {
+				t.Fatal("accepted invalid upstream metadata")
+			}
+			if !bytes.Equal(before, readLock(t, dir)) {
+				t.Fatal("failure changed lock bytes")
+			}
+		})
+	}
+}
+
+func TestEmptyPublishedDigestFailsClosed(t *testing.T) {
+	dir := checkout(t)
+	before := readLock(t, dir)
+	client := fixtureClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, "/repos/") {
+			json.NewEncoder(w).Encode([]release{{Tag: "v2.103.0", Assets: []asset{{Name: "gh_2.103.0_linux_amd64.tar.gz", URL: "https://github.com/amd64", Digest: "sha256:"}, {Name: "gh_2.103.0_linux_arm64.tar.gz", URL: "https://github.com/arm64", Digest: "sha256:"}}}})
+			return
+		}
+		fmt.Fprint(w, "binary")
+	})
+	if err := Upgrade(context.Background(), client, dir, "gh", &bytes.Buffer{}); err == nil {
+		t.Fatal("accepted present empty publisher checksum")
+	}
+	if !bytes.Equal(before, readLock(t, dir)) {
+		t.Fatal("changed lock")
+	}
+}
+func TestAntigravityCurrentManifestSameVersion(t *testing.T) {
+	dir := checkout(t)
+	payload := []byte("current agy")
+	sum512 := fmt.Sprintf("%x", sha512.Sum512(payload))
+	client := fixtureClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, "/repos/") {
+			json.NewEncoder(w).Encode([]release{{Tag: "1.3.2"}})
+			return
+		}
+		if strings.Contains(r.URL.Path, "/manifests/") {
+			json.NewEncoder(w).Encode(map[string]string{"version": "1.3.2", "url": "https://storage.googleapis.com/antigravity-public/current.tar.gz", "sha512": sum512})
+			return
+		}
+		w.Write(payload)
+	})
+	if err := Upgrade(context.Background(), client, dir, "agy", &bytes.Buffer{}); err != nil {
+		t.Fatal(err)
+	}
+}
+func TestUpgradeAllRepairsChangedCatalogInventory(t *testing.T) {
+	dir := checkout(t)
+	c, _ := toolconfig.Load(dir)
+	delete(c.Catalog.Packages, "claude")
+	delete(c.Desired, "claude")
+	added := c.Catalog.Packages["gh"]
+	added.Repository = "example/new-tool"
+	c.Catalog.Packages["new-tool"] = added
+	c.Desired["new-tool"] = c.Desired["gh"]
+	catalog, err := json.Marshal(c.Catalog)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "tools.packages.json"), catalog, 0644); err != nil {
+		t.Fatal(err)
+	}
+	var desired strings.Builder
+	for n, v := range c.Desired {
+		fmt.Fprintln(&desired, n+v.String())
+	}
+	if err := os.WriteFile(filepath.Join(dir, "tools.txt"), []byte(desired.String()), 0644); err != nil {
+		t.Fatal(err)
+	}
+	client := fixtureClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, "/repos/") {
+			repo := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/repos/"), "/releases")
+			for n, p := range c.Catalog.Packages {
+				if p.Repository == repo {
+					v := c.Desired[n].Lower.String()
+					assets := []asset{}
+					for _, arch := range []string{"amd64", "arm64"} {
+						name := expand(p.Asset, v, p.Architectures[arch], "", "")
+						assets = append(assets, asset{Name: name, URL: "https://github.com/" + p.Repository + "/" + name})
+					}
+					json.NewEncoder(w).Encode([]release{{Tag: p.TagPrefix + v, Assets: assets}})
+					return
+				}
+			}
+		}
+		if strings.Contains(r.URL.Path, "/manifests/") {
+			json.NewEncoder(w).Encode(map[string]string{"version": "1.3.1"})
+			return
+		}
+		if strings.HasSuffix(r.URL.Path, "chronology.html") {
+			fmt.Fprint(w, `<tr><td>2026-10-09</td><td><a href="releaselog/3_54_0.html">3.54.0</a></td></tr>`)
+			return
+		}
+		if strings.HasSuffix(r.URL.Path, "download.html") {
+			return
+		}
+		fmt.Fprint(w, "binary")
+	})
+	if err := Upgrade(context.Background(), client, dir, "", &bytes.Buffer{}); err != nil {
+		t.Fatal(err)
+	}
+	updated, err := toolconfig.Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := updated.Lock.Platforms["arm64"]["new-tool"]; !ok {
+		t.Fatal("added tool missing")
+	}
+	if _, ok := updated.Lock.Platforms["amd64"]["claude"]; ok {
+		t.Fatal("removed tool retained")
+	}
+}
+func TestUpstreamRedirectPolicy(t *testing.T) {
+	for _, target := range []string{"http://github.com/payload", "https://evil.example/payload"} {
+		t.Run(target, func(t *testing.T) {
+			calls := 0
+			client := fixtureClient(t, func(w http.ResponseWriter, r *http.Request) { calls++; http.Redirect(w, r, target, http.StatusFound) })
+			if _, err := (resolver{client: client}).get(context.Background(), "https://github.com/artifact"); err == nil {
+				t.Fatal("unsafe redirect accepted")
+			}
+			if calls != 1 {
+				t.Fatalf("followed unsafe redirect: %d requests", calls)
+			}
+		})
+	}
+}
+
+func TestEmptySQLitePublisherChecksumFailsClosed(t *testing.T) {
+	dir := checkout(t)
+	before := readLock(t, dir)
+	client := fixtureClient(t, func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case strings.HasSuffix(r.URL.Path, "chronology.html"):
+			fmt.Fprint(w, `<tr><td>2026-10-09</td><td><a href="releaselog/3_54_0.html">3.54.0</a></td></tr>`)
+		case strings.HasSuffix(r.URL.Path, "download.html"):
+			fmt.Fprintln(w, "PRODUCT,3.54.0,2026/sqlite-amalgamation-3540000.zip,10,")
+		default:
+			fmt.Fprint(w, "binary")
+		}
+	})
+	if err := Upgrade(context.Background(), client, dir, "sqlite3", &bytes.Buffer{}); err == nil {
+		t.Fatal("accepted empty published SQLite hash")
+	}
+	if !bytes.Equal(before, readLock(t, dir)) {
+		t.Fatal("changed lock")
+	}
+}
+func TestTargetedUpgradeRequiresUnchangedCatalog(t *testing.T) {
+	dir := checkout(t)
+	c, _ := toolconfig.Load(dir)
+	before := readLock(t, dir)
+	p := c.Catalog.Packages["gh"]
+	p.Sidecar = "changed-checksums.txt"
+	c.Catalog.Packages["gh"] = p
+	data, _ := json.Marshal(c.Catalog)
+	if err := os.WriteFile(filepath.Join(dir, "tools.packages.json"), data, 0644); err != nil {
+		t.Fatal(err)
+	}
+	client := fixtureClient(t, func(w http.ResponseWriter, r *http.Request) {
+		t.Error("requested metadata before rejecting changed catalog")
+	})
+	if err := Upgrade(context.Background(), client, dir, "codex", &bytes.Buffer{}); err == nil || !strings.Contains(err.Error(), "without a tool") {
+		t.Fatalf("unexpected error %v", err)
+	}
+	if !bytes.Equal(before, readLock(t, dir)) {
+		t.Fatal("changed lock")
+	}
+}
+
+type failedWriter struct{}
+
+func (failedWriter) Write([]byte) (int, error) { return 0, fmt.Errorf("output unavailable") }
