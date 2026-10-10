@@ -2,14 +2,20 @@ GO ?= go
 GOFMT ?= gofmt
 PACKAGES := ./cmd/... ./internal/...
 BINARY := bin/bundledock
+VERSION ?= dev
+RELEASE_DIR ?= dist/cli
+export GO VERSION RELEASE_DIR
+
 TOOLS_IMAGE ?= bundledock-toolbox:poc
 TOOLS_CONSUMER ?= mcr.microsoft.com/devcontainers/go:2-1.27-trixie
 
-.PHONY: help build run test vet fmt check clean tools-build tools-volume tools-smoke tools-test
+.PHONY: release release-test help build run test vet fmt check clean tools-build tools-volume tools-smoke tools-test
 
 help:
 	@printf '%s\n' \
 	  'make build             Build bin/bundledock' \
+	  'make release           Build local two-architecture CLI artifacts' \
+	  'make release-test      Verify CLI release artifacts end to end' \
 	  'make run ARGS="--help"  Run the CLI' \
 	  'make test              Run tests' \
 	  'make vet               Run go vet' \
@@ -54,3 +60,9 @@ check:
 
 clean:
 	rm -f $(BINARY)
+
+release:
+	sh scripts/release.sh
+
+release-test:
+	sh scripts/release-test.sh
