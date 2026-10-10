@@ -2,12 +2,10 @@
 
 ![BundleDock — Build and ship OCI bundles.](assets/banner.svg)
 
-[![CI](https://github.com/wstein/bundledock/actions/workflows/ci.yml/badge.svg)](https://github.com/wstein/bundledock/actions/workflows/ci.yml)
+[![CLI CI](https://github.com/wstein/bundledock/actions/workflows/ci.yml/badge.svg)](https://github.com/wstein/bundledock/actions/workflows/ci.yml)
 [![Go 1.24 or newer](https://img.shields.io/badge/Go-1.24%2B-00ADD8?logo=go&logoColor=white)](go.mod)
-[![Quay toolbox](https://img.shields.io/badge/Quay-toolbox-5eead4?labelColor=0b2545)](https://quay.io/repository/bundledock/toolbox)
-[![OCI toolbox](https://img.shields.io/badge/OCI-toolbox-5eead4?labelColor=0b2545)](oci/Dockerfile)
+[![Published toolbox version](https://img.shields.io/badge/dynamic/regex?url=https%3A%2F%2Fquay.io%2Fapi%2Fv1%2Frepository%2Fbundledock%2Ftoolbox%2Ftag%2F%3FonlyActiveTags%3Dtrue%26limit%3D100%26page%3D1&search=%22name%22%5Cs%2A%3A%5Cs%2A%22%28%5Cd%7B4%7D%5C.%5Cd%7B2%7D%5C.%5Cd%7B2%7D-%28%3F%3Ab%5Cd%2B%5C.%5Cd%2B%7C%5Cd%2B-%5Cd%2B%29%29%22&replace=%241&label=Quay&color=5eead4&labelColor=0b2545)](https://quay.io/repository/bundledock/toolbox)
 [![Publish toolbox](https://github.com/wstein/bundledock/actions/workflows/bundledock-toolbox.yml/badge.svg?branch=main)](https://github.com/wstein/bundledock/actions/workflows/bundledock-toolbox.yml)
-[![Pinned tool catalog](https://img.shields.io/badge/tools-pinned-5eead4?labelColor=0b2545)](tools.packages.json)
 
 BundleDock builds an OCI toolbox of pinned development CLIs and packaged
 runtime assets for shared, read-only use in Linux containers. The toolbox supplies
