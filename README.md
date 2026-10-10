@@ -252,10 +252,10 @@ Make inherits `GOFLAGS`; OCI build commands also pass `-trimpath` explicitly.
 The devcontainer pins the current local tool image by ID and initializes its
 read-only volume on the host before starting. This image must already exist in
 the host's Docker image store. Rebuild the devcontainer to activate the mount.
-The pinned older image keeps its original `/opt/anchorage` source tree and
-initializer; its volume is mounted at `/opt/workharbor` in the consumer. Moving
-the consumer mount does not add tools to that older inventory. No source override
-is needed for the pinned initializer.
+The current bundle and its consumer mount both use `/opt/workharbor`. The pinned
+inventory includes Herdr and the common CLI utilities listed above. Updating the
+configuration requires a container rebuild; reopening a terminal or reusing the
+old container preserves its existing volume mount.
 
 When selecting another bundle, update both the image ID in `initializeCommand`
 and the matching volume name in `.devcontainer/devcontainer.json`. Credentials
