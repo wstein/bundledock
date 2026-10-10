@@ -239,6 +239,28 @@ func (c Config) validate(strict bool) error {
 		default:
 			return fmt.Errorf("unknown provider for %s", name)
 		}
+
+		if p.Provider != "sqlite" && p.Normalization != "semver" {
+			return fmt.Errorf("%s requires semver normalization", name)
+		}
+		if p.Provider == "sqlite" && (p.HistoryURL == "" || p.MetadataURL == "" || p.BaseURL == "" || p.Install.Kind != "sqlite-source") {
+			return fmt.Errorf("SQLite requires official history, metadata and named source compiler")
+		}
+		if p.Provider == "claude" && (p.BaseURL == "" || p.Install.Kind != "raw") {
+			return fmt.Errorf("Claude requires official base URL and raw binary recipe")
+		}
+		if p.Provider == "antigravity" && p.MetadataURL == "" {
+			return fmt.Errorf("Antigravity requires official updater metadata URL")
+		}
+		for _, template := range []string{p.Asset, p.Sidecar} {
+			expanded := strings.NewReplacer("{version}", "1.2.3", "{arch}", "arch", "{year}", "2026", "{compact}", "3010200", "{asset}", "asset").Replace(template)
+			if template != "" && (!validPath(expanded) || strings.ContainsAny(expanded, "{}")) {
+				return fmt.Errorf("invalid asset template for %s", name)
+			}
+		}
+		if p.Install.Kind == "raw" && len(p.Install.Members) != 1 {
+			return fmt.Errorf("raw recipe requires one executable for %s", name)
+		}
 		if len(p.Architectures) != 2 || p.Architectures["amd64"] == "" || p.Architectures["arm64"] == "" || p.Asset == "" || len(p.AllowedHosts) == 0 {
 			return fmt.Errorf("missing assets/platforms for %s", name)
 		}

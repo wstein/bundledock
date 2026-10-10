@@ -57,3 +57,61 @@ func TestRepositoryIdentityAndBothArchitectures(t *testing.T) {
 		t.Fatal("accepted divergent/out of range version")
 	}
 }
+
+func TestCatalogRejectsIncompleteAndUnsafeRecipes(t *testing.T) {
+	for _, kind := range []string{"provider", "platform", "shell", "template", "member", "alias", "sqlite-kind", "claude-base", "sqlite-history", "normalization"} {
+		t.Run(kind, func(t *testing.T) {
+			c, err := Load("../..")
+			if err != nil {
+				t.Fatal(err)
+			}
+			name := "gh"
+			if kind == "sqlite-history" || kind == "sqlite-kind" {
+				name = "sqlite3"
+			}
+			if kind == "claude-base" {
+				name = "claude"
+			}
+			p := c.Catalog.Packages[name]
+			switch kind {
+			case "provider":
+				p.Provider = "shell"
+			case "platform":
+				delete(p.Architectures, "arm64")
+			case "shell":
+				p.Install.Kind = "exec"
+			case "template":
+				p.Asset = "tool-{command}.tar.gz"
+			case "member":
+				p.Install.Members["../bad"] = "bin/bad"
+			case "alias":
+				p.Install.Aliases = map[string]string{"bin/alias": "../outside"}
+			case "sqlite-kind":
+				p.Install.Kind = "tar.gz"
+			case "claude-base":
+				p.BaseURL = ""
+			case "sqlite-history":
+				p.HistoryURL = ""
+			case "normalization":
+				p.Normalization = "sqlite-compact"
+			}
+			c.Catalog.Packages[name] = p
+			c.Bind()
+			if err := c.Validate(); err == nil {
+				t.Fatalf("accepted invalid %s recipe", kind)
+			}
+		})
+	}
+}
+func TestStableNumericOrdering(t *testing.T) {
+	a, _ := ParseVersion("2.10.0")
+	b, _ := ParseVersion("2.9.99")
+	if a.Compare(b) <= 0 {
+		t.Fatal("lexical version ordering")
+	}
+	for _, v := range []string{"1.2", "1.2.3.4", "1.2.3+build", "18446744073709551616.0.0", "1.02.3", "v1.2.3"} {
+		if _, err := ParseVersion(v); err == nil {
+			t.Fatalf("accepted %q", v)
+		}
+	}
+}
