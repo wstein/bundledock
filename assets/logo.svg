@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="256" height="256" role="img" aria-labelledby="title description">
+<title id="title">BundleDock</title>
+<desc id="description">Three stacked shipping packages above a dock platform, in turquoise on a rounded navy tile.</desc>
+<rect x="0.8" y="0.8" width="62.4" height="62.4" rx="13.28" fill="#0b2545" stroke="#2a4a7a" stroke-width="1.6"/>
+<g fill="none" stroke="#5eead4" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+<path d="M24 11H40V25H24Z M32 11V17"/>
+<path d="M16 25H48V40H16Z M32 25V40 M24 25V31 M40 25V31"/>
+<path d="M11 47H53 M16 47V54 M48 47V54"/>
+</g>
+</svg>

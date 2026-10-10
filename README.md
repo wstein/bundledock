@@ -1,5 +1,7 @@
 # BundleDock
 
+![BundleDock — Build and ship OCI bundles.](assets/banner.svg)
+
 BundleDock is an early-stage OCI bundle builder. Its current tools profile packages
 pinned development CLIs and their required runtimes into a shared, read-only
 bundle for Linux containers. Additional bundle profiles are planned.
@@ -304,6 +306,7 @@ Checks target this repository's `cmd` and `internal` Go packages.
 - `tools.txt`, `tools.packages.json`, `tools.lock.json`: desired versions, trusted recipes, and verified pins.
 - `oci`: Dockerfile, Docker-only host adapter, smoke test, and upstream license notices.
 - `.github/workflows/bundledock-tools.yml`: weekly two-platform publication workflow.
+- `assets`, `brand`: approved brand assets, licensed font sources, and generation provenance.
 
 ## Repository history
 
