@@ -89,8 +89,8 @@ Process visibility follows the consumer container's permissions.
 These measured sizes exclude installed license notices and filesystem overhead.
 All four archives passed checksum verification and the production extractor.
 ARM64 version/help checks and btop's noninteractive `--default-config` passed
-with isolated writable HOME; AMD64 execution, interactive TUI behavior and Docker
-build/smoke remain unverified. Repeat the optional native acceptance checks with:
+with isolated writable HOME. The full native CI smoke also passed on AMD64 and
+ARM64 (see the CI evidence below); interactive TUI behavior remains unverified. Repeat the optional native acceptance checks with:
 
 ```sh
 BUNDLEDOCK_PROCESS_MONITORS_ARCHIVE_DIR=/path/to/archives \
@@ -181,9 +181,12 @@ runners. Each native job explicitly pulls the consumer baseline and runs the
 full existing smoke suite against the immutable ID of its one build. CI neither
 upgrades tools nor publishes images and has no registry credentials.
 
-The badge links to the standalone repository's workflow. It reports live GitHub
-results once the repository is published and a run completes; local Go checks
-and workflow validation do not establish Docker runtime coverage.
+The badge links to the standalone repository's live workflow status.
+[The first CI run](https://github.com/wstein/bundledock/actions/runs/38059364460)
+passed Go checks and the full native Docker build/smoke suite on AMD64 and ARM64
+for commit `d659b81403b6b19caf06e35cb1f57ea5dc2e67bf`. Later documentation-only
+commits preserve that tested code and tool lock; their own run status appears in
+Actions. Interactive TUI use and authenticated agent workflows remain unverified.
 
 ### Weekly image publication
 
@@ -258,25 +261,25 @@ image ID. Use the reported `quay.io/<namespace>/bundledock-toolbox@sha256:...` r
 for explicit deployment or rollback. Publication does not change the devcontainer
 pin, initialize host volumes, or activate the new image.
 
-Local verification of the CI adapter uses fake Docker commands in `make check`.
-Real builds, native smoke execution and Quay publication still require the first
-successful configured workflow run; the implementation environment had no Docker.
+Local verification of the publication adapter uses fake Docker commands in
+`make check`; the implementation environment had no Docker. GitHub CI has since
+passed real builds and native smoke on both architectures as linked above.
+Quay publication still requires the first successful configured publication run.
 
 The original four agent tools and complete Codex assets occupied about 864 MiB
 uncompressed on ARM64; the added utilities increase that size. The volume is shared across workspaces on the same Docker host.
-The initial local build and smoke tests were run on Linux ARM64; AMD64 downloads
-are pinned but have not yet been built or runtime-verified. The Go port has been
-verified with local HTTP/archive fixtures for both architectures; its Docker build
-and runtime smoke test still need a Docker host. The additional utilities have
-been exercised natively on ARM64, including syntax search, and offline uv cache selection; their Docker smoke test and AMD64
-execution remain unverified. Before adopting the new bundle,
-run `make tools-build tools-smoke` on each supported architecture.
+The initial local build and smoke tests were run on Linux ARM64. The Go port
+also passed local HTTP/archive fixtures for both architectures. The current
+locked toolbox has now passed real native Docker build and smoke on AMD64 and
+ARM64 in the linked CI run, including syntax search and offline uv cache selection.
+Before adopting a changed lock or consumer baseline, run `make tools-build
+tools-smoke` on each supported architecture.
 
 For the five quality and security tools, all ten official AMD64/ARM64 archives
 were checked against publisher digests and passed the production extractor.
-The shared offline fixture script passed natively on ARM64; that native run did
-not enforce network isolation. AMD64 execution and Docker build/smoke remain
-unverified. To repeat release acceptance checks with downloaded official archives
+The shared offline fixture script initially passed natively on ARM64 without
+network isolation. The linked full CI smoke subsequently passed on AMD64 and
+ARM64 with consumer networking disabled. To repeat release acceptance checks with downloaded official archives
 and a PATH containing the five executables:
 
 ```sh
