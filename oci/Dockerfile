@@ -6,6 +6,7 @@ WORKDIR /src
 COPY go.mod ./
 COPY cmd/tools-bundle ./cmd/tools-bundle
 COPY cmd/tools-init ./cmd/tools-init
+COPY internal/toolconfig ./internal/toolconfig
 COPY internal/toolbundle ./internal/toolbundle
 COPY internal/toolvolume ./internal/toolvolume
 RUN CGO_ENABLED=0 go build -trimpath -o /out/tools-bundle ./cmd/tools-bundle \
@@ -16,7 +17,8 @@ ARG TARGETARCH
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=compiler /out/tools-bundle /usr/local/bin/tools-bundle
-COPY oci/tools.lock.json /build/tools.lock.json
+COPY tools.txt tools.packages.json tools.lock.json /build/
+COPY oci/licenses /build/oci/licenses
 RUN tools-bundle -arch "${TARGETARCH}" -sqlite-source /build/sqlite
 
 # Compile against the target consumer baseline, with SQLite's normal extension
@@ -32,7 +34,6 @@ RUN mkdir /out && cc -Os -DSQLITE_THREADSAFE=1 shell.c sqlite3.c \
 FROM downloads AS builder
 ARG TARGETARCH
 COPY --from=sqlite-compiler /out/sqlite3 /opt/anchorage/bin/sqlite3
-COPY oci/licenses /opt/anchorage/licenses
 # Write metadata only after the compiled executable is in the final tree.
 RUN tools-bundle -arch "${TARGETARCH}"
 

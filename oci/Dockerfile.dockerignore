@@ -6,11 +6,15 @@
 !cmd/tools-init
 !cmd/tools-init/**
 !internal
+!internal/toolconfig
+!internal/toolconfig/**
 !internal/toolbundle
 !internal/toolbundle/**
 !internal/toolvolume
 !internal/toolvolume/**
 !oci
-!oci/tools.lock.json
+!tools.txt
+!tools.packages.json
+!tools.lock.json
 !oci/licenses
 !oci/licenses/**

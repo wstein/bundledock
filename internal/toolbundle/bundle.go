@@ -1,6 +1,7 @@
 package toolbundle
 
 import (
+	"anchorage/internal/toolconfig"
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
@@ -14,7 +15,6 @@ import (
 	"io"
 	"io/fs"
 	"net/http"
-	"net/url"
 	"os"
 	"path"
 	"sort"
@@ -22,55 +22,8 @@ import (
 	"time"
 )
 
-type Spec struct {
-	Version string `json:"version"`
-	URL     string `json:"url"`
-	SHA256  string `json:"sha256,omitempty"`
-	SHA512  string `json:"sha512,omitempty"`
-}
-type Lock struct {
-	Schema    int                        `json:"schema"`
-	Platforms map[string]map[string]Spec `json:"platforms"`
-}
+type Spec = toolconfig.Spec
 
-func ReadLock(r io.Reader, arch string) (map[string]Spec, error) {
-	if arch != "amd64" && arch != "arm64" {
-		return nil, fmt.Errorf("unsupported architecture %q", arch)
-	}
-	var lock Lock
-	d := json.NewDecoder(r)
-	d.DisallowUnknownFields()
-	if err := d.Decode(&lock); err != nil {
-		return nil, fmt.Errorf("decode lock: %w", err)
-	}
-	if err := d.Decode(new(any)); err != io.EOF {
-		return nil, fmt.Errorf("unexpected trailing lock data")
-	}
-	if lock.Schema != 1 {
-		return nil, fmt.Errorf("unsupported lock schema %d", lock.Schema)
-	}
-	tools, ok := lock.Platforms[arch]
-	if !ok {
-		return nil, fmt.Errorf("missing architecture %q", arch)
-	}
-	if len(tools) != 11 {
-		return nil, fmt.Errorf("lock must contain codex, claude, gh, agy, jq, rg, fd, sqlite3, ast-grep, yq and uv")
-	}
-	for _, name := range []string{"codex", "claude", "gh", "agy", "jq", "rg", "fd", "sqlite3", "ast-grep", "yq", "uv"} {
-		spec, ok := tools[name]
-		if !ok || spec.Version == "" {
-			return nil, fmt.Errorf("missing tool/version %s", name)
-		}
-		u, err := url.Parse(spec.URL)
-		if err != nil || u.Host == "" || (u.Scheme != "https" && u.Scheme != "http") || u.User != nil {
-			return nil, fmt.Errorf("invalid URL for %s", name)
-		}
-		if _, _, err := checksum(spec); err != nil {
-			return nil, fmt.Errorf("%s: %w", name, err)
-		}
-	}
-	return tools, nil
-}
 func checksum(spec Spec) (hash.Hash, string, error) {
 	var h hash.Hash
 	var expected string
@@ -92,7 +45,7 @@ func checksum(spec Spec) (hash.Hash, string, error) {
 // Build downloads each artifact to a temporary file, verifies it, then extracts.
 // SQLite must already be compiled for arch at destination/bin/sqlite3.
 // A failed build leaves its incomplete output for inspection; use a fresh directory.
-func Build(ctx context.Context, client *http.Client, tools map[string]Spec, arch, destination string, output io.Writer) error {
+func Build(ctx context.Context, client *http.Client, tools map[string]Spec, packages map[string]toolconfig.Package, notices fs.FS, arch, destination string, output io.Writer) error {
 	if client == nil {
 		client = &http.Client{Timeout: 120 * time.Second}
 	}
@@ -119,16 +72,40 @@ func Build(ctx context.Context, client *http.Client, tools map[string]Spec, arch
 	if info.Mode().Perm()&0111 == 0 || info.Size() == 0 {
 		return fmt.Errorf("compiled SQLite must be a nonempty executable")
 	}
-	for _, name := range []string{"agy", "ast-grep", "claude", "codex", "fd", "gh", "jq", "rg", "uv", "yq"} {
+	names := make([]string, 0, len(packages))
+	for name := range packages {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		if packages[name].Install.Kind == "sqlite-source" {
+			continue
+		}
 		spec := tools[name]
 		fmt.Fprintln(output, "Installing", name, spec.Version)
-		if err := install(ctx, client, root, name, spec); err != nil {
+		if err := install(ctx, client, root, name, packages[name], spec); err != nil {
 			return fmt.Errorf("install %s: %w", name, err)
+		}
+	}
+	for name, p := range packages {
+		for _, notice := range p.Notices {
+			f, err := notices.Open(notice)
+			if err != nil {
+				return err
+			}
+			err = WriteFile(root, "licenses/"+name+"/"+path.Base(notice), f, 0644)
+			closeErr := f.Close()
+			if err != nil {
+				return err
+			}
+			if closeErr != nil {
+				return closeErr
+			}
 		}
 	}
 	return WriteManifest(root, arch, tools)
 }
-func install(ctx context.Context, client *http.Client, root *os.Root, name string, spec Spec) error {
+func install(ctx context.Context, client *http.Client, root *os.Root, name string, p toolconfig.Package, spec Spec) error {
 	h, expected, err := checksum(spec)
 	if err != nil {
 		return err
@@ -165,28 +142,46 @@ func install(ctx context.Context, client *http.Client, root *os.Root, name strin
 	if _, err := payload.Seek(0, io.SeekStart); err != nil {
 		return err
 	}
-	if name == "sqlite3" || name == "ast-grep" {
+	switch p.Install.Kind {
+	case "zip", "sqlite-source":
 		info, err := payload.Stat()
 		if err != nil {
 			return err
 		}
-		if name == "ast-grep" {
-			return extractSelectedZIP(root, payload, info.Size(), map[string]zipTarget{"ast-grep": {"bin/ast-grep", 0755}})
+		selected := map[string]zipTarget{}
+		for member, target := range p.Install.Members {
+			mode := fs.FileMode(0755)
+			if p.Install.Kind == "sqlite-source" {
+				mode = 0644
+			}
+			selected[member] = zipTarget{target, mode}
 		}
-		return extractSQLiteSource(root, payload, info.Size())
+		if err := extractSelectedZIP(root, payload, info.Size(), selected); err != nil {
+			return err
+		}
+		return copyAliases(root, p.Install.Aliases)
+	case "raw":
+		if len(p.Install.Members) != 1 {
+			return fmt.Errorf("raw recipe requires one executable")
+		}
+		for _, target := range p.Install.Members {
+			if err := WriteFile(root, target, payload, 0755); err != nil {
+				return err
+			}
+		}
+		return copyAliases(root, p.Install.Aliases)
+	case "tar.gz":
+		return Extract(root, name, p, payload)
+	default:
+		return fmt.Errorf("unsupported install kind %q", p.Install.Kind)
 	}
-	if name == "claude" || name == "jq" || name == "yq" {
-		return WriteFile(root, "bin/"+name, payload, 0755)
-	}
-	return Extract(root, name, payload)
 }
 
-// Extract preserves all Codex resources; other tools select one executable by basename.
-// fd is also installed as fdfind, using a regular file for shared-volume integrity.
-// Every archive entry is validated, including entries not selected for installation.
-func Extract(root *os.Root, tool string, source io.Reader) error {
-	if tool != "codex" && tool != "gh" && tool != "agy" && tool != "rg" && tool != "fd" && tool != "uv" {
-		return fmt.Errorf("unsupported archive tool %q", tool)
+// Extract validates every tar member before selecting declarative executables.
+// Preserve keeps native package resources; aliases are independent regular files.
+func Extract(root *os.Root, tool string, p toolconfig.Package, source io.Reader) error {
+	if p.Install.Kind != "tar.gz" {
+		return fmt.Errorf("expected tar.gz recipe")
 	}
 	gz, err := gzip.NewReader(source)
 	if err != nil {
@@ -194,8 +189,8 @@ func Extract(root *os.Root, tool string, source io.Reader) error {
 	}
 	defer gz.Close()
 	archive := tar.NewReader(gz)
-	seen := make(map[string]bool)
-	count := 0
+	seen := map[string]bool{}
+	installed := map[string]bool{}
 	for {
 		entry, err := archive.Next()
 		if err == io.EOF {
@@ -213,7 +208,7 @@ func Extract(root *os.Root, tool string, source io.Reader) error {
 		}
 		seen[name] = true
 		if entry.Typeflag == tar.TypeDir {
-			if tool == "codex" {
+			if p.Install.Preserve {
 				if err := mkdir(root, name); err != nil {
 					return err
 				}
@@ -223,64 +218,64 @@ func Extract(root *os.Root, tool string, source io.Reader) error {
 		if entry.Typeflag != tar.TypeReg && entry.Typeflag != tar.TypeRegA {
 			return fmt.Errorf("unsupported archive entry %q", name)
 		}
-		target := name
-		if tool != "codex" {
-			executable := tool
-			if tool == "agy" {
-				executable = "antigravity"
+		key := path.Base(name)
+		if p.Install.Preserve {
+			key = name
+		}
+		target, selected := p.Install.Members[key]
+		if selected {
+			if installed[key] {
+				return fmt.Errorf("duplicate archive selection %q", key)
 			}
-			if path.Base(name) == executable || tool == "uv" && path.Base(name) == "uvx" {
-				target = "bin/" + tool
-				if tool == "uv" {
-					target = "bin/" + path.Base(name)
-				}
-				count++
-				if entry.Mode&0111 == 0 {
-					return fmt.Errorf("%s entrypoint is not executable", tool)
-				}
-			} else if (tool == "rg" || tool == "fd") && isLicense(path.Base(name)) {
-				target = "licenses/" + tool + "/" + path.Base(name)
-			} else {
-				continue
-			}
-		} else if name == "bin/codex" {
-			count++
+			installed[key] = true
 			if entry.Mode&0111 == 0 {
-				return fmt.Errorf("Codex entrypoint is not executable")
+				return fmt.Errorf("%s entrypoint is not executable", tool)
+			}
+		} else if p.Install.Preserve {
+			target = name
+		} else {
+			for _, notice := range p.Install.ArchiveNotices {
+				if path.Base(name) == notice {
+					target = "licenses/" + tool + "/" + notice
+					break
+				}
+			}
+			if target == "" {
+				continue
 			}
 		}
 		mode := fs.FileMode(0644)
-		if strings.HasPrefix(target, "bin/") || tool == "codex" && entry.Mode&0111 != 0 {
+		if selected || p.Install.Preserve && entry.Mode&0111 != 0 {
 			mode = 0755
 		}
 		if err := WriteFile(root, target, archive, mode); err != nil {
 			return err
 		}
 	}
-	// Drain through gzip's trailer so truncated streams and CRC errors are reported.
 	if _, err := io.Copy(io.Discard, gz); err != nil {
 		return err
 	}
-	expected := 1
-	if tool == "uv" {
-		expected = 2
+	if len(installed) != len(p.Install.Members) {
+		return fmt.Errorf("expected %d %s executable(s), found %d", len(p.Install.Members), tool, len(installed))
 	}
-	if count != expected {
-		return fmt.Errorf("expected %d %s executable(s), found %d", expected, tool, count)
-	}
-	if tool == "fd" {
-		f, err := OpenFile(root, "bin/fd")
+	return copyAliases(root, p.Install.Aliases)
+}
+func copyAliases(root *os.Root, aliases map[string]string) error {
+	for alias, target := range aliases {
+		f, err := OpenFile(root, target)
 		if err != nil {
 			return err
 		}
-		defer f.Close()
-		return WriteFile(root, "bin/fdfind", f, 0755)
+		err = WriteFile(root, alias, f, 0755)
+		closeErr := f.Close()
+		if err != nil {
+			return err
+		}
+		if closeErr != nil {
+			return closeErr
+		}
 	}
 	return nil
-}
-
-func isLicense(name string) bool {
-	return name == "LICENSE-MIT" || name == "LICENSE-APACHE" || name == "UNLICENSE" || name == "COPYING"
 }
 
 func WriteManifest(root *os.Root, arch string, tools map[string]Spec) error {

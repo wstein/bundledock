@@ -1,6 +1,7 @@
 package toolbundle
 
 import (
+	"anchorage/internal/toolconfig"
 	"archive/zip"
 	"context"
 	"fmt"
@@ -14,7 +15,7 @@ import (
 
 // PrepareSQLiteSource verifies the official amalgamation before opening its ZIP.
 // Sources are written to a build-only directory, separate from the final bundle.
-func PrepareSQLiteSource(ctx context.Context, client *http.Client, spec Spec, destination string) error {
+func PrepareSQLiteSource(ctx context.Context, client *http.Client, spec Spec, p toolconfig.Package, destination string) error {
 	if client == nil {
 		client = &http.Client{Timeout: 120 * time.Second}
 	}
@@ -26,14 +27,7 @@ func PrepareSQLiteSource(ctx context.Context, client *http.Client, spec Spec, de
 		return err
 	}
 	defer root.Close()
-	return install(ctx, client, root, "sqlite3", spec)
-}
-
-func extractSQLiteSource(root *os.Root, source io.ReaderAt, size int64) error {
-	return extractSelectedZIP(root, source, size, map[string]zipTarget{
-		"sqlite3.c": {"sqlite3.c", 0644}, "shell.c": {"shell.c", 0644},
-		"sqlite3.h": {"sqlite3.h", 0644}, "sqlite3ext.h": {"sqlite3ext.h", 0644},
-	})
+	return install(ctx, client, root, "sqlite3", p, spec)
 }
 
 type zipTarget struct {

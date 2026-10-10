@@ -1,6 +1,7 @@
 package toolbundle
 
 import (
+	"anchorage/internal/toolconfig"
 	"archive/tar"
 	"archive/zip"
 	"bytes"
@@ -9,7 +10,7 @@ import (
 	"crypto/sha256"
 	"crypto/sha512"
 	"encoding/hex"
-	"encoding/json"
+
 	"fmt"
 	"io"
 	"net/http"
@@ -110,14 +111,7 @@ func TestVendorBuildBothArchitectures(t *testing.T) {
 	_, tools, server := fixture(t)
 	for _, arch := range []string{"amd64", "arm64"} {
 		t.Run(arch, func(t *testing.T) {
-			data, err := json.Marshal(Lock{Schema: 1, Platforms: map[string]map[string]Spec{arch: tools}})
-			if err != nil {
-				t.Fatal(err)
-			}
-			specs, err := ReadLock(bytes.NewReader(data), arch)
-			if err != nil {
-				t.Fatal(err)
-			}
+			specs := tools
 			first := t.TempDir()
 			second := t.TempDir()
 			for _, dst := range []string{first, second} {
@@ -129,7 +123,7 @@ func TestVendorBuildBothArchitectures(t *testing.T) {
 					t.Fatal(err)
 				}
 				root.Close()
-				if err := Build(context.Background(), server.Client(), specs, arch, dst, io.Discard); err != nil {
+				if err := Build(context.Background(), server.Client(), specs, testPackages(t), os.DirFS("../.."), arch, dst, io.Discard); err != nil {
 					t.Fatal(err)
 				}
 			}
@@ -180,65 +174,13 @@ func TestVendorBuildBothArchitectures(t *testing.T) {
 					t.Fatalf("bad checksum %q", line)
 				}
 			}
-			if !sort.StringsAreSorted(names) || !strings.Contains(string(sums), "  manifest.json\n") || len(names) != len(want)+1 {
+			if !sort.StringsAreSorted(names) || !strings.Contains(string(sums), "  manifest.json\n") || len(names) < len(want)+1 {
 				t.Fatalf("unexpected sums %q", sums)
 			}
 			if _, err := os.Stat(filepath.Join(first, "empty")); err != nil {
 				t.Fatal(err)
 			}
 		})
-	}
-}
-func TestPinnedLockAndMalformedLocks(t *testing.T) {
-	data, err := os.ReadFile("../../oci/tools.lock.json")
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, arch := range []string{"amd64", "arm64"} {
-		if _, err := ReadLock(bytes.NewReader(data), arch); err != nil {
-			t.Fatal(err)
-		}
-	}
-	_, tools, _ := fixture(t)
-	mutations := []struct {
-		name   string
-		change func(*Lock)
-	}{
-		{"schema", func(l *Lock) { l.Schema = 2 }}, {"missing arch", func(l *Lock) { delete(l.Platforms, "amd64") }},
-		{"missing tool", func(l *Lock) { delete(l.Platforms["amd64"], "gh") }},
-		{"invalid checksum", func(l *Lock) { s := l.Platforms["amd64"]["gh"]; s.SHA256 = "xyz"; l.Platforms["amd64"]["gh"] = s }},
-		{"two checksums", func(l *Lock) {
-			s := l.Platforms["amd64"]["gh"]
-			s.SHA512 = strings.Repeat("a", 128)
-			l.Platforms["amd64"]["gh"] = s
-		}},
-		{"invalid URL", func(l *Lock) {
-			s := l.Platforms["amd64"]["gh"]
-			s.URL = "file:///tmp/payload"
-			l.Platforms["amd64"]["gh"] = s
-		}},
-	}
-	for _, test := range mutations {
-		t.Run(test.name, func(t *testing.T) {
-			copyTools := map[string]Spec{}
-			for k, v := range tools {
-				copyTools[k] = v
-			}
-			l := Lock{1, map[string]map[string]Spec{"amd64": copyTools}}
-			test.change(&l)
-			b, _ := json.Marshal(l)
-			if _, err := ReadLock(bytes.NewReader(b), "amd64"); err == nil {
-				t.Fatal("accepted malformed lock")
-			}
-		})
-	}
-	for _, b := range []string{"{", string(data) + " {}", strings.Replace(string(data), `"schema": 1`, `"unknown": 1`, 1)} {
-		if _, err := ReadLock(strings.NewReader(b), "amd64"); err == nil {
-			t.Fatal("accepted malformed JSON")
-		}
-	}
-	if _, err := ReadLock(bytes.NewReader(data), "386"); err == nil {
-		t.Fatal("accepted unsupported architecture")
 	}
 }
 func TestDownloadFailuresBeforeExtraction(t *testing.T) {
@@ -262,7 +204,7 @@ func TestDownloadFailuresBeforeExtraction(t *testing.T) {
 			digest := sha256.Sum256([]byte("expected"))
 			client := server.Client()
 			client.Timeout = 30 * time.Millisecond
-			err := install(context.Background(), client, root, "claude", Spec{URL: server.URL, SHA256: fmt.Sprintf("%x", digest)})
+			err := install(context.Background(), client, root, "claude", testPackages(t)["claude"], Spec{URL: server.URL, SHA256: fmt.Sprintf("%x", digest)})
 			if err == nil {
 				t.Fatal("expected download failure")
 			}
@@ -286,7 +228,7 @@ func TestArchiveSafetyAndEntrypoints(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			root, _ := openRoot(t)
-			if err := Extract(root, "codex", bytes.NewReader(archive(t, c.members...))); err == nil {
+			if err := Extract(root, "codex", testPackages(t)["codex"], bytes.NewReader(archive(t, c.members...))); err == nil {
 				t.Fatal("accepted unsafe/incomplete archive")
 			}
 		})
@@ -299,7 +241,7 @@ func TestArchiveSafetyAndEntrypoints(t *testing.T) {
 			}
 			for _, members := range [][]member{{{"unrelated", "x", 0644, 0}}, {{"a/" + exe, "one", 0755, 0}, {"b/" + exe, "two", 0755, 0}}, {{"a/" + exe, "cli", 0755, 0}, {"../unselected", "x", 0644, 0}}, {{"a/" + exe, "cli", 0755, 0}, {"unselected", "", 0644, tar.TypeSymlink}}} {
 				root, _ := openRoot(t)
-				if err := Extract(root, tool, bytes.NewReader(archive(t, members...))); err == nil {
+				if err := Extract(root, tool, testPackages(t)[tool], bytes.NewReader(archive(t, members...))); err == nil {
 					t.Fatal("accepted missing/ambiguous/unsafe archive")
 				}
 			}
@@ -307,7 +249,7 @@ func TestArchiveSafetyAndEntrypoints(t *testing.T) {
 	}
 	root, _ := openRoot(t)
 	data := archive(t, member{"bin/codex", "cli", 0755, 0})
-	if err := Extract(root, "codex", bytes.NewReader(data[:len(data)-6])); err == nil {
+	if err := Extract(root, "codex", testPackages(t)["codex"], bytes.NewReader(data[:len(data)-6])); err == nil {
 		t.Fatal("accepted truncated gzip trailer")
 	}
 }
@@ -326,7 +268,7 @@ func TestDestinationLinksCannotEscape(t *testing.T) {
 			if err := os.Symlink(outside, target); err != nil {
 				t.Fatal(err)
 			}
-			if err := Extract(root, "codex", bytes.NewReader(archive(t, member{"bin/codex", "cli", 0755, 0}))); err == nil {
+			if err := Extract(root, "codex", testPackages(t)["codex"], bytes.NewReader(archive(t, member{"bin/codex", "cli", 0755, 0}))); err == nil {
 				t.Fatal("accepted destination symlink")
 			}
 			entries, _ := os.ReadDir(outside)
@@ -365,7 +307,7 @@ func sqliteArchive(t *testing.T, members ...member) []byte {
 func TestSQLiteSourceVerifiedExtraction(t *testing.T) {
 	payloads, tools, server := fixture(t)
 	root, sourceDir := openRoot(t)
-	if err := PrepareSQLiteSource(context.Background(), server.Client(), tools["sqlite3"], sourceDir); err != nil {
+	if err := PrepareSQLiteSource(context.Background(), server.Client(), tools["sqlite3"], testPackages(t)["sqlite3"], sourceDir); err != nil {
 		t.Fatal(err)
 	}
 	for name, want := range map[string]string{"sqlite3.c": "sqlite source", "shell.c": "shell source", "sqlite3.h": "sqlite header", "sqlite3ext.h": "extension header"} {
@@ -382,7 +324,7 @@ func TestSQLiteSourceVerifiedExtraction(t *testing.T) {
 	// ZIP parsing must never happen before the source checksum has been verified.
 	payloads["sqlite3"] = []byte("unverified invalid zip")
 	root, _ = openRoot(t)
-	if err := install(context.Background(), server.Client(), root, "sqlite3", tools["sqlite3"]); err == nil || !strings.Contains(err.Error(), "checksum mismatch") {
+	if err := install(context.Background(), server.Client(), root, "sqlite3", testPackages(t)["sqlite3"], tools["sqlite3"]); err == nil || !strings.Contains(err.Error(), "checksum mismatch") {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
@@ -405,7 +347,7 @@ func TestSQLiteSourceSafety(t *testing.T) {
 			defer server.Close()
 			sum := sha256.Sum256(payload)
 			root, _ := openRoot(t)
-			if err := install(context.Background(), server.Client(), root, "sqlite3", Spec{URL: server.URL, SHA256: fmt.Sprintf("%x", sum)}); err == nil {
+			if err := install(context.Background(), server.Client(), root, "sqlite3", testPackages(t)["sqlite3"], Spec{URL: server.URL, SHA256: fmt.Sprintf("%x", sum)}); err == nil {
 				t.Fatal("accepted unsafe SQLite source archive")
 			}
 		})
@@ -428,7 +370,7 @@ func TestBuildRequiresCompiledSQLite(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			if err := Build(context.Background(), server.Client(), tools, "arm64", dst, io.Discard); err == nil {
+			if err := Build(context.Background(), server.Client(), tools, testPackages(t), os.DirFS("../.."), "arm64", dst, io.Discard); err == nil {
 				t.Fatal("accepted absent or unusable compiled SQLite")
 			}
 			if _, err := root.Stat("manifest.json"); !os.IsNotExist(err) {
@@ -441,7 +383,7 @@ func TestBuildRequiresCompiledSQLite(t *testing.T) {
 func TestAstGrepVerifiedZIP(t *testing.T) {
 	_, tools, server := fixture(t)
 	root, _ := openRoot(t)
-	if err := install(context.Background(), server.Client(), root, "ast-grep", tools["ast-grep"]); err != nil {
+	if err := install(context.Background(), server.Client(), root, "ast-grep", testPackages(t)["ast-grep"], tools["ast-grep"]); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := root.Stat("bin/sg"); !os.IsNotExist(err) {
@@ -458,7 +400,7 @@ func TestAstGrepVerifiedZIP(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.Write(payload) }))
 		sum := sha256.Sum256(payload)
 		root, _ := openRoot(t)
-		err := install(context.Background(), server.Client(), root, "ast-grep", Spec{URL: server.URL, SHA256: fmt.Sprintf("%x", sum)})
+		err := install(context.Background(), server.Client(), root, "ast-grep", testPackages(t)["ast-grep"], Spec{URL: server.URL, SHA256: fmt.Sprintf("%x", sum)})
 		server.Close()
 		if err == nil {
 			t.Fatal("accepted missing/unsafe/ambiguous/nonexecutable ast-grep archive")
@@ -468,7 +410,7 @@ func TestAstGrepVerifiedZIP(t *testing.T) {
 
 func TestUVCompanionSafety(t *testing.T) {
 	root, _ := openRoot(t)
-	if err := Extract(root, "uv", bytes.NewReader(archive(t, member{"uv/uv", "uv", 0755, 0}, member{"uv/uvx", "uvx", 0755, 0}))); err != nil {
+	if err := Extract(root, "uv", testPackages(t)["uv"], bytes.NewReader(archive(t, member{"uv/uv", "uv", 0755, 0}, member{"uv/uvx", "uvx", 0755, 0}))); err != nil {
 		t.Fatal(err)
 	}
 	for _, members := range [][]member{
@@ -478,8 +420,29 @@ func TestUVCompanionSafety(t *testing.T) {
 		{{"uv/uv", "uv", 0755, 0}, {"uv/uvx", "uvx", 0755, 0}, {"unselected", "link", 0644, tar.TypeSymlink}},
 	} {
 		root, _ := openRoot(t)
-		if err := Extract(root, "uv", bytes.NewReader(archive(t, members...))); err == nil {
+		if err := Extract(root, "uv", testPackages(t)["uv"], bytes.NewReader(archive(t, members...))); err == nil {
 			t.Fatal("accepted missing/unsafe/ambiguous/nonexecutable uv companion")
 		}
 	}
+}
+
+func TestDeclarativeTarRecipe(t *testing.T) {
+	root, dir := openRoot(t)
+	p := toolconfig.Package{Install: toolconfig.Install{Kind: "tar.gz", Members: map[string]string{"vendor-bin": "bin/custom"}, Aliases: map[string]string{"bin/alias": "bin/custom"}}}
+	if err := Extract(root, "custom", p, bytes.NewReader(archive(t, member{"release/vendor-bin", "custom binary", 0755, 0}))); err != nil {
+		t.Fatal(err)
+	}
+	got, err := os.ReadFile(filepath.Join(dir, "bin/alias"))
+	if err != nil || string(got) != "custom binary" {
+		t.Fatalf("alias %q %v", got, err)
+	}
+}
+
+func testPackages(t *testing.T) map[string]toolconfig.Package {
+	t.Helper()
+	c, err := toolconfig.Load("../..")
+	if err != nil {
+		t.Fatal(err)
+	}
+	return c.Catalog.Packages
 }
