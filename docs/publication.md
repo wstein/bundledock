@@ -3,7 +3,7 @@
 [Back to BundleDock](../README.md)
 
 [The publication workflow](../.github/workflows/bundledock-toolbox.yml) runs Mondays
-at 03:17 UTC and through Actions → **Publish bundledock-toolbox** → **Run workflow**.
+at 03:17 UTC and through Actions → **Publish toolbox** → **Run workflow**.
 Only the repository default branch can publish. GitHub may delay scheduled runs.
 Publication runs share one concurrency group; an active run is allowed to finish.
 Before promotion, a read-only GitHub API check rejects a run superseded by a newer
@@ -15,25 +15,31 @@ Set up the destination before the first publication:
 
 1. Sign in to [Quay.io](https://quay.io/) and choose the user or organization
    namespace that will own the image. Create a repository named
-   `bundledock-toolbox` in that namespace. Choose public visibility for anonymous
+   `toolbox` in that namespace. Choose public visibility for anonymous
    pulls or private visibility when consumers will authenticate; this choice is
    independent of the GitHub source repository's visibility.
 2. Create a dedicated robot account in the namespace's **Robot Accounts** tab.
    In the target repository's permissions, grant that robot **Write** access to
-   `bundledock-toolbox` only. It does not need namespace administration or access
+   `toolbox` only. It does not need namespace administration or access
    to unrelated repositories. Its username has the form `namespace+robotname`.
 3. In [BundleDock's Actions settings](https://github.com/wstein/bundledock/settings/secrets/actions),
-   add the repository variable and secrets below. Enter the robot token directly
+   add the repository variables and secret below. Enter the robot token directly
    as the secret value; keep it out of Git, logs, issues, and command arguments.
 
 
 | Setting | Value |
 | --- | --- |
-| Repository variable `QUAY_IMAGE` | `quay.io/<namespace>/bundledock-toolbox` |
-| Secret `QUAY_USERNAME` | Quay robot account username |
-| Secret `QUAY_PASSWORD` | Robot token with write access to that repository |
+| Repository variable `REPOSITORY_URL` | `quay.io/bundledock/` (namespace prefix) |
+| Repository variable `REPOSITORY_USERNAME` | `bundledock+github-actions` (Quay robot username) |
+| Secret `REPOSITORY_TOKEN` | Robot token with write access to `quay.io/bundledock/toolbox` |
 
-After setting these values, start **Publish bundledock-toolbox** manually from
+The workflow accepts the namespace prefix with or without one trailing slash and
+appends `toolbox`, so `quay.io/bundledock` and `quay.io/bundledock/` both publish
+to `quay.io/bundledock/toolbox`. Do not include an HTTPS scheme, image name, tag,
+or digest in `REPOSITORY_URL`. Other namespaces use the same prefix format and
+a robot username from that namespace.
+
+After setting these values, start **Publish toolbox** manually from
 the default branch and watch the resolver, both native jobs, and promotion in
 [Actions](https://github.com/wstein/bundledock/actions/workflows/bundledock-toolbox.yml).
 A successful run publishes a dated run-attempt tag and `stable`; inspect its
@@ -43,6 +49,10 @@ updates. No registry publication has been verified until a configured run succee
 For a private Quay repository, consumers need their own read credentials.
 
 The Quay namespace is deployment configuration, with no default in the workflow.
+These settings replace `QUAY_IMAGE`, `QUAY_USERNAME`, and `QUAY_PASSWORD`; the
+workflow does not read the old names. Keep an existing `REPOSITORY_TOKEN` secret
+in place when it already holds the robot token; no token needs to be copied into
+source or inspected.
 Use a dedicated [Quay robot account](https://docs.quay.io/glossary/robot-accounts.html).
 The workflow uses read-only contents permission and read-only Actions permission
 in the promotion job for the newest-run check. It never runs for pull
@@ -69,7 +79,7 @@ not a build identifier: base layers or Debian packages can change for the same l
 Download `resolved-tools-<attempt>`, `published-amd64-<attempt>`,
 `published-arm64-<attempt>` and `publication-<attempt>` artifacts from the run (retained for 90 days). The run summary and `publication.json`
 report the remote multi-platform registry digest, which differs from a local Docker
-image ID. Use the reported `quay.io/<namespace>/bundledock-toolbox@sha256:...` reference
+image ID. Use the reported `quay.io/<namespace>/toolbox@sha256:...` reference
 for explicit deployment or rollback. Publication does not change the devcontainer
 pin, initialize host volumes, or activate the new image.
 

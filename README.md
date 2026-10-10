@@ -71,7 +71,7 @@ helpers; optional voice resources are omitted.
 - [Upgrade tools](docs/tools.md#upgrade-the-lock): edit desired ranges, resolve a lock, rebuild, and initialize a new volume.
 - [Understand the bundle](docs/architecture.md): shared volumes, rollback, runtime dependencies, and measured voice savings.
 - [Develop and verify](docs/development.md): CLI commands, checks, smoke coverage, and revision-specific evidence.
-- [Publish to Quay](docs/publication.md): configure a robot account and run the weekly or manual publication workflow.
+- [Publish to Quay](docs/publication.md): configure the repository namespace and robot account, then run **Publish toolbox** to publish `quay.io/bundledock/toolbox`.
 
 The [CI workflow](.github/workflows/ci.yml) checks pushes and pull requests and
 builds/smokes both native architectures. See the [verification record](docs/development.md#verification-evidence)

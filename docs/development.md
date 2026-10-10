@@ -8,7 +8,7 @@ Use a local Go 1.24 or newer toolchain. The Anchorage umbrella provides an
 optional consumer devcontainer; its integration and pinned image are maintained
 there. Make inherits `GOFLAGS`; OCI build commands pass `-trimpath` explicitly.
 
-The output image remains `bundledock-toolbox`, its installed prefix remains
+The local output image remains `bundledock-toolbox`, its installed prefix remains
 `/opt/workharbor`, and the initializer retains `anchorage-tools-<digest>` volume
 names so existing image-derived volumes remain reusable. Writable credentials,
 configuration, caches, and environments belong outside the bundle.
