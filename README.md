@@ -32,10 +32,10 @@ image-derived volume name; substitute it below:
 
 ```sh
 docker run --rm -it \
-  --mount type=volume,src=<printed-volume-name>,dst=/opt/bundledock,readonly,volume-nocopy \
+  --mount type=volume,src=<printed-volume-name>,dst=/opt/bundledock/toolbox,readonly,volume-nocopy \
   --env DISABLE_UPDATES=1 --env DISABLE_AUTOUPDATER=1 \
   mcr.microsoft.com/devcontainers/go:2-1.27-trixie \
-  sh -c 'export PATH="/opt/bundledock/bin:$PATH"; exec bash'
+  sh -c 'export PATH="/opt/bundledock/toolbox/bin:$PATH"; exec bash'
 ```
 
 Keep credentials, configuration, caches, and environments in writable home

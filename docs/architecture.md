@@ -54,14 +54,18 @@ Initialization never removes an existing lock or retries a partial nonempty volu
 
 Follow the [quick start](../README.md#quick-start) to mount the printed volume.
 
-Use `/opt/bundledock` as the consumer mount path and put its `bin` directory on
-PATH. Bundle metadata and packaged assets use relative paths, so an existing
-image-derived volume can be mounted there without changing its image or volume
-identity. The initializer still mounts the volume at `/bundle` while copying or
-verifying it. New images read their source tree from `/opt/bundledock`; the
+Bundle roots use `/opt/bundledock/<bundle-name>`. The current bundle is
+`toolbox`: mount it read-only at `/opt/bundledock/toolbox` and put
+`/opt/bundledock/toolbox/bin` on PATH. Each bundle keeps its own metadata,
+assets and licenses inside its root. Additional bundles can use sibling roots
+and separate volumes without overlapping mounts; no additional bundle is shipped.
+The builder accepts `--destination` for another root. Bundle metadata and packaged
+assets use relative paths, so an existing image-derived volume can be mounted there
+without changing its image or volume identity. The initializer still mounts the volume at `/bundle` while copying or
+verifying it. New images read their source tree from `/opt/bundledock/toolbox`; the
 initializer accepts `--source` and `--target` overrides for other locations.
 Older images retain their own initializer and source prefix; their relative
-volume contents can also be mounted at `/opt/bundledock`. New volume names use
+volume contents can also be mounted at `/opt/bundledock/toolbox`. New volume names use
 `bundledock-toolbox-<digest>`. To select an existing legacy volume by name, run
 `sh oci/volume.sh <original-image> <existing-volume-name>`.
 Keep authentication and writable tool state in the user's home directory or
@@ -94,7 +98,7 @@ embeds `share`, so no external runtime data directory is required. External manu
 pages and local HTML documentation from a full Fish installation are omitted. ast-grep uses
 the compatible Debian consumer libraries. `fd` and `fdfind` are identical regular
 files so the volume needs no symlinks. ast-grep's `sg` alias is excluded to preserve
-consumer commands. Upstream notices are included under `/opt/bundledock/licenses`.
+consumer commands. Upstream notices are included under `/opt/bundledock/toolbox/licenses`.
 uv packages no Python runtime or Python packages; keep its cache, environments,
 and any intentionally installed runtimes outside the shared tool volume.
 `oci/volume.sh` remains a small Docker-only host adapter so the devcontainer can

@@ -41,4 +41,4 @@ still pins an older image, so do not assume these commands exist in a running se
 | Generate software bills of materials | `syft`. |
 
 Keep HOME, caches, and virtual environments in writable locations outside the
-read-only `/opt/bundledock` tool bundle.
+read-only `/opt/bundledock/toolbox` tool bundle.
