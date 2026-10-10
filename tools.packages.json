@@ -571,6 +571,7 @@
       "notices": [
         "oci/licenses/btop/FMT-LICENSE.rst",
         "oci/licenses/btop/WIDECHAR-LICENSE",
+        "oci/licenses/btop/UNICODE-LICENSE",
         "oci/licenses/btop/SOURCE"
       ]
     }

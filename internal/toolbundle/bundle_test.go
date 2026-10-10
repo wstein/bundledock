@@ -170,7 +170,7 @@ func TestVendorBuildBothArchitectures(t *testing.T) {
 					mode os.FileMode
 				}{content, 0644}
 			}
-			for _, file := range []string{"FMT-LICENSE.rst", "WIDECHAR-LICENSE", "SOURCE"} {
+			for _, file := range []string{"FMT-LICENSE.rst", "WIDECHAR-LICENSE", "UNICODE-LICENSE", "SOURCE"} {
 				content, err := os.ReadFile("../../oci/licenses/btop/" + file)
 				if err != nil {
 					t.Fatal(err)
