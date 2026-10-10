@@ -1,0 +1,283 @@
+{
+  "schema": 1,
+  "packages": {
+    "codex": {
+      "provider": "github",
+      "repository": "openai/codex",
+      "tag_prefix": "rust-v",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "x86_64",
+        "arm64": "aarch64"
+      },
+      "asset": "codex-package-{arch}-unknown-linux-musl.tar.gz",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "tar.gz",
+        "members": {
+          "bin/codex": "bin/codex"
+        },
+        "preserve": true
+      },
+      "sidecar": "{asset}.sha256"
+    },
+    "gh": {
+      "provider": "github",
+      "repository": "cli/cli",
+      "tag_prefix": "v",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "amd64",
+        "arm64": "arm64"
+      },
+      "asset": "gh_{version}_linux_{arch}.tar.gz",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "tar.gz",
+        "members": {
+          "gh": "bin/gh"
+        }
+      },
+      "sidecar": "gh_{version}_checksums.txt"
+    },
+    "agy": {
+      "provider": "github",
+      "repository": "google-antigravity/antigravity-cli",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "amd64",
+        "arm64": "arm64"
+      },
+      "asset": "agy_cli_linux_{arch}.tar.gz",
+      "allowed_hosts": [
+        "github.com",
+        "storage.googleapis.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "tar.gz",
+        "members": {
+          "antigravity": "bin/agy"
+        }
+      }
+    },
+    "jq": {
+      "provider": "github",
+      "repository": "jqlang/jq",
+      "tag_prefix": "jq-",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "amd64",
+        "arm64": "arm64"
+      },
+      "asset": "jq-linux-{arch}",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "raw",
+        "members": {
+          "jq": "bin/jq"
+        }
+      },
+      "notices": [
+        "oci/licenses/jq/AUTHORS",
+        "oci/licenses/jq/COPYING",
+        "oci/licenses/jq/ONIGURUMA-COPYING",
+        "oci/licenses/jq/SOURCE"
+      ],
+      "sidecar": "sha256sum.txt"
+    },
+    "rg": {
+      "provider": "github",
+      "repository": "BurntSushi/ripgrep",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "x86_64",
+        "arm64": "aarch64"
+      },
+      "asset": "ripgrep-{version}-{arch}-unknown-linux-musl.tar.gz",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "tar.gz",
+        "members": {
+          "rg": "bin/rg"
+        },
+        "archive_notices": [
+          "LICENSE-MIT",
+          "LICENSE-APACHE",
+          "UNLICENSE",
+          "COPYING"
+        ]
+      },
+      "sidecar": "{asset}.sha256"
+    },
+    "fd": {
+      "provider": "github",
+      "repository": "sharkdp/fd",
+      "tag_prefix": "v",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "x86_64",
+        "arm64": "aarch64"
+      },
+      "asset": "fd-v{version}-{arch}-unknown-linux-musl.tar.gz",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "tar.gz",
+        "members": {
+          "fd": "bin/fd"
+        },
+        "aliases": {
+          "bin/fdfind": "bin/fd"
+        },
+        "archive_notices": [
+          "LICENSE-MIT",
+          "LICENSE-APACHE",
+          "UNLICENSE",
+          "COPYING"
+        ]
+      },
+      "sidecar": "{asset}.sha256"
+    },
+    "ast-grep": {
+      "provider": "github",
+      "repository": "ast-grep/ast-grep",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "x86_64",
+        "arm64": "aarch64"
+      },
+      "asset": "app-{arch}-unknown-linux-gnu.zip",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "zip",
+        "members": {
+          "ast-grep": "bin/ast-grep"
+        }
+      },
+      "notices": [
+        "oci/licenses/ast-grep/LICENSE",
+        "oci/licenses/ast-grep/SOURCE"
+      ]
+    },
+    "yq": {
+      "provider": "github",
+      "repository": "mikefarah/yq",
+      "tag_prefix": "v",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "amd64",
+        "arm64": "arm64"
+      },
+      "asset": "yq_linux_{arch}",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "raw",
+        "members": {
+          "yq": "bin/yq"
+        }
+      },
+      "notices": [
+        "oci/licenses/yq/LICENSE",
+        "oci/licenses/yq/SOURCE"
+      ]
+    },
+    "uv": {
+      "provider": "github",
+      "repository": "astral-sh/uv",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "x86_64",
+        "arm64": "aarch64"
+      },
+      "asset": "uv-{arch}-unknown-linux-musl.tar.gz",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "tar.gz",
+        "members": {
+          "uv": "bin/uv",
+          "uvx": "bin/uvx"
+        }
+      },
+      "notices": [
+        "oci/licenses/uv/LICENSE-APACHE",
+        "oci/licenses/uv/LICENSE-MIT",
+        "oci/licenses/uv/SOURCE"
+      ],
+      "sidecar": "{asset}.sha256"
+    },
+    "claude": {
+      "provider": "claude",
+      "repository": "anthropics/claude-code",
+      "tag_prefix": "v",
+      "base_url": "https://downloads.claude.ai/claude-code-releases",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "linux-x64",
+        "arm64": "linux-arm64"
+      },
+      "asset": "claude",
+      "allowed_hosts": [
+        "downloads.claude.ai"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "raw",
+        "members": {
+          "claude": "bin/claude"
+        }
+      }
+    },
+    "sqlite3": {
+      "provider": "sqlite",
+      "base_url": "https://www.sqlite.org",
+      "history_url": "https://www.sqlite.org/chronology.html",
+      "metadata_url": "https://www.sqlite.org/download.html",
+      "normalization": "sqlite-compact",
+      "architectures": {
+        "amd64": "source",
+        "arm64": "source"
+      },
+      "asset": "{year}/sqlite-amalgamation-{compact}.zip",
+      "allowed_hosts": [
+        "www.sqlite.org"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "sqlite-source",
+        "members": {
+          "sqlite3.c": "sqlite3.c",
+          "shell.c": "shell.c",
+          "sqlite3.h": "sqlite3.h",
+          "sqlite3ext.h": "sqlite3ext.h"
+        }
+      },
+      "notices": [
+        "oci/licenses/sqlite3/NOTICE"
+      ]
+    }
+  }
+}
