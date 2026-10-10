@@ -202,3 +202,118 @@ func TestConcurrentInitialization(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestRepeatRejectsTreeAndPermissionChanges(t *testing.T) {
+	cases := []struct {
+		name   string
+		mutate func(*testing.T, string)
+	}{
+		{"unexpected executable", func(t *testing.T, dst string) {
+			write(t, dst, "bin/git", "shadow system git")
+			if err := os.Chmod(filepath.Join(dst, "bin/git"), 0755); err != nil {
+				t.Fatal(err)
+			}
+		}},
+		{"unexpected directory", func(t *testing.T, dst string) {
+			if err := os.Mkdir(filepath.Join(dst, "injected"), 0755); err != nil {
+				t.Fatal(err)
+			}
+		}},
+		{"unexpected symlink", func(t *testing.T, dst string) {
+			if err := os.Symlink("codex", filepath.Join(dst, "bin/git")); err != nil {
+				t.Fatal(err)
+			}
+		}},
+		{"generic lock is unexpected", func(t *testing.T, dst string) {
+			if err := os.Mkdir(filepath.Join(dst, ".lock"), 0755); err != nil {
+				t.Fatal(err)
+			}
+		}},
+		{"file executable mode", func(t *testing.T, dst string) {
+			if err := os.Chmod(filepath.Join(dst, "bin/codex"), 0644); err != nil {
+				t.Fatal(err)
+			}
+		}},
+		{"resource executable mode", func(t *testing.T, dst string) {
+			if err := os.Chmod(filepath.Join(dst, "codex-package.json"), 0755); err != nil {
+				t.Fatal(err)
+			}
+		}},
+		{"directory mode", func(t *testing.T, dst string) {
+			if err := os.Chmod(filepath.Join(dst, "bin"), 0700); err != nil {
+				t.Fatal(err)
+			}
+		}},
+		{"missing empty directory", func(t *testing.T, dst string) {
+			if err := os.Remove(filepath.Join(dst, "empty/nested")); err != nil {
+				t.Fatal(err)
+			}
+		}},
+		{"ready contents", func(t *testing.T, dst string) { write(t, dst, ".ready", "unexpected contents") }},
+		{"ready executable mode", func(t *testing.T, dst string) {
+			if err := os.Chmod(filepath.Join(dst, ".ready"), 0755); err != nil {
+				t.Fatal(err)
+			}
+		}},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			src, dst := bundle(t), t.TempDir()
+			if err := Initialize(src, dst, io.Discard); err != nil {
+				t.Fatal(err)
+			}
+			c.mutate(t, dst)
+			if err := Initialize(src, dst, io.Discard); err == nil {
+				t.Fatal("accepted modified volume tree or permissions")
+			}
+			absent(t, dst, ".initializing")
+		})
+	}
+}
+
+func TestCopyTreeValidationBeforeReady(t *testing.T) {
+	for _, change := range []string{"extra executable", "empty directory removed", "executable mode", "lock contents"} {
+		t.Run(change, func(t *testing.T) {
+			src, dst := bundle(t), t.TempDir()
+			err := initialize(src, dst, io.Discard, func(a, b *os.Root) error {
+				if err := copyBundle(a, b); err != nil {
+					return err
+				}
+				switch change {
+				case "extra executable":
+					return toolbundle.WriteFile(b, "bin/git", strings.NewReader("shadow"), 0755)
+				case "empty directory removed":
+					return b.Remove("empty/nested")
+				case "executable mode":
+					return os.Chmod(filepath.Join(dst, "bin/codex"), 0644)
+				case "lock contents":
+					return toolbundle.WriteFile(b, ".initializing/extra", strings.NewReader("unexpected"), 0644)
+				}
+				return nil
+			})
+			if err == nil {
+				t.Fatal("marked altered copy ready")
+			}
+			absent(t, dst, ".ready")
+			if change != "lock contents" {
+				absent(t, dst, ".initializing")
+			}
+		})
+	}
+}
+
+func TestRootMountPermissionsMayDiffer(t *testing.T) {
+	src, dst := bundle(t), t.TempDir()
+	if err := os.Chmod(src, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(dst, 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := Initialize(src, dst, io.Discard); err != nil {
+		t.Fatal(err)
+	}
+	if err := Initialize(src, dst, io.Discard); err != nil {
+		t.Fatal(err)
+	}
+}

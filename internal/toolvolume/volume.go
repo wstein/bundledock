@@ -56,6 +56,9 @@ func initialize(source, target string, output io.Writer, copyFiles func(*os.Root
 				return fmt.Errorf("volume %s differs from bundle", name)
 			}
 		}
+		if err := verifyTree(src, dst); err != nil {
+			return err
+		}
 		return verify(dst)
 	}
 	if !os.IsNotExist(err) {
@@ -77,6 +80,9 @@ func initialize(source, target string, output io.Writer, copyFiles func(*os.Root
 		return fmt.Errorf("refusing to initialize a nonempty volume")
 	}
 	if err := copyFiles(src, dst); err != nil {
+		return err
+	}
+	if err := verifyTree(src, dst); err != nil {
 		return err
 	}
 	if err := verify(dst); err != nil {
@@ -129,6 +135,105 @@ func copyBundle(src, dst *os.Root) error {
 		return toolbundle.WriteFile(dst, name, f, mode)
 	})
 }
+
+// verifyTree checks membership, structure and normalized modes against the
+// trusted image. SHA256SUMS alone cannot detect added files or chmod changes.
+func verifyTree(src, dst *os.Root) error {
+	expected := make(map[string]fs.FileMode)
+	err := fs.WalkDir(src.FS(), ".", func(name string, entry fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if name == "." {
+			return nil
+		}
+		if name == ".ready" || name == ".initializing" {
+			return fmt.Errorf("reserved bundle path %q", name)
+		}
+		if err := toolbundle.CheckPath(src, name); err != nil {
+			return err
+		}
+		info, err := entry.Info()
+		if err != nil {
+			return err
+		}
+		switch {
+		case info.IsDir():
+			expected[name] = fs.ModeDir | 0755
+		case info.Mode().IsRegular():
+			mode := fs.FileMode(0644)
+			if info.Mode()&0111 != 0 {
+				mode = 0755
+			}
+			expected[name] = mode
+		default:
+			return fmt.Errorf("unsupported bundle path %q", name)
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	err = fs.WalkDir(dst.FS(), ".", func(name string, entry fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if name == "." {
+			return nil
+		} // Volume mount permissions may differ.
+		if err := toolbundle.CheckPath(dst, name); err != nil {
+			return err
+		}
+		info, err := entry.Info()
+		if err != nil {
+			return err
+		}
+		if name == ".ready" {
+			if info.Mode() != 0644 || info.Size() != 0 {
+				return fmt.Errorf("invalid ready marker")
+			}
+			return nil
+		}
+		if name == ".initializing" {
+			if !info.IsDir() {
+				return fmt.Errorf("invalid initialization lock")
+			}
+			dir, err := dst.Open(name)
+			if err != nil {
+				return err
+			}
+			children, err := dir.ReadDir(-1)
+			closeErr := dir.Close()
+			if err != nil {
+				return err
+			}
+			if closeErr != nil {
+				return closeErr
+			}
+			if len(children) != 0 {
+				return fmt.Errorf("initialization lock is not empty")
+			}
+			return fs.SkipDir
+		}
+		mode, ok := expected[name]
+		if !ok {
+			return fmt.Errorf("unexpected volume path %q", name)
+		}
+		if info.Mode() != mode {
+			return fmt.Errorf("volume path %q has mode %s, expected %s", name, info.Mode(), mode)
+		}
+		delete(expected, name)
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	if len(expected) != 0 {
+		return fmt.Errorf("volume is missing %d bundle paths", len(expected))
+	}
+	return nil
+}
+
 func verify(root *os.Root) error {
 	sums, err := toolbundle.OpenFile(root, "SHA256SUMS")
 	if err != nil {
