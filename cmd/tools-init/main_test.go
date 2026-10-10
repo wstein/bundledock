@@ -23,6 +23,9 @@ func TestInitializerDefaultsAndRelocatedBundle(t *testing.T) {
 		}
 	})
 	t.Run("relative bundle", func(t *testing.T) {
+		if _, err := os.Stat("/bin/sh"); err != nil {
+			t.Skip("requires /bin/sh: ", err)
+		}
 		parent := t.TempDir()
 		source := filepath.Join(parent, "opt", "anchorage")
 		target := filepath.Join(parent, "bundle")
@@ -40,7 +43,7 @@ func TestInitializerDefaultsAndRelocatedBundle(t *testing.T) {
 		// The executable resolves its asset relative to its installed location,
 		// like the native package assets preserved by the bundle builder.
 		for name, data := range map[string]string{
-			"bin/fixture":    "#!/bin/sh\ncat \"$(dirname \"$0\")/../assets/message\"\n",
+			"bin/fixture":    "#!/bin/sh\nIFS= read -r message < \"${0%/*}/../assets/message\"\nprintf '%s\\n' \"$message\"\n",
 			"assets/message": "relocated tool\n",
 		} {
 			mode := os.FileMode(0644)
