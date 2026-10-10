@@ -73,10 +73,10 @@ func TestScratchCarrierContract(t *testing.T) {
 		}
 	}
 	for _, required := range []string{
-		"COPY --from=builder /opt/bundledock /opt/bundledock",
+		"COPY --from=builder /opt/bundledock/toolbox /opt/bundledock/toolbox",
 		"COPY --from=compiler /out/init-volume /usr/local/bin/init-volume",
 		`ENTRYPOINT ["/usr/local/bin/init-volume"]`,
-		`ENV PATH="/opt/bundledock/bin:/usr/local/bin"`,
+		`ENV PATH="/opt/bundledock/toolbox/bin:/usr/local/bin"`,
 	} {
 		if !strings.Contains(final, required) {
 			t.Fatalf("missing carrier contract: %s", required)
@@ -101,11 +101,12 @@ run)
  shift
  entrypoint=
  mount=
+ mounts=
  while [ "$#" -gt 0 ]; do
   case "$1" in
    --rm) shift ;;
    --entrypoint) entrypoint=$2; shift 2 ;;
-   --mount) mount=$2; shift 2 ;;
+   --mount) mount=$2; mounts="$mounts $2"; shift 2 ;;
    --network|--user|--tmpfs|--env) shift 2 ;;
    *) image=$1; shift; break ;;
   esac
@@ -130,7 +131,12 @@ run)
      esac
      printf '%s\n' "$state" > "$CARRIER_STATE"
      printf 'mutated %s\n' "$state" >> "$CARRIER_CALLS" ;;
-    *) printf '%s\n' consumer >> "$CARRIER_CALLS" ;;
+    *)
+     case "$mounts" in
+      *dst=/opt/bundledock/toolbox,readonly,volume-nocopy*) ;;
+      *) echo 'consumer must mount the named toolbox root read-only' >&2; exit 66 ;;
+     esac
+     printf '%s\n' consumer >> "$CARRIER_CALLS" ;;
    esac ;;
   *) exit 64 ;;
  esac ;;

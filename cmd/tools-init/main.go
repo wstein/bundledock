@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	source := flag.String("source", "/opt/bundledock", "bundle directory in the image")
+	source := flag.String("source", "/opt/bundledock/toolbox", "bundle directory in the image")
 	target := flag.String("target", "/bundle", "mounted tool volume directory")
 	flag.Parse()
 	if err := toolvolume.Initialize(*source, *target, os.Stdout); err != nil {
