@@ -11,6 +11,16 @@ import (
 	"testing"
 )
 
+func TestREADMEStartsWithContent(t *testing.T) {
+	data, err := os.ReadFile("../README.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.HasPrefix(string(data), "# BundleDock\n") {
+		t.Fatal("GitHub README must start with its heading, without Hugo front matter")
+	}
+}
+
 func TestDocsBuild(t *testing.T) {
 	if os.Getenv("BUNDLEDOCK_DOCS_TEST") != "1" {
 		t.Skip("host Hugo integration check; run make docs-test to enable")
@@ -39,6 +49,19 @@ func TestDocsBuild(t *testing.T) {
 		}
 		if !strings.Contains(string(data), text) {
 			t.Errorf("%s missing %q", page, text)
+		}
+	}
+	cli, err := os.ReadFile(filepath.Join(output, "cli/index.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, expected := range []string{
+		"<title>CLI and quick start · BundleDock</title>",
+		`<meta name="description" content="Build the toolbox, initialize a shared volume, and run pinned CLIs in a compatible consumer.">`,
+		`href="/bundledock/cli/" aria-current="page">CLI &amp; quick start</a>`,
+	} {
+		if !strings.Contains(string(cli), expected) {
+			t.Errorf("README-mounted CLI page must retain its site metadata and navigation: missing %q", expected)
 		}
 	}
 	for _, asset := range []string{"logo.svg", "banner.svg", "favicon.svg"} {

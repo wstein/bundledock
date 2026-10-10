@@ -3,6 +3,15 @@ locale = 'en-US'
 title = 'BundleDock'
 disableKinds = ['taxonomy', 'term', 'RSS']
 
+# Keep site-only metadata out of the README rendered by GitHub.
+[[cascade]]
+  title = 'CLI and quick start'
+  description = 'Build the toolbox, initialize a shared volume, and run pinned CLIs in a compatible consumer.'
+  weight = 10
+  [cascade.target]
+    path = '/cli'
+    kind = 'page'
+
 [params]
   description = 'Pinned development tools, shared across Linux containers.'
   repository = 'https://github.com/wstein/bundledock'
