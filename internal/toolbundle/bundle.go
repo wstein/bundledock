@@ -34,6 +34,10 @@ type Lock struct {
 }
 
 func ReadLock(r io.Reader, arch string) (map[string]Spec, error) {
+	return readLock(r, arch, []string{"codex", "claude", "gh", "agy"})
+}
+
+func readLock(r io.Reader, arch string, names []string) (map[string]Spec, error) {
 	if arch != "amd64" && arch != "arm64" {
 		return nil, fmt.Errorf("unsupported architecture %q", arch)
 	}
@@ -53,24 +57,31 @@ func ReadLock(r io.Reader, arch string) (map[string]Spec, error) {
 	if !ok {
 		return nil, fmt.Errorf("missing architecture %q", arch)
 	}
-	if len(tools) != 4 {
-		return nil, fmt.Errorf("lock must contain codex, claude, gh and agy")
-	}
-	for _, name := range []string{"codex", "claude", "gh", "agy"} {
-		spec, ok := tools[name]
-		if !ok || spec.Version == "" {
-			return nil, fmt.Errorf("missing tool/version %s", name)
-		}
-		u, err := url.Parse(spec.URL)
-		if err != nil || u.Host == "" || (u.Scheme != "https" && u.Scheme != "http") || u.User != nil {
-			return nil, fmt.Errorf("invalid URL for %s", name)
-		}
-		if _, _, err := checksum(spec); err != nil {
-			return nil, fmt.Errorf("%s: %w", name, err)
-		}
+	if err := validateSpecs(tools, names); err != nil {
+		return nil, err
 	}
 	return tools, nil
 }
+func validateSpecs(tools map[string]Spec, names []string) error {
+	if len(tools) != len(names) {
+		return fmt.Errorf("lock must contain exactly %s", strings.Join(names, ", "))
+	}
+	for _, name := range names {
+		spec, ok := tools[name]
+		if !ok || spec.Version == "" {
+			return fmt.Errorf("missing tool/version %s", name)
+		}
+		u, err := url.Parse(spec.URL)
+		if err != nil || u.Host == "" || (u.Scheme != "https" && u.Scheme != "http") || u.User != nil {
+			return fmt.Errorf("invalid URL for %s", name)
+		}
+		if _, _, err := checksum(spec); err != nil {
+			return fmt.Errorf("%s: %w", name, err)
+		}
+	}
+	return nil
+}
+
 func checksum(spec Spec) (hash.Hash, string, error) {
 	var h hash.Hash
 	var expected string
@@ -155,9 +166,12 @@ func install(ctx context.Context, client *http.Client, root *os.Root, name strin
 	return Extract(root, name, payload)
 }
 
-// Extract preserves all Codex resources; gh/agy select one executable by basename.
+// Extract preserves complete Codex/Python trees; gh/agy select one executable.
 // Every archive entry is validated, including entries not selected for installation.
 func Extract(root *os.Root, tool string, source io.Reader) error {
+	if tool == "python3" {
+		return extractPython(root, source)
+	}
 	if tool != "codex" && tool != "gh" && tool != "agy" {
 		return fmt.Errorf("unsupported archive tool %q", tool)
 	}
