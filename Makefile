@@ -5,7 +5,7 @@ BINARY := bin/anchorage
 TOOLS_IMAGE ?= anchorage/tools:poc
 TOOLS_CONSUMER ?= mcr.microsoft.com/devcontainers/go:2-1.27-trixie
 
-.PHONY: help build run test vet fmt check clean tools-build tools-volume tools-smoke tools-test
+.PHONY: help build run test vet fmt check clean tools-build tools-volume tools-smoke tools-test devcontainer-test
 
 help:
 	@printf '%s\n' \
@@ -20,6 +20,10 @@ help:
 	@printf '%s\n' 'make tools-volume      Initialize a versioned tool volume' \
 	  'make tools-smoke       Test shared read-only tool execution' \
 	  'make tools-test        Test native package extraction'
+	@printf '%s\n' 'make devcontainer-test Test persistent shell configuration setup'
+
+devcontainer-test:
+	sh .devcontainer/test-setup.sh
 
 tools-build:
 	docker build -f oci/Dockerfile -t $(TOOLS_IMAGE) .
