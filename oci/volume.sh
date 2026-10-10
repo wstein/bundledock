@@ -1,6 +1,6 @@
 #!/bin/sh
 set -eu
-image=${1:-bundledock-tools:poc}
+image=${1:-bundledock-toolbox:poc}
 # Resolve the mutable tag once; both the volume and initializer use this ID.
 id=$(docker image inspect --format '{{.Id}}' -- "$image")
 digest=${id#sha256:}

@@ -41,7 +41,7 @@ type Adapter struct {
 	Architecture string
 }
 
-var imagePattern = regexp.MustCompile(`^quay\.io/[a-z0-9]+(?:[._-][a-z0-9]+)*/bundledock-tools$`)
+var imagePattern = regexp.MustCompile(`^quay\.io/[a-z0-9]+(?:[._-][a-z0-9]+)*/bundledock-toolbox$`)
 var tagPattern = regexp.MustCompile(`^\d{4}\.\d{2}\.\d{2}-[1-9]\d*-[1-9]\d*$`)
 var commitPattern = regexp.MustCompile(`^[a-f0-9]{40}$`)
 var digestPattern = regexp.MustCompile(`^sha256:[a-f0-9]{64}$`)
@@ -58,7 +58,7 @@ func HashFile(path string) (string, error) {
 func NewMetadata(lock, image, tag, commit, source, created string) (Metadata, error) {
 	m := Metadata{Image: image, Tag: tag, Commit: commit, Source: source, Created: created}
 	if !imagePattern.MatchString(image) {
-		return m, fmt.Errorf("QUAY_IMAGE must be quay.io/<namespace>/bundledock-tools")
+		return m, fmt.Errorf("QUAY_IMAGE must be quay.io/<namespace>/bundledock-toolbox")
 	}
 	if !tagPattern.MatchString(tag) || !commitPattern.MatchString(commit) {
 		return m, fmt.Errorf("invalid date/run/attempt tag or source commit")
@@ -110,7 +110,7 @@ func labels(m Metadata, lock, arch string) (map[string]string, error) {
 		return nil, err
 	}
 	return map[string]string{
-		"org.opencontainers.image.title": "bundledock-tools", "org.opencontainers.image.source": m.Source,
+		"org.opencontainers.image.title": "bundledock-toolbox", "org.opencontainers.image.source": m.Source,
 		"org.opencontainers.image.revision": m.Commit, "org.opencontainers.image.created": m.Created,
 		"org.opencontainers.image.version": m.Tag, "io.bundledock.tools.lock-sha256": m.LockSHA256,
 		"io.bundledock.tools.versions": string(encoded),
@@ -179,7 +179,7 @@ func (a Adapter) Build(m Metadata, lock, arch, consumer string) (Receipt, error)
 	if runtime.GOOS != "linux" || native != arch || (arch != "amd64" && arch != "arm64") {
 		return r, fmt.Errorf("native Linux architecture required")
 	}
-	args := []string{"docker", "build", "--pull", "--platform", "linux/" + arch, "-f", "oci/Dockerfile", "-t", "bundledock-tools:build-" + m.Tag + "-" + arch}
+	args := []string{"docker", "build", "--pull", "--platform", "linux/" + arch, "-f", "oci/Dockerfile", "-t", "bundledock-toolbox:build-" + m.Tag + "-" + arch}
 	imageLabels, err := labels(m, lock, arch)
 	if err != nil {
 		return r, err

@@ -2,9 +2,10 @@
 
 ![BundleDock — Build and ship OCI bundles.](assets/banner.svg)
 
-BundleDock is an early-stage OCI bundle builder. Its current tools profile packages
-pinned development CLIs and their required runtimes into a shared, read-only
-bundle for Linux containers. Additional bundle profiles are planned.
+BundleDock builds an OCI toolbox of pinned development CLIs and their required
+runtimes for shared, read-only use in Linux containers. The toolbox supplies
+common utilities alongside stock language images, such as Go or Rust images,
+which provide their own language toolchains.
 
 ## Proof of concept
 
@@ -33,7 +34,7 @@ make tools-test
 make tools-smoke
 make tools-volume
 # Or, with a local Go toolchain:
-make run ARGS="tools volume --image bundledock-tools:poc"
+make run ARGS="tools volume --image bundledock-toolbox:poc"
 ```
 
 `tools.lock.json` pins vendor artifact URLs and checksums for Linux `amd64`
@@ -133,8 +134,8 @@ alias or other tool-management commands are added.
 
 ### Weekly image publication
 
-[The publication workflow](.github/workflows/bundledock-tools.yml) runs Mondays
-at 03:17 UTC and through Actions → **Publish bundledock-tools** → **Run workflow**.
+[The publication workflow](.github/workflows/bundledock-toolbox.yml) runs Mondays
+at 03:17 UTC and through Actions → **Publish bundledock-toolbox** → **Run workflow**.
 Only the repository default branch can publish. GitHub may delay scheduled runs.
 Publication runs share one concurrency group; an active run is allowed to finish.
 Before promotion, a read-only GitHub API check rejects a run superseded by a newer
@@ -146,7 +147,7 @@ Before enabling it, create the Quay repository and set these GitHub Actions valu
 
 | Setting | Value |
 | --- | --- |
-| Repository variable `QUAY_IMAGE` | `quay.io/<namespace>/bundledock-tools` |
+| Repository variable `QUAY_IMAGE` | `quay.io/<namespace>/bundledock-toolbox` |
 | Secret `QUAY_USERNAME` | Quay robot account username |
 | Secret `QUAY_PASSWORD` | Robot token with write access to that repository |
 
@@ -177,7 +178,7 @@ not a build identifier: base layers or Debian packages can change for the same l
 Download `resolved-tools-<attempt>`, `published-amd64-<attempt>`,
 `published-arm64-<attempt>` and `publication-<attempt>` artifacts from the run (retained for 90 days). The run summary and `publication.json`
 report the remote multi-platform registry digest, which differs from a local Docker
-image ID. Use the reported `quay.io/<namespace>/bundledock-tools@sha256:...` reference
+image ID. Use the reported `quay.io/<namespace>/bundledock-toolbox@sha256:...` reference
 for explicit deployment or rollback. Publication does not change the devcontainer
 pin, initialize host volumes, or activate the new image.
 
@@ -274,7 +275,7 @@ Use a local Go 1.24 or newer toolchain. The Anchorage umbrella provides an
 optional consumer devcontainer; its integration and pinned image are maintained
 there. Make inherits `GOFLAGS`; OCI build commands pass `-trimpath` explicitly.
 
-The output image remains `bundledock-tools`, its installed prefix remains
+The output image remains `bundledock-toolbox`, its installed prefix remains
 `/opt/workharbor`, and the initializer retains `anchorage-tools-<digest>` volume
 names so existing image-derived volumes remain reusable. Writable credentials,
 configuration, caches, and environments belong outside the bundle.
@@ -305,7 +306,7 @@ Checks target this repository's `cmd` and `internal` Go packages.
 - `internal`: package catalog, upstream resolution, bundle extraction, volume validation, and Docker adapters.
 - `tools.txt`, `tools.packages.json`, `tools.lock.json`: desired versions, trusted recipes, and verified pins.
 - `oci`: Dockerfile, Docker-only host adapter, smoke test, and upstream license notices.
-- `.github/workflows/bundledock-tools.yml`: weekly two-platform publication workflow.
+- `.github/workflows/bundledock-toolbox.yml`: weekly two-platform publication workflow.
 - `assets`, `brand`: approved brand assets, licensed font sources, and generation provenance.
 
 ## Repository history
