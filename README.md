@@ -2,6 +2,7 @@
 
 ![BundleDock — Build and ship OCI bundles.](assets/banner.svg)
 
+[![CI](https://github.com/wstein/bundledock/actions/workflows/ci.yml/badge.svg)](https://github.com/wstein/bundledock/actions/workflows/ci.yml)
 [![Go 1.24 or newer](https://img.shields.io/badge/Go-1.24%2B-00ADD8?logo=go&logoColor=white)](go.mod)
 [![Linux amd64 and arm64](https://img.shields.io/badge/Linux-amd64%20%7C%20arm64-0b2545?logo=linux&logoColor=white)](tools.lock.json)
 [![OCI toolbox](https://img.shields.io/badge/OCI-toolbox-5eead4?labelColor=0b2545)](oci/Dockerfile)
@@ -171,6 +172,19 @@ Existing images, volumes, running containers, and desired ranges are unaffected 
 resolution. `tools volume` remains the existing initialization command; no update
 alias or other tool-management commands are added.
 
+### Continuous integration
+
+[The CI workflow](.github/workflows/ci.yml) checks pushes, pull requests, and
+manual runs. It runs formatting checks, the full Go test suite, `go vet`, and a
+CLI build, then builds the checked-in toolbox lock on native AMD64 and ARM64
+runners. Each native job explicitly pulls the consumer baseline and runs the
+full existing smoke suite against the immutable ID of its one build. CI neither
+upgrades tools nor publishes images and has no registry credentials.
+
+The badge links to the standalone repository's workflow. It reports live GitHub
+results once the repository is published and a run completes; local Go checks
+and workflow validation do not establish Docker runtime coverage.
+
 ### Weekly image publication
 
 [The publication workflow](.github/workflows/bundledock-toolbox.yml) runs Mondays
@@ -182,13 +196,36 @@ eligible run, including one that failed. This prevents an old queued run or reru
 from rolling stable back. Start a fresh manual run to recover; when rerunning a
 run, choose **Re-run all jobs** so the resolver creates current-attempt artifacts.
 
-Before enabling it, create the Quay repository and set these GitHub Actions values:
+Set up the destination before the first publication:
+
+1. Sign in to [Quay.io](https://quay.io/) and choose the user or organization
+   namespace that will own the image. Create a repository named
+   `bundledock-toolbox` in that namespace. Choose public visibility for anonymous
+   pulls or private visibility when consumers will authenticate; this choice is
+   independent of the GitHub source repository's visibility.
+2. Create a dedicated robot account in the namespace's **Robot Accounts** tab.
+   In the target repository's permissions, grant that robot **Write** access to
+   `bundledock-toolbox` only. It does not need namespace administration or access
+   to unrelated repositories. Its username has the form `namespace+robotname`.
+3. In [BundleDock's Actions settings](https://github.com/wstein/bundledock/settings/secrets/actions),
+   add the repository variable and secrets below. Enter the robot token directly
+   as the secret value; keep it out of Git, logs, issues, and command arguments.
+
 
 | Setting | Value |
 | --- | --- |
 | Repository variable `QUAY_IMAGE` | `quay.io/<namespace>/bundledock-toolbox` |
 | Secret `QUAY_USERNAME` | Quay robot account username |
 | Secret `QUAY_PASSWORD` | Robot token with write access to that repository |
+
+After setting these values, start **Publish bundledock-toolbox** manually from
+the default branch and watch the resolver, both native jobs, and promotion in
+[Actions](https://github.com/wstein/bundledock/actions/workflows/bundledock-toolbox.yml).
+A successful run publishes a dated run-attempt tag and `stable`; inspect its
+summary and artifacts for the immutable digest before choosing a deployment.
+Configuring these values also allows the Monday schedule to publish subsequent
+updates. No registry publication has been verified until a configured run succeeds.
+For a private Quay repository, consumers need their own read credentials.
 
 The Quay namespace is deployment configuration, with no default in the workflow.
 Use a dedicated [Quay robot account](https://docs.quay.io/glossary/robot-accounts.html).
@@ -367,6 +404,7 @@ Checks target this repository's `cmd` and `internal` Go packages.
 - `internal`: package catalog, upstream resolution, bundle extraction, volume validation, and Docker adapters.
 - `tools.txt`, `tools.packages.json`, `tools.lock.json`: desired versions, trusted recipes, and verified pins.
 - `oci`: Dockerfile, Docker-only host adapter, smoke test, and upstream license notices.
+- `.github/workflows/ci.yml`: pull request and push checks plus native locked-toolbox smoke.
 - `.github/workflows/bundledock-toolbox.yml`: weekly two-platform publication workflow.
 - `assets`, `brand`: approved brand assets, licensed font sources, and generation provenance.
 
