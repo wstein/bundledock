@@ -1,7 +1,7 @@
 package toolmanager
 
 import (
-	"anchorage/internal/toolconfig"
+	"bundledock/internal/toolconfig"
 	"bytes"
 	"context"
 	"crypto/sha256"

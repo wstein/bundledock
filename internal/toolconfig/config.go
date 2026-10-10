@@ -214,7 +214,7 @@ func (c Config) validate(strict bool) error {
 		return fmt.Errorf("unsupported catalog/lock schema")
 	}
 	if strict && (c.Lock.DesiredDigest != c.DesiredDigest() || c.Lock.CatalogDigest != c.CatalogDigest()) {
-		return fmt.Errorf("tools.lock.json identity differs from tools.txt or tools.packages.json; run anchorage tools upgrade (desired %s/%s catalog %s/%s)", c.Lock.DesiredDigest, c.DesiredDigest(), c.Lock.CatalogDigest, c.CatalogDigest())
+		return fmt.Errorf("tools.lock.json identity differs from tools.txt or tools.packages.json; run bundledock tools upgrade (desired %s/%s catalog %s/%s)", c.Lock.DesiredDigest, c.DesiredDigest(), c.Lock.CatalogDigest, c.CatalogDigest())
 	}
 	if len(c.Desired) != len(c.Catalog.Packages) || len(c.Lock.Platforms) != 2 {
 		return fmt.Errorf("desired tools, catalog and both lock architectures must agree")

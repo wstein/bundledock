@@ -1,7 +1,7 @@
 GO ?= go
 GOFMT ?= gofmt
 PACKAGES := ./cmd/... ./internal/...
-BINARY := bin/anchorage
+BINARY := bin/bundledock
 TOOLS_IMAGE ?= anchorage/tools:poc
 TOOLS_CONSUMER ?= mcr.microsoft.com/devcontainers/go:2-1.27-trixie
 
@@ -9,7 +9,7 @@ TOOLS_CONSUMER ?= mcr.microsoft.com/devcontainers/go:2-1.27-trixie
 
 help:
 	@printf '%s\n' \
-	  'make build             Build bin/anchorage' \
+	  'make build             Build bin/bundledock' \
 	  'make run ARGS="--help"  Run the CLI' \
 	  'make test              Run tests' \
 	  'make vet               Run go vet' \
@@ -29,7 +29,7 @@ tools-build:
 	docker build -f oci/Dockerfile -t $(TOOLS_IMAGE) .
 
 tools-test:
-	$(GO) test ./cmd/anchorage ./internal/toolmanager ./internal/toolconfig ./internal/toolbundle ./internal/toolvolume ./internal/dockercli
+	$(GO) test ./cmd/bundledock ./internal/toolmanager ./internal/toolconfig ./internal/toolbundle ./internal/toolvolume ./internal/dockercli
 
 tools-volume:
 	sh oci/volume.sh "$(TOOLS_IMAGE)"
@@ -38,10 +38,10 @@ tools-smoke:
 	sh oci/smoke.sh "$(TOOLS_IMAGE)" "$(TOOLS_CONSUMER)"
 
 build:
-	$(GO) build -o $(BINARY) ./cmd/anchorage
+	$(GO) build -o $(BINARY) ./cmd/bundledock
 
 run:
-	$(GO) run ./cmd/anchorage $(ARGS)
+	$(GO) run ./cmd/bundledock $(ARGS)
 
 test:
 	$(GO) test $(PACKAGES)

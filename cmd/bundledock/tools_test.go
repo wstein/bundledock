@@ -1,7 +1,7 @@
 package main
 
 import (
-	"anchorage/internal/toolconfig"
+	"bundledock/internal/toolconfig"
 	"bytes"
 	"context"
 	"crypto/sha256"

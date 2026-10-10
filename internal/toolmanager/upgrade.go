@@ -2,7 +2,7 @@
 package toolmanager
 
 import (
-	"anchorage/internal/toolconfig"
+	"bundledock/internal/toolconfig"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -32,7 +32,7 @@ func Upgrade(ctx context.Context, client *http.Client, directory, tool string, o
 	}
 	if !exists {
 		if tool != "" {
-			return fmt.Errorf("tools.lock.json is missing; run anchorage tools upgrade without a tool")
+			return fmt.Errorf("tools.lock.json is missing; run bundledock tools upgrade without a tool")
 		}
 		c.Lock = toolconfig.Lock{Platforms: map[string]map[string]toolconfig.Spec{"amd64": {}, "arm64": {}}}
 	} else {
@@ -47,10 +47,10 @@ func Upgrade(ctx context.Context, client *http.Client, directory, tool string, o
 		if tool != "" {
 			c, err = toolconfig.LoadForUpgrade(directory)
 			if err != nil {
-				return fmt.Errorf("targeted upgrade requires an unchanged package inventory; run anchorage tools upgrade: %w", err)
+				return fmt.Errorf("targeted upgrade requires an unchanged package inventory; run bundledock tools upgrade: %w", err)
 			}
 			if c.Lock.CatalogDigest != c.CatalogDigest() {
-				return fmt.Errorf("package catalog changed; run anchorage tools upgrade without a tool")
+				return fmt.Errorf("package catalog changed; run bundledock tools upgrade without a tool")
 			}
 		} else {
 			var previous toolconfig.Lock

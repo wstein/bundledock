@@ -2,8 +2,8 @@
 package main
 
 import (
-	"anchorage/internal/toolbundle"
-	"anchorage/internal/toolconfig"
+	"bundledock/internal/toolbundle"
+	"bundledock/internal/toolconfig"
 	"context"
 	"flag"
 	"fmt"

@@ -1,7 +1,7 @@
 package toolmanager
 
 import (
-	"anchorage/internal/toolconfig"
+	"bundledock/internal/toolconfig"
 	"context"
 	"crypto/sha256"
 	"crypto/sha3"
@@ -61,7 +61,7 @@ func (r resolver) get(ctx context.Context, raw string) (*http.Response, error) {
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("User-Agent", "anchorage-tools")
+	req.Header.Set("User-Agent", "bundledock-tools")
 	if req.URL.Scheme == "https" && req.URL.Host == "api.github.com" {
 		if token := strings.TrimSpace(os.Getenv("GITHUB_TOKEN")); token != "" {
 			req.Header.Set("Authorization", "Bearer "+token)

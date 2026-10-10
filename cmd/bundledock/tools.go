@@ -1,8 +1,8 @@
 package main
 
 import (
-	"anchorage/internal/dockercli"
-	"anchorage/internal/toolmanager"
+	"bundledock/internal/dockercli"
+	"bundledock/internal/toolmanager"
 	"github.com/spf13/cobra"
 	"net/http"
 	"os"

@@ -2,7 +2,7 @@
 package main
 
 import (
-	"anchorage/internal/toolpublish"
+	"bundledock/internal/toolpublish"
 	"context"
 	"encoding/json"
 	"flag"
@@ -48,7 +48,7 @@ func copyFile(source, destination string) error {
 func resolve(directory string, meta toolpublish.Metadata, runner func(...string) ([]byte, error)) error {
 	// This is the only upstream resolution in a workflow run. No repository write
 	// or push follows; all other jobs download this one lock/provenance artifact.
-	if _, err := runner("go", "run", "./cmd/anchorage", "tools", "upgrade"); err != nil {
+	if _, err := runner("go", "run", "./cmd/bundledock", "tools", "upgrade"); err != nil {
 		return err
 	}
 	var err error

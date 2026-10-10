@@ -1,8 +1,8 @@
 package toolbundle
 
 import (
-	"anchorage/internal/toolconfig"
 	"archive/tar"
+	"bundledock/internal/toolconfig"
 	"bytes"
 	"compress/gzip"
 	"context"
@@ -112,7 +112,7 @@ func install(ctx context.Context, client *http.Client, root *os.Root, name strin
 	if err != nil {
 		return err
 	}
-	payload, err := os.CreateTemp("", "anchorage-tool-*")
+	payload, err := os.CreateTemp("", "bundledock-tool-*")
 	if err != nil {
 		return err
 	}

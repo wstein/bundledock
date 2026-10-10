@@ -1,0 +1,33 @@
+package main
+
+import (
+	"bytes"
+	"strings"
+	"testing"
+)
+
+func TestBundleDockCommandIdentity(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		args []string
+		want string
+	}{
+		{"help", []string{"--help"}, "bundledock [flags]"},
+		{"tools help", []string{"tools", "--help"}, "bundledock tools [command]"},
+		{"version", []string{"--version"}, "bundledock version dev\n"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var output bytes.Buffer
+			cmd := newRootCommand()
+			cmd.SetOut(&output)
+			cmd.SetErr(&output)
+			cmd.SetArgs(tc.args)
+			if err := cmd.Execute(); err != nil {
+				t.Fatal(err)
+			}
+			if !strings.Contains(output.String(), tc.want) {
+				t.Fatalf("output %q does not contain %q", output.String(), tc.want)
+			}
+		})
+	}
+}

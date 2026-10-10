@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"anchorage/internal/toolpublish"
+	"bundledock/internal/toolpublish"
 )
 
 func TestResolveOnceAndKeepExactArtifactBytes(t *testing.T) {
@@ -25,7 +25,7 @@ func TestResolveOnceAndKeepExactArtifactBytes(t *testing.T) {
 	calls := 0
 	runner := func(args ...string) ([]byte, error) {
 		calls++
-		if !reflect.DeepEqual(args, []string{"go", "run", "./cmd/anchorage", "tools", "upgrade"}) {
+		if !reflect.DeepEqual(args, []string{"go", "run", "./cmd/bundledock", "tools", "upgrade"}) {
 			t.Fatalf("unexpected resolver command %v", args)
 		}
 		return nil, os.WriteFile("tools.lock.json", resolved, 0600)

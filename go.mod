@@ -1,4 +1,4 @@
-module anchorage
+module bundledock
 
 go 1.24.0
 

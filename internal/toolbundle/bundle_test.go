@@ -1,9 +1,9 @@
 package toolbundle
 
 import (
-	"anchorage/internal/toolconfig"
 	"archive/tar"
 	"archive/zip"
+	"bundledock/internal/toolconfig"
 	"bytes"
 	"compress/gzip"
 	"context"

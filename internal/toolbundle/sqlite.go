@@ -1,8 +1,8 @@
 package toolbundle
 
 import (
-	"anchorage/internal/toolconfig"
 	"archive/zip"
+	"bundledock/internal/toolconfig"
 	"context"
 	"fmt"
 	"io"

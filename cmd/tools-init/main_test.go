@@ -1,7 +1,7 @@
 package main
 
 import (
-	"anchorage/internal/toolbundle"
+	"bundledock/internal/toolbundle"
 	"bytes"
 	"os"
 	"os/exec"

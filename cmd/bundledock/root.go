@@ -4,8 +4,8 @@ import "github.com/spf13/cobra"
 
 func newRootCommand() *cobra.Command {
 	root := &cobra.Command{
-		Use:          "anchorage",
-		Short:        "AI-native Docker development environments",
+		Use:          "bundledock",
+		Short:        "Build and manage OCI bundles",
 		Version:      "dev",
 		Args:         cobra.NoArgs,
 		SilenceUsage: true,
