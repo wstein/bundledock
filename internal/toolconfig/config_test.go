@@ -1,6 +1,8 @@
 package toolconfig
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -33,7 +35,7 @@ func TestRepositoryIdentityAndBothArchitectures(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(c.Catalog.Packages) != 14 {
+	if len(c.Catalog.Packages) != 16 {
 		t.Fatal("catalog incomplete")
 	}
 	if err := c.Validate(); err != nil {
@@ -145,5 +147,59 @@ func TestFishAndStarshipCatalogPins(t *testing.T) {
 				t.Fatalf("missing %s/%s pin", tc.name, arch)
 			}
 		}
+	}
+}
+
+func TestShellAlternativeCatalogPins(t *testing.T) {
+	c, err := Load("../..")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct{ name, kind, version string }{{"nu", "tar.gz", "0.116.1"}, {"tmux", "tar.gz", "v3.7c"}} {
+		p, ok := c.Catalog.Packages[tc.name]
+		if !ok || p.Install.Kind != tc.kind || p.Install.Members[tc.name] != "bin/"+tc.name {
+			t.Fatalf("missing %s binary recipe", tc.name)
+		}
+		for _, arch := range []string{"amd64", "arm64"} {
+			if c.Lock.Platforms[arch][tc.name].Version != tc.version {
+				t.Fatalf("missing %s/%s pin", tc.name, arch)
+			}
+		}
+	}
+	p := c.Catalog.Packages["tmux"]
+	if v, err := p.Version("3.8"); err != nil || v != "3.8.0" {
+		t.Fatalf("tmux release normalization: %q %v", v, err)
+	}
+	for tag, want := range map[string]string{"v3.7a": "3.7.1", "v3.7b": "3.7.2", "v3.7c": "3.7.3", "v3.8": "3.8.0"} {
+		if got, err := p.Version(tag); err != nil || got != want {
+			t.Fatalf("%s: %s %v", tag, got, err)
+		}
+	}
+	for _, bad := range []string{"v3.7aa", "v3.7-rc", "v3.07c", "v3.7.1", "v3.7C"} {
+		if _, err := p.Version(bad); err == nil {
+			t.Fatalf("accepted tmux tag %s", bad)
+		}
+	}
+}
+func TestLoadInputsAllowsNarrowTmuxRanges(t *testing.T) {
+	for _, requirement := range []string{"tmux==3.7.3", "tmux>=3.7.3,<3.8.0"} {
+		t.Run(requirement, func(t *testing.T) {
+			dir := t.TempDir()
+			for _, name := range []string{"tools.txt", "tools.packages.json"} {
+				b, err := os.ReadFile(filepath.Join("../..", name))
+				if err != nil {
+					t.Fatal(err)
+				}
+				if name == "tools.txt" {
+					b = []byte(strings.Replace(string(b), "tmux>=3.7.3,<4.0.0", requirement, 1))
+				}
+				if err := os.WriteFile(filepath.Join(dir, name), b, 0644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if _, err := LoadInputs(dir); err != nil {
+				t.Fatalf("valid desired input rejected: %v", err)
+			}
+		})
 	}
 }

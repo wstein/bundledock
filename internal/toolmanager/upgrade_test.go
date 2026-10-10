@@ -153,7 +153,7 @@ func TestAllProvidersPaginationRangesAndVerification(t *testing.T) {
 			repo := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/repos/"), "/releases")
 			n := repos[repo]
 			p := c.Catalog.Packages[n]
-			v := versions[n]
+			v := fixtureReleaseVersion(p, versions[n])
 			if r.URL.Query().Get("page") == "1" {
 				w.Header().Set("Link", `<https://api.github.com`+r.URL.Path+`?per_page=100&page=2>; rel="next"`)
 				json.NewEncoder(w).Encode([]any{map[string]any{"tag_name": p.TagPrefix + "999.0.0"}, map[string]any{"tag_name": p.TagPrefix + v + "-rc.1"}, map[string]any{"tag_name": p.TagPrefix + v, "draft": true}})
@@ -342,7 +342,7 @@ func TestChangedDesiredAndBootstrap(t *testing.T) {
 					repo := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/repos/"), "/releases")
 					for n, p := range c.Catalog.Packages {
 						if p.Repository == repo {
-							v := c.Desired[n].Lower.String()
+							v := fixtureReleaseVersion(p, c.Desired[n].Lower.String())
 							if !bootstrap && n == "gh" {
 								v = "3.0.0"
 							}
@@ -518,7 +518,7 @@ func TestUpgradeAllRepairsChangedCatalogInventory(t *testing.T) {
 			repo := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/repos/"), "/releases")
 			for n, p := range c.Catalog.Packages {
 				if p.Repository == repo {
-					v := c.Desired[n].Lower.String()
+					v := fixtureReleaseVersion(p, c.Desired[n].Lower.String())
 					assets := []asset{}
 					for _, arch := range []string{"amd64", "arm64"} {
 						name := expand(p.Asset, v, p.Architectures[arch], "", "")
@@ -674,4 +674,16 @@ func TestNullGitHubDigestMeansUnpublished(t *testing.T) {
 			}
 		})
 	}
+}
+
+// Fixture release tags retain tmux's native two-component/letter spelling.
+func fixtureReleaseVersion(p toolconfig.Package, canonical string) string {
+	if p.Normalization != "tmux-release" {
+		return canonical
+	}
+	v, _ := toolconfig.ParseVersion(canonical)
+	if v[2] == 0 {
+		return fmt.Sprintf("%d.%d", v[0], v[1])
+	}
+	return fmt.Sprintf("%d.%d%c", v[0], v[1], 'a'+v[2]-1)
 }

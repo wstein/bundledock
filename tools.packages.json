@@ -356,6 +356,59 @@
         "oci/licenses/starship/SOURCE"
       ],
       "sidecar": "{asset}.sha256"
+    },
+    "nu": {
+      "provider": "github",
+      "repository": "nushell/nushell",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "x86_64",
+        "arm64": "aarch64"
+      },
+      "asset": "nu-{version}-{arch}-unknown-linux-musl.tar.gz",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "tar.gz",
+        "members": {
+          "nu": "bin/nu"
+        }
+      },
+      "notices": [
+        "oci/licenses/nu/LICENSE",
+        "oci/licenses/nu/SOURCE"
+      ]
+    },
+    "tmux": {
+      "provider": "github",
+      "repository": "tmux/tmux-builds",
+      "normalization": "tmux-release",
+      "architectures": {
+        "amd64": "x86_64",
+        "arm64": "arm64"
+      },
+      "asset": "tmux-{version}-linux-{arch}.tar.gz",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "tar.gz",
+        "members": {
+          "tmux": "bin/tmux"
+        }
+      },
+      "notices": [
+        "oci/licenses/tmux/COPYING.ncurses",
+        "oci/licenses/tmux/COPYING.tmux",
+        "oci/licenses/tmux/COPYRIGHT.musl",
+        "oci/licenses/tmux/LICENSE.libevent",
+        "oci/licenses/tmux/LICENSE.utf8proc",
+        "oci/licenses/tmux/SOURCE"
+      ],
+      "tag_prefix": "v"
     }
   }
 }

@@ -85,6 +85,18 @@
         "url": "https://github.com/starship/starship/releases/download/v1.26.0/starship-x86_64-unknown-linux-musl.tar.gz",
         "sha256": "b7c232b0e8249d8e55a40beb79c5c43a7d370f3f9408bd215deb0170daeaadf3",
         "verification": "publisher-sha256"
+      },
+      "nu": {
+        "version": "0.116.1",
+        "url": "https://github.com/nushell/nushell/releases/download/0.116.1/nu-0.116.1-x86_64-unknown-linux-musl.tar.gz",
+        "sha256": "13ef75df08df30f8d7b031df538e82a52c6e74ce839b1a9091c3a3f1969c3742",
+        "verification": "publisher-sha256"
+      },
+      "tmux": {
+        "version": "v3.7c",
+        "url": "https://github.com/tmux/tmux-builds/releases/download/v3.7c/tmux-3.7c-linux-x86_64.tar.gz",
+        "sha256": "cc56bd1cc873eb6089c615f0496b072385bda8a6d944069f38564a5d49c128aa",
+        "verification": "publisher-sha256"
       }
     },
     "arm64": {
@@ -171,9 +183,21 @@
         "url": "https://github.com/starship/starship/releases/download/v1.26.0/starship-aarch64-unknown-linux-musl.tar.gz",
         "sha256": "dc30189378d2f2e287384e8a692d3f95ad1df64cf0e8c36aa9201516028aed6b",
         "verification": "publisher-sha256"
+      },
+      "nu": {
+        "version": "0.116.1",
+        "url": "https://github.com/nushell/nushell/releases/download/0.116.1/nu-0.116.1-aarch64-unknown-linux-musl.tar.gz",
+        "sha256": "b103770c00bf322c409caa007aad44882d1cc5d24d82f719f877812ac33d6ad1",
+        "verification": "publisher-sha256"
+      },
+      "tmux": {
+        "version": "v3.7c",
+        "url": "https://github.com/tmux/tmux-builds/releases/download/v3.7c/tmux-3.7c-linux-arm64.tar.gz",
+        "sha256": "29dcb978da2a4b0cf6790f9e004865dac239a3ba03bbf776dddacce23d03831b",
+        "verification": "publisher-sha256"
       }
     }
   },
-  "desired_digest": "b4be7d5fd1c9f7658fa40c405aea5b18a1bb9cbbdc38d4de427c33cba3267563",
-  "catalog_digest": "44d3e0e8a5d354fa5bda49dcf40d329c497a276778a6af5f2d101565cb3fda2b"
+  "desired_digest": "d538337bb753e2cd27fcafde256003281c953e913d09f8b82240e138e363d361",
+  "catalog_digest": "3c3dcec4e9c67bda0c9429de60ea0ce3d56d13fa12381490bdd1028bd4555d7f"
 }

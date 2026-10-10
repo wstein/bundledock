@@ -75,6 +75,8 @@ func openRoot(t *testing.T) (*os.Root, string) {
 func fixture(t *testing.T) (map[string][]byte, map[string]Spec, *httptest.Server) {
 	t.Helper()
 	payloads := map[string][]byte{
+		"nu":       archive(t, member{"nu-0.116.1/nu", "nu executable", 0755, 0}),
+		"tmux":     archive(t, member{"tmux", "tmux executable", 0755, 0}),
 		"fish":     xzArchive(t, member{"fish", "fish executable", 0755, 0}),
 		"starship": archive(t, member{"starship", "starship executable", 0755, 0}),
 		"uv":       archive(t, member{"uv-1/uv", "uv executable", 0755, 0}, member{"uv-1/uvx", "uvx executable", 0755, 0}),
@@ -136,6 +138,7 @@ func TestVendorBuildBothArchitectures(t *testing.T) {
 				data string
 				mode os.FileMode
 			}{
+				"bin/nu": {"nu executable", 0755}, "bin/tmux": {"tmux executable", 0755},
 				"bin/fish": {"fish executable", 0755}, "bin/starship": {"starship executable", 0755},
 				"bin/uv": {"uv executable", 0755}, "bin/uvx": {"uvx executable", 0755},
 				"bin/ast-grep": {"ast-grep executable", 0755},

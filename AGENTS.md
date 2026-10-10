@@ -24,7 +24,9 @@ still pins an older image, so do not assume these commands exist in a running se
 | Manage Python environments and run Python tools | `uv` and `uvx`. |
 | Agent and GitHub workflows | `codex`, `claude`, `agy`, and `gh`. |
 | Manage terminal workspaces and agent sessions | `herdr`. |
-| Use an optional interactive shell | `fish`. |
+| Use the preferred interactive shell | `fish`. |
+| Use an alternative structured shell | `nu` (Nushell). |
+| Use an alternative terminal multiplexer | `tmux`. |
 | Customize a shell prompt | `starship`. |
 
 Keep HOME, caches, and virtual environments in writable locations outside the

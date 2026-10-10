@@ -130,13 +130,19 @@ func LoadInputs(directory string) (*Config, error) {
 		if len(p.AllowedHosts) > 0 {
 			host = p.AllowedHosts[0]
 		}
-		s := Spec{Version: p.TagPrefix + c.Desired[n].Lower.String(), URL: "https://" + host + "/", SHA256: strings.Repeat("0", 64), Verification: "tls-download-sha256"}
+		probeVersion := p.TagPrefix + c.Desired[n].Lower.String()
+		if p.Normalization == "tmux-release" {
+			probeVersion = "v3.8"
+		}
+		s := Spec{Version: probeVersion, URL: "https://" + host + "/", SHA256: strings.Repeat("0", 64), Verification: "tls-download-sha256"}
 		for _, a := range []string{"amd64", "arm64"} {
 			probe.Lock.Platforms[a][n] = s
 		}
 	}
 	probe.Bind()
-	if err := probe.Validate(); err != nil {
+	// Synthetic pins validate recipe grammar; desired membership is checked only
+	// for real resolved pins. A tmux suffix cannot be inferred from every semver.
+	if err := probe.validate(false); err != nil {
 		return nil, err
 	}
 	return c, nil
@@ -205,6 +211,17 @@ func ValidateSpec(s Spec) error {
 }
 func (p Package) Version(tag string) (string, error) {
 	v := strings.TrimPrefix(tag, p.TagPrefix)
+	if p.Normalization == "tmux-release" {
+		match := regexp.MustCompile(`^([0-9]+)\.([0-9]+)([a-z]?)$`).FindStringSubmatch(v)
+		if match == nil {
+			return "", fmt.Errorf("unsupported tmux release %q", tag)
+		}
+		patch := 0
+		if match[3] != "" {
+			patch = int(match[3][0]-'a') + 1
+		}
+		v = fmt.Sprintf("%s.%s.%d", match[1], match[2], patch)
+	}
 	_, err := ParseVersion(v)
 	return v, err
 }
@@ -224,7 +241,7 @@ func (c Config) validate(strict bool) error {
 		if !ok {
 			return fmt.Errorf("catalog tool %s is absent from tools.txt", name)
 		}
-		if p.Normalization != "semver" && p.Normalization != "sqlite-compact" {
+		if p.Normalization != "semver" && p.Normalization != "sqlite-compact" && p.Normalization != "tmux-release" {
 			return fmt.Errorf("unknown normalization for %s", name)
 		}
 		switch p.Provider {
@@ -240,7 +257,10 @@ func (c Config) validate(strict bool) error {
 			return fmt.Errorf("unknown provider for %s", name)
 		}
 
-		if p.Provider != "sqlite" && p.Normalization != "semver" {
+		if p.Normalization == "tmux-release" && (name != "tmux" || p.Provider != "github" || p.Repository != "tmux/tmux-builds" || p.TagPrefix != "v") {
+			return fmt.Errorf("tmux-release is only supported for official tmux builds")
+		}
+		if p.Provider != "sqlite" && p.Normalization != "semver" && p.Normalization != "tmux-release" {
 			return fmt.Errorf("%s requires semver normalization", name)
 		}
 		if p.Provider == "sqlite" && (p.HistoryURL == "" || p.MetadataURL == "" || p.BaseURL == "" || p.Install.Kind != "sqlite-source") {

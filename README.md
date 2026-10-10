@@ -38,7 +38,7 @@ make run ARGS="tools volume --image workharbor-tools:poc"
 and `arm64`. The bundle contains Codex (including native helpers), Claude Code,
 Antigravity, GitHub CLI, SQLite, jq, ripgrep, fd, ast-grep, Mike Farah yq, uv
 (with uvx), and [Herdr](https://github.com/herdrdev/herdr) for terminal workspaces
-and agent sessions, plus the Fish shell and Starship prompt. Builds verify every
+and agent sessions, plus the Fish shell and Starship prompt, with Nushell and tmux available as alternatives. Builds verify every
 download. The Debian base image is pinned by digest; Debian packages still come from its current package repositories.
 
 | Tool | Pinned version |
@@ -57,6 +57,15 @@ download. The Debian base image is pinned by digest; Debian packages still come 
 | Herdr (`herdr`) | 0.9.3 |
 | Fish (`fish`) | 4.9.3 |
 | Starship (`starship`) | 1.26.0 |
+| Nushell (`nu`) | 0.116.1 |
+| tmux (`tmux`) | 3.7c (official static builds) |
+
+Nushell and tmux are opt-in commands. tmux uses the latest published stable
+[official static build](https://github.com/tmux/tmux-builds/releases/tag/v3.7c),
+3.7c, while the upstream source release is 3.8. Its provider resolves that static
+build feed; release suffixes compare numerically (`3.7a` = `3.7.1`, `3.7c` =
+`3.7.3`, `3.8` = `3.8.0`) while lock versions and asset URLs retain the upstream tag.
+No plugins or user configuration are installed for either alternative.
 
 The devcontainer uses Fish for interactive VS Code terminals and offers separate
 Herdr and Bash profiles. Select Herdr from the terminal profile menu or run
@@ -238,7 +247,7 @@ Keep authentication and writable tool state in the user's home directory or
 separate private volumes. No credentials are included in the image. The read-only mount prevents tools from updating the
 shared executables; Claude updates are also disabled with environment variables.
 
-The smoke test executes all fourteen tools and the `fdfind` and `uvx` companions
+The smoke test executes all sixteen tools and the `fdfind` and `uvx` companions
 as a non-root user in two concurrent containers with networking disabled. It checks
 a SQLite query, JSON and YAML processing, text search, file discovery, and Go syntax
 search. Fish checks a pipeline, arithmetic, embedded functions and completions;
