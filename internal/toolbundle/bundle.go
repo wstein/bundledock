@@ -165,7 +165,8 @@ func install(ctx context.Context, client *http.Client, root *os.Root, name strin
 }
 
 // Extract validates every tar member before selecting declarative executables.
-// Preserve keeps native package resources; aliases are independent regular files.
+// Preserve keeps native package resources except declared directories; aliases
+// are independent regular files. Excluded entries undergo the same validation.
 func Extract(root *os.Root, tool string, p toolconfig.Package, source io.Reader) error {
 	var decoded io.Reader
 	var limited *io.LimitedReader
@@ -217,7 +218,7 @@ func Extract(root *os.Root, tool string, p toolconfig.Package, source io.Reader)
 		}
 		seen[name] = true
 		if entry.Typeflag == tar.TypeDir {
-			if p.Install.Preserve {
+			if p.Install.Preserve && !p.Install.Excludes(name) {
 				if err := mkdir(root, name); err != nil {
 					return err
 				}
@@ -226,6 +227,14 @@ func Extract(root *os.Root, tool string, p toolconfig.Package, source io.Reader)
 		}
 		if entry.Typeflag != tar.TypeReg && entry.Typeflag != tar.TypeRegA {
 			return fmt.Errorf("unsupported archive entry %q", name)
+		}
+		if p.Install.Excludes(name) {
+			// Consume the payload through the tar reader so truncation and decoder
+			// integrity failures still abort even though no output file is created.
+			if _, err := io.Copy(io.Discard, archive); err != nil {
+				return err
+			}
+			continue
 		}
 		key := path.Base(name)
 		if p.Install.Preserve {

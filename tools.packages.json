@@ -20,7 +20,10 @@
         "members": {
           "bin/codex": "bin/codex"
         },
-        "preserve": true
+        "preserve": true,
+        "exclude_directories": [
+          "codex-resources/voice"
+        ]
       },
       "sidecar": "{asset}.sha256"
     },

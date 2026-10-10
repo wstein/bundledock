@@ -222,3 +222,32 @@ func TestQualitySecurityCatalogPins(t *testing.T) {
 		})
 	}
 }
+
+func TestPreservedArchiveDirectoryExclusions(t *testing.T) {
+	for _, dir := range []string{"codex-resources/voice", "", ".", "../voice", "/voice", "codex-resources/../voice", "./voice", "voice/", "voice\\lib", "voice\nlib", "bin"} {
+		t.Run(dir, func(t *testing.T) {
+			c, err := Load("../..")
+			if err != nil {
+				t.Fatal(err)
+			}
+			p := c.Catalog.Packages["codex"]
+			p.Install.ExcludeDirectories = []string{dir}
+			c.Catalog.Packages["codex"] = p
+			c.Bind()
+			err = c.Validate()
+			if dir == "codex-resources/voice" {
+				if err != nil {
+					t.Fatal(err)
+				}
+				p.Install.Preserve = false
+				c.Catalog.Packages["codex"] = p
+				c.Bind()
+				if err := c.Validate(); err == nil {
+					t.Fatal("exclusions accepted without preserve")
+				}
+			} else if err == nil {
+				t.Fatal("unsafe or required directory exclusion accepted")
+			}
+		})
+	}
+}

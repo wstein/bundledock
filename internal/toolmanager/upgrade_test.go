@@ -76,6 +76,7 @@ func TestSingleUpgradeBothArchitecturesAndAtomicFailure(t *testing.T) {
 			dir := checkout(t)
 			before := readLock(t, dir)
 			old, _ := toolconfig.Load(dir)
+			oldCatalog := old.CatalogDigest()
 			assets := []map[string]string{{"name": "gh_2.103.0_linux_amd64.tar.gz", "browser_download_url": "https://github.com/cli/cli/releases/download/v2.103.0/gh_2.103.0_linux_amd64.tar.gz", "digest": sum}}
 			if failure != "missing-arm64" {
 				assets = append(assets, map[string]string{"name": "gh_2.103.0_linux_arm64.tar.gz", "browser_download_url": "https://github.com/cli/cli/releases/download/v2.103.0/gh_2.103.0_linux_arm64.tar.gz", "digest": sum})
@@ -115,6 +116,9 @@ func TestSingleUpgradeBothArchitecturesAndAtomicFailure(t *testing.T) {
 			c, err := toolconfig.Load(dir)
 			if err != nil {
 				t.Fatal(err)
+			}
+			if c.CatalogDigest() != oldCatalog || len(c.Catalog.Packages["codex"].Install.ExcludeDirectories) != 1 || !c.Catalog.Packages["codex"].Install.Excludes("codex-resources/voice/lib.so") {
+				t.Fatal("targeted upgrade changed Codex exclusion recipe or its identity")
 			}
 			for _, a := range []string{"amd64", "arm64"} {
 				if c.Lock.Platforms[a]["gh"].Version != "v2.103.0" {

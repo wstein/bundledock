@@ -96,7 +96,7 @@ func fixture(t *testing.T) (map[string][]byte, map[string]Spec, *httptest.Server
 		"fd":       archive(t, member{"fd-1/fd", "fd executable", 0755, 0}, member{"fd-1/LICENSE-MIT", "fd mit", 0644, 0}, member{"fd-1/LICENSE-APACHE", "fd apache", 0644, 0}),
 		"gh":       archive(t, member{"gh_1/bin/gh", "github cli", 0755, 0}, member{"gh_1/share/man/gh.1", "manual", 0644, 0}),
 		"agy":      archive(t, member{"bundle/antigravity", "antigravity cli", 0755, 0}),
-		"codex":    archive(t, member{"bin/codex", "codex cli", 0755, 0}, member{"codex-package.json", `{"entrypoint":"bin/codex"}`, 0644, 0}, member{"bin/codex-code-mode-host", "host", 0755, 0}, member{"codex-path/rg", "rg", 0755, 0}, member{"codex-resources/bwrap", "bwrap", 0755, 0}, member{"codex-resources/voice/lib/example.so", "shared library", 0644, 0}, member{"empty/", "", 0755, tar.TypeDir}),
+		"codex":    archive(t, member{"bin/codex", "codex cli", 0755, 0}, member{"codex-package.json", `{"entrypoint":"bin/codex"}`, 0644, 0}, member{"bin/codex-code-mode-host", "host", 0755, 0}, member{"codex-path/rg", "rg", 0755, 0}, member{"codex-resources/bwrap", "bwrap", 0755, 0}, member{"codex-resources/zsh/bin/zsh", "zsh", 0755, 0}, member{"codex-resources/voice/", "", 0755, tar.TypeDir}, member{"./codex-resources/voice/lib/example.so", "shared library", 0644, 0}, member{"codex-resources/voice-other/keep", "other resource", 0644, 0}, member{"empty/", "", 0755, tar.TypeDir}),
 	}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if data, ok := payloads[strings.TrimPrefix(r.URL.Path, "/")]; ok {
@@ -155,7 +155,7 @@ func TestVendorBuildBothArchitectures(t *testing.T) {
 				"licenses/herdr/SOURCE":   {"Upstream: https://github.com/herdrdev/herdr\nLicense: Apache-2.0\nPinned release: v0.9.3\nLicense source: https://raw.githubusercontent.com/herdrdev/herdr/v0.9.3/LICENSE\n", 0644},
 				"licenses/fd/LICENSE-MIT": {"fd mit", 0644}, "licenses/fd/LICENSE-APACHE": {"fd apache", 0644},
 				"bin/claude": {"claude executable", 0755}, "bin/gh": {"github cli", 0755}, "bin/agy": {"antigravity cli", 0755}, "bin/codex": {"codex cli", 0755},
-				"bin/codex-code-mode-host": {"host", 0755}, "codex-path/rg": {"rg", 0755}, "codex-resources/bwrap": {"bwrap", 0755}, "codex-resources/voice/lib/example.so": {"shared library", 0644}, "codex-package.json": {`{"entrypoint":"bin/codex"}`, 0644},
+				"bin/codex-code-mode-host": {"host", 0755}, "codex-path/rg": {"rg", 0755}, "codex-resources/bwrap": {"bwrap", 0755}, "codex-resources/zsh/bin/zsh": {"zsh", 0755}, "codex-resources/voice-other/keep": {"other resource", 0644}, "codex-package.json": {`{"entrypoint":"bin/codex"}`, 0644},
 			}
 
 			for _, name := range []string{"typos", "lychee", "gitleaks", "trivy", "syft"} {
@@ -210,6 +210,9 @@ func TestVendorBuildBothArchitectures(t *testing.T) {
 				if err != nil || info.Mode().Perm() != w.mode {
 					t.Fatalf("%s mode=%v err=%v", name, info, err)
 				}
+			}
+			if _, err := os.Stat(filepath.Join(first, "codex-resources/voice")); !os.IsNotExist(err) {
+				t.Fatalf("optional Codex voice resources installed: %v", err)
 			}
 			if _, err := os.Stat(filepath.Join(first, "bin/sg")); !os.IsNotExist(err) {
 				t.Fatalf("unexpected sg alias: %v", err)
@@ -521,5 +524,101 @@ func TestTarXZMemberLimit(t *testing.T) {
 	root, _ := openRoot(t)
 	if err := Extract(root, "fish", p, bytes.NewReader(xzArchive(t, members...))); err == nil || !strings.Contains(err.Error(), "too many") {
 		t.Fatalf("member limit: %v", err)
+	}
+}
+
+func TestExcludedArchiveEntriesStillValidated(t *testing.T) {
+	for _, kind := range []string{"tar.gz", "tar.xz"} {
+		t.Run(kind, func(t *testing.T) {
+			p := testPackages(t)["codex"]
+			p.Install.Kind = kind
+			makeArchive := archive
+			if kind == "tar.xz" {
+				makeArchive = xzArchive
+			}
+			for _, bad := range []member{
+				{"codex-resources/voice/../escape", "bad", 0644, 0},
+				{"codex-resources/voice/absolute", "", 0644, tar.TypeSymlink},
+				{"codex-resources/voice/hardlink", "", 0644, tar.TypeLink},
+				{"codex-resources/voice/device", "", 0644, tar.TypeChar},
+				{"codex-resources/voice/fifo", "", 0644, tar.TypeFifo},
+			} {
+				t.Run(bad.name, func(t *testing.T) {
+					root, _ := openRoot(t)
+					data := makeArchive(t, member{"bin/codex", "cli", 0755, 0}, bad)
+					if err := Extract(root, "codex", p, bytes.NewReader(data)); err == nil {
+						t.Fatal("accepted unsafe excluded entry")
+					}
+				})
+			}
+			t.Run("duplicate", func(t *testing.T) {
+				root, _ := openRoot(t)
+				data := makeArchive(t, member{"bin/codex", "cli", 0755, 0}, member{"codex-resources/voice/lib.so", "one", 0644, 0}, member{"./codex-resources/voice/lib.so", "two", 0644, 0})
+				if err := Extract(root, "codex", p, bytes.NewReader(data)); err == nil {
+					t.Fatal("accepted duplicate excluded entry")
+				}
+			})
+			for _, damage := range []string{"truncated payload", "truncated trailer", "corrupt trailer"} {
+				t.Run(damage, func(t *testing.T) {
+					data := makeArchive(t, member{"bin/codex", "cli", 0755, 0}, member{"codex-resources/voice/lib.so", "library", 0644, 0})
+					if damage == "truncated payload" {
+						var raw bytes.Buffer
+						tw := tar.NewWriter(&raw)
+						if err := tw.WriteHeader(&tar.Header{Name: "bin/codex", Size: 3, Mode: 0755}); err != nil {
+							t.Fatal(err)
+						}
+						if _, err := io.WriteString(tw, "cli"); err != nil {
+							t.Fatal(err)
+						}
+						if err := tw.WriteHeader(&tar.Header{Name: "codex-resources/voice/lib.so", Size: 100, Mode: 0644}); err != nil {
+							t.Fatal(err)
+						}
+						if _, err := io.WriteString(tw, "partial"); err != nil {
+							t.Fatal(err)
+						}
+						// Keep compression valid while truncating the excluded tar member.
+						var compressed bytes.Buffer
+						var writer io.WriteCloser = gzip.NewWriter(&compressed)
+						if kind == "tar.xz" {
+							var err error
+							writer, err = xz.NewWriter(&compressed)
+							if err != nil {
+								t.Fatal(err)
+							}
+						}
+						if _, err := writer.Write(raw.Bytes()); err != nil {
+							t.Fatal(err)
+						}
+						if err := writer.Close(); err != nil {
+							t.Fatal(err)
+						}
+						data = compressed.Bytes()
+					} else if damage == "truncated trailer" {
+						data = data[:len(data)-6]
+					} else {
+						data[len(data)-8] ^= 1
+					}
+					root, _ := openRoot(t)
+					if err := Extract(root, "codex", p, bytes.NewReader(data)); err == nil {
+						t.Fatal("accepted damaged excluded archive")
+					}
+				})
+			}
+		})
+	}
+}
+
+func TestExcludedContentsStillRequirePinnedChecksum(t *testing.T) {
+	original := archive(t, member{"bin/codex", "cli", 0755, 0}, member{"codex-resources/voice/lib.so", "original", 0644, 0})
+	changed := archive(t, member{"bin/codex", "cli", 0755, 0}, member{"codex-resources/voice/lib.so", "changed", 0644, 0})
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.Write(changed) }))
+	defer server.Close()
+	root, _ := openRoot(t)
+	err := install(context.Background(), server.Client(), root, "codex", testPackages(t)["codex"], Spec{URL: server.URL, SHA256: fmt.Sprintf("%x", sha256.Sum256(original))})
+	if err == nil || !strings.Contains(err.Error(), "checksum mismatch") {
+		t.Fatalf("expected original archive checksum rejection, got %v", err)
+	}
+	if _, err := root.Stat("bin/codex"); !os.IsNotExist(err) {
+		t.Fatalf("decoded before checksum verification: %v", err)
 	}
 }

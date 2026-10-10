@@ -48,12 +48,25 @@ type Package struct {
 	Notices       []string          `json:"notices,omitempty"`
 }
 type Install struct {
-	Kind           string            `json:"kind"`
-	Members        map[string]string `json:"members,omitempty"`
-	Aliases        map[string]string `json:"aliases,omitempty"`
-	Preserve       bool              `json:"preserve,omitempty"`
-	ArchiveNotices []string          `json:"archive_notices,omitempty"`
+	Kind               string            `json:"kind"`
+	Members            map[string]string `json:"members,omitempty"`
+	Aliases            map[string]string `json:"aliases,omitempty"`
+	Preserve           bool              `json:"preserve,omitempty"`
+	ArchiveNotices     []string          `json:"archive_notices,omitempty"`
+	ExcludeDirectories []string          `json:"exclude_directories,omitempty"`
 }
+
+// Excludes reports whether a normalized archive path is in an omitted directory.
+// Directory names are exact relative paths, without glob or prefix matching.
+func (i Install) Excludes(name string) bool {
+	for _, directory := range i.ExcludeDirectories {
+		if name == directory || strings.HasPrefix(name, directory+"/") {
+			return true
+		}
+	}
+	return false
+}
+
 type Config struct {
 	Desired Desired
 	Catalog Catalog
@@ -312,6 +325,19 @@ func (c Config) validate(strict bool) error {
 		}
 		if p.Install.Preserve && p.Install.Kind != "tar.gz" && p.Install.Kind != "tar.xz" {
 			return fmt.Errorf("preserve requires tar.gz or tar.xz")
+		}
+		if len(p.Install.ExcludeDirectories) > 0 && !p.Install.Preserve {
+			return fmt.Errorf("directory exclusions require preserve for %s", name)
+		}
+		for _, directory := range p.Install.ExcludeDirectories {
+			if !validPath(directory) {
+				return fmt.Errorf("unsafe excluded directory for %s", name)
+			}
+		}
+		for member := range p.Install.Members {
+			if p.Install.Excludes(member) {
+				return fmt.Errorf("excluded executable member for %s", name)
+			}
 		}
 		for _, notice := range append(append([]string{}, p.Notices...), p.Install.ArchiveNotices...) {
 			if !validPath(notice) {

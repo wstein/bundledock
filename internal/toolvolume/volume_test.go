@@ -1,8 +1,11 @@
 package toolvolume
 
 import (
+	"archive/tar"
 	"bundledock/internal/toolbundle"
+	"bundledock/internal/toolconfig"
 	"bytes"
+	"compress/gzip"
 	"errors"
 	"io"
 	"os"
@@ -19,14 +22,33 @@ func bundle(t *testing.T) string {
 		t.Fatal(err)
 	}
 	defer root.Close()
-	for name, data := range map[string]string{"bin/codex": "cli", "bin/codex-code-mode-host": "host", "codex-path/rg": "rg", "codex-resources/voice/lib/libfixture.so": "lib", "codex-package.json": "{}"} {
-		mode := os.FileMode(0755)
+	var data bytes.Buffer
+	gz := gzip.NewWriter(&data)
+	tw := tar.NewWriter(gz)
+	for name, content := range map[string]string{"bin/codex": "cli", "bin/codex-code-mode-host": "host", "codex-path/rg": "rg", "codex-resources/bwrap": "bwrap", "codex-resources/zsh/bin/zsh": "zsh", "codex-resources/voice/lib/libfixture.so": "lib", "codex-resources/voice-other/keep": "other", "codex-package.json": "{}"} {
+		mode := int64(0755)
 		if strings.HasSuffix(name, ".json") || strings.HasSuffix(name, ".so") {
 			mode = 0644
 		}
-		if err := toolbundle.WriteFile(root, name, strings.NewReader(data), mode); err != nil {
+		if err := tw.WriteHeader(&tar.Header{Name: name, Size: int64(len(content)), Mode: mode}); err != nil {
 			t.Fatal(err)
 		}
+		if _, err := io.WriteString(tw, content); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := tw.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if err := gz.Close(); err != nil {
+		t.Fatal(err)
+	}
+	c, err := toolconfig.Load("../..")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := toolbundle.Extract(root, "codex", c.Catalog.Packages["codex"], bytes.NewReader(data.Bytes())); err != nil {
+		t.Fatal(err)
 	}
 	if err := toolbundle.MakeDirectory(root, "empty/nested"); err != nil {
 		t.Fatal(err)
@@ -58,7 +80,7 @@ func TestInitializeAndRepeat(t *testing.T) {
 	if out.String() != "Tool volume initialized\n" {
 		t.Fatalf("output %q", out.String())
 	}
-	for _, name := range []string{"bin/codex", "codex-resources/voice/lib/libfixture.so", "manifest.json", "SHA256SUMS"} {
+	for _, name := range []string{"bin/codex", "bin/codex-code-mode-host", "codex-path/rg", "codex-resources/bwrap", "codex-resources/zsh/bin/zsh", "codex-resources/voice-other/keep", "codex-package.json", "manifest.json", "SHA256SUMS"} {
 		a, _ := os.ReadFile(filepath.Join(src, name))
 		b, _ := os.ReadFile(filepath.Join(dst, name))
 		if !bytes.Equal(a, b) {
@@ -76,6 +98,8 @@ func TestInitializeAndRepeat(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(dst, ".ready")); err != nil {
 		t.Fatal(err)
 	}
+	absent(t, src, "codex-resources/voice")
+	absent(t, dst, "codex-resources/voice")
 	absent(t, dst, ".initializing")
 	out.Reset()
 	if err := Initialize(src, dst, &out); err != nil {
