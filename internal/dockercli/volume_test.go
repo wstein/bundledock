@@ -17,7 +17,7 @@ import (
 
 func TestImmutableIDAndForwardedOutput(t *testing.T) {
 	id := "sha256:" + strings.Repeat("a", 64)
-	volume := "anchorage-tools-" + strings.Repeat("a", 64)
+	volume := "bundledock-toolbox-" + strings.Repeat("a", 64)
 	image := "arbitrary image; $(touch ignored)"
 	var calls [][]string
 	var out, stderr bytes.Buffer
@@ -134,8 +134,38 @@ func TestDockerOnlyCompatibilityAdapter(t *testing.T) {
 	if err != nil {
 		t.Fatalf("adapter failed: %v %s", err, data)
 	}
-	want := "Tool volume initialized\nVolume: anchorage-tools-" + strings.Repeat("b", 64) + "\n"
+	want := "Tool volume initialized\nVolume: bundledock-toolbox-" + strings.Repeat("b", 64) + "\n"
 	if string(data) != want {
 		t.Fatalf("output %q", data)
+	}
+}
+
+func TestDockerAdapterExplicitLegacyVolume(t *testing.T) {
+	id := "sha256:" + strings.Repeat("b", 64)
+	log := filepath.Join(t.TempDir(), "calls")
+	t.Setenv("DOCKER_CALLS", log)
+	fakeDocker(t, "printf '%s\\n' \"$*\" >> \"$DOCKER_CALLS\"\ncase \"$1\" in\nimage) printf '%s\\n' '"+id+"' ;;\nesac\n")
+	legacy := "anchorage-tools-" + strings.Repeat("b", 64)
+	output, err := exec.Command("sh", "../../oci/volume.sh", id, legacy).CombinedOutput()
+	if err != nil {
+		t.Fatalf("adapter: %v %s", err, output)
+	}
+	calls, err := os.ReadFile(log)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(calls), "volume create "+legacy+"\n") || !strings.Contains(string(calls), "src="+legacy+",dst=/bundle,volume-nocopy "+id) || !strings.Contains(string(output), "Volume: "+legacy) {
+		t.Fatalf("calls %s output %s", calls, output)
+	}
+}
+
+func TestDockerAdapterRejectsInvalidVolumeNames(t *testing.T) {
+	id := "sha256:" + strings.Repeat("b", 64)
+	fakeDocker(t, "case \"$1\" in\nimage) printf '%s\\n' '"+id+"' ;;\n*) printf 'unexpected mutation\\n' ;;\nesac\n")
+	for _, name := range []string{"-option", "has space", "a,b", "a/b", "a\nother"} {
+		output, err := exec.Command("sh", "../../oci/volume.sh", id, name).CombinedOutput()
+		if err == nil || !strings.Contains(string(output), "Invalid Docker volume name") || strings.Contains(string(output), "unexpected mutation") {
+			t.Fatalf("accepted %q: %v %s", name, err, output)
+		}
 	}
 }

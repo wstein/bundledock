@@ -31,7 +31,7 @@ func TestToolsVolumeCommand(t *testing.T) {
 	if err := cmd.ExecuteContext(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	if want := "Tool volume initialized\nVolume: anchorage-tools-" + strings.Repeat("a", 64) + "\n"; output.String() != want {
+	if want := "Tool volume initialized\nVolume: bundledock-toolbox-" + strings.Repeat("a", 64) + "\n"; output.String() != want {
 		t.Fatalf("output %q", output.String())
 	}
 }

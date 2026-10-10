@@ -32,7 +32,7 @@ func Volume(ctx context.Context, run Runner, image string, stdout, stderr io.Wri
 	if !imageID.MatchString(id) {
 		return fmt.Errorf("Docker returned invalid image ID %q", id)
 	}
-	volume := "anchorage-tools-" + strings.TrimPrefix(id, "sha256:")
+	volume := "bundledock-toolbox-" + strings.TrimPrefix(id, "sha256:")
 	if err := run(ctx, io.Discard, stderr, "volume", "create", volume); err != nil {
 		return fmt.Errorf("create tools volume: %w", err)
 	}

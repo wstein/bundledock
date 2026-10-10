@@ -9,10 +9,13 @@ builds and checks. The module retains Go 1.24 source compatibility. The Anchorag
 optional consumer devcontainer; its integration and pinned image are maintained
 there. Make inherits `GOFLAGS`; OCI build commands pass `-trimpath` explicitly.
 
-The local output image remains `bundledock-toolbox`, its installed prefix remains
-`/opt/workharbor`, and the initializer retains `anchorage-tools-<digest>` volume
-names so existing image-derived volumes remain reusable. Writable credentials,
-configuration, caches, and environments belong outside the bundle.
+The local output image is `bundledock-toolbox`, its installed prefix is
+`/opt/bundledock`, and new volumes default to `bundledock-toolbox-<digest>`.
+Existing volumes remain reusable with their original images: pass the existing
+name as the second argument to `sh oci/volume.sh <image> <volume-name>`.
+This selects the existing data without copying or renaming the volume. Anchorage
+selects its pinned legacy volume explicitly. Writable credentials, configuration,
+caches, and environments belong outside the bundle.
 
 ```sh
 make run
@@ -162,7 +165,7 @@ a redacted synthetic secret, embedded Dockerfile configuration findings, and a
 synthetic package in an SBOM. They scan only their generated local fixtures.
 Trivy configuration smoke uses embedded checks with check updates disabled and
 does not download a vulnerability database. Trivy vulnerability scans require
-separately managed databases and writable caches outside `/opt/workharbor`;
+separately managed databases and writable caches outside `/opt/bundledock`;
 no database is baked into the bundle. Syft update checks are disabled in smoke.
 Nushell processes structured records. A headless tmux server uses an
 isolated socket and the consumer's `/bin/bash`, then removes its session.
