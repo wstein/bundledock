@@ -26,24 +26,3 @@ jobs:
           cache: false
       - name: Check formatting, tests and vet
         run: make check
-      - name: Build CLI
-        run: make build
-
-  native:
-    needs: check
-    runs-on: ${{ matrix.runner }}
-    timeout-minutes: 90
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - architecture: amd64
-            runner: ubuntu-24.04
-          - architecture: arm64
-            runner: ubuntu-24.04-arm
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - name: Build pinned toolbox and run full native smoke
-        run: sh bundles/toolbox/ci-smoke.sh

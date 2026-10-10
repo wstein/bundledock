@@ -70,15 +70,15 @@ func TestPublicationWorkflowRepositoryConfiguration(t *testing.T) {
 	}
 }
 
-func TestDailyPublicationSkipsAllNativeAndPromotionWorkOnNoop(t *testing.T) {
+func TestPublicationKeepsNativeAndPromotionGates(t *testing.T) {
 	b, err := os.ReadFile("../../.github/workflows/bundledock-toolbox.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
 	w := string(b)
-	for _, required := range []string{"cron: '0 6 * * *'", "publish: ${{ steps.plan.outputs.publish }}", "id: plan", `"$RUNNER_TEMP/tools-publish" plan`} {
+	for _, required := range []string{"publish: ${{ steps.plan.outputs.publish }}", "id: plan", `"$RUNNER_TEMP/tools-publish" plan`} {
 		if !strings.Contains(w, required) {
-			t.Fatalf("missing daily publication contract %s", required)
+			t.Fatalf("missing publication contract %s", required)
 		}
 	}
 	for _, name := range []string{"native", "promote"} {
@@ -91,7 +91,7 @@ func TestDailyPublicationSkipsAllNativeAndPromotionWorkOnNoop(t *testing.T) {
 			job = job[:keys[1][0]]
 		}
 		// A job-level condition excludes native runners, builds, logins, pushes
-		// and promotion together when the scheduled resolver reports no change.
+		// and promotion together when the resolver does not approve publication.
 		if !strings.Contains(job, "if: needs.resolve.outputs.publish == 'true'") {
 			t.Fatalf("%s does not skip all work on no-op", name)
 		}
@@ -122,5 +122,93 @@ func TestWorkflowsUsePatchedBuildToolchain(t *testing.T) {
 		if strings.Count(workflow, "uses: actions/setup-go@") != strings.Count(workflow, "go-version-file: .go-version") || strings.Contains(workflow, "go-version-file: go.mod") {
 			t.Errorf("%s must use the shared patched compiler version for every Go setup", name)
 		}
+	}
+}
+
+func TestAutomaticCIOnlyChecksSource(t *testing.T) {
+	data, err := os.ReadFile("../../.github/workflows/ci.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := string(data)
+	if !strings.Contains(w, "run: make check") {
+		t.Fatal("automatic CI must retain source checks")
+	}
+	for _, forbidden := range []string{"make build", "ci-smoke.sh", "docker ", "tools-build", "make release", "make docs", "  native:"} {
+		if strings.Contains(w, forbidden) {
+			t.Errorf("automatic CI must not build artifacts: %s", forbidden)
+		}
+	}
+}
+
+func TestPublicationRequiresManualApprovedRevision(t *testing.T) {
+	data, err := os.ReadFile("../../.github/workflows/bundledock-toolbox.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := string(data)
+	start, end := strings.Index(w, "\non:\n"), strings.Index(w, "\npermissions:")
+	if start < 0 || end < start {
+		t.Fatal("missing workflow event contract")
+	}
+	triggers := w[start:end]
+	for _, forbidden := range []string{"schedule:", "push:", "pull_request:", "workflow_run:", "repository_dispatch:", "workflow_call:"} {
+		if strings.Contains(triggers, forbidden) {
+			t.Errorf("publication must require user dispatch: %s", forbidden)
+		}
+	}
+	for _, required := range []string{"workflow_dispatch:", "approved_sha:", "required: true"} {
+		if !strings.Contains(triggers, required) {
+			t.Errorf("missing explicit approval input: %s", required)
+		}
+	}
+	for _, required := range []string{"github.event_name == 'workflow_dispatch'", "github.event.repository.default_branch == 'main'", "github.ref == 'refs/heads/main'", "github.event.sender.type == 'User'", "inputs.approved_sha == github.sha", "run: sh scripts/approve-publication.sh", "APPROVED_SHA: ${{ inputs.approved_sha }}", "SENDER_TYPE: ${{ github.event.sender.type }}", "TRIGGERING_ACTOR: ${{ github.triggering_actor }}"} {
+		if !strings.Contains(w, required) {
+			t.Errorf("missing approval gate: %s", required)
+		}
+	}
+	if strings.Count(w, "run: sh scripts/approve-publication.sh") != 3 {
+		t.Error("resolve, native and promote must each recheck approval, including partial reruns")
+	}
+	gate := strings.Index(w, "run: sh scripts/approve-publication.sh")
+	setup := strings.Index(w, "uses: actions/setup-go@")
+	if gate < 0 || setup < gate {
+		t.Error("approval must precede compilation and resolution")
+	}
+}
+
+func TestPublicationApprovalFailsClosed(t *testing.T) {
+	sha := strings.Repeat("a", 40)
+	base := []string{"GITHUB_EVENT_NAME=workflow_dispatch", "DEFAULT_BRANCH=main", "GITHUB_REF=refs/heads/main", "GITHUB_SHA=" + sha, "APPROVED_SHA=" + sha, "GITHUB_ACTOR=maintainer", "TRIGGERING_ACTOR=maintainer", "SENDER_TYPE=User"}
+	cases := []struct {
+		name, replacement string
+		wantErr           bool
+	}{
+		{"human approval", "", false},
+		{"schedule", "GITHUB_EVENT_NAME=schedule", true},
+		{"PR", "GITHUB_EVENT_NAME=pull_request", true},
+		{"push", "GITHUB_EVENT_NAME=push", true},
+		{"wrong branch", "GITHUB_REF=refs/heads/topic", true},
+		{"different default", "DEFAULT_BRANCH=develop", true},
+		{"missing approval", "APPROVED_SHA=", true},
+		{"wrong revision", "APPROVED_SHA=" + strings.Repeat("b", 40), true},
+		{"short revision", "APPROVED_SHA=aaaaaaa", true},
+		{"bot sender", "SENDER_TYPE=Bot", true},
+		{"bot actor", "GITHUB_ACTOR=renovate[bot]", true},
+		{"automated rerun", "TRIGGERING_ACTOR=github-actions[bot]", true},
+		{"missing actor", "GITHUB_ACTOR=", true},
+	}
+	for _, test := range cases {
+		t.Run(test.name, func(t *testing.T) {
+			cmd := exec.Command("sh", "../../scripts/approve-publication.sh")
+			cmd.Env = append(os.Environ(), base...)
+			if test.replacement != "" {
+				cmd.Env = append(cmd.Env, test.replacement)
+			}
+			out, err := cmd.CombinedOutput()
+			if (err != nil) != test.wantErr {
+				t.Fatalf("approval error=%v output=%s", err, out)
+			}
+		})
 	}
 }
