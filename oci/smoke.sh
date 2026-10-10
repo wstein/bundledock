@@ -1,6 +1,6 @@
 #!/bin/sh
 set -eu
-image=${1:-workharbor-tools:poc}
+image=${1:-bundledock-tools:poc}
 consumer=${2:-mcr.microsoft.com/devcontainers/go:2-1.27-trixie}
 image=$(docker image inspect --format '{{.Id}}' "$image")
 volume=$(docker volume create)

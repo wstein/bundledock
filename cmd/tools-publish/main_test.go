@@ -18,7 +18,7 @@ func TestResolveOnceAndKeepExactArtifactBytes(t *testing.T) {
 	if err := os.WriteFile("tools.lock.json", initial, 0600); err != nil {
 		t.Fatal(err)
 	}
-	meta, err := toolpublish.NewMetadata("tools.lock.json", "quay.io/example/workharbor-tools", "2026.10.10-123-1", strings.Repeat("a", 40), "https://github.com/example/repo", "2026-10-10T03:17:00Z")
+	meta, err := toolpublish.NewMetadata("tools.lock.json", "quay.io/example/bundledock-tools", "2026.10.10-123-1", strings.Repeat("a", 40), "https://github.com/example/repo", "2026-10-10T03:17:00Z")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -62,7 +62,7 @@ func TestFailedResolveCreatesNoArtifact(t *testing.T) {
 	if err := os.WriteFile("tools.lock.json", []byte("{}"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	meta, err := toolpublish.NewMetadata("tools.lock.json", "quay.io/example/workharbor-tools", "2026.10.10-123-1", strings.Repeat("a", 40), "https://github.com/example/repo", "2026-10-10T03:17:00Z")
+	meta, err := toolpublish.NewMetadata("tools.lock.json", "quay.io/example/bundledock-tools", "2026.10.10-123-1", strings.Repeat("a", 40), "https://github.com/example/repo", "2026-10-10T03:17:00Z")
 	if err != nil {
 		t.Fatal(err)
 	}

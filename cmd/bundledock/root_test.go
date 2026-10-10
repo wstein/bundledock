@@ -41,7 +41,7 @@ func TestToolsVolumeHelpDefaultImage(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(output.String(), `default "workharbor-tools:poc"`) {
+	if !strings.Contains(output.String(), `default "bundledock-tools:poc"`) {
 		t.Fatalf("volume help has an unexpected default image: %q", output.String())
 	}
 }

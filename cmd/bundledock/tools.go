@@ -11,7 +11,7 @@ import (
 func newToolsCommand() *cobra.Command { return newToolsCommandWithClient(nil) }
 func newToolsCommandWithClient(client *http.Client) *cobra.Command {
 	tools := &cobra.Command{Use: "tools", Short: "Manage shared OCI tools", Args: cobra.NoArgs, RunE: func(cmd *cobra.Command, args []string) error { return cmd.Help() }}
-	image := "workharbor-tools:poc"
+	image := "bundledock-tools:poc"
 	volume := &cobra.Command{
 		Use: "volume", Short: "Initialize and verify a versioned Docker tool volume", Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {

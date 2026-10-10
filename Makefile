@@ -2,7 +2,7 @@ GO ?= go
 GOFMT ?= gofmt
 PACKAGES := ./cmd/... ./internal/...
 BINARY := bin/bundledock
-TOOLS_IMAGE ?= workharbor-tools:poc
+TOOLS_IMAGE ?= bundledock-tools:poc
 TOOLS_CONSUMER ?= mcr.microsoft.com/devcontainers/go:2-1.27-trixie
 
 .PHONY: help build run test vet fmt check clean tools-build tools-volume tools-smoke tools-test

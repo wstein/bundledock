@@ -1,4 +1,4 @@
-name: Publish workharbor-tools
+name: Publish bundledock-tools
 
 on:
   schedule:
@@ -11,7 +11,7 @@ permissions:
 # A single publisher owns stable. Queue manual and scheduled runs without
 # cancelling a native smoke test or allowing concurrent stable updates.
 concurrency:
-  group: workharbor-tools-publish
+  group: bundledock-tools-publish
   cancel-in-progress: false
 
 jobs:

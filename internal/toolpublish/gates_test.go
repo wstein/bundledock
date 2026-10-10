@@ -105,7 +105,7 @@ func fixture(t *testing.T) (Metadata, string) {
 	if err := os.WriteFile(lock, []byte(`{"platforms":{"amd64":{"gh":{"version":"v1.2.3"}},"arm64":{"gh":{"version":"v1.2.3"}}}}`), 0600); err != nil {
 		t.Fatal(err)
 	}
-	m, err := NewMetadata(lock, "quay.io/example/workharbor-tools", "2026.10.10-123-1", strings.Repeat("f", 40), "https://github.com/example/repo", "2026-10-10T03:17:00Z")
+	m, err := NewMetadata(lock, "quay.io/example/bundledock-tools", "2026.10.10-123-1", strings.Repeat("f", 40), "https://github.com/example/repo", "2026-10-10T03:17:00Z")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -159,7 +159,7 @@ func TestBuildSmokeThenPushExactImage(t *testing.T) {
 	if builds != 1 || !exactTag {
 		t.Fatalf("must push original smoked image without rebuild: %v", f.calls)
 	}
-	if f.labels["io.workharbor.tools.versions"] != `{"gh":"v1.2.3"}` || f.labels["org.opencontainers.image.title"] != "workharbor-tools" {
+	if f.labels["io.bundledock.tools.versions"] != `{"gh":"v1.2.3"}` || f.labels["org.opencontainers.image.title"] != "bundledock-tools" {
 		t.Fatal("missing tool versions/title provenance")
 	}
 }
@@ -224,7 +224,7 @@ func TestReceiptAndLabelsBindBeforePush(t *testing.T) {
 			t.Fatalf("accepted invalid %s receipt", field)
 		}
 	}
-	f.labels["io.workharbor.tools.lock-sha256"] = "wrong"
+	f.labels["io.bundledock.tools.lock-sha256"] = "wrong"
 	if _, err := (Adapter{Run: f.run}).Push(m, lock, r); err == nil {
 		t.Fatal("accepted wrong image labels")
 	}
@@ -311,9 +311,16 @@ func TestBadPublishedIndexPreventsStable(t *testing.T) {
 
 func TestDestinationValidation(t *testing.T) {
 	_, lock := fixture(t)
-	for _, image := range []string{"", "docker.io/example/workharbor-tools", "quay.io/example/tools", "quay.io/example/workharbor-tools:stable", "quay.io/example/workharbor-tools;echo hi"} {
+	for _, image := range []string{"", "docker.io/example/bundledock-tools", "quay.io/example/tools", "quay.io/example/bundledock-tools:stable", "quay.io/example/bundledock-tools;echo hi", "quay.io/example/workharbor-tools"} {
 		if _, err := NewMetadata(lock, image, "2026.10.10-123-1", strings.Repeat("f", 40), "https://github.com/example/repo", "2026-10-10T03:17:00Z"); err == nil {
 			t.Fatalf("accepted invalid destination %q", image)
 		}
+	}
+}
+
+func TestBundleDockDestinationAccepted(t *testing.T) {
+	_, lock := fixture(t)
+	if _, err := NewMetadata(lock, "quay.io/example/bundledock-tools", "2026.10.10-123-1", strings.Repeat("f", 40), "https://github.com/example/repo", "2026-10-10T03:17:00Z"); err != nil {
+		t.Fatalf("rejected BundleDock destination: %v", err)
 	}
 }
