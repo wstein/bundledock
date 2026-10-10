@@ -280,6 +280,31 @@
       "notices": [
         "oci/licenses/sqlite3/NOTICE"
       ]
+    },
+    "herdr": {
+      "provider": "github",
+      "repository": "herdrdev/herdr",
+      "tag_prefix": "v",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "x86_64",
+        "arm64": "aarch64"
+      },
+      "asset": "herdr-linux-{arch}",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "raw",
+        "members": {
+          "herdr": "bin/herdr"
+        }
+      },
+      "notices": [
+        "oci/licenses/herdr/LICENSE",
+        "oci/licenses/herdr/SOURCE"
+      ]
     }
   }
 }

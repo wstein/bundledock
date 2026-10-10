@@ -67,6 +67,12 @@
         "url": "https://github.com/astral-sh/uv/releases/download/0.13.0/uv-x86_64-unknown-linux-musl.tar.gz",
         "sha256": "b0828fc4cdc47d65951e94b5f0a15a5364420e8dcd88723f3b21e7a2eb30bbc3",
         "verification": "tls-download-sha256"
+      },
+      "herdr": {
+        "version": "v0.9.3",
+        "url": "https://github.com/herdrdev/herdr/releases/download/v0.9.3/herdr-linux-x86_64",
+        "sha256": "18a8dc65f1c2fa485884344356dea1cfd911c6f06cf46fa78e193f4087f4dba7",
+        "verification": "tls-download-sha256"
       }
     },
     "arm64": {
@@ -135,9 +141,15 @@
         "url": "https://github.com/astral-sh/uv/releases/download/0.13.0/uv-aarch64-unknown-linux-musl.tar.gz",
         "sha256": "281ca6cf43f4e26e35474839ad4861be86de42af2682f74134460f5b2071b96d",
         "verification": "tls-download-sha256"
+      },
+      "herdr": {
+        "version": "v0.9.3",
+        "url": "https://github.com/herdrdev/herdr/releases/download/v0.9.3/herdr-linux-aarch64",
+        "sha256": "4de7aa3e25678812e92960de64f7c2aaa1bca1f0f80a3c5e559837e231e1f5c0",
+        "verification": "tls-download-sha256"
       }
     }
   },
-  "desired_digest": "b3320b1309b722dffb646c749a4864f232c0a53a51a768179c5b5a715b274ed8",
-  "catalog_digest": "9ad83a2e261ad60589023456df7b992d530585cc218f53af1889921f2d238f96"
+  "desired_digest": "1d98844ef4ea283db97a2a2f408f89fa2938f5ca85e0323c97039732ba3e9588",
+  "catalog_digest": "6b21491d1b50eb591de969775134374db47d39fe02fd735f74f1d7fc264e49cd"
 }

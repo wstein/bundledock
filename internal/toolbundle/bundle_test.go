@@ -77,6 +77,7 @@ func fixture(t *testing.T) (map[string][]byte, map[string]Spec, *httptest.Server
 		"ast-grep": sqliteArchive(t, member{"ast-grep", "ast-grep executable", 0755, 0}, member{"sg", "unwanted alias", 0755, 0}),
 		"sqlite3":  sqliteArchive(t, member{"sqlite/sqlite3.c", "sqlite source", 0644, 0}, member{"sqlite/shell.c", "shell source", 0644, 0}, member{"sqlite/sqlite3.h", "sqlite header", 0644, 0}, member{"sqlite/sqlite3ext.h", "extension header", 0644, 0}),
 		"claude":   []byte("claude executable"),
+		"herdr":    []byte("herdr executable"),
 		"yq":       []byte("yq executable"),
 		"jq":       []byte("jq executable"),
 		"rg":       archive(t, member{"ripgrep-1/rg", "ripgrep executable", 0755, 0}, member{"ripgrep-1/LICENSE-MIT", "rg license", 0644, 0}, member{"ripgrep-1/UNLICENSE", "rg public domain", 0644, 0}, member{"ripgrep-1/COPYING", "rg copying", 0644, 0}),
@@ -133,10 +134,13 @@ func TestVendorBuildBothArchitectures(t *testing.T) {
 			}{
 				"bin/uv": {"uv executable", 0755}, "bin/uvx": {"uvx executable", 0755},
 				"bin/ast-grep": {"ast-grep executable", 0755},
+				"bin/herdr":    {"herdr executable", 0755},
 				"bin/sqlite3":  {"compiled sqlite", 0755},
 				"bin/yq":       {"yq executable", 0755},
 				"bin/jq":       {"jq executable", 0755}, "bin/rg": {"ripgrep executable", 0755}, "bin/fd": {"fd executable", 0755}, "bin/fdfind": {"fd executable", 0755},
 				"licenses/rg/LICENSE-MIT": {"rg license", 0644}, "licenses/rg/UNLICENSE": {"rg public domain", 0644}, "licenses/rg/COPYING": {"rg copying", 0644},
+				"licenses/herdr/LICENSE":  {herdrLicense(t), 0644},
+				"licenses/herdr/SOURCE":   {"Upstream: https://github.com/herdrdev/herdr\nLicense: Apache-2.0\nPinned release: v0.9.3\nLicense source: https://raw.githubusercontent.com/herdrdev/herdr/v0.9.3/LICENSE\n", 0644},
 				"licenses/fd/LICENSE-MIT": {"fd mit", 0644}, "licenses/fd/LICENSE-APACHE": {"fd apache", 0644},
 				"bin/claude": {"claude executable", 0755}, "bin/gh": {"github cli", 0755}, "bin/agy": {"antigravity cli", 0755}, "bin/codex": {"codex cli", 0755},
 				"bin/codex-code-mode-host": {"host", 0755}, "codex-path/rg": {"rg", 0755}, "codex-resources/bwrap": {"bwrap", 0755}, "codex-resources/voice/lib/example.so": {"shared library", 0644}, "codex-package.json": {`{"entrypoint":"bin/codex"}`, 0644},
@@ -445,4 +449,13 @@ func testPackages(t *testing.T) map[string]toolconfig.Package {
 		t.Fatal(err)
 	}
 	return c.Catalog.Packages
+}
+
+func herdrLicense(t *testing.T) string {
+	t.Helper()
+	data, err := os.ReadFile("../../oci/licenses/herdr/LICENSE")
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(data)
 }
