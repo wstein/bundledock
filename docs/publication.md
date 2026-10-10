@@ -2,12 +2,17 @@
 
 [Back to BundleDock](../README.md)
 
-[The publication workflow](../.github/workflows/bundledock-toolbox.yml) runs Mondays
-at 03:17 UTC and through Actions → **Publish toolbox** → **Run workflow**.
-Only the repository default branch can publish. GitHub may delay scheduled runs.
+[The publication workflow](../.github/workflows/bundledock-toolbox.yml) checks all
+tools for their latest official stable prebuilt release within `tools.txt` ranges
+daily at 06:00 UTC (`0 6 * * *`), and through Actions → **Publish toolbox** →
+**Run workflow**. Only the repository default branch can publish. GitHub may delay
+scheduled runs; this is not an exact wall-clock delivery guarantee.
 Publication runs share one concurrency group; an active run is allowed to finish.
 Before promotion, a read-only GitHub API check rejects a run superseded by a newer
-eligible run, including one that failed. This prevents an old queued run or rerun
+eligible run, including one whose native build failed. A newer run with successful
+resolution and skipped native jobs is a proven no-op and does not supersede an
+older changed publication. Unknown or unfinished eligibility fails closed, with
+bounded queries for the exact run attempt. This prevents an old queued run or rerun
 from rolling stable back. Start a fresh manual run to recover; when rerunning a
 run, choose **Re-run all jobs** so the resolver creates current-attempt artifacts.
 
@@ -44,8 +49,11 @@ the default branch and watch the resolver, both native jobs, and promotion in
 [Actions](https://github.com/wstein/bundledock/actions/workflows/bundledock-toolbox.yml).
 A successful run publishes a dated run-attempt tag, `stable` and `latest`; inspect its
 summary and artifacts for the immutable digest before choosing a deployment.
-Configuring these values also allows the Monday schedule to publish subsequent
-updates. No registry publication has been verified until a configured run succeeds.
+Configuring these values also allows the daily schedule to publish subsequent
+tool updates. A manual dispatch always builds and publishes after validating the
+baseline, even when tool assets are unchanged, so builder or base-image changes
+can be released deliberately. No registry publication has been verified until a
+configured run succeeds.
 For a private Quay repository, consumers need their own read credentials.
 
 The Quay namespace is deployment configuration, with no default in the workflow.
@@ -55,8 +63,13 @@ in place when it already holds the robot token; no token needs to be copied into
 source or inspected.
 Use a dedicated [Quay robot account](https://docs.quay.io/glossary/robot-accounts.html).
 The workflow uses read-only contents permission and read-only Actions permission
-in the promotion job for the newest-run check. It never runs for pull
-requests, and supplies registry credentials only after each native smoke passes.
+in resolution and promotion. It never runs for pull requests. The separate
+baseline comparison step uses robot credentials only against `quay.io` to request
+a repository-scoped pull-only bearer token and read manifests/configs, including
+for private repositories. It never stores those credentials or logs in to Docker.
+Service-issued signed blob/archive downloads receive no registry or GitHub
+authorization header, and authenticated HTTP requests do not follow redirects.
+Docker login and all registry writes occur only after each native smoke passes.
 Check [GitHub runner availability and plan limits](https://docs.github.com/en/actions/how-tos/write-workflows/choose-where-workflows-run/choose-the-runner-for-a-job)
 for `ubuntu-24.04` (AMD64) and `ubuntu-24.04-arm` (ARM64).
 
@@ -76,6 +89,29 @@ image title, source, revision, build time, run tag, lock hash, tool versions and
 `GITHUB_RUN_ID`, run number, attempt and source commit. The newest-run gate uses
 the full run ID to query GitHub; shortening the tag does not change that check.
 
+Scheduled publication compares the resolved tool and asset pins on both
+architectures with the existing `stable` image's published baseline, rather than
+the committed lock, which may predate earlier automated upgrades. An unchanged
+schedule skips both native jobs and promotion, including Docker builds, smoke,
+login and pushes. Input range or catalog metadata changes alone do not count as
+tool updates; changes to inventory, versions, URLs, checksums or verification do.
+New images carry `io.bundledock.tools.platforms-sha256`, a canonical digest of
+those pins, alongside the full-lock provenance hash. Both platform config labels
+must agree, and downloaded immutable manifests/configs must match their digests.
+
+For older images without that semantic label, the adapter identifies their
+successful GitHub run and exact attempt from provenance, downloads its
+`resolved-tools-<attempt>` artifact and verifies the lock bytes against the
+image's full-lock SHA256 before comparing tool pins. The legacy tag format is
+supported even when the image predates the separate run-ID label. That migration
+depends on the old artifact remaining available; after a new image is published,
+the durable OCI label removes that retention dependency. Missing `stable`,
+expired/deleted legacy artifacts, mismatched provenance, authentication failures
+and network errors stop publication, including manual dispatch. They never imply
+an empty baseline or silently bootstrap a first publication. A new destination
+requires a separately reviewed initial publication before this workflow can
+compare daily updates.
+
 A native job pushes its exact tested image to `staging-<run-tag>-<architecture>`.
 If either architecture fails, final promotion is skipped. Once both pass, the
 adapter verifies each remote registry manifest references its smoked image config,
@@ -94,8 +130,8 @@ Workflow recreation can restart its run counter. Before each staging push and
 again before creating the final version index, an authenticated Quay manifest
 check requires HTTP 404 for the version tag. An existing tag, authentication
 failure or network error aborts that operation without updating the version or
-either mutable alias; start a fresh workflow run to obtain another tag. Robot credentials
-remain available only after native smoke passes. This is a collision check,
+either mutable alias; start a fresh workflow run to obtain another tag. Registry write operations
+remain gated on native smoke passing. This is a collision check,
 not an atomic reservation: registry-enforced immutability requires separate Quay
 configuration, and unrelated registry writers must be controlled separately.
 The lock hash is provenance, not a build identifier: base layers or Debian

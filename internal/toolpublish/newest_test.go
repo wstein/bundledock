@@ -2,6 +2,7 @@ package toolpublish
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -82,5 +83,60 @@ func TestNewestPublicationFailsClosed(t *testing.T) {
 				t.Fatalf("gate did not fail safely: %v", err)
 			}
 		})
+	}
+}
+
+func TestNewerNoopDoesNotSupersedePublication(t *testing.T) {
+	current := `{"id":123,"run_number":10,"run_attempt":2,"event":"workflow_dispatch","head_branch":"main","head_sha":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","created_at":"2026-10-10T03:17:00Z","workflow_id":77}`
+	for _, test := range []struct {
+		name, jobs string
+		wantErr    bool
+	}{
+		{"resolved no-op", `{"jobs":[{"name":"resolve","status":"completed","conclusion":"success"},{"name":"native","status":"completed","conclusion":"skipped"}]}`, false},
+		{"changed both architectures", `{"jobs":[{"name":"resolve","status":"completed","conclusion":"success"},{"name":"native (amd64, ubuntu-24.04)","status":"completed","conclusion":"success"},{"name":"native (arm64, ubuntu-24.04-arm)","status":"completed","conclusion":"failure"}]}`, true},
+		{"resolver failure", `{"jobs":[{"name":"resolve","status":"completed","conclusion":"failure"},{"name":"native","status":"completed","conclusion":"skipped"}]}`, true},
+		{"resolver pending", `{"jobs":[{"name":"resolve","status":"in_progress"}]}`, true},
+		{"missing eligibility", `{"jobs":[]}`, true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			jobCalls := 0
+			client := &http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+				body := current
+				if strings.Contains(r.URL.Path, "/workflows/") {
+					body = `{"workflow_runs":[{"id":124,"run_number":11,"run_attempt":1,"event":"schedule","head_branch":"main"},` + current + `]}`
+				}
+				if strings.Contains(r.URL.Path, "/jobs") {
+					jobCalls++
+					if r.URL.Path != "/repos/example/repo/actions/runs/124/attempts/1/jobs" {
+						t.Fatalf("wrong job attempt: %s", r.URL)
+					}
+					body = test.jobs
+				}
+				return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(body)), Header: make(http.Header)}, nil
+			})}
+			err := CheckNewest(context.Background(), client, "example/repo", "main", 123, 2, strings.Repeat("a", 40), "private-token")
+			if (err != nil) != test.wantErr || jobCalls != 1 {
+				t.Fatalf("got %v with %d job queries, want error=%t", err, jobCalls, test.wantErr)
+			}
+		})
+	}
+}
+
+func TestNewerNoopJobPaginationIsBounded(t *testing.T) {
+	calls := 0
+	eligible, err := nativeEligibility(func(path string, out any) error {
+		calls++
+		if !strings.Contains(path, "/actions/runs/124/attempts/3/jobs?") {
+			t.Fatalf("unbound attempt query %s", path)
+		}
+		body := `{"jobs":[{"name":"resolve","status":"completed","conclusion":"success"}`
+		for i := 1; i < 100; i++ {
+			body += `,{"name":"unrelated","status":"completed","conclusion":"success"}`
+		}
+		body += `]}`
+		return json.Unmarshal([]byte(body), out)
+	}, workflowRun{ID: 124, Attempt: 3})
+	if err == nil || eligible || calls != 10 {
+		t.Fatalf("unbounded eligibility search: %t %v %d", eligible, err, calls)
 	}
 }

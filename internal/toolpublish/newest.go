@@ -2,7 +2,6 @@ package toolpublish
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -24,43 +23,19 @@ type workflowRun struct {
 
 // CheckNewest refuses to promote an older run or attempt. Concurrency serializes
 // promotions, but GitHub's pending queue has no ordering guarantee. A newer run
-// supersedes an older one even when the newer run fails: start a fresh manual run
+// supersedes an older one when it is eligible, even after failure. Proven
+// resolved no-ops are ignored; unresolved eligibility fails closed. Start a fresh manual run
 // to retry publication, rather than allowing an old source revision to roll back
 // stable. The authenticated client never follows redirects off api.github.com.
 func CheckNewest(ctx context.Context, client *http.Client, repository, branch string, id, attempt int64, commit, token string) error {
 	if id < 1 || attempt < 1 || branch == "" || !commitPattern.MatchString(commit) || token == "" {
 		return fmt.Errorf("complete GitHub run identity and token required")
 	}
-	parts := strings.Split(repository, "/")
-	if len(parts) != 2 || parts[0] == "" || parts[1] == "" || strings.ContainsAny(repository, "?%#\\") {
-		return fmt.Errorf("invalid GitHub repository")
+	github, err := newGithubReader(client, repository, token)
+	if err != nil {
+		return err
 	}
-	guarded := http.Client{Timeout: 30 * time.Second}
-	if client != nil {
-		guarded = *client
-	}
-	guarded.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
-	get := func(path string, out any) error {
-		req, err := http.NewRequestWithContext(ctx, "GET", "https://api.github.com/repos/"+repository+path, nil)
-		if err != nil {
-			return err
-		}
-		req.Header.Set("Authorization", "Bearer "+token)
-		req.Header.Set("Accept", "application/vnd.github+json")
-		req.Header.Set("X-GitHub-Api-Version", "2026-03-10")
-		response, err := guarded.Do(req)
-		if err != nil {
-			return fmt.Errorf("GitHub newest-run query failed: %w", err)
-		}
-		defer response.Body.Close()
-		if response.StatusCode != http.StatusOK {
-			return fmt.Errorf("GitHub newest-run query returned HTTP %d", response.StatusCode)
-		}
-		if err = json.NewDecoder(response.Body).Decode(out); err != nil {
-			return fmt.Errorf("invalid GitHub run response: %w", err)
-		}
-		return nil
-	}
+	get := func(path string, out any) error { return github.get(ctx, path, out) }
 	var current workflowRun
 	if err := get("/actions/runs/"+strconv.FormatInt(id, 10), &current); err != nil {
 		return err
@@ -90,7 +65,13 @@ func CheckNewest(ctx context.Context, client *http.Client, repository, branch st
 				continue
 			}
 			if run.Number > current.Number {
-				return fmt.Errorf("newer eligible workflow run %d supersedes this publication", run.ID)
+				eligible, err := nativeEligibility(get, run)
+				if err != nil {
+					return err
+				}
+				if eligible {
+					return fmt.Errorf("newer eligible workflow run %d supersedes this publication", run.ID)
+				}
 			}
 			if run.ID == id {
 				if run.Attempt != attempt {
@@ -107,4 +88,43 @@ func CheckNewest(ctx context.Context, client *http.Client, repository, branch st
 		}
 	}
 	return fmt.Errorf("cannot establish newest publication within GitHub pagination limit")
+}
+
+// A skipped native job alone is ambiguous: a failed resolver also skips it.
+// Only successful resolution plus completed skipped native jobs proves a no-op.
+func nativeEligibility(get func(string, any) error, run workflowRun) (bool, error) {
+	if run.ID < 1 || run.Attempt < 1 {
+		return false, fmt.Errorf("newer run lacks complete attempt identity")
+	}
+	resolved, native, eligible := false, false, false
+	for page := 1; page <= 10; page++ {
+		var list struct {
+			Jobs []struct{ Name, Status, Conclusion string }
+		}
+		path := "/actions/runs/" + strconv.FormatInt(run.ID, 10) + "/attempts/" + strconv.FormatInt(run.Attempt, 10) + "/jobs?per_page=100&page=" + strconv.Itoa(page)
+		if err := get(path, &list); err != nil {
+			return false, err
+		}
+		for _, job := range list.Jobs {
+			if job.Name == "resolve" {
+				resolved = job.Status == "completed" && job.Conclusion == "success"
+			}
+			if job.Name == "native" || strings.HasPrefix(job.Name, "native (") {
+				native = true
+				if job.Status != "completed" || job.Conclusion != "skipped" {
+					eligible = true
+				}
+			}
+		}
+		if len(list.Jobs) < 100 {
+			if eligible {
+				return true, nil
+			}
+			if resolved && native {
+				return false, nil
+			}
+			return false, fmt.Errorf("cannot establish newer run %d publication eligibility", run.ID)
+		}
+	}
+	return false, fmt.Errorf("newer run jobs exceed pagination limit")
 }

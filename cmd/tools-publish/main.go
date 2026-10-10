@@ -72,9 +72,28 @@ func artifactIdentity(meta toolpublish.Metadata, id, number, attempt, commit str
 	return nil
 }
 
+func publicationDecision(lock, event string, baseline func() (string, error)) (bool, error) {
+	if event != "schedule" && event != "workflow_dispatch" {
+		return false, fmt.Errorf("publication requires schedule or workflow_dispatch")
+	}
+	b, err := os.ReadFile(lock)
+	if err != nil {
+		return false, err
+	}
+	fresh, err := toolpublish.ToolDigest(b)
+	if err != nil {
+		return false, err
+	}
+	published, err := baseline()
+	if err != nil {
+		return false, err
+	}
+	return event == "workflow_dispatch" || fresh != published, nil
+}
+
 func execute(args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("expected resolve, build, push, newest or promote")
+		return fmt.Errorf("expected resolve, plan, build, push, newest or promote")
 	}
 	flags := flag.NewFlagSet("tools-publish "+args[0], flag.ContinueOnError)
 	directory := flags.String("directory", "resolved", "resolved artifact directory")
@@ -115,6 +134,33 @@ func execute(args []string) error {
 		return toolpublish.CheckTagAbsent(ctx, nil, image, tag, os.Getenv("REPOSITORY_USERNAME"), os.Getenv("REPOSITORY_TOKEN"))
 	}}
 	switch args[0] {
+	case "plan":
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+		defer cancel()
+		publish, err := publicationDecision(lock, os.Getenv("GITHUB_EVENT_NAME"), func() (string, error) {
+			return toolpublish.PublishedToolDigest(ctx, nil, meta.Image, os.Getenv("REPOSITORY_USERNAME"), os.Getenv("REPOSITORY_TOKEN"), func(published toolpublish.Metadata) ([]byte, error) {
+				return toolpublish.PublishedLockArtifact(ctx, nil, os.Getenv("GITHUB_REPOSITORY"), os.Getenv("DEFAULT_BRANCH"), os.Getenv("GITHUB_TOKEN"), published)
+			})
+		})
+		if err != nil {
+			return err
+		}
+		output, err := os.OpenFile(os.Getenv("GITHUB_OUTPUT"), os.O_APPEND|os.O_WRONLY, 0600)
+		if err != nil {
+			return err
+		}
+		_, err = fmt.Fprintf(output, "publish=%t\n", publish)
+		closeErr := output.Close()
+		if err != nil {
+			return err
+		}
+		if closeErr != nil {
+			return closeErr
+		}
+		if !publish {
+			fmt.Println("All resolved tools match the published baseline; skipping native builds and publication.")
+		}
+		return nil
 	case "newest":
 		id, err := strconv.ParseInt(os.Getenv("GITHUB_RUN_ID"), 10, 64)
 		if err != nil {

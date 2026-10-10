@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -55,6 +56,40 @@ func TestResolveOnceAndKeepExactArtifactBytes(t *testing.T) {
 	meta.LockSHA256 = sum
 	if meta != provenance {
 		t.Fatalf("resolver provenance changed: %+v", provenance)
+	}
+}
+
+func TestPublicationDecisionAgainstPublishedTools(t *testing.T) {
+	lock, err := os.ReadFile("../../tools.lock.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	path := filepath.Join(dir, "tools.lock.json")
+	if err = os.WriteFile(path, lock, 0600); err != nil {
+		t.Fatal(err)
+	}
+	digest, err := toolpublish.ToolDigest(lock)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, test := range []struct {
+		event, baseline string
+		baselineErr     error
+		want            bool
+		wantErr         bool
+	}{
+		{"schedule", digest, nil, false, false},
+		{"schedule", strings.Repeat("0", 64), nil, true, false},
+		{"workflow_dispatch", digest, nil, true, false},
+		{"workflow_dispatch", "", fmt.Errorf("registry unavailable"), false, true},
+		{"schedule", "", fmt.Errorf("artifact expired"), false, true},
+	} {
+		calls := 0
+		got, err := publicationDecision(path, test.event, func() (string, error) { calls++; return test.baseline, test.baselineErr })
+		if got != test.want || (err != nil) != test.wantErr || calls != 1 {
+			t.Fatalf("event=%s got=%t err=%v calls=%d", test.event, got, err, calls)
+		}
 	}
 }
 

@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -23,13 +24,14 @@ func TestPublicationWorkflowRepositoryConfiguration(t *testing.T) {
 		}
 	}
 	for _, mapping := range []string{"REPOSITORY_USERNAME: ${{ vars.REPOSITORY_USERNAME }}", "REPOSITORY_TOKEN: ${{ secrets.REPOSITORY_TOKEN }}"} {
-		if strings.Count(workflow, mapping) != 4 {
+		if strings.Count(workflow, mapping) != 5 {
 			t.Fatalf("native and promotion logins and absence checks must use %s", mapping)
 		}
 	}
 
-	smoke := strings.Index(workflow, "- name: Build once and smoke on the native architecture")
-	firstSecret := strings.Index(workflow, "REPOSITORY_TOKEN: ${{ secrets.REPOSITORY_TOKEN }}")
+	native := workflow[strings.Index(workflow, "\n  native:"):]
+	smoke := strings.Index(native, "- name: Build once and smoke on the native architecture")
+	firstSecret := strings.Index(native, "REPOSITORY_TOKEN: ${{ secrets.REPOSITORY_TOKEN }}")
 	if smoke < 0 || firstSecret < smoke {
 		t.Fatal("registry credentials supplied before native smoke")
 	}
@@ -65,6 +67,34 @@ func TestPublicationWorkflowRepositoryConfiguration(t *testing.T) {
 	}
 	if logins != 2 {
 		t.Fatalf("expected native and promotion logins, got %d", logins)
+	}
+}
+
+func TestDailyPublicationSkipsAllNativeAndPromotionWorkOnNoop(t *testing.T) {
+	b, err := os.ReadFile("../../.github/workflows/bundledock-toolbox.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := string(b)
+	for _, required := range []string{"cron: '0 6 * * *'", "publish: ${{ steps.plan.outputs.publish }}", "id: plan", `"$RUNNER_TEMP/tools-publish" plan`} {
+		if !strings.Contains(w, required) {
+			t.Fatalf("missing daily publication contract %s", required)
+		}
+	}
+	for _, name := range []string{"native", "promote"} {
+		start := strings.Index(w, "\n  "+name+":\n")
+		if start < 0 {
+			t.Fatal("missing job " + name)
+		}
+		job := w[start:]
+		if keys := regexp.MustCompile(`(?m)^  [a-z]+:\n`).FindAllStringIndex(job, -1); len(keys) > 1 {
+			job = job[:keys[1][0]]
+		}
+		// A job-level condition excludes native runners, builds, logins, pushes
+		// and promotion together when the scheduled resolver reports no change.
+		if !strings.Contains(job, "if: needs.resolve.outputs.publish == 'true'") {
+			t.Fatalf("%s does not skip all work on no-op", name)
+		}
 	}
 }
 
