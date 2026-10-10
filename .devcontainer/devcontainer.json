@@ -12,6 +12,7 @@
 		"type=volume,source=anchorage-home-${devcontainerId},target=/home/vscode"
 	],
 	"containerEnv": {
+		"GOFLAGS": "-trimpath",
 		"DISABLE_UPDATES": "1",
 		"DISABLE_AUTOUPDATER": "1"
 	},

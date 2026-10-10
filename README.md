@@ -86,6 +86,8 @@ or `TOOLS_CONSUMER` when invoking Make to select another image or test consumer.
 
 The repository includes a Go devcontainer configuration. Open it with an editor
 that supports development containers, or use a local Go 1.24 or newer toolchain.
+The devcontainer sets `GOFLAGS=-trimpath` so Go builds omit local filesystem paths.
+Make inherits `GOFLAGS`.
 
 The devcontainer pins the current local tool image by ID and initializes its
 read-only volume on the host before starting. This image must already exist in
