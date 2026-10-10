@@ -10,6 +10,8 @@ if test -n "$(git status --porcelain --untracked-files=normal)"; then modified=t
 # Exercise the public Make target with a linker-injected version.
 make release VERSION=local-test RELEASE_DIR="$test_dir/first"
 (cd "$test_dir/first" && sha256sum -c SHA256SUMS)
+cmp LICENSE "$test_dir/first/LICENSE"
+grep -Eq '^[0-9a-f]{64}  LICENSE$' "$test_dir/first/SHA256SUMS"
 for arch in amd64 arm64; do
     binary="$test_dir/first/bundledock-linux-$arch"
     test -x "$binary"
@@ -30,7 +32,7 @@ if test "$(go env GOHOSTOS)" = linux; then
     esac
 fi
 make release VERSION=local-test RELEASE_DIR="$test_dir/second"
-for name in bundledock-linux-amd64 bundledock-linux-arm64 SHA256SUMS PROVENANCE; do
+for name in bundledock-linux-amd64 bundledock-linux-arm64 SHA256SUMS PROVENANCE LICENSE; do
     cmp "$test_dir/first/$name" "$test_dir/second/$name"
 done
 if make release VERSION=local-test RELEASE_DIR="$test_dir/first"; then

@@ -41,7 +41,7 @@ targets. Builds write `bin/bundledock`; `make clean` removes the binary.
 
 `make release VERSION=dev RELEASE_DIR=dist/cli` builds BundleDock's own CLI for
 Linux AMD64 and ARM64. It creates `bundledock-linux-amd64`,
-`bundledock-linux-arm64`, `PROVENANCE`, and `SHA256SUMS`; an existing destination
+`bundledock-linux-arm64`, `LICENSE`, `PROVENANCE`, and `SHA256SUMS`; an existing destination
 is refused. Verify the outputs with `cd dist/cli && sha256sum -c SHA256SUMS`.
 The target does not create a Git tag or publish a release.
 
@@ -54,8 +54,8 @@ local verification artifacts, not a clean release candidate.
 Builds use the selected `GO` executable, `CGO_ENABLED=0`, `-trimpath`,
 `GOAMD64=v1`, and `GOARM64=v8.0`, and clear `GOFLAGS` for consistent flags.
 Use the pinned compiler in `.go-version`; the Go module's minimum remains 1.24.
-`make release-test` builds both architectures twice, verifies checksums and
-build settings, compares repeated outputs, checks the native Linux version when
+`make release-test` builds both architectures twice, verifies checksums, the
+bundled license and build settings, compares repeated outputs, checks the native Linux version when
 supported, and tests rejection of existing destinations and invalid versions.
 This validates local artifact preparation; native AMD64 execution, Docker image
 checks and publication remain separate checks.

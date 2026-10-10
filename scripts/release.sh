@@ -19,6 +19,7 @@ mkdir -- "$destination"
 destination=$(CDPATH= cd -- "$destination" && pwd)
 trap 'rm -rf -- "$destination"' EXIT
 trap 'exit 1' HUP INT TERM
+cp LICENSE "$destination/LICENSE"
 for arch in amd64 arm64; do
     CGO_ENABLED=0 GOOS=linux GOARCH="$arch" GOAMD64=v1 GOARM64=v8.0 GOFLAGS= \
         "$go" build -trimpath -ldflags "-X main.version=$version" \
@@ -35,6 +36,6 @@ GOOS=linux
 GOAMD64=v1
 GOARM64=v8.0
 PROVENANCE
-(cd "$destination" && sha256sum bundledock-linux-amd64 bundledock-linux-arm64 PROVENANCE > SHA256SUMS)
+(cd "$destination" && sha256sum bundledock-linux-amd64 bundledock-linux-arm64 PROVENANCE LICENSE > SHA256SUMS)
 trap - EXIT HUP INT TERM
 printf 'CLI artifacts written to %s\n' "$destination"
