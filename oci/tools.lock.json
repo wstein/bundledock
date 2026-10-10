@@ -41,6 +41,11 @@
         "version": "3.54.0",
         "url": "https://www.sqlite.org/2026/sqlite-amalgamation-3540000.zip",
         "sha256": "68e913b0fe8ec6b4e5f391c594a28872884e80d6cd042a1e50c957be46b5aa4d"
+      },
+      "ast-grep": {
+        "version": "0.45.3",
+        "url": "https://github.com/ast-grep/ast-grep/releases/download/0.45.3/app-x86_64-unknown-linux-gnu.zip",
+        "sha256": "f8ac830881339d1edee6b2652f54798c0f4da5a827f2db38a08ee31117783ce8"
       }
     },
     "arm64": {
@@ -83,6 +88,11 @@
         "version": "3.54.0",
         "url": "https://www.sqlite.org/2026/sqlite-amalgamation-3540000.zip",
         "sha256": "68e913b0fe8ec6b4e5f391c594a28872884e80d6cd042a1e50c957be46b5aa4d"
+      },
+      "ast-grep": {
+        "version": "0.45.3",
+        "url": "https://github.com/ast-grep/ast-grep/releases/download/0.45.3/app-aarch64-unknown-linux-gnu.zip",
+        "sha256": "b39cfbc58da4b869a88b8a4bc57bd5deb0d24541e704cf7c257da7b53ec81c8f"
       }
     }
   }

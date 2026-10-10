@@ -72,14 +72,15 @@ func openRoot(t *testing.T) (*os.Root, string) {
 func fixture(t *testing.T) (map[string][]byte, map[string]Spec, *httptest.Server) {
 	t.Helper()
 	payloads := map[string][]byte{
-		"sqlite3": sqliteArchive(t, member{"sqlite/sqlite3.c", "sqlite source", 0644, 0}, member{"sqlite/shell.c", "shell source", 0644, 0}, member{"sqlite/sqlite3.h", "sqlite header", 0644, 0}, member{"sqlite/sqlite3ext.h", "extension header", 0644, 0}),
-		"claude":  []byte("claude executable"),
-		"jq":      []byte("jq executable"),
-		"rg":      archive(t, member{"ripgrep-1/rg", "ripgrep executable", 0755, 0}, member{"ripgrep-1/LICENSE-MIT", "rg license", 0644, 0}, member{"ripgrep-1/UNLICENSE", "rg public domain", 0644, 0}, member{"ripgrep-1/COPYING", "rg copying", 0644, 0}),
-		"fd":      archive(t, member{"fd-1/fd", "fd executable", 0755, 0}, member{"fd-1/LICENSE-MIT", "fd mit", 0644, 0}, member{"fd-1/LICENSE-APACHE", "fd apache", 0644, 0}),
-		"gh":      archive(t, member{"gh_1/bin/gh", "github cli", 0755, 0}, member{"gh_1/share/man/gh.1", "manual", 0644, 0}),
-		"agy":     archive(t, member{"bundle/antigravity", "antigravity cli", 0755, 0}),
-		"codex":   archive(t, member{"bin/codex", "codex cli", 0755, 0}, member{"codex-package.json", `{"entrypoint":"bin/codex"}`, 0644, 0}, member{"bin/codex-code-mode-host", "host", 0755, 0}, member{"codex-path/rg", "rg", 0755, 0}, member{"codex-resources/bwrap", "bwrap", 0755, 0}, member{"codex-resources/voice/lib/example.so", "shared library", 0644, 0}, member{"empty/", "", 0755, tar.TypeDir}),
+		"ast-grep": sqliteArchive(t, member{"ast-grep", "ast-grep executable", 0755, 0}, member{"sg", "unwanted alias", 0755, 0}),
+		"sqlite3":  sqliteArchive(t, member{"sqlite/sqlite3.c", "sqlite source", 0644, 0}, member{"sqlite/shell.c", "shell source", 0644, 0}, member{"sqlite/sqlite3.h", "sqlite header", 0644, 0}, member{"sqlite/sqlite3ext.h", "extension header", 0644, 0}),
+		"claude":   []byte("claude executable"),
+		"jq":       []byte("jq executable"),
+		"rg":       archive(t, member{"ripgrep-1/rg", "ripgrep executable", 0755, 0}, member{"ripgrep-1/LICENSE-MIT", "rg license", 0644, 0}, member{"ripgrep-1/UNLICENSE", "rg public domain", 0644, 0}, member{"ripgrep-1/COPYING", "rg copying", 0644, 0}),
+		"fd":       archive(t, member{"fd-1/fd", "fd executable", 0755, 0}, member{"fd-1/LICENSE-MIT", "fd mit", 0644, 0}, member{"fd-1/LICENSE-APACHE", "fd apache", 0644, 0}),
+		"gh":       archive(t, member{"gh_1/bin/gh", "github cli", 0755, 0}, member{"gh_1/share/man/gh.1", "manual", 0644, 0}),
+		"agy":      archive(t, member{"bundle/antigravity", "antigravity cli", 0755, 0}),
+		"codex":    archive(t, member{"bin/codex", "codex cli", 0755, 0}, member{"codex-package.json", `{"entrypoint":"bin/codex"}`, 0644, 0}, member{"bin/codex-code-mode-host", "host", 0755, 0}, member{"codex-path/rg", "rg", 0755, 0}, member{"codex-resources/bwrap", "bwrap", 0755, 0}, member{"codex-resources/voice/lib/example.so", "shared library", 0644, 0}, member{"empty/", "", 0755, tar.TypeDir}),
 	}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if data, ok := payloads[strings.TrimPrefix(r.URL.Path, "/")]; ok {
@@ -134,8 +135,9 @@ func TestVendorBuildBothArchitectures(t *testing.T) {
 				data string
 				mode os.FileMode
 			}{
-				"bin/sqlite3": {"compiled sqlite", 0755},
-				"bin/jq":      {"jq executable", 0755}, "bin/rg": {"ripgrep executable", 0755}, "bin/fd": {"fd executable", 0755}, "bin/fdfind": {"fd executable", 0755},
+				"bin/ast-grep": {"ast-grep executable", 0755},
+				"bin/sqlite3":  {"compiled sqlite", 0755},
+				"bin/jq":       {"jq executable", 0755}, "bin/rg": {"ripgrep executable", 0755}, "bin/fd": {"fd executable", 0755}, "bin/fdfind": {"fd executable", 0755},
 				"licenses/rg/LICENSE-MIT": {"rg license", 0644}, "licenses/rg/UNLICENSE": {"rg public domain", 0644}, "licenses/rg/COPYING": {"rg copying", 0644},
 				"licenses/fd/LICENSE-MIT": {"fd mit", 0644}, "licenses/fd/LICENSE-APACHE": {"fd apache", 0644},
 				"bin/claude": {"claude executable", 0755}, "bin/gh": {"github cli", 0755}, "bin/agy": {"antigravity cli", 0755}, "bin/codex": {"codex cli", 0755},
@@ -151,6 +153,9 @@ func TestVendorBuildBothArchitectures(t *testing.T) {
 				if err != nil || info.Mode().Perm() != w.mode {
 					t.Fatalf("%s mode=%v err=%v", name, info, err)
 				}
+			}
+			if _, err := os.Stat(filepath.Join(first, "bin/sg")); !os.IsNotExist(err) {
+				t.Fatalf("unexpected sg alias: %v", err)
 			}
 			for _, name := range []string{"manifest.json", "SHA256SUMS"} {
 				a, _ := os.ReadFile(filepath.Join(first, name))
@@ -426,5 +431,33 @@ func TestBuildRequiresCompiledSQLite(t *testing.T) {
 				t.Fatalf("manifest published before SQLite compilation: %v", err)
 			}
 		})
+	}
+}
+
+func TestAstGrepVerifiedZIP(t *testing.T) {
+	_, tools, server := fixture(t)
+	root, _ := openRoot(t)
+	if err := install(context.Background(), server.Client(), root, "ast-grep", tools["ast-grep"]); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := root.Stat("bin/sg"); !os.IsNotExist(err) {
+		t.Fatalf("unexpected sg alias: %v", err)
+	}
+	for _, members := range [][]member{
+		{{"sg", "missing ast-grep", 0755, 0}},
+		{{"ast-grep", "binary", 0755, 0}, {"../unselected", "bad", 0644, 0}},
+		{{"ast-grep", "binary", 0755, 0}, {"unselected", "link", 0644, tar.TypeSymlink}},
+		{{"ast-grep", "binary", 0755, 0}, {"nested/ast-grep", "ambiguous", 0755, 0}},
+		{{"ast-grep", "not executable", 0644, 0}},
+	} {
+		payload := sqliteArchive(t, members...)
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.Write(payload) }))
+		sum := sha256.Sum256(payload)
+		root, _ := openRoot(t)
+		err := install(context.Background(), server.Client(), root, "ast-grep", Spec{URL: server.URL, SHA256: fmt.Sprintf("%x", sum)})
+		server.Close()
+		if err == nil {
+			t.Fatal("accepted missing/unsafe/ambiguous/nonexecutable ast-grep archive")
+		}
 	}
 }
