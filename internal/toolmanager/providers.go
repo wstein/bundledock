@@ -41,7 +41,10 @@ func (a *asset) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &fields); err != nil {
 		return err
 	}
-	_, v.DigestPresent = fields["digest"]
+	rawDigest, exists := fields["digest"]
+	// GitHub uses null for older assets without a published digest. An empty
+	// string remains present and invalid rather than enabling the fallback.
+	v.DigestPresent = exists && strings.TrimSpace(string(rawDigest)) != "null"
 	*a = asset(v)
 	return nil
 }

@@ -637,3 +637,41 @@ func TestGitHubAuthenticationIsScopedToAPIHost(t *testing.T) {
 		resp.Body.Close()
 	}
 }
+
+func TestNullGitHubDigestMeansUnpublished(t *testing.T) {
+	for _, digest := range []string{"null", `""`} {
+		t.Run(digest, func(t *testing.T) {
+			dir := checkout(t)
+			before := readLock(t, dir)
+			client := fixtureClient(t, func(w http.ResponseWriter, r *http.Request) {
+				if strings.HasPrefix(r.URL.Path, "/repos/") {
+					fmt.Fprintf(w, `[{"tag_name":"v2.103.0","assets":[{"name":"gh_2.103.0_linux_amd64.tar.gz","browser_download_url":"https://github.com/amd64","digest":%s},{"name":"gh_2.103.0_linux_arm64.tar.gz","browser_download_url":"https://github.com/arm64","digest":%s}]}]`, digest, digest)
+					return
+				}
+				fmt.Fprint(w, "historical binary")
+			})
+			err := Upgrade(context.Background(), client, dir, "gh", &bytes.Buffer{})
+			if digest != "null" {
+				if err == nil {
+					t.Fatal("accepted empty string publisher checksum")
+				}
+				if !bytes.Equal(before, readLock(t, dir)) {
+					t.Fatal("failure changed lock")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			c, err := toolconfig.Load(dir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, arch := range []string{"amd64", "arm64"} {
+				if c.Lock.Platforms[arch]["gh"].Verification != "tls-download-sha256" {
+					t.Fatal("null digest misrepresented as published")
+				}
+			}
+		})
+	}
+}
