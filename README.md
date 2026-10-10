@@ -4,9 +4,9 @@
 
 [![CI](https://github.com/wstein/bundledock/actions/workflows/ci.yml/badge.svg)](https://github.com/wstein/bundledock/actions/workflows/ci.yml)
 [![Go 1.24 or newer](https://img.shields.io/badge/Go-1.24%2B-00ADD8?logo=go&logoColor=white)](go.mod)
-[![Linux amd64 and arm64](https://img.shields.io/badge/Linux-amd64%20%7C%20arm64-0b2545?logo=linux&logoColor=white)](tools.lock.json)
+[![Quay toolbox](https://img.shields.io/badge/Quay-toolbox-5eead4?labelColor=0b2545)](https://quay.io/repository/bundledock/toolbox)
 [![OCI toolbox](https://img.shields.io/badge/OCI-toolbox-5eead4?labelColor=0b2545)](oci/Dockerfile)
-[![Publish toolbox](https://github.com/wstein/bundledock/actions/workflows/bundledock-toolbox.yml/badge.svg?branch=main)](https://quay.io/repository/bundledock/toolbox)
+[![Publish toolbox](https://github.com/wstein/bundledock/actions/workflows/bundledock-toolbox.yml/badge.svg?branch=main)](https://github.com/wstein/bundledock/actions/workflows/bundledock-toolbox.yml)
 [![Pinned tool catalog](https://img.shields.io/badge/tools-pinned-5eead4?labelColor=0b2545)](tools.packages.json)
 
 BundleDock builds an OCI toolbox of pinned development CLIs and packaged
