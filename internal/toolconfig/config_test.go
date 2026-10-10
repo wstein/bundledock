@@ -31,7 +31,7 @@ func TestDesiredBoundedStableVersions(t *testing.T) {
 }
 
 func TestRepositoryIdentityAndBothArchitectures(t *testing.T) {
-	c, err := Load("../..")
+	c, err := Load("../../bundles/toolbox")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -63,7 +63,7 @@ func TestRepositoryIdentityAndBothArchitectures(t *testing.T) {
 func TestCatalogRejectsIncompleteAndUnsafeRecipes(t *testing.T) {
 	for _, kind := range []string{"provider", "platform", "shell", "template", "member", "alias", "claude-base", "normalization"} {
 		t.Run(kind, func(t *testing.T) {
-			c, err := Load("../..")
+			c, err := Load("../../bundles/toolbox")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -112,7 +112,7 @@ func TestStableNumericOrdering(t *testing.T) {
 }
 
 func TestCatalogAllowsTarXZ(t *testing.T) {
-	c, err := Load("../..")
+	c, err := Load("../../bundles/toolbox")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -126,7 +126,7 @@ func TestCatalogAllowsTarXZ(t *testing.T) {
 }
 
 func TestFishAndStarshipCatalogPins(t *testing.T) {
-	c, err := Load("../..")
+	c, err := Load("../../bundles/toolbox")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -144,7 +144,7 @@ func TestFishAndStarshipCatalogPins(t *testing.T) {
 }
 
 func TestShellAlternativeCatalogPins(t *testing.T) {
-	c, err := Load("../..")
+	c, err := Load("../../bundles/toolbox")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -179,7 +179,7 @@ func TestLoadInputsAllowsNarrowTmuxRanges(t *testing.T) {
 		t.Run(requirement, func(t *testing.T) {
 			dir := t.TempDir()
 			for _, name := range []string{"tools.txt", "tools.packages.json"} {
-				b, err := os.ReadFile(filepath.Join("../..", name))
+				b, err := os.ReadFile(filepath.Join("../../bundles/toolbox", name))
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -198,7 +198,7 @@ func TestLoadInputsAllowsNarrowTmuxRanges(t *testing.T) {
 }
 
 func TestQualitySecurityCatalogPins(t *testing.T) {
-	c, err := Load("../..")
+	c, err := Load("../../bundles/toolbox")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -226,7 +226,7 @@ func TestQualitySecurityCatalogPins(t *testing.T) {
 func TestPreservedArchiveDirectoryExclusions(t *testing.T) {
 	for _, dir := range []string{"codex-resources/voice", "", ".", "../voice", "/voice", "codex-resources/../voice", "./voice", "voice/", "voice\\lib", "voice\nlib", "bin"} {
 		t.Run(dir, func(t *testing.T) {
-			c, err := Load("../..")
+			c, err := Load("../../bundles/toolbox")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -249,5 +249,18 @@ func TestPreservedArchiveDirectoryExclusions(t *testing.T) {
 				t.Fatal("unsafe or required directory exclusion accepted")
 			}
 		})
+	}
+}
+
+func TestRepositoryToolboxLayout(t *testing.T) {
+	for _, name := range []string{"tools.txt", "tools.packages.json", "tools.lock.json", "Dockerfile", "Dockerfile.dockerignore", "smoke.sh", "volume.sh"} {
+		if _, err := os.Stat(filepath.Join("../../bundles/toolbox", name)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, old := range []string{"../../tools.txt", "../../tools.packages.json", "../../tools.lock.json", "../../oci"} {
+		if _, err := os.Stat(old); !os.IsNotExist(err) {
+			t.Fatalf("obsolete duplicate bundle path %s", old)
+		}
 	}
 }

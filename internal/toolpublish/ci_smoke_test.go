@@ -12,7 +12,7 @@ func TestCISmokeBuildsLockedImageOnce(t *testing.T) {
 	for _, failure := range []string{"", "build", "pull", "smoke"} {
 		t.Run(failure, func(t *testing.T) {
 			dir := t.TempDir()
-			source, err := os.ReadFile("../../oci/ci-smoke.sh")
+			source, err := os.ReadFile("../../bundles/toolbox/ci-smoke.sh")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -50,7 +50,7 @@ printf 'smoke %s\n' "$*" >> "$CALLS"
 				t.Fatal(err)
 			}
 			got := string(data)
-			if strings.Count(got, "build ") != 1 || !strings.Contains(got, "build -f oci/Dockerfile --iidfile ") {
+			if strings.Count(got, "build ") != 1 || !strings.Contains(got, "build -f bundles/toolbox/Dockerfile --iidfile ") {
 				t.Fatalf("must build checked-in lock exactly once: %s", got)
 			}
 			if strings.Contains(got, "push") || strings.Contains(got, "upgrade") {

@@ -15,6 +15,11 @@ import (
 	"strings"
 )
 
+// ToolboxDirectory is the repository-relative home of the default tool bundle.
+const ToolboxDirectory = "bundles/toolbox"
+
+const ToolboxLock = ToolboxDirectory + "/tools.lock.json"
+
 type Spec struct {
 	Version      string `json:"version"`
 	URL          string `json:"url"`

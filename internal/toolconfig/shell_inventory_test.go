@@ -3,7 +3,7 @@ package toolconfig
 import "testing"
 
 func TestBundledBashRemovedAndAlternativesPreserved(t *testing.T) {
-	c, err := Load("../..")
+	c, err := Load("../../bundles/toolbox")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -26,7 +26,7 @@ func TestBundledBashRemovedAndAlternativesPreserved(t *testing.T) {
 }
 
 func TestSQLiteRemovedFromBundleInputs(t *testing.T) {
-	c, err := Load("../..")
+	c, err := Load("../../bundles/toolbox")
 	if err != nil {
 		t.Fatal(err)
 	}

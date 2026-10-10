@@ -10,17 +10,21 @@ import (
 	"testing"
 	"time"
 
+	"bundledock/internal/toolconfig"
 	"bundledock/internal/toolpublish"
 )
 
 func TestResolveOnceAndKeepExactArtifactBytes(t *testing.T) {
 	t.Chdir(t.TempDir())
-	initial := []byte("{\"old\":true}\n")
-	resolved := []byte("{\"resolved\":true}\n")
-	if err := os.WriteFile("tools.lock.json", initial, 0600); err != nil {
+	if err := os.MkdirAll(toolconfig.ToolboxDirectory, 0700); err != nil {
 		t.Fatal(err)
 	}
-	meta, err := toolpublish.NewMetadata("tools.lock.json", "quay.io/example/toolbox", "2026.10.10-b12.1", strings.Repeat("a", 40), "https://github.com/example/repo", "2026-10-10T03:17:00Z", "38069722044")
+	initial := []byte("{\"old\":true}\n")
+	resolved := []byte("{\"resolved\":true}\n")
+	if err := os.WriteFile(toolconfig.ToolboxLock, initial, 0600); err != nil {
+		t.Fatal(err)
+	}
+	meta, err := toolpublish.NewMetadata(toolconfig.ToolboxLock, "quay.io/example/toolbox", "2026.10.10-b12.1", strings.Repeat("a", 40), "https://github.com/example/repo", "2026-10-10T03:17:00Z", "38069722044")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -30,7 +34,7 @@ func TestResolveOnceAndKeepExactArtifactBytes(t *testing.T) {
 		if !reflect.DeepEqual(args, []string{"go", "run", "./cmd/bundledock", "tools", "upgrade"}) {
 			t.Fatalf("unexpected resolver command %v", args)
 		}
-		return nil, os.WriteFile("tools.lock.json", resolved, 0600)
+		return nil, os.WriteFile(toolconfig.ToolboxLock, resolved, 0600)
 	}
 	if err = resolve("resolved", meta, runner); err != nil {
 		t.Fatal(err)
@@ -60,7 +64,7 @@ func TestResolveOnceAndKeepExactArtifactBytes(t *testing.T) {
 }
 
 func TestPublicationDecisionAgainstPublishedTools(t *testing.T) {
-	lock, err := os.ReadFile("../../tools.lock.json")
+	lock, err := os.ReadFile("../../bundles/toolbox/tools.lock.json")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -95,10 +99,13 @@ func TestPublicationDecisionAgainstPublishedTools(t *testing.T) {
 
 func TestFailedResolveCreatesNoArtifact(t *testing.T) {
 	t.Chdir(t.TempDir())
-	if err := os.WriteFile("tools.lock.json", []byte("{}"), 0600); err != nil {
+	if err := os.MkdirAll(toolconfig.ToolboxDirectory, 0700); err != nil {
 		t.Fatal(err)
 	}
-	meta, err := toolpublish.NewMetadata("tools.lock.json", "quay.io/example/toolbox", "2026.10.10-b12.1", strings.Repeat("a", 40), "https://github.com/example/repo", "2026-10-10T03:17:00Z", "38069722044")
+	if err := os.WriteFile(toolconfig.ToolboxLock, []byte("{}"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	meta, err := toolpublish.NewMetadata(toolconfig.ToolboxLock, "quay.io/example/toolbox", "2026.10.10-b12.1", strings.Repeat("a", 40), "https://github.com/example/repo", "2026-10-10T03:17:00Z", "38069722044")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -145,6 +152,9 @@ func TestResolveRejectsInvalidRunCountersBeforeResolving(t *testing.T) {
 		for _, value := range []string{"", "0", "-1", "01", "+1", "1.2", "abc", " 1"} {
 			t.Run(name+"="+value, func(t *testing.T) {
 				t.Chdir(t.TempDir())
+				if err := os.MkdirAll(toolconfig.ToolboxDirectory, 0700); err != nil {
+					t.Fatal(err)
+				}
 				t.Setenv("REPOSITORY_URL", "quay.io/example")
 				t.Setenv("GITHUB_RUN_ID", "38069722044")
 				t.Setenv("GITHUB_RUN_NUMBER", "12")
@@ -169,7 +179,10 @@ func TestResolveUsesRepositoryURL(t *testing.T) {
 		t.Run(prefix, func(t *testing.T) {
 			dir := t.TempDir()
 			t.Chdir(dir)
-			if err := os.WriteFile("tools.lock.json", []byte("{}\n"), 0600); err != nil {
+			if err := os.MkdirAll(toolconfig.ToolboxDirectory, 0700); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(toolconfig.ToolboxLock, []byte("{}\n"), 0600); err != nil {
 				t.Fatal(err)
 			}
 			// Exercise execute's real environment adapter without resolving upstreams.

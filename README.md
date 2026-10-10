@@ -77,7 +77,7 @@ builds/smokes both native architectures. See the [verification record](docs/deve
 for what has actually passed and the remaining limits. Quay publication and
 authenticated agent tasks require separate verification.
 
-Upstream tool notices are kept in [oci/licenses](oci/licenses); brand licensing
+Upstream tool notices are kept in [bundles/toolbox/licenses](bundles/toolbox/licenses); brand licensing
 and asset provenance are documented in [brand/README.md](brand/README.md).
 BundleDock's [source and full-history provenance](docs/development.md#repository-history)
 are independent of image publication and consumer activation.

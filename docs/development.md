@@ -14,7 +14,7 @@ there. Make inherits `GOFLAGS`; OCI build commands pass `-trimpath` explicitly.
 The local output image is `bundledock-toolbox`, its installed prefix is
 `/opt/bundledock/toolbox`, and new volumes default to `bundledock-toolbox-<digest>`.
 Existing volumes remain reusable with their original images: pass the existing
-name as the second argument to `sh oci/volume.sh <image> <volume-name>`.
+name as the second argument to `sh bundles/toolbox/volume.sh <image> <volume-name>`.
 This selects the existing data without copying or renaming the volume. Anchorage
 selects its pinned legacy volume explicitly. Writable credentials, configuration,
 caches, and environments belong outside the bundle.
@@ -69,7 +69,8 @@ adapter tests without building an OCI image.
 - `cmd/bundledock`: Go CLI entry point.
 - `cmd/tools-bundle`, `cmd/tools-init`, `cmd/tools-publish`: build, initialization, and publication adapters.
 - `internal`: package catalog, upstream resolution, bundle extraction, volume validation, and Docker adapters.
-- `tools.txt`, `tools.packages.json`, `tools.lock.json`: desired versions, trusted recipes, and verified pins.
+- `bundles/toolbox/`: Dockerfile, smoke/volume adapters, licenses and bundle inputs.
+- `bundles/toolbox/{tools.txt,tools.packages.json,tools.lock.json}`: desired versions, trusted recipes, and verified pins.
 - `oci`: Dockerfile, Docker-only host adapter, smoke test, and upstream license notices.
 - `.github/workflows/ci.yml`: pull request and push checks plus native locked-toolbox smoke.
 - `.github/workflows/bundledock-toolbox.yml`: weekly two-platform publication workflow.

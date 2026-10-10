@@ -24,7 +24,7 @@ func TestCodexOfficialArchivesWithoutVoice(t *testing.T) {
 	if evidence == "" {
 		t.Skip("official archive directory not supplied")
 	}
-	c, err := toolconfig.Load("../..")
+	c, err := toolconfig.Load("../../bundles/toolbox")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -35,7 +35,7 @@ func TestCodexOfficialArchivesWithoutVoice(t *testing.T) {
 			spec := c.Lock.Platforms[arch]["codex"]
 			spec.URL = server.URL + "/" + path.Base(spec.URL)
 			source := t.TempDir()
-			if err := toolbundle.Build(context.Background(), server.Client(), map[string]toolconfig.Spec{"codex": spec}, map[string]toolconfig.Package{"codex": c.Catalog.Packages["codex"]}, os.DirFS("../.."), arch, source, io.Discard); err != nil {
+			if err := toolbundle.Build(context.Background(), server.Client(), map[string]toolconfig.Spec{"codex": spec}, map[string]toolconfig.Package{"codex": c.Catalog.Packages["codex"]}, os.DirFS("../../bundles/toolbox"), arch, source, io.Discard); err != nil {
 				t.Fatal(err)
 			}
 			destination := t.TempDir()

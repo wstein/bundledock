@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "desired_digest": "364d20d992c070034ef11793a0e5c6e70fbd4208725f1af437b18624f9b26534",
-  "catalog_digest": "b353938605d0ae93fcdaffd7df81aa068dad8f83db10222790f5fd298cdc31bb",
+  "catalog_digest": "2fb8d829f23013d37ce7732bff42babb179c3c95358609784fad9dfc299f8530",
   "platforms": {
     "amd64": {
       "agy": {

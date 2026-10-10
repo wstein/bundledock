@@ -133,7 +133,7 @@ func TestVendorBuildBothArchitectures(t *testing.T) {
 					t.Fatal(err)
 				}
 				root.Close()
-				if err := Build(context.Background(), server.Client(), specs, testPackages(t), os.DirFS("../.."), arch, dst, io.Discard); err != nil {
+				if err := Build(context.Background(), server.Client(), specs, testPackages(t), os.DirFS("../../bundles/toolbox"), arch, dst, io.Discard); err != nil {
 					t.Fatal(err)
 				}
 			}
@@ -171,7 +171,7 @@ func TestVendorBuildBothArchitectures(t *testing.T) {
 				}{content, 0644}
 			}
 			for _, file := range []string{"FMT-LICENSE.rst", "WIDECHAR-LICENSE", "UNICODE-LICENSE", "SOURCE"} {
-				content, err := os.ReadFile("../../oci/licenses/btop/" + file)
+				content, err := os.ReadFile("../../bundles/toolbox/licenses/btop/" + file)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -181,7 +181,7 @@ func TestVendorBuildBothArchitectures(t *testing.T) {
 				}{string(content), 0644}
 			}
 			for _, file := range []string{"LICENSE", "SOURCE"} {
-				content, err := os.ReadFile("../../oci/licenses/bottom/" + file)
+				content, err := os.ReadFile("../../bundles/toolbox/licenses/bottom/" + file)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -191,7 +191,7 @@ func TestVendorBuildBothArchitectures(t *testing.T) {
 				}{string(content), 0644}
 			}
 			for _, file := range []string{"LICENSE-MIT", "LICENSE-APACHE"} {
-				content, err := os.ReadFile("../../oci/licenses/lychee/" + file)
+				content, err := os.ReadFile("../../bundles/toolbox/licenses/lychee/" + file)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -426,7 +426,7 @@ func TestDeclarativeTarRecipe(t *testing.T) {
 
 func testPackages(t *testing.T) map[string]toolconfig.Package {
 	t.Helper()
-	c, err := toolconfig.Load("../..")
+	c, err := toolconfig.Load("../../bundles/toolbox")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -435,7 +435,7 @@ func testPackages(t *testing.T) map[string]toolconfig.Package {
 
 func herdrLicense(t *testing.T) string {
 	t.Helper()
-	data, err := os.ReadFile("../../oci/licenses/herdr/LICENSE")
+	data, err := os.ReadFile("../../bundles/toolbox/licenses/herdr/LICENSE")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -2,6 +2,7 @@
 package main
 
 import (
+	"bundledock/internal/toolconfig"
 	"bundledock/internal/toolpublish"
 	"context"
 	"encoding/json"
@@ -52,14 +53,14 @@ func resolve(directory string, meta toolpublish.Metadata, runner func(...string)
 		return err
 	}
 	var err error
-	meta.LockSHA256, err = toolpublish.HashFile("tools.lock.json")
+	meta.LockSHA256, err = toolpublish.HashFile(toolconfig.ToolboxLock)
 	if err != nil {
 		return err
 	}
 	if err = os.Mkdir(directory, 0700); err != nil {
 		return err
 	}
-	if err = copyFile("tools.lock.json", filepath.Join(directory, "tools.lock.json")); err != nil {
+	if err = copyFile(toolconfig.ToolboxLock, filepath.Join(directory, "tools.lock.json")); err != nil {
 		return err
 	}
 	return writeJSON(filepath.Join(directory, "provenance.json"), meta)
@@ -115,7 +116,7 @@ func execute(args []string) error {
 		}
 		now := time.Now().UTC()
 		tag := now.Format("2006.01.02") + "-b" + os.Getenv("GITHUB_RUN_NUMBER") + "." + os.Getenv("GITHUB_RUN_ATTEMPT")
-		meta, err := toolpublish.NewMetadata("tools.lock.json", image, tag, os.Getenv("GITHUB_SHA"), os.Getenv("GITHUB_SERVER_URL")+"/"+os.Getenv("GITHUB_REPOSITORY"), now.Format("2006-01-02T15:04:05Z"), os.Getenv("GITHUB_RUN_ID"))
+		meta, err := toolpublish.NewMetadata(toolconfig.ToolboxLock, image, tag, os.Getenv("GITHUB_SHA"), os.Getenv("GITHUB_SERVER_URL")+"/"+os.Getenv("GITHUB_REPOSITORY"), now.Format("2006-01-02T15:04:05Z"), os.Getenv("GITHUB_RUN_ID"))
 		if err != nil {
 			return err
 		}
@@ -174,7 +175,7 @@ func execute(args []string) error {
 		defer cancel()
 		return toolpublish.CheckNewest(ctx, nil, os.Getenv("GITHUB_REPOSITORY"), os.Getenv("DEFAULT_BRANCH"), id, attempt, meta.Commit, os.Getenv("GITHUB_TOKEN"))
 	case "build":
-		if err := copyFile(lock, "tools.lock.json"); err != nil {
+		if err := copyFile(lock, toolconfig.ToolboxLock); err != nil {
 			return err
 		}
 		result, err := adapter.Build(meta, lock, *arch, *consumer)

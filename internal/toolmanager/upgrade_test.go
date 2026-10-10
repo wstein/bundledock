@@ -42,7 +42,7 @@ func checkout(t *testing.T) string {
 	t.Helper()
 	dir := t.TempDir()
 	for _, n := range []string{"tools.txt", "tools.packages.json", "tools.lock.json"} {
-		b, err := os.ReadFile(filepath.Join("../..", n))
+		b, err := os.ReadFile(filepath.Join("../../bundles/toolbox", n))
 		if err != nil {
 			t.Fatal(err)
 		}

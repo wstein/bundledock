@@ -3,7 +3,7 @@ package toolconfig
 import "testing"
 
 func TestProcessMonitorInventory(t *testing.T) {
-	c, err := Load("../..")
+	c, err := Load("../../bundles/toolbox")
 	if err != nil {
 		t.Fatal(err)
 	}

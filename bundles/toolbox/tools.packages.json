@@ -93,10 +93,10 @@
         }
       },
       "notices": [
-        "oci/licenses/jq/AUTHORS",
-        "oci/licenses/jq/COPYING",
-        "oci/licenses/jq/ONIGURUMA-COPYING",
-        "oci/licenses/jq/SOURCE"
+        "licenses/jq/AUTHORS",
+        "licenses/jq/COPYING",
+        "licenses/jq/ONIGURUMA-COPYING",
+        "licenses/jq/SOURCE"
       ],
       "sidecar": "sha256sum.txt"
     },
@@ -178,8 +178,8 @@
         }
       },
       "notices": [
-        "oci/licenses/ast-grep/LICENSE",
-        "oci/licenses/ast-grep/SOURCE"
+        "licenses/ast-grep/LICENSE",
+        "licenses/ast-grep/SOURCE"
       ]
     },
     "yq": {
@@ -203,8 +203,8 @@
         }
       },
       "notices": [
-        "oci/licenses/yq/LICENSE",
-        "oci/licenses/yq/SOURCE"
+        "licenses/yq/LICENSE",
+        "licenses/yq/SOURCE"
       ]
     },
     "uv": {
@@ -228,9 +228,9 @@
         }
       },
       "notices": [
-        "oci/licenses/uv/LICENSE-APACHE",
-        "oci/licenses/uv/LICENSE-MIT",
-        "oci/licenses/uv/SOURCE"
+        "licenses/uv/LICENSE-APACHE",
+        "licenses/uv/LICENSE-MIT",
+        "licenses/uv/SOURCE"
       ],
       "sidecar": "{asset}.sha256"
     },
@@ -277,8 +277,8 @@
         }
       },
       "notices": [
-        "oci/licenses/herdr/LICENSE",
-        "oci/licenses/herdr/SOURCE"
+        "licenses/herdr/LICENSE",
+        "licenses/herdr/SOURCE"
       ]
     },
     "fish": {
@@ -301,9 +301,9 @@
         }
       },
       "notices": [
-        "oci/licenses/fish/COPYING",
-        "oci/licenses/fish/license.rst",
-        "oci/licenses/fish/SOURCE"
+        "licenses/fish/COPYING",
+        "licenses/fish/license.rst",
+        "licenses/fish/SOURCE"
       ]
     },
     "starship": {
@@ -327,8 +327,8 @@
         }
       },
       "notices": [
-        "oci/licenses/starship/LICENSE",
-        "oci/licenses/starship/SOURCE"
+        "licenses/starship/LICENSE",
+        "licenses/starship/SOURCE"
       ],
       "sidecar": "{asset}.sha256"
     },
@@ -352,8 +352,8 @@
         }
       },
       "notices": [
-        "oci/licenses/nu/LICENSE",
-        "oci/licenses/nu/SOURCE"
+        "licenses/nu/LICENSE",
+        "licenses/nu/SOURCE"
       ]
     },
     "tmux": {
@@ -376,12 +376,12 @@
         }
       },
       "notices": [
-        "oci/licenses/tmux/COPYING.ncurses",
-        "oci/licenses/tmux/COPYING.tmux",
-        "oci/licenses/tmux/COPYRIGHT.musl",
-        "oci/licenses/tmux/LICENSE.libevent",
-        "oci/licenses/tmux/LICENSE.utf8proc",
-        "oci/licenses/tmux/SOURCE"
+        "licenses/tmux/COPYING.ncurses",
+        "licenses/tmux/COPYING.tmux",
+        "licenses/tmux/COPYRIGHT.musl",
+        "licenses/tmux/LICENSE.libevent",
+        "licenses/tmux/LICENSE.utf8proc",
+        "licenses/tmux/SOURCE"
       ],
       "tag_prefix": "v"
     },
@@ -410,7 +410,7 @@
         ]
       },
       "notices": [
-        "oci/licenses/typos/SOURCE"
+        "licenses/typos/SOURCE"
       ]
     },
     "lychee": {
@@ -435,9 +435,9 @@
       },
       "sidecar": "{asset}.sha256",
       "notices": [
-        "oci/licenses/lychee/LICENSE-MIT",
-        "oci/licenses/lychee/LICENSE-APACHE",
-        "oci/licenses/lychee/SOURCE"
+        "licenses/lychee/LICENSE-MIT",
+        "licenses/lychee/LICENSE-APACHE",
+        "licenses/lychee/SOURCE"
       ]
     },
     "gitleaks": {
@@ -465,7 +465,7 @@
       },
       "sidecar": "gitleaks_{version}_checksums.txt",
       "notices": [
-        "oci/licenses/gitleaks/SOURCE"
+        "licenses/gitleaks/SOURCE"
       ]
     },
     "trivy": {
@@ -493,7 +493,7 @@
       },
       "sidecar": "trivy_{version}_checksums.txt",
       "notices": [
-        "oci/licenses/trivy/SOURCE"
+        "licenses/trivy/SOURCE"
       ]
     },
     "syft": {
@@ -521,7 +521,7 @@
       },
       "sidecar": "syft_{version}_checksums.txt",
       "notices": [
-        "oci/licenses/syft/SOURCE"
+        "licenses/syft/SOURCE"
       ]
     },
     "bottom": {
@@ -544,8 +544,8 @@
         }
       },
       "notices": [
-        "oci/licenses/bottom/LICENSE",
-        "oci/licenses/bottom/SOURCE"
+        "licenses/bottom/LICENSE",
+        "licenses/bottom/SOURCE"
       ]
     },
     "btop": {
@@ -572,10 +572,10 @@
       },
       "tag_prefix": "v",
       "notices": [
-        "oci/licenses/btop/FMT-LICENSE.rst",
-        "oci/licenses/btop/WIDECHAR-LICENSE",
-        "oci/licenses/btop/UNICODE-LICENSE",
-        "oci/licenses/btop/SOURCE"
+        "licenses/btop/FMT-LICENSE.rst",
+        "licenses/btop/WIDECHAR-LICENSE",
+        "licenses/btop/UNICODE-LICENSE",
+        "licenses/btop/SOURCE"
       ]
     }
   }

@@ -47,10 +47,19 @@ func TestToolsRejectsUnexpectedArguments(t *testing.T) {
 	}
 }
 
-func TestToolsUpgradeCommandHTTP(t *testing.T) {
-	dir := t.TempDir()
+func TestToolsUpgradeCommandHTTP(t *testing.T)                  { testToolsUpgradeCommandHTTP(t, false) }
+func TestToolsUpgradeCommandHTTPDirectoryOverride(t *testing.T) { testToolsUpgradeCommandHTTP(t, true) }
+func testToolsUpgradeCommandHTTP(t *testing.T, override bool) {
+	root := t.TempDir()
+	dir := filepath.Join(root, "bundles", "toolbox")
+	if override {
+		dir = filepath.Join(root, "custom-bundle")
+	}
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		t.Fatal(err)
+	}
 	for _, n := range []string{"tools.txt", "tools.packages.json", "tools.lock.json"} {
-		b, err := os.ReadFile(filepath.Join("../..", n))
+		b, err := os.ReadFile(filepath.Join("../../bundles/toolbox", n))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -62,7 +71,7 @@ func TestToolsUpgradeCommandHTTP(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Chdir(dir); err != nil {
+	if err := os.Chdir(root); err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() {
@@ -88,7 +97,11 @@ func TestToolsUpgradeCommandHTTP(t *testing.T) {
 	var out bytes.Buffer
 	cmd.SetOut(&out)
 	cmd.SetErr(&out)
-	cmd.SetArgs([]string{"tools", "upgrade", "gh"})
+	args := []string{"tools", "upgrade", "gh"}
+	if override {
+		args = append(args, "--directory", dir)
+	}
+	cmd.SetArgs(args)
 	if err := cmd.Execute(); err != nil {
 		t.Fatal(err)
 	}
@@ -133,5 +146,17 @@ func TestToolsCommandSurface(t *testing.T) {
 		if err := c.Execute(); err == nil {
 			t.Fatalf("accepted %v", args)
 		}
+	}
+}
+
+func TestToolsUpgradeDirectoryOverride(t *testing.T) {
+	cmd := newToolsCommand()
+	upgrade, _, err := cmd.Find([]string{"upgrade"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	flag := upgrade.Flags().Lookup("directory")
+	if flag == nil || flag.DefValue != "bundles/toolbox" {
+		t.Fatal("upgrade must default to bundles/toolbox and retain an explicit directory override")
 	}
 }

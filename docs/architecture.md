@@ -67,7 +67,7 @@ initializer accepts `--source` and `--target` overrides for other locations.
 Older images retain their own initializer and source prefix; their relative
 volume contents can also be mounted at `/opt/bundledock/toolbox`. New volume names use
 `bundledock-toolbox-<digest>`. To select an existing legacy volume by name, run
-`sh oci/volume.sh <original-image> <existing-volume-name>`.
+`sh bundles/toolbox/volume.sh <original-image> <existing-volume-name>`.
 Keep authentication and writable tool state in the user's home directory or
 separate private volumes. No credentials are included in the image. The read-only mount prevents tools from updating the
 shared executables; Claude updates are also disabled with environment variables.
@@ -79,7 +79,7 @@ Other images must supply compatible system libraries, Git, and CA certificates;
 mounting this volume does not install those dependencies. Override `TOOLS_IMAGE`
 or `TOOLS_CONSUMER` when invoking Make to select another image or test consumer.
 
-The OCI build uses the repository root as context with `oci/Dockerfile.dockerignore`
+The OCI build uses the repository root as context with `bundles/toolbox/Dockerfile.dockerignore`
 limiting it to the builder/initializer sources and artifact lock. Go compilation
 and artifact downloads run on `BUILDPLATFORM`; the initializer is cross-compiled
 for `TARGETARCH`. Final manifests and checksums include the extracted executables
@@ -101,5 +101,5 @@ files so the volume needs no symlinks. ast-grep's `sg` alias is excluded to pres
 consumer commands. Upstream notices are included under `/opt/bundledock/toolbox/licenses`.
 uv packages no Python runtime or Python packages; keep its cache, environments,
 and any intentionally installed runtimes outside the shared tool volume.
-`oci/volume.sh` remains a small Docker-only host adapter so the devcontainer can
+`bundles/toolbox/volume.sh` remains a small Docker-only host adapter so the devcontainer can
 initialize before a Go toolchain or BundleDock binary is available on the host.

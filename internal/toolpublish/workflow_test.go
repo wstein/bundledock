@@ -106,7 +106,7 @@ func TestWorkflowsUsePatchedBuildToolchain(t *testing.T) {
 	if strings.TrimSpace(string(version)) != "1.27.2" {
 		t.Fatal("build toolchain must use the verified patched Go release")
 	}
-	dockerfile, err := os.ReadFile("../../oci/Dockerfile")
+	dockerfile, err := os.ReadFile("../../bundles/toolbox/Dockerfile")
 	if err != nil {
 		t.Fatal(err)
 	}

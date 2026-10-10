@@ -4,6 +4,10 @@
 
 ## Pinned tools
 
+The default bundle lives in `bundles/toolbox/`: `tools.txt`,
+`tools.packages.json`, `tools.lock.json`, its Dockerfile, smoke scripts and licenses.
+Shared Go code remains at the repository root.
+
 `tools.lock.json` pins vendor artifact URLs and checksums for Linux `amd64`
 and `arm64`; builds verify every download.
 
@@ -46,6 +50,7 @@ Run upgrades from the repository root:
 ```sh
 make run ARGS="tools upgrade"       # resolve all tools
 make run ARGS="tools upgrade gh"    # resolve only GitHub CLI
+make run ARGS="tools upgrade --directory bundles/toolbox" # explicit bundle directory
 ```
 
 `tools.txt` contains one desired requirement per line: `gh>=2.102.0,<3.0.0`
@@ -73,7 +78,7 @@ per member. The decoder validates stream integrity through EOF. XZ headers can
 request dictionary memory beyond these limits, so the production installer
 verifies the exact trusted upstream checksum before decoding; these limits do
 not make the decoder suitable for arbitrary untrusted archives. Decoder notices
-are retained in `oci/licenses/xz`.
+are retained in `bundles/toolbox/licenses/xz`.
 
 Upgrades fetch fresh release metadata and select the numerically newest stable
 version within each requirement. GitHub release history is paginated. Optional `GITHUB_TOKEN` authentication is

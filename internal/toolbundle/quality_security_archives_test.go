@@ -20,7 +20,7 @@ func TestQualitySecurityOfficialArchives(t *testing.T) {
 	if evidence == "" {
 		t.Skip("official archive directory not supplied")
 	}
-	c, err := toolconfig.Load("../..")
+	c, err := toolconfig.Load("../../bundles/toolbox")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -41,7 +41,7 @@ func TestQualitySecurityOfficialArchives(t *testing.T) {
 				specs[name] = spec
 			}
 			dst := t.TempDir()
-			if err := Build(context.Background(), server.Client(), specs, packages, os.DirFS("../.."), arch, dst, io.Discard); err != nil {
+			if err := Build(context.Background(), server.Client(), specs, packages, os.DirFS("../../bundles/toolbox"), arch, dst, io.Discard); err != nil {
 				t.Fatal(err)
 			}
 			for name := range packages {

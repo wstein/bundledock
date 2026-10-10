@@ -182,7 +182,7 @@ func (a Adapter) Smoke(id, consumer string) error {
 	if _, err := a.Run("docker", "pull", consumer); err != nil {
 		return err
 	}
-	_, err := a.Run("sh", "oci/smoke.sh", id, consumer)
+	_, err := a.Run("sh", "bundles/toolbox/smoke.sh", id, consumer)
 	return err
 }
 
@@ -198,7 +198,7 @@ func (a Adapter) Build(m Metadata, lock, arch, consumer string) (Receipt, error)
 	if runtime.GOOS != "linux" || native != arch || (arch != "amd64" && arch != "arm64") {
 		return r, fmt.Errorf("native Linux architecture required")
 	}
-	args := []string{"docker", "build", "--pull", "--platform", "linux/" + arch, "-f", "oci/Dockerfile", "-t", "bundledock-toolbox:build-" + m.Tag + "-" + arch}
+	args := []string{"docker", "build", "--pull", "--platform", "linux/" + arch, "-f", "bundles/toolbox/Dockerfile", "-t", "bundledock-toolbox:build-" + m.Tag + "-" + arch}
 	imageLabels, err := labels(m, lock, arch)
 	if err != nil {
 		return r, err

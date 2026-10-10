@@ -13,9 +13,10 @@
 !internal/toolbundle/**
 !internal/toolvolume
 !internal/toolvolume/**
-!oci
-!tools.txt
-!tools.packages.json
-!tools.lock.json
-!oci/licenses
-!oci/licenses/**
+!bundles
+!bundles/toolbox
+!bundles/toolbox/tools.txt
+!bundles/toolbox/tools.packages.json
+!bundles/toolbox/tools.lock.json
+!bundles/toolbox/licenses
+!bundles/toolbox/licenses/**

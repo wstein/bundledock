@@ -46,4 +46,4 @@ jobs:
         with:
           persist-credentials: false
       - name: Build pinned toolbox and run full native smoke
-        run: sh oci/ci-smoke.sh
+        run: sh bundles/toolbox/ci-smoke.sh

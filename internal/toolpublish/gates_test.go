@@ -140,7 +140,7 @@ func TestBuildSmokeThenPushExactImage(t *testing.T) {
 		if reflect.DeepEqual(c, []string{"docker", "pull", "consumer:test"}) {
 			pull = i
 		}
-		if reflect.DeepEqual(c, []string{"sh", "oci/smoke.sh", f.id, "consumer:test"}) {
+		if reflect.DeepEqual(c, []string{"sh", "bundles/toolbox/smoke.sh", f.id, "consumer:test"}) {
 			smoke = i
 		}
 		if prefix(c, "docker", "push") {

@@ -9,7 +9,7 @@ import (
 )
 
 func TestBuildStagesUseMinimalAlpineBases(t *testing.T) {
-	data, err := os.ReadFile("../../oci/Dockerfile")
+	data, err := os.ReadFile("../../bundles/toolbox/Dockerfile")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -45,8 +45,8 @@ func TestBuildStagesUseMinimalAlpineBases(t *testing.T) {
 	}
 	for _, required := range []string{
 		"COPY --from=compiler /out/tools-bundle /usr/local/bin/tools-bundle",
-		"COPY tools.txt tools.packages.json tools.lock.json /build/",
-		"COPY oci/licenses /build/oci/licenses",
+		"COPY bundles/toolbox/tools.txt bundles/toolbox/tools.packages.json bundles/toolbox/tools.lock.json /build/",
+		"COPY bundles/toolbox/licenses /build/licenses",
 	} {
 		if !strings.Contains(downloads, required) {
 			t.Errorf("downloads must retain %s", required)
@@ -58,7 +58,7 @@ func TestBuildStagesUseMinimalAlpineBases(t *testing.T) {
 }
 
 func TestScratchCarrierContract(t *testing.T) {
-	data, err := os.ReadFile("../../oci/Dockerfile")
+	data, err := os.ReadFile("../../bundles/toolbox/Dockerfile")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -147,7 +147,7 @@ esac
 		t.Fatal(err)
 	}
 	calls := filepath.Join(dir, "calls")
-	cmd := exec.Command("sh", "../../oci/smoke.sh", "carrier:fixture", "consumer:fixture")
+	cmd := exec.Command("sh", "../../bundles/toolbox/smoke.sh", "carrier:fixture", "consumer:fixture")
 	cmd.Env = append(os.Environ(), "PATH="+dir+":"+os.Getenv("PATH"), "CARRIER_CALLS="+calls, "CARRIER_STATE="+filepath.Join(dir, "state"))
 	output, err := cmd.CombinedOutput()
 	if err != nil {

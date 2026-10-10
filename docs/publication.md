@@ -82,8 +82,8 @@ establish that upstream binaries are free of known vulnerabilities. Review the
 [remaining embedded dependency findings](development.md#embedded-dependency-findings)
 and wait for patched stable releases to remediate them.
 It never commits or pushes the resulting lock. Both native jobs consume that
-artifact, build `oci/Dockerfile` once, explicitly pull the consumer baseline and
-run `oci/smoke.sh` against the resulting local image ID. OCI labels include the
+artifact, build `bundles/toolbox/Dockerfile` once, explicitly pull the consumer baseline and
+run `bundles/toolbox/smoke.sh` against the resulting local image ID. OCI labels include the
 image title, source, revision, build time, run tag, lock hash, tool versions and
 `io.bundledock.github.run-id`. Artifact checks still bind to the full
 `GITHUB_RUN_ID`, run number, attempt and source commit. The newest-run gate uses

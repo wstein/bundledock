@@ -28,16 +28,16 @@ help:
 	  'make tools-test        Test native package extraction'
 
 tools-build:
-	docker build -f oci/Dockerfile -t $(TOOLS_IMAGE) .
+	docker build -f bundles/toolbox/Dockerfile -t $(TOOLS_IMAGE) .
 
 tools-test:
 	$(GO) test ./cmd/bundledock ./internal/toolmanager ./internal/toolconfig ./internal/toolbundle ./internal/toolvolume ./internal/dockercli
 
 tools-volume:
-	sh oci/volume.sh "$(TOOLS_IMAGE)"
+	sh bundles/toolbox/volume.sh "$(TOOLS_IMAGE)"
 
 tools-smoke:
-	sh oci/smoke.sh "$(TOOLS_IMAGE)" "$(TOOLS_CONSUMER)"
+	sh bundles/toolbox/smoke.sh "$(TOOLS_IMAGE)" "$(TOOLS_CONSUMER)"
 
 build:
 	$(GO) build -o $(BINARY) ./cmd/bundledock
