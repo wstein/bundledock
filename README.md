@@ -82,6 +82,16 @@ Both upgrade and build validate this catalog; the Dockerfile owns the fixed SQLi
 compile command. Review catalog edits as build inputs. A catalog change requires
 an upgrade of all tools so preserved pins cannot acquire a different recipe silently.
 
+The native builder supports `tar.xz` with the checksum-pinned pure Go
+`github.com/ulikunitz/xz` decoder; no external `xz` command is needed. XZ inputs
+are limited to 64 MiB compressed, 256 MiB decoded, 4096 tar members, and 128 MiB
+per member. The decoder validates stream integrity through EOF. XZ headers can
+request dictionary memory beyond these limits, so the production installer
+verifies the exact trusted upstream checksum before decoding; these limits do
+not make the decoder suitable for arbitrary untrusted archives. Decoder notices
+are retained in `oci/licenses/xz`.
+
+
 Upgrades fetch fresh release metadata and select the numerically newest stable
 version within each requirement. GitHub release history is paginated. Optional `GITHUB_TOKEN` authentication is
 sent only to `api.github.com`; artifact and other provider requests never receive

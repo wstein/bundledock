@@ -20,6 +20,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/ulikunitz/xz"
 )
 
 type Spec = toolconfig.Spec
@@ -128,10 +130,17 @@ func install(ctx context.Context, client *http.Client, root *os.Root, name strin
 		response.Body.Close()
 		return fmt.Errorf("download HTTP %s", response.Status)
 	}
-	_, copyErr := io.Copy(io.MultiWriter(payload, h), response.Body)
+	var download io.Reader = response.Body
+	if p.Install.Kind == "tar.xz" {
+		download = io.LimitReader(download, 64<<20+1)
+	}
+	copied, copyErr := io.Copy(io.MultiWriter(payload, h), download)
 	closeErr := response.Body.Close()
 	if copyErr != nil {
 		return copyErr
+	}
+	if p.Install.Kind == "tar.xz" && copied > 64<<20 {
+		return fmt.Errorf("XZ download too large")
 	}
 	if closeErr != nil {
 		return closeErr
@@ -170,7 +179,7 @@ func install(ctx context.Context, client *http.Client, root *os.Root, name strin
 			}
 		}
 		return copyAliases(root, p.Install.Aliases)
-	case "tar.gz":
+	case "tar.gz", "tar.xz":
 		return Extract(root, name, p, payload)
 	default:
 		return fmt.Errorf("unsupported install kind %q", p.Install.Kind)
@@ -180,15 +189,29 @@ func install(ctx context.Context, client *http.Client, root *os.Root, name strin
 // Extract validates every tar member before selecting declarative executables.
 // Preserve keeps native package resources; aliases are independent regular files.
 func Extract(root *os.Root, tool string, p toolconfig.Package, source io.Reader) error {
-	if p.Install.Kind != "tar.gz" {
-		return fmt.Errorf("expected tar.gz recipe")
+	var decoded io.Reader
+	var limited *io.LimitedReader
+	switch p.Install.Kind {
+	case "tar.gz":
+		gz, err := gzip.NewReader(source)
+		if err != nil {
+			return err
+		}
+		defer gz.Close()
+		decoded = gz
+	case "tar.xz":
+		// XZ headers control dictionary allocation. Production install verifies
+		// the trusted upstream checksum before constructing this decoder.
+		reader, err := xz.NewReader(source)
+		if err != nil {
+			return err
+		}
+		limited = &io.LimitedReader{R: reader, N: 256<<20 + 1}
+		decoded = limited
+	default:
+		return fmt.Errorf("expected tar.gz or tar.xz recipe")
 	}
-	gz, err := gzip.NewReader(source)
-	if err != nil {
-		return err
-	}
-	defer gz.Close()
-	archive := tar.NewReader(gz)
+	archive := tar.NewReader(decoded)
 	seen := map[string]bool{}
 	installed := map[string]bool{}
 	for {
@@ -203,6 +226,14 @@ func Extract(root *os.Root, tool string, p toolconfig.Package, source io.Reader)
 			return err
 		}
 		name := path.Clean(entry.Name)
+		if limited != nil {
+			if len(seen) >= 4096 {
+				return fmt.Errorf("too many XZ archive members")
+			}
+			if entry.Size > 128<<20 {
+				return fmt.Errorf("XZ archive member too large: %q", name)
+			}
+		}
 		if seen[name] {
 			return fmt.Errorf("duplicate archive path %q", name)
 		}
@@ -252,8 +283,11 @@ func Extract(root *os.Root, tool string, p toolconfig.Package, source io.Reader)
 			return err
 		}
 	}
-	if _, err := io.Copy(io.Discard, gz); err != nil {
+	if _, err := io.Copy(io.Discard, decoded); err != nil {
 		return err
+	}
+	if limited != nil && limited.N == 0 {
+		return fmt.Errorf("XZ archive decompressed data too large")
 	}
 	if len(installed) != len(p.Install.Members) {
 		return fmt.Errorf("expected %d %s executable(s), found %d", len(p.Install.Members), tool, len(installed))

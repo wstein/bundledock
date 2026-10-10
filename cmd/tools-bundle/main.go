@@ -1,4 +1,4 @@
-// tools-bundle is the image build's standard-library-only artifact installer.
+// tools-bundle is the image build's native artifact installer.
 package main
 
 import (

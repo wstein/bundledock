@@ -115,3 +115,17 @@ func TestStableNumericOrdering(t *testing.T) {
 		}
 	}
 }
+
+func TestCatalogAllowsTarXZ(t *testing.T) {
+	c, err := Load("../..")
+	if err != nil {
+		t.Fatal(err)
+	}
+	p := c.Catalog.Packages["gh"]
+	p.Install.Kind = "tar.xz"
+	c.Catalog.Packages["gh"] = p
+	c.Bind()
+	if err := c.Validate(); err != nil {
+		t.Fatal(err)
+	}
+}

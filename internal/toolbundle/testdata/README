@@ -1,0 +1,3 @@
+fish.tar.xz is a synthetic single-member tar.xz fixture generated with Python 3
+stdlib tarfile (USTAR format) and lzma.compress. It contains executable fish
+(mode 0755) with the text "fish executable"; no upstream binary is included.

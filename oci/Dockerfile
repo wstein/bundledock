@@ -2,8 +2,9 @@
 FROM --platform=$BUILDPLATFORM golang:1.24-trixie AS compiler
 ARG TARGETARCH
 WORKDIR /src
-# These commands use only the standard library; no module downloads are needed.
-COPY go.mod ./
+# The bundle builder uses the checksum-pinned pure Go XZ decoder.
+COPY go.mod go.sum ./
+RUN go mod download
 COPY cmd/tools-bundle ./cmd/tools-bundle
 COPY cmd/tools-init ./cmd/tools-init
 COPY internal/toolconfig ./internal/toolconfig

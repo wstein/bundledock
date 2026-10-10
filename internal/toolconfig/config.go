@@ -275,7 +275,7 @@ func (c Config) validate(strict bool) error {
 			}
 		}
 		switch p.Install.Kind {
-		case "raw", "tar.gz", "zip", "sqlite-source":
+		case "raw", "tar.gz", "tar.xz", "zip", "sqlite-source":
 		default:
 			return fmt.Errorf("unknown install kind for %s", name)
 		}
@@ -304,8 +304,8 @@ func (c Config) validate(strict bool) error {
 				return fmt.Errorf("alias target is not installed for %s", name)
 			}
 		}
-		if p.Install.Preserve && p.Install.Kind != "tar.gz" {
-			return fmt.Errorf("preserve requires tar.gz")
+		if p.Install.Preserve && p.Install.Kind != "tar.gz" && p.Install.Kind != "tar.xz" {
+			return fmt.Errorf("preserve requires tar.gz or tar.xz")
 		}
 		for _, notice := range append(append([]string{}, p.Notices...), p.Install.ArchiveNotices...) {
 			if !validPath(notice) {

@@ -1,0 +1,5 @@
+Upstream: https://github.com/ulikunitz/xz
+License: BSD-3-Clause
+Pinned module: v0.5.17
+License source: https://github.com/ulikunitz/xz/blob/v0.5.17/LICENSE
+Used by the build-time tools-bundle installer and Anchorage CLI; not a bundled tool.

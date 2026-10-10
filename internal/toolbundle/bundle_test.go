@@ -21,6 +21,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/ulikunitz/xz"
 )
 
 type member struct {
@@ -458,4 +460,89 @@ func herdrLicense(t *testing.T) string {
 		t.Fatal(err)
 	}
 	return string(data)
+}
+
+func TestExtractTarXZ(t *testing.T) {
+	data, err := os.ReadFile("testdata/fish.tar.xz")
+	if err != nil {
+		t.Fatal(err)
+	}
+	p := toolconfig.Package{Install: toolconfig.Install{Kind: "tar.xz", Members: map[string]string{"fish": "bin/fish"}}}
+	root, dir := openRoot(t)
+	if err := Extract(root, "fish", p, bytes.NewReader(data)); err != nil {
+		t.Fatal(err)
+	}
+	got, err := os.ReadFile(filepath.Join(dir, "bin/fish"))
+	if err != nil || string(got) != "fish executable" {
+		t.Fatalf("data=%q err=%v", got, err)
+	}
+}
+
+func xzArchive(t *testing.T, members ...member) []byte {
+	t.Helper()
+	gz, err := gzip.NewReader(bytes.NewReader(archive(t, members...)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer gz.Close()
+	var data bytes.Buffer
+	writer, err := xz.NewWriter(&data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := io.Copy(writer, gz); err != nil {
+		t.Fatal(err)
+	}
+	if err := writer.Close(); err != nil {
+		t.Fatal(err)
+	}
+	return data.Bytes()
+}
+
+func TestTarXZSafety(t *testing.T) {
+	p := toolconfig.Package{Install: toolconfig.Install{Kind: "tar.xz", Members: map[string]string{"fish": "bin/fish"}}}
+	for _, members := range [][]member{
+		{{"../escape", "bad", 0755, 0}}, {{"/escape", "bad", 0755, 0}},
+		{{"fish", "", 0755, tar.TypeSymlink}}, {{"fish", "", 0755, tar.TypeLink}},
+		{{"fish", "", 0755, tar.TypeChar}}, {{"fish", "", 0755, tar.TypeFifo}},
+		{{"fish", "bad", 0644, 0}}, {{"other", "bad", 0755, 0}},
+		{{"a/fish", "one", 0755, 0}, {"b/fish", "two", 0755, 0}},
+		{{"fish", "one", 0755, 0}, {"fish", "two", 0755, 0}},
+		{{"fish", "one", 0755, 0}, {"../unselected", "bad", 0644, 0}},
+	} {
+		root, _ := openRoot(t)
+		if err := Extract(root, "fish", p, bytes.NewReader(xzArchive(t, members...))); err == nil {
+			t.Fatal("accepted unsafe or incomplete XZ archive")
+		}
+	}
+	good := xzArchive(t, member{"fish", "one", 0755, 0})
+	corrupt := bytes.Clone(good)
+	corrupt[len(corrupt)-8] ^= 1
+	for _, data := range [][]byte{good[:len(good)-6], corrupt, []byte("not XZ")} {
+		root, _ := openRoot(t)
+		if err := Extract(root, "fish", p, bytes.NewReader(data)); err == nil {
+			t.Fatal("accepted malformed/truncated XZ")
+		}
+	}
+	root, _ := openRoot(t)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.Write(good) }))
+	defer server.Close()
+	if err := install(context.Background(), server.Client(), root, "fish", p, Spec{URL: server.URL, SHA256: strings.Repeat("0", 64)}); err == nil || !strings.Contains(err.Error(), "checksum mismatch") {
+		t.Fatalf("unverified extraction: %v", err)
+	}
+	if _, err := root.Stat("bin/fish"); !os.IsNotExist(err) {
+		t.Fatal("installed unverified XZ")
+	}
+}
+
+func TestTarXZMemberLimit(t *testing.T) {
+	p := toolconfig.Package{Install: toolconfig.Install{Kind: "tar.xz", Members: map[string]string{"fish": "bin/fish"}}}
+	members := []member{{"fish", "one", 0755, 0}}
+	for i := 0; i < 4096; i++ {
+		members = append(members, member{fmt.Sprintf("dir-%d/", i), "", 0755, tar.TypeDir})
+	}
+	root, _ := openRoot(t)
+	if err := Extract(root, "fish", p, bytes.NewReader(xzArchive(t, members...))); err == nil || !strings.Contains(err.Error(), "too many") {
+		t.Fatalf("member limit: %v", err)
+	}
 }
