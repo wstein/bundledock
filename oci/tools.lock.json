@@ -46,6 +46,11 @@
         "version": "0.45.3",
         "url": "https://github.com/ast-grep/ast-grep/releases/download/0.45.3/app-x86_64-unknown-linux-gnu.zip",
         "sha256": "f8ac830881339d1edee6b2652f54798c0f4da5a827f2db38a08ee31117783ce8"
+      },
+      "yq": {
+        "version": "4.54.1",
+        "url": "https://github.com/mikefarah/yq/releases/download/v4.54.1/yq_linux_amd64",
+        "sha256": "8e34fc298390875de416e6a4afcb8cabeceb25d9aa8506c1a2f9353cf702ea5f"
       }
     },
     "arm64": {
@@ -93,6 +98,11 @@
         "version": "0.45.3",
         "url": "https://github.com/ast-grep/ast-grep/releases/download/0.45.3/app-aarch64-unknown-linux-gnu.zip",
         "sha256": "b39cfbc58da4b869a88b8a4bc57bd5deb0d24541e704cf7c257da7b53ec81c8f"
+      },
+      "yq": {
+        "version": "4.54.1",
+        "url": "https://github.com/mikefarah/yq/releases/download/v4.54.1/yq_linux_arm64",
+        "sha256": "189088da0c6429ec5178dfaab1a114805f6cab0b61b165ab236efedf1d57a71b"
       }
     }
   }

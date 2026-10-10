@@ -53,10 +53,10 @@ func ReadLock(r io.Reader, arch string) (map[string]Spec, error) {
 	if !ok {
 		return nil, fmt.Errorf("missing architecture %q", arch)
 	}
-	if len(tools) != 9 {
-		return nil, fmt.Errorf("lock must contain codex, claude, gh, agy, jq, rg, fd, sqlite3 and ast-grep")
+	if len(tools) != 10 {
+		return nil, fmt.Errorf("lock must contain codex, claude, gh, agy, jq, rg, fd, sqlite3, ast-grep and yq")
 	}
-	for _, name := range []string{"codex", "claude", "gh", "agy", "jq", "rg", "fd", "sqlite3", "ast-grep"} {
+	for _, name := range []string{"codex", "claude", "gh", "agy", "jq", "rg", "fd", "sqlite3", "ast-grep", "yq"} {
 		spec, ok := tools[name]
 		if !ok || spec.Version == "" {
 			return nil, fmt.Errorf("missing tool/version %s", name)
@@ -119,7 +119,7 @@ func Build(ctx context.Context, client *http.Client, tools map[string]Spec, arch
 	if info.Mode().Perm()&0111 == 0 || info.Size() == 0 {
 		return fmt.Errorf("compiled SQLite must be a nonempty executable")
 	}
-	for _, name := range []string{"agy", "ast-grep", "claude", "codex", "fd", "gh", "jq", "rg"} {
+	for _, name := range []string{"agy", "ast-grep", "claude", "codex", "fd", "gh", "jq", "rg", "yq"} {
 		spec := tools[name]
 		fmt.Fprintln(output, "Installing", name, spec.Version)
 		if err := install(ctx, client, root, name, spec); err != nil {
@@ -175,7 +175,7 @@ func install(ctx context.Context, client *http.Client, root *os.Root, name strin
 		}
 		return extractSQLiteSource(root, payload, info.Size())
 	}
-	if name == "claude" || name == "jq" {
+	if name == "claude" || name == "jq" || name == "yq" {
 		return WriteFile(root, "bin/"+name, payload, 0755)
 	}
 	return Extract(root, name, payload)
