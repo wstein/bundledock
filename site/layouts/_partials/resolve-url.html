@@ -1,0 +1,20 @@
+{{- $url := urls.Parse .Destination -}}
+{{- $result := .Destination -}}
+{{- if and (not $url.IsAbs) (not $url.Host) $url.Path -}}
+  {{- $source := path.Clean (path.Join (path.Dir .Page.File.Path) $url.Path) -}}
+  {{- if eq $source "README.md" }}{{ $source = "cli.md" }}{{ end -}}
+  {{- $source = replaceRE "^docs/" "guides/" $source -}}
+  {{- with site.GetPage $source -}}
+    {{- $result = .RelPermalink -}}
+  {{- else -}}
+    {{- if hasPrefix $source "assets/" -}}
+      {{- $result = relURL $source -}}
+    {{- else -}}
+      {{- $repositoryPath := path.Clean (path.Join (path.Dir (strings.TrimPrefix (printf "%s/" hugo.WorkingDir) $.Page.File.Filename)) $url.Path) -}}
+      {{- $result = printf "%s/blob/main/%s" site.Params.repository $repositoryPath -}}
+    {{- end -}}
+  {{- end -}}
+  {{- with $url.RawQuery }}{{ $result = printf "%s?%s" $result . }}{{ end -}}
+  {{- with $url.Fragment }}{{ $result = printf "%s#%s" $result . }}{{ end -}}
+{{- end -}}
+{{- return $result -}}

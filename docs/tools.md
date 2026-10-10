@@ -1,3 +1,9 @@
+---
+title: Tool catalog and upgrades
+description: Inspect pinned tool versions and resolve verified upgrades for both architectures.
+weight: 20
+---
+
 # Tool catalog and upgrades
 
 [Back to BundleDock](../README.md)

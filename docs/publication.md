@@ -1,3 +1,9 @@
+---
+title: Publication to Quay
+description: Configure the destination and understand the native smoke and registry publication gates.
+weight: 40
+---
+
 # Publish the toolbox to Quay
 
 [Back to BundleDock](../README.md)

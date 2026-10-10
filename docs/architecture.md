@@ -1,3 +1,9 @@
+---
+title: Architecture and consumer runtime
+description: Understand the carrier image, shared volumes, bundle layout, and consumer requirements.
+weight: 30
+---
+
 # Architecture and consumer runtime
 
 [Back to BundleDock](../README.md)

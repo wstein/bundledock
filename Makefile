@@ -9,7 +9,7 @@ export GO VERSION RELEASE_DIR
 TOOLS_IMAGE ?= bundledock-toolbox:poc
 TOOLS_CONSUMER ?= mcr.microsoft.com/devcontainers/go:2-1.27-trixie
 
-.PHONY: release release-test help build run test vet fmt check clean tools-build tools-volume tools-smoke tools-test
+.PHONY: release release-test help build run test vet fmt check clean tools-build tools-volume tools-smoke tools-test docs docs-serve docs-test
 
 help:
 	@printf '%s\n' \
@@ -21,6 +21,9 @@ help:
 	  'make vet               Run go vet' \
 	  'make fmt               Format Go source' \
 	  'make check             Check formatting, tests, and vet' \
+	  'make docs              Build the local Hugo documentation in public/' \
+	  'make docs-serve        Preview documentation at http://localhost:1313/' \
+	  'make docs-test         Check rendered documentation, links, and assets' \
 	  'make clean             Remove the built binary'
 	@printf '%s\n' 'make tools-build       Build the local OCI tool bundle'
 	@printf '%s\n' 'make tools-volume      Initialize a versioned tool volume' \
@@ -66,3 +69,13 @@ release:
 
 release-test:
 	sh scripts/release-test.sh
+
+# Hugo is a docs-only dependency; it is never included in the tool catalog.
+docs:
+	bash scripts/hugo.sh --panicOnWarning
+
+docs-serve:
+	bash scripts/hugo.sh server --bind 127.0.0.1
+
+docs-test:
+	$(GO) test ./scripts -count=1

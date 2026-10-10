@@ -1,3 +1,9 @@
+---
+title: Development and verification
+description: Build the CLI, run checks, and review the recorded verification evidence and limits.
+weight: 50
+---
+
 # Development and verification
 
 [Back to BundleDock](../README.md)
@@ -36,6 +42,26 @@ ID, and runs the initializer with networking disabled.
 
 Make targets are thin wrappers around Go commands. Run `make help` for available
 targets. Builds write `bin/bundledock`; `make clean` removes the binary.
+
+### Local documentation site
+
+Run `make docs` to build the static documentation into ignored `public/`, or
+`make docs-serve` to preview it at `http://localhost:1313/`. `make docs-test`
+builds the site and checks guide content, local links and fragments, project
+subpath URLs, and unchanged brand assets. The README and these four guides are
+mounted directly by Hugo; edit the original Markdown to update both views.
+
+The docs wrapper downloads only the official stable prebuilt Hugo 0.167.0 for
+Linux AMD64 or ARM64, verifies the publisher SHA256 in `.config/hugo.sha256`
+on every run, and extracts to a temporary directory removed when it exits.
+It needs Bash, curl, tar, and sha256sum; the documentation tests use Go.
+Hugo is a docs build dependency and is never added to the toolbox catalog.
+No Node, third-party theme, source compilation, deployment, or credentials are
+needed. The first build downloads its pinned archive; later builds use the
+verified cache in `.cache/hugo` (override with `HUGO_CACHE_DIR`). Remove that
+directory to clear downloaded archives while preserving the `public/` preview.
+To review a project-subpath build, run
+`bash scripts/hugo.sh --baseURL https://example.org/bundledock/`.
 
 ### Release review
 

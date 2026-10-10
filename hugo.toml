@@ -1,0 +1,56 @@
+baseURL = 'http://localhost:1313/'
+locale = 'en-US'
+title = 'BundleDock'
+disableKinds = ['taxonomy', 'term', 'RSS']
+
+[params]
+  description = 'Pinned development tools, shared across Linux containers.'
+  repository = 'https://github.com/wstein/bundledock'
+
+[markup.highlight]
+  noClasses = false
+[markup.tableOfContents]
+  startLevel = 2
+  endLevel = 3
+
+# Mount the repository documentation directly; there are no copied guides.
+[[module.mounts]]
+  source = 'site/content'
+  target = 'content'
+[[module.mounts]]
+  source = 'README.md'
+  target = 'content/cli.md'
+[[module.mounts]]
+  source = 'docs'
+  target = 'content/guides'
+  files = ['architecture.md', 'development.md', 'publication.md', 'tools.md']
+[[module.mounts]]
+  source = 'site/layouts'
+  target = 'layouts'
+[[module.mounts]]
+  source = 'site/static'
+  target = 'static'
+[[module.mounts]]
+  source = 'assets'
+  target = 'static/assets'
+
+[[menus.main]]
+  name = 'CLI & quick start'
+  pageRef = '/cli'
+  weight = 10
+[[menus.main]]
+  name = 'Tool catalog'
+  pageRef = '/guides/tools'
+  weight = 20
+[[menus.main]]
+  name = 'Architecture'
+  pageRef = '/guides/architecture'
+  weight = 30
+[[menus.main]]
+  name = 'Publication'
+  pageRef = '/guides/publication'
+  weight = 40
+[[menus.main]]
+  name = 'Development'
+  pageRef = '/guides/development'
+  weight = 50

@@ -1,0 +1,18 @@
+{{ define "main" }}
+<section class="hero">
+  <p class="eyebrow">One toolbox. Every workspace.</p>
+  <h1>Build once. Share your tools.</h1>
+  <p class="lead">Pinned development CLIs in a shared, read-only OCI toolbox. Keep common utilities consistent while stock language images provide your toolchains.</p>
+  <a class="button" href="{{ (site.GetPage "/cli").RelPermalink }}#quick-start">Get started <span aria-hidden="true">→</span></a>
+  <img class="banner" src="{{ "assets/banner.svg" | relURL }}" alt="BundleDock — Build and ship OCI bundles." width="1000" height="150">
+</section>
+<section aria-labelledby="explore">
+  <h2 id="explore">Explore BundleDock</h2>
+  <div class="cards">
+    {{ range site.Menus.main }}
+    <a class="card" href="{{ .URL }}"><h3>{{ .Name }}</h3><p>{{ .Page.Description }}</p><span aria-hidden="true">→</span></a>
+    {{ end }}
+  </div>
+</section>
+<p class="note">BundleDock is a proof of concept for Linux AMD64 and ARM64. Use the architecture and development guides to check consumer requirements and verification limits.</p>
+{{ end }}

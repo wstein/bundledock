@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="{{ site.Language.Locale }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ if not .IsHome }}{{ .Title }} · {{ end }}BundleDock</title>
+  <meta name="description" content="{{ .Description | default site.Params.description }}">
+  <link rel="icon" href="{{ "assets/favicon.svg" | relURL }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ "style.css" | relURL }}">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="header">
+    <a class="brand" href="{{ site.Home.RelPermalink }}"><img src="{{ "assets/logo.svg" | relURL }}" alt="" width="44" height="44"><span>BundleDock</span></a>
+    <a class="source" href="{{ site.Params.repository }}">Source on GitHub <span aria-hidden="true">↗</span></a>
+  </header>
+  <div class="shell">
+    <nav class="navigation" aria-label="Documentation">
+      <a href="{{ site.Home.RelPermalink }}"{{ if .IsHome }} aria-current="page"{{ end }}>Overview</a>
+      {{ range site.Menus.main }}
+      <a href="{{ .URL }}"{{ if eq $.RelPermalink .URL }} aria-current="page"{{ end }}>{{ .Name }}</a>
+      {{ end }}
+    </nav>
+    <main id="main">{{ block "main" . }}{{ end }}</main>
+  </div>
+  <footer>BundleDock · Linux AMD64 &amp; ARM64 · <a href="{{ site.Params.repository }}/blob/main/LICENSE">EUPL-1.2</a></footer>
+</body>
+</html>

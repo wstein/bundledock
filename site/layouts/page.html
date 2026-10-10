@@ -1,0 +1,6 @@
+{{ define "main" }}
+<div class="reading">
+  <article class="prose">{{ .Content }}</article>
+  {{ with .TableOfContents }}<aside class="contents" aria-label="On this page"><h2>On this page</h2>{{ . }}</aside>{{ end }}
+</div>
+{{ end }}

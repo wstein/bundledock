@@ -1,3 +1,9 @@
+---
+title: CLI and quick start
+description: Build the toolbox, initialize a shared volume, and run pinned CLIs in a compatible consumer.
+weight: 10
+---
+
 # BundleDock
 
 ![BundleDock — Build and ship OCI bundles.](assets/banner.svg)
