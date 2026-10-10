@@ -110,6 +110,60 @@ Existing images, volumes, running containers, and desired ranges are unaffected 
 resolution. `tools volume` remains the existing initialization command; no update
 alias or other tool-management commands are added.
 
+### Weekly image publication
+
+[The publication workflow](.github/workflows/workharbor-tools.yml) runs Mondays
+at 03:17 UTC and through Actions → **Publish workharbor-tools** → **Run workflow**.
+Only the repository default branch can publish. GitHub may delay scheduled runs.
+Publication runs share one concurrency group; an active run is allowed to finish.
+Before promotion, a read-only GitHub API check rejects a run superseded by a newer
+eligible run, including one that failed. This prevents an old queued run or rerun
+from rolling stable back. Start a fresh manual run to recover; when rerunning a
+run, choose **Re-run all jobs** so the resolver creates current-attempt artifacts.
+
+Before enabling it, create the Quay repository and set these GitHub Actions values:
+
+| Setting | Value |
+| --- | --- |
+| Repository variable `QUAY_IMAGE` | `quay.io/<namespace>/workharbor-tools` |
+| Secret `QUAY_USERNAME` | Quay robot account username |
+| Secret `QUAY_PASSWORD` | Robot token with write access to that repository |
+
+The Quay namespace is deployment configuration, with no default in the workflow.
+Use a dedicated [Quay robot account](https://docs.quay.io/glossary/robot-accounts.html).
+The workflow uses read-only contents permission and read-only Actions permission
+in the promotion job for the newest-run check. It never runs for pull
+requests, and supplies registry credentials only after each native smoke passes.
+Check [GitHub runner availability and plan limits](https://docs.github.com/en/actions/how-tos/write-workflows/choose-where-workflows-run/choose-the-runner-for-a-job)
+for `ubuntu-24.04` (AMD64) and `ubuntu-24.04-arm` (ARM64).
+
+One resolver runs `anchorage tools upgrade` for all tools, then uploads the exact
+lock bytes and shared source commit, UTC build time, lock SHA256 and run tag.
+It never commits or pushes the resulting lock. Both native jobs consume that
+artifact, build `oci/Dockerfile` once, explicitly pull the consumer baseline and
+run `oci/smoke.sh` against the resulting local image ID. OCI labels include the
+image title, source, revision, build time, run tag, lock hash and tool versions.
+
+A native job pushes its exact tested image to `staging-<run-tag>-<architecture>`.
+If either architecture fails, final promotion is skipped. Once both pass, the
+adapter verifies each remote registry manifest references its smoked image config,
+creates the two-platform manifest and verifies its platform digests before updating
+`stable`. The version tag is `YYYY.MM.DD-<github.run_id>-<github.run_attempt>`, so
+reruns use distinct tags. These names are unique per attempt; registry-enforced
+immutability requires separate Quay configuration. The lock hash is provenance,
+not a build identifier: base layers or Debian packages can change for the same lock.
+
+Download `resolved-tools-<attempt>`, `published-amd64-<attempt>`,
+`published-arm64-<attempt>` and `publication-<attempt>` artifacts from the run (retained for 90 days). The run summary and `publication.json`
+report the remote multi-platform registry digest, which differs from a local Docker
+image ID. Use the reported `quay.io/<namespace>/workharbor-tools@sha256:...` reference
+for explicit deployment or rollback. Publication does not change the devcontainer
+pin, initialize host volumes, or activate the new image.
+
+Local verification of the CI adapter uses fake Docker commands in `make check`.
+Real builds, native smoke execution and Quay publication still require the first
+successful configured workflow run; the implementation environment had no Docker.
+
 The original four agent tools and complete Codex assets occupied about 864 MiB
 uncompressed on ARM64; the added utilities increase that size. The volume is shared across workspaces on the same Docker host.
 The initial local build and smoke tests were run on Linux ARM64; AMD64 downloads
