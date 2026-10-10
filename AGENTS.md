@@ -32,6 +32,7 @@ still pins an older image, so do not assume these commands exist in a running se
 | Use the preferred interactive shell | `fish`. |
 | Use an alternative structured shell | `nu` (Nushell). |
 | Use an alternative terminal multiplexer | `tmux`. |
+| Monitor processes and system resources | `btm` (bottom) and `btop`. |
 | Customize a shell prompt | `starship`. |
 | Check spelling | `typos`. |
 | Check links | `lychee`. |

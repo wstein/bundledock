@@ -43,10 +43,10 @@ make run ARGS="tools volume --image bundledock-toolbox:poc"
 ```
 
 `tools.lock.json` pins vendor artifact URLs and checksums for Linux `amd64`
-and `arm64`. The bundle contains twenty tools: Codex (including native helpers), Claude Code,
+and `arm64`. The bundle contains twenty-two tools: Codex (including native helpers), Claude Code,
 Antigravity, GitHub CLI, jq, ripgrep, fd, ast-grep, Mike Farah yq, uv
 (with uvx), and [Herdr](https://github.com/herdrdev/herdr) for terminal workspaces
-and agent sessions, plus the Fish shell and Starship prompt, with Nushell and tmux available as alternatives, and typos, lychee, Gitleaks, Trivy, and Syft for quality and security checks. Builds verify every
+and agent sessions, plus the Fish shell and Starship prompt, with Nushell and tmux available as alternatives, and typos, lychee, Gitleaks, Trivy, and Syft for quality and security checks, plus bottom (`btm`) and btop for process and system monitoring. Builds verify every
 download. The Debian base image is pinned by digest; Debian packages still come from its current package repositories.
 
 | Tool | Pinned version |
@@ -71,6 +71,35 @@ download. The Debian base image is pinned by digest; Debian packages still come 
 | Gitleaks (`gitleaks`) | 8.30.1 |
 | Trivy (`trivy`) | 0.75.0 |
 | Syft (`syft`) | 1.54.1 |
+| bottom (`btm`) | 0.14.9 |
+| btop (`btop`) | 1.4.7 |
+
+bottom and btop use official static musl release binaries on both architectures;
+no extra dynamic runtime packages or language toolchains are needed. btop's
+published binaries report `GPU_SUPPORT=false`. The bundle installs the executables
+and upstream notices; optional themes and shell completions are not installed.
+Process visibility follows the consumer container's permissions.
+
+| Added artifact | AMD64 download / executable bytes | ARM64 download / executable bytes |
+| --- | ---: | ---: |
+| bottom 0.14.9 | 2,126,967 / 5,231,120 | 1,918,659 / 4,276,136 |
+| btop 1.4.7 | 1,047,005 / 2,386,088 | 983,319 / 2,184,904 |
+
+These measured sizes exclude installed license notices and filesystem overhead.
+All four archives passed checksum verification and the production extractor.
+ARM64 version/help checks and btop's noninteractive `--default-config` passed
+with isolated writable HOME; AMD64 execution, interactive TUI behavior and Docker
+build/smoke remain unverified. Repeat the optional native acceptance checks with:
+
+```sh
+BUNDLEDOCK_PROCESS_MONITORS_ARCHIVE_DIR=/path/to/archives \
+BUNDLEDOCK_PROCESS_MONITORS_SMOKE_PATH=/path/to/bin \
+go test ./internal/toolbundle -run 'TestProcessMonitors' -count=1
+```
+
+The OCI smoke runs the same bounded version/help/default-config checks without a
+TTY in each isolated consumer. Upstream and discovered vendor notices are retained;
+this is not a complete audit of all compiled transitive dependency licenses.
 
 Nushell and tmux are opt-in commands. tmux uses the latest published stable
 [official static build](https://github.com/tmux/tmux-builds/releases/tag/v3.7c),
@@ -249,7 +278,7 @@ Keep authentication and writable tool state in the user's home directory or
 separate private volumes. No credentials are included in the image. The read-only mount prevents tools from updating the
 shared executables; Claude updates are also disabled with environment variables.
 
-The smoke test executes all twenty tools and the `fdfind` and `uvx` companions
+The smoke test executes all twenty-two tools and the `fdfind` and `uvx` companions
 as a non-root user in two concurrent containers with networking disabled. It checks
 JSON and YAML processing, text search, file discovery, and Go syntax
 search. The quality and security fixtures verify a typo correction, a local HTML anchor,
