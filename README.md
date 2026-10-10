@@ -39,8 +39,9 @@ make run ARGS="tools volume --image anchorage/tools:poc"
 
 `tools.lock.json` pins vendor artifact URLs and checksums for Linux `amd64`
 and `arm64`. The bundle contains Codex (including native helpers), Claude Code,
-Antigravity, GitHub CLI, SQLite, jq, ripgrep, fd, ast-grep, Mike Farah yq, and uv
-(with uvx). Builds verify every download. The Debian base image
+Antigravity, GitHub CLI, SQLite, jq, ripgrep, fd, ast-grep, Mike Farah yq, uv
+(with uvx), and [Herdr](https://github.com/herdrdev/herdr) for terminal workspaces
+and agent sessions. Builds verify every download. The Debian base image
 is pinned by digest; Debian packages still come from its current package repositories.
 
 | Tool | Pinned version |
@@ -56,6 +57,7 @@ is pinned by digest; Debian packages still come from its current package reposit
 | ast-grep (`ast-grep`) | 0.45.3 |
 | Mike Farah yq (`yq`) | 4.54.1 |
 | uv (`uv`, `uvx`) | 0.13.0 |
+| Herdr (`herdr`) | 0.9.3 |
 
 Run upgrades from the repository root:
 
@@ -199,14 +201,16 @@ state in the user's home directory or separate private volumes. No credentials
 are included in the image. The read-only mount prevents tools from updating the
 shared executables; Claude updates are also disabled with environment variables.
 
-The smoke test executes all eleven tools and the `fdfind` and `uvx` companions
+The smoke test executes all twelve tools and the `fdfind` and `uvx` companions
 as a non-root user in two concurrent containers with networking disabled. It checks
 a SQLite query, JSON and YAML processing, text search, file discovery, and Go syntax
 search. uv uses a writable cache under each consumer's home; managed Python downloads
 are disabled, and its cache command runs offline. It also starts and stops Codex's
 local daemon to verify its complete native package is usable. It checks repeat initialization,
 read-only mounts, and rejection of changed, incomplete, or locked volumes. This verifies executable
-startup, not authentication, model requests, or agent sandbox behavior.
+startup, not authentication, model requests, or agent sandbox behavior. Herdr
+only runs `--version`; its interactive UI, server, and agent integration need
+separate runtime testing.
 
 The supported initial consumer baseline is the Debian Trixie Go devcontainer.
 Other images must supply compatible system libraries, Git, and CA certificates;

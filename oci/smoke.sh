@@ -26,6 +26,7 @@ check() {
             claude --version
             agy --version
             gh --version
+            herdr --version
             sqlite3 --version
             test "$(sqlite3 :memory: "SELECT 6 * 7;")" = 42
             jq --version

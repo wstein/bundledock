@@ -23,6 +23,7 @@ still pins an older image, so do not assume these commands exist in a running se
 | Query local databases | `sqlite3`. |
 | Manage Python environments and run Python tools | `uv` and `uvx`. |
 | Agent and GitHub workflows | `codex`, `claude`, `agy`, and `gh`. |
+| Manage terminal workspaces and agent sessions | `herdr`. |
 
 Keep HOME, caches, and virtual environments in writable locations outside the
 read-only `/opt/anchorage` tool bundle.
