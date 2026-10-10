@@ -5,10 +5,10 @@
 	"initializeCommand": [
 		"sh",
 		"${localWorkspaceFolder}/oci/volume.sh",
-		"sha256:ee5bb2d1e476ec4e8548efd755e6fc14786147b486a7a568cce9ddc5a30c7ddb"
+		"sha256:7a13739dbb4155d4f556234afc33591084f06c440749225e71b9e0d54d51a6c4"
 	],
 	"mounts": [
-		"type=volume,source=anchorage-tools-ee5bb2d1e476ec4e8548efd755e6fc14786147b486a7a568cce9ddc5a30c7ddb,target=/opt/workharbor,readonly,volume-nocopy",
+		"type=volume,source=anchorage-tools-7a13739dbb4155d4f556234afc33591084f06c440749225e71b9e0d54d51a6c4,target=/opt/workharbor,readonly,volume-nocopy",
 		"type=volume,source=anchorage-home-${devcontainerId},target=/home/vscode"
 	],
 	"containerEnv": {
