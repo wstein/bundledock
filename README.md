@@ -66,29 +66,9 @@ build feed; release suffixes compare numerically (`3.7a` = `3.7.1`, `3.7c` =
 `3.7.3`, `3.8` = `3.8.0`) while lock versions and asset URLs retain the upstream tag.
 No plugins or user configuration are installed for either alternative.
 
-The devcontainer uses Fish for interactive VS Code terminals and offers separate
-Herdr and Bash profiles. Select Herdr from the terminal profile menu or run
-`herdr` in the workspace directory. In interactive Fish, `herd` runs
-`exec herdr`, forwarding arguments and replacing the current shell. New Herdr configs select Fish for interactive
-panes; existing user settings take precedence. Starship uses its default prompt.
-No custom Starship theme or plugin manager is installed.
-
-On container creation, `.devcontainer/setup.sh` seeds a guarded Starship snippet
-at `~/.config/fish/conf.d/anchorage-starship.fish` and a minimal Herdr config at
-`~/.config/herdr/config.toml`. Existing files are preserved, including changes
-made after the first setup. `XDG_CONFIG_HOME` is respected. Run
-`sh .devcontainer/setup.sh` inside the container to apply setup to an existing home.
-
-The current Debian devcontainer keeps `SHELL=/bin/bash` and explicitly selects
-Bash for VS Code automation. Fish is limited to interactive use; the login shell
-is unchanged. An Alpine variant should select `/bin/ash` for agent and automation
-shells. Alpine runtime compatibility is not established by this Debian setup.
-
-Configuration, history, caches, and Herdr session state live in the writable home
-volume. Sessions can survive client detachment while the container runs; running
-processes do not survive container recreation. To customize the prompt, create
-`~/.config/starship.toml`; `STARSHIP_CONFIG` and `STARSHIP_CACHE` can select other
-writable locations. Fonts are configured in the client terminal.
+Consumer devcontainer setup, persistent shell configuration, and image/volume
+pins live in the separate Anchorage umbrella repository. This repository owns
+the builder and the tools it packages.
 
 Run upgrades from the repository root:
 
@@ -288,31 +268,14 @@ initialize before a Go toolchain or BundleDock binary is available on the host.
 
 ## Development
 
-The repository includes a Go devcontainer configuration. Open it with an editor
-that supports development containers, or use a local Go 1.24 or newer toolchain.
-The devcontainer sets `GOFLAGS=-trimpath` so Go builds omit local filesystem paths.
-Make inherits `GOFLAGS`; OCI build commands also pass `-trimpath` explicitly.
+Use a local Go 1.24 or newer toolchain. The Anchorage umbrella provides an
+optional consumer devcontainer; its integration and pinned image are maintained
+there. Make inherits `GOFLAGS`; OCI build commands pass `-trimpath` explicitly.
 
-The devcontainer pins the current local tool image by ID and initializes its
-read-only volume on the host before starting. This image must already exist in
-the host's Docker image store. Rebuild the devcontainer to activate the mount.
-The current bundle and its consumer mount both use `/opt/workharbor`. The pinned
-inventory includes Herdr and the common CLI utilities listed above. Updating the
-configuration requires a container rebuild; reopening a terminal or reusing the
-old container preserves its existing volume mount.
-
-When selecting another bundle, update both the image ID in `initializeCommand`
-and the matching volume name in `.devcontainer/devcontainer.json`. Credentials
-remain in the container user's home directory; the shared tool volume stores
-executables only. A separate writable volume, `anchorage-home-${devcontainerId}`,
-persists `/home/vscode` across rebuilds and keeps each devcontainer's user state
-separate. Docker seeds a new home volume from the image's existing home directory.
-
-The legacy `anchorage-tools-<digest>` volume prefix, `anchorage-home-` home volume,
-and `anchorage-starship.fish` / `anchorage-herdr.fish` configuration filenames are
-retained intentionally so the rename reuses existing tool volumes, user state,
-and customized shell configuration. The output image remains `workharbor-tools`
-and its installed prefix remains `/opt/workharbor`.
+The output image remains `workharbor-tools`, its installed prefix remains
+`/opt/workharbor`, and the initializer retains `anchorage-tools-<digest>` volume
+names so existing image-derived volumes remain reusable. Writable credentials,
+configuration, caches, and environments belong outside the bundle.
 
 ```sh
 make run
@@ -331,23 +294,24 @@ ID, and runs the initializer with networking disabled.
 Make targets are thin wrappers around Go commands. Run `make help` for available
 targets. Builds write `bin/bundledock`; `make clean` removes the binary.
 
-Checks target `cmd` and `internal` explicitly because the CrewBook submodule
-contains Go evaluation fixtures that are not BundleDock packages.
+Checks target this repository's `cmd` and `internal` Go packages.
 
 ## Repository layout
 
 - `cmd/bundledock`: Go CLI entry point.
-- `.devcontainer`: development container configuration.
-- `internal/toolconfig`, `internal/toolmanager`: shared declarative inputs and upstream lock resolution.
-- `cmd/tools-bundle`, `cmd/tools-init`: standard-library OCI build and initialization commands.
-- `internal`: bundle downloads/extraction, volume validation, and host Docker adapter.
-- `oci`: Dockerfile, artifact lock, Docker-only host adapter, and smoke test.
-- `crewbook`: pinned CrewBook workflow submodule.
+- `cmd/tools-bundle`, `cmd/tools-init`, `cmd/tools-publish`: build, initialization, and publication adapters.
+- `internal`: package catalog, upstream resolution, bundle extraction, volume validation, and Docker adapters.
+- `tools.txt`, `tools.packages.json`, `tools.lock.json`: desired versions, trusted recipes, and verified pins.
+- `oci`: Dockerfile, Docker-only host adapter, smoke test, and upstream license notices.
+- `.github/workflows/workharbor-tools.yml`: weekly two-platform publication workflow.
 
-To clone with the workflow resources:
+## Repository history
 
-```sh
-git clone --recurse-submodules <repository-url>
-```
+BundleDock was extracted from Anchorage by a full local clone followed by
+ownership cleanup commits. All original shared commits and their SHAs remain
+in its ancestry; history was not filtered or squashed. The original shared
+history therefore includes former umbrella paths and submodule references.
 
-For an existing clone, run `git submodule update --init --recursive`.
+The intended standalone URL is `https://github.com/wstein/bundledock`. This
+extraction is local and unpublished; that URL is not yet a verified clone source.
+No remote creation, push, or registry publication is part of the extraction.

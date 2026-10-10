@@ -1,7 +1,13 @@
-When the user invokes $crewbook, use split mode: start crewbook/desk
-and one persistent crewbook/dispatch subagent, configured as
-gpt-6.1-sol with medium reasoning effort. Retain and resume the same
-dispatcher throughout the session.
+# BundleDock repository
+
+BundleDock owns the Go CLI, declarative tool inputs, OCI build and smoke tests,
+license notices, publication workflow, and brand assets. Anchorage is the
+separate umbrella repository that owns consumer devcontainer integration.
+
+Run `make check` and `make build` before handing over Go or build changes.
+Run Docker build and smoke checks when Docker is available; report platform
+coverage and unavailable checks accurately. Do not publish images or push Git
+changes without explicit authorization.
 
 Make multiple atomic, focused commits using Conventional Commits.
 Keep each commit limited to one logical change.
