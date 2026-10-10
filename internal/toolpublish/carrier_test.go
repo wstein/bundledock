@@ -73,10 +73,10 @@ func TestScratchCarrierContract(t *testing.T) {
 		}
 	}
 	for _, required := range []string{
-		"COPY --from=builder /opt/workharbor /opt/workharbor",
+		"COPY --from=builder /opt/bundledock /opt/bundledock",
 		"COPY --from=compiler /out/init-volume /usr/local/bin/init-volume",
 		`ENTRYPOINT ["/usr/local/bin/init-volume"]`,
-		`ENV PATH="/opt/workharbor/bin:/usr/local/bin"`,
+		`ENV PATH="/opt/bundledock/bin:/usr/local/bin"`,
 	} {
 		if !strings.Contains(final, required) {
 			t.Fatalf("missing carrier contract: %s", required)

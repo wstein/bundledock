@@ -24,7 +24,7 @@ ARG TARGETARCH
 RUN tools-bundle -arch "${TARGETARCH}"
 
 FROM scratch
-COPY --from=builder /opt/workharbor /opt/workharbor
+COPY --from=builder /opt/bundledock /opt/bundledock
 COPY --from=compiler /out/init-volume /usr/local/bin/init-volume
-ENV PATH="/opt/workharbor/bin:/usr/local/bin" DISABLE_UPDATES=1 DISABLE_AUTOUPDATER=1
+ENV PATH="/opt/bundledock/bin:/usr/local/bin" DISABLE_UPDATES=1 DISABLE_AUTOUPDATER=1
 ENTRYPOINT ["/usr/local/bin/init-volume"]

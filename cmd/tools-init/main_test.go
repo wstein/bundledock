@@ -18,7 +18,7 @@ func TestInitializerDefaultsAndRelocatedBundle(t *testing.T) {
 	}
 	t.Run("defaults", func(t *testing.T) {
 		output, err := exec.Command(binary, "--help").CombinedOutput()
-		if err != nil || !strings.Contains(string(output), `default "/opt/workharbor"`) || !strings.Contains(string(output), `default "/bundle"`) {
+		if err != nil || !strings.Contains(string(output), `default "/opt/bundledock"`) || !strings.Contains(string(output), `default "/bundle"`) {
 			t.Fatalf("initializer defaults: %v\n%s", err, output)
 		}
 	})
@@ -27,9 +27,9 @@ func TestInitializerDefaultsAndRelocatedBundle(t *testing.T) {
 			t.Skip("requires /bin/sh: ", err)
 		}
 		parent := t.TempDir()
-		source := filepath.Join(parent, "opt", "bundledock")
+		source := filepath.Join(parent, "opt", "workharbor")
 		target := filepath.Join(parent, "bundle")
-		mounted := filepath.Join(parent, "opt", "workharbor")
+		mounted := filepath.Join(parent, "opt", "bundledock")
 		for _, dir := range []string{source, target} {
 			if err := os.MkdirAll(dir, 0755); err != nil {
 				t.Fatal(err)
