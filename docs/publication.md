@@ -61,20 +61,36 @@ Check [GitHub runner availability and plan limits](https://docs.github.com/en/ac
 for `ubuntu-24.04` (AMD64) and `ubuntu-24.04-arm` (ARM64).
 
 One resolver runs `bundledock tools upgrade` for all tools, then uploads the exact
-lock bytes and shared source commit, UTC build time, lock SHA256 and run tag.
+lock bytes and shared source commit, UTC build time, lock SHA256, run tag and full
+GitHub run ID (`run_id`).
 It never commits or pushes the resulting lock. Both native jobs consume that
 artifact, build `oci/Dockerfile` once, explicitly pull the consumer baseline and
 run `oci/smoke.sh` against the resulting local image ID. OCI labels include the
-image title, source, revision, build time, run tag, lock hash and tool versions.
+image title, source, revision, build time, run tag, lock hash, tool versions and
+`io.bundledock.github.run-id`. Artifact checks still bind to the full
+`GITHUB_RUN_ID`, run number, attempt and source commit. The newest-run gate uses
+the full run ID to query GitHub; shortening the tag does not change that check.
 
 A native job pushes its exact tested image to `staging-<run-tag>-<architecture>`.
 If either architecture fails, final promotion is skipped. Once both pass, the
 adapter verifies each remote registry manifest references its smoked image config,
 creates the two-platform manifest and verifies its platform digests before updating
-`stable`. The version tag is `YYYY.MM.DD-<github.run_id>-<github.run_attempt>`, so
-reruns use distinct tags. These names are unique per attempt; registry-enforced
-immutability requires separate Quay configuration. The lock hash is provenance,
-not a build identifier: base layers or Debian packages can change for the same lock.
+`stable`. The UTC version tag is
+`YYYY.MM.DD-b<github.run_number>.<github.run_attempt>`, for example
+`2026.10.10-b12.4`. The run number distinguishes normal runs and the attempt
+counter distinguishes reruns. Missing, malformed or nonpositive counters are
+rejected before resolving tools.
+
+Workflow recreation can restart its run counter. Before each staging push and
+again before creating the final version index, an authenticated Quay manifest
+check requires HTTP 404 for the version tag. An existing tag, authentication
+failure or network error aborts that operation without updating the version or
+`stable`; start a fresh workflow run to obtain another tag. Robot credentials
+remain available only after native smoke passes. This is a collision check,
+not an atomic reservation: registry-enforced immutability requires separate Quay
+configuration, and unrelated registry writers must be controlled separately.
+The lock hash is provenance, not a build identifier: base layers or Debian
+packages can change for the same lock.
 
 Download `resolved-tools-<attempt>`, `published-amd64-<attempt>`,
 `published-arm64-<attempt>` and `publication-<attempt>` artifacts from the run (retained for 90 days). The run summary and `publication.json`
