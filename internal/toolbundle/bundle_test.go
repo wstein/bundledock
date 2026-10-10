@@ -79,6 +79,8 @@ func fixture(t *testing.T) (map[string][]byte, map[string]Spec, *httptest.Server
 		"lychee":   archive(t, member{"lychee-x86_64-unknown-linux-musl/lychee", "lychee executable", 0755, 0}),
 		"gitleaks": archive(t, member{"gitleaks", "gitleaks executable", 0755, 0}, member{"LICENSE", "gitleaks license", 0644, 0}),
 		"trivy":    archive(t, member{"trivy", "trivy executable", 0755, 0}, member{"LICENSE", "trivy license", 0644, 0}),
+		"bottom":   archive(t, member{"btm", "bottom executable", 0755, 0}),
+		"btop":     archive(t, member{"./btop/bin/btop", "btop executable", 0755, 0}, member{"./btop/LICENSE", "btop license", 0644, 0}),
 		"syft":     archive(t, member{"syft", "syft executable", 0755, 0}, member{"LICENSE", "syft license", 0644, 0}),
 		"nu":       archive(t, member{"nu-0.116.1/nu", "nu executable", 0755, 0}),
 		"tmux":     archive(t, member{"tmux", "tmux executable", 0755, 0}),
@@ -139,7 +141,9 @@ func TestVendorBuildBothArchitectures(t *testing.T) {
 				data string
 				mode os.FileMode
 			}{
-				"bin/nu": {"nu executable", 0755}, "bin/tmux": {"tmux executable", 0755},
+				"bin/btm": {"bottom executable", 0755}, "bin/btop": {"btop executable", 0755},
+				"licenses/btop/LICENSE": {"btop license", 0644},
+				"bin/nu":                {"nu executable", 0755}, "bin/tmux": {"tmux executable", 0755},
 				"bin/fish": {"fish executable", 0755}, "bin/starship": {"starship executable", 0755},
 				"bin/uv": {"uv executable", 0755}, "bin/uvx": {"uvx executable", 0755},
 				"bin/ast-grep": {"ast-grep executable", 0755},
@@ -165,6 +169,26 @@ func TestVendorBuildBothArchitectures(t *testing.T) {
 					data string
 					mode os.FileMode
 				}{content, 0644}
+			}
+			for _, file := range []string{"FMT-LICENSE.rst", "WIDECHAR-LICENSE", "SOURCE"} {
+				content, err := os.ReadFile("../../oci/licenses/btop/" + file)
+				if err != nil {
+					t.Fatal(err)
+				}
+				want["licenses/btop/"+file] = struct {
+					data string
+					mode os.FileMode
+				}{string(content), 0644}
+			}
+			for _, file := range []string{"LICENSE", "SOURCE"} {
+				content, err := os.ReadFile("../../oci/licenses/bottom/" + file)
+				if err != nil {
+					t.Fatal(err)
+				}
+				want["licenses/bottom/"+file] = struct {
+					data string
+					mode os.FileMode
+				}{string(content), 0644}
 			}
 			for _, file := range []string{"LICENSE-MIT", "LICENSE-APACHE"} {
 				content, err := os.ReadFile("../../oci/licenses/lychee/" + file)

@@ -520,6 +520,59 @@
       "notices": [
         "oci/licenses/syft/SOURCE"
       ]
+    },
+    "bottom": {
+      "provider": "github",
+      "repository": "ClementTsang/bottom",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "x86_64",
+        "arm64": "aarch64"
+      },
+      "asset": "bottom_{arch}-unknown-linux-musl.tar.gz",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "tar.gz",
+        "members": {
+          "btm": "bin/btm"
+        }
+      },
+      "notices": [
+        "oci/licenses/bottom/LICENSE",
+        "oci/licenses/bottom/SOURCE"
+      ]
+    },
+    "btop": {
+      "provider": "github",
+      "repository": "aristocratos/btop",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "x86_64",
+        "arm64": "aarch64"
+      },
+      "asset": "btop-{arch}-unknown-linux-musl.tar.gz",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "tar.gz",
+        "members": {
+          "btop": "bin/btop"
+        },
+        "archive_notices": [
+          "LICENSE"
+        ]
+      },
+      "tag_prefix": "v",
+      "notices": [
+        "oci/licenses/btop/FMT-LICENSE.rst",
+        "oci/licenses/btop/WIDECHAR-LICENSE",
+        "oci/licenses/btop/SOURCE"
+      ]
     }
   }
 }

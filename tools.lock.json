@@ -1,7 +1,7 @@
 {
   "schema": 2,
-  "desired_digest": "7ec9eab726029a0f46b1adc838144e03fdc85b88a28e489cbe7aa7bbd54fd034",
-  "catalog_digest": "c3fd1d15aebfebdcdbb5c274c92c6d8e5e49a91035b23e7372b71146f4128b83",
+  "desired_digest": "364d20d992c070034ef11793a0e5c6e70fbd4208725f1af437b18624f9b26534",
+  "catalog_digest": "ac394bc6df6eee786fe5221859c8cffe29bb05d14a48eaabde91db13a136d80a",
   "platforms": {
     "amd64": {
       "agy": {
@@ -15,6 +15,18 @@
         "url": "https://github.com/ast-grep/ast-grep/releases/download/0.45.3/app-x86_64-unknown-linux-gnu.zip",
         "sha256": "f8ac830881339d1edee6b2652f54798c0f4da5a827f2db38a08ee31117783ce8",
         "verification": "tls-download-sha256"
+      },
+      "bottom": {
+        "version": "0.14.9",
+        "url": "https://github.com/ClementTsang/bottom/releases/download/0.14.9/bottom_x86_64-unknown-linux-musl.tar.gz",
+        "sha256": "b4bee5b193e7d3f6e090ac14f0ca15acec2e7fe4ef64988e0bfc492e16c28c9a",
+        "verification": "publisher-sha256"
+      },
+      "btop": {
+        "version": "v1.4.7",
+        "url": "https://github.com/aristocratos/btop/releases/download/v1.4.7/btop-x86_64-unknown-linux-musl.tar.gz",
+        "sha256": "5099054dd6a101bd12eb6ff3702a9a6a3f57aaa27923a0da478ae5b517faf335",
+        "verification": "publisher-sha256"
       },
       "claude": {
         "version": "2.1.296",
@@ -137,6 +149,18 @@
         "url": "https://github.com/ast-grep/ast-grep/releases/download/0.45.3/app-aarch64-unknown-linux-gnu.zip",
         "sha256": "b39cfbc58da4b869a88b8a4bc57bd5deb0d24541e704cf7c257da7b53ec81c8f",
         "verification": "tls-download-sha256"
+      },
+      "bottom": {
+        "version": "0.14.9",
+        "url": "https://github.com/ClementTsang/bottom/releases/download/0.14.9/bottom_aarch64-unknown-linux-musl.tar.gz",
+        "sha256": "7b6d532f6a6af356970f4e8d7d3a792590485aa4a53ebf038e10d20366125533",
+        "verification": "publisher-sha256"
+      },
+      "btop": {
+        "version": "v1.4.7",
+        "url": "https://github.com/aristocratos/btop/releases/download/v1.4.7/btop-aarch64-unknown-linux-musl.tar.gz",
+        "sha256": "6270de0ef4c84cf0eea61cb148b3ad9ae91a11e9c3309867ffc6b3751024c252",
+        "verification": "publisher-sha256"
       },
       "claude": {
         "version": "2.1.296",

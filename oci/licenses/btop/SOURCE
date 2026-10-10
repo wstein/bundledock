@@ -1,0 +1,6 @@
+Upstream: https://github.com/aristocratos/btop
+License: Apache-2.0 (LICENSE extracted from release archive)
+Pinned release: v1.4.7
+fmt license source: https://github.com/aristocratos/btop/blob/v1.4.7/include/fmt/LICENSE.rst
+widecharwidth license source: https://github.com/ridiculousfish/widecharwidth/blob/master/LICENSE
+The fmt binary embedding exception permits omitting its notice; retained conservatively.
