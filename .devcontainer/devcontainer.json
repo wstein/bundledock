@@ -5,18 +5,41 @@
 	"initializeCommand": [
 		"sh",
 		"${localWorkspaceFolder}/oci/volume.sh",
-		"sha256:7a13739dbb4155d4f556234afc33591084f06c440749225e71b9e0d54d51a6c4"
+		"sha256:727ee1a63b344f79a136ca1762eaca603d32a7d404ee48a0bb405a18004d6246"
 	],
 	"mounts": [
-		"type=volume,source=anchorage-tools-7a13739dbb4155d4f556234afc33591084f06c440749225e71b9e0d54d51a6c4,target=/opt/workharbor,readonly,volume-nocopy",
+		"type=volume,source=anchorage-tools-727ee1a63b344f79a136ca1762eaca603d32a7d404ee48a0bb405a18004d6246,target=/opt/workharbor,readonly,volume-nocopy",
 		"type=volume,source=anchorage-home-${devcontainerId},target=/home/vscode"
 	],
 	"containerEnv": {
 		"GOFLAGS": "-trimpath",
 		"DISABLE_UPDATES": "1",
-		"DISABLE_AUTOUPDATER": "1"
+		"DISABLE_AUTOUPDATER": "1",
+		"SHELL": "/bin/bash"
 	},
 	"remoteEnv": {
 		"PATH": "/opt/workharbor/bin:${containerEnv:PATH}"
+	},
+	"postCreateCommand": "sh .devcontainer/setup.sh",
+	"customizations": {
+		"vscode": {
+			"settings": {
+				"terminal.integrated.profiles.linux": {
+					"Fish": {
+						"path": "/opt/workharbor/bin/fish"
+					},
+					"Herdr": {
+						"path": "/opt/workharbor/bin/herdr"
+					},
+					"Bash": {
+						"path": "/bin/bash"
+					}
+				},
+				"terminal.integrated.defaultProfile.linux": "Fish",
+				"terminal.integrated.automationProfile.linux": {
+					"path": "/bin/bash"
+				}
+			}
+		}
 	}
 }
