@@ -32,14 +32,20 @@ the repository root, choosing the additional checks that cover your change:
 
 | Change | Checks |
 | --- | --- |
-| Go or build behavior | `make check` and `make build` |
+| Go or build behavior | `make check`; `make build` only with explicit user approval |
 | Local CLI release artifacts | `make release-test` |
 | Documentation site or rendered guides | `make docs-test` |
 | Tool extraction, catalog, or volumes | `make tools-test`, plus Docker checks below |
 | OCI image, tool pins, or consumer compatibility | `make tools-build tools-smoke` on native Linux AMD64 and ARM64 |
 
-`make check` checks Go formatting, tests, and vet. `make docs-test` explicitly
-opts into host Hugo integration checks; generic Go tests skip them. The docs
+`make check` checks Go formatting, tests, and vet. Routine test compilation is
+allowed. All artifact, image, CLI release, and documentation builds require
+explicit user approval before execution, including every build-oriented target
+in the table and `make docs-test`/`make release-test`. Report checks deferred for
+approval accurately. Push, merge, schedule, and bot activity supply no build or
+release approval. A future lock-only updater must not dispatch native builds.
+
+`make docs-test` explicitly opts into host Hugo integration checks; generic Go tests skip them. The docs
 wrapper uses a verified official prebuilt Hugo and needs network access for an
 uncached archive. See the [Makefile](Makefile) and
 [verification guide](docs/development.md#local-documentation-site) for details.

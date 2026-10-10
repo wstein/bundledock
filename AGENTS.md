@@ -4,10 +4,21 @@ BundleDock owns the Go CLI, declarative tool inputs, OCI build and smoke tests,
 license notices, publication workflow, and brand assets. Anchorage is the
 separate umbrella repository that owns consumer devcontainer integration.
 
-Run `make check` and `make build` before handing over Go or build changes.
-Run Docker build and smoke checks when Docker is available; report platform
-coverage and unavailable checks accurately. Do not publish images or push Git
-changes without explicit authorization.
+Run `make check` before handing over Go or build changes. Routine source tests,
+vet and their compiler verification may run automatically. Obtain the user's
+explicit approval before any artifact, CLI release, OCI image, or documentation
+build, including `make build`, `make release`, `make release-test`, `make docs`,
+`make docs-test`, `make docs-serve`, or Docker build/smoke checks. Report deferred
+checks and platform coverage accurately; a passing source check is not image or
+release readiness.
+
+Builds and releases require explicit user approval of the intended operation
+and source revision. Pushes, merges, schedules, bot updates, and lock-only PRs
+must never dispatch a native build or publication automatically. Toolbox
+publication is manual-only from default `main`, with the user's full approved
+SHA matching the run revision. Do not tag, publish, activate an image, or push
+Git changes without explicit authorization. A local commit or merge supplies
+none of those approvals.
 
 Third-party tools must use official stable prebuilt releases. Never build them
 from source or silently patch their binaries or embedded dependencies. If a

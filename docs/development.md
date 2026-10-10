@@ -31,7 +31,6 @@ make run ARGS="--help"
 make run ARGS="--version"
 make run ARGS="tools volume --image bundledock-toolbox:poc"
 make check
-make build
 ```
 
 The CLI uses [Cobra](https://github.com/spf13/cobra) and currently provides help,
@@ -40,12 +39,20 @@ a development version identifier, `bundledock tools upgrade [tool]`, and
 The volume command uses the host Docker CLI, resolves the image once to its immutable
 ID, and runs the initializer with networking disabled.
 
+Routine source tests, formatting checks and vet may run automatically, including
+their compiler verification. Obtain the user's explicit approval for the intended
+operation and source revision before any artifact, image, release, or
+documentation build. This includes `make build`, `make release`, `make release-test`,
+Docker build/smoke, all documentation targets below, and optional tests that
+render a site. A push, merge, schedule, bot update or local commit is not approval.
+Report builds deferred for approval separately from passing source checks.
+
 Make targets are thin wrappers around Go commands. Run `make help` for available
 targets. Builds write `bin/bundledock`; `make clean` removes the binary.
 
 ### Local documentation site
 
-Run `make docs` to build the static documentation into ignored `public/`, or
+After explicit user approval, run `make docs` to build the static documentation into ignored `public/`, or
 `make docs-serve` to preview it at `http://localhost:1313/`. `make docs-test`
 builds the site and checks guide content, local links and fragments, project
 subpath URLs, and unchanged brand assets. Generic Go test runs skip these host
@@ -87,7 +94,8 @@ archives passed locked-hash verification and extraction through the OCI builder.
 Native ARM64 version, minimal offline site generation, and the current BundleDock
 documentation build passed using the extracted binary's explicit path.
 Native AMD64 execution and Docker consumer smoke were unavailable in this ARM64
-host session; both platforms remain covered by the native OCI CI smoke matrix.
+host session; both platforms have a native smoke matrix in the manual publication workflow,
+which requires explicit user approval before it runs.
 The consumer smoke uses `/opt/bundledock/toolbox/bin/hugo` directly, with
 `--network none` and writable HOME/cache/output outside the read-only bundle.
 
@@ -98,19 +106,21 @@ the two locked archives in one directory and run:
 BUNDLEDOCK_HUGO_ARCHIVE_DIR=/path/to/archives go test ./internal/toolbundle -run TestHugoOfficialArchives -v -count=1
 ```
 
-The check verifies and extracts both architectures and executes version, minimal
+This optional check requires explicit user approval because it verifies and
+extracts both architectures and executes version, minimal
 site, and current documentation builds on the native Linux architecture.
 
 ### Release review
 
-Before the next release, review every item in the local TODO list and its
+Before artifact, image, documentation, or release build operations, obtain
+explicit user approval of the operation and source revision. Before the next release, review every item in the local TODO list and its
 supporting evidence. Resolve unfinished or blocked items, or obtain an explicit
 user decision to defer each one, before creating a release tag or publishing.
 Keep the local TODO list untracked.
 
 ### Local CLI artifacts
 
-`make release VERSION=dev RELEASE_DIR=dist/cli` builds BundleDock's own CLI for
+After explicit user approval, `make release VERSION=dev RELEASE_DIR=dist/cli` builds BundleDock's own CLI for
 Linux AMD64 and ARM64. It creates `bundledock-linux-amd64`,
 `bundledock-linux-arm64`, `LICENSE`, `PROVENANCE`, and `SHA256SUMS`; an existing destination
 is refused. Verify the outputs with `cd dist/cli && sha256sum -c SHA256SUMS`.
@@ -125,7 +135,7 @@ local verification artifacts, not a clean release candidate.
 Builds use the selected `GO` executable, `CGO_ENABLED=0`, `-trimpath`,
 `GOAMD64=v1`, and `GOARM64=v8.0`, and clear `GOFLAGS` for consistent flags.
 Use the pinned compiler in `.go-version`; the Go module's minimum remains 1.24.
-`make release-test` builds both architectures twice, verifies checksums, the
+`make release-test` also requires explicit user approval: it builds both architectures twice, verifies checksums, the
 bundled license and build settings, compares repeated outputs, checks the native Linux version when
 supported, and tests rejection of existing destinations and invalid versions.
 This validates local artifact preparation; native AMD64 execution, Docker image
@@ -142,8 +152,8 @@ adapter tests without building an OCI image.
 - `internal`: package catalog, upstream resolution, bundle extraction, volume validation, and Docker adapters.
 - `bundles/toolbox/`: Dockerfile, smoke/volume adapters, licenses and bundle inputs.
 - `bundles/toolbox/{tools.txt,tools.packages.json,tools.lock.json}`: desired versions, trusted recipes, and verified pins.
-- `.github/workflows/ci.yml`: pull request and push checks plus native locked-toolbox smoke.
-- `.github/workflows/bundledock-toolbox.yml`: weekly two-platform publication workflow.
+- `.github/workflows/ci.yml`: pull request and push formatting, source tests and vet.
+- `.github/workflows/bundledock-toolbox.yml`: user-approved manual two-platform build and publication.
 - `assets`, `brand`: approved brand assets, licensed font sources, and generation provenance.
 
 ## Repository history
@@ -160,11 +170,18 @@ activation.
 ## Continuous integration
 
 [The CI workflow](../.github/workflows/ci.yml) checks pushes, pull requests, and
-manual runs. It runs formatting checks, the full Go test suite, `go vet`, and a
-CLI build, then builds the checked-in toolbox lock on native AMD64 and ARM64
-runners. Each native job explicitly pulls the consumer baseline and runs the
-full existing smoke suite against the immutable ID of its one build. CI neither
-upgrades tools nor publishes images and has no registry credentials.
+manual runs with formatting checks, the full source test suite, and `go vet`.
+Its test compilation verifies source without creating CLI release artifacts,
+OCI images, or a documentation site. Automatic native image and CLI artifact
+builds are disabled.
+
+The [manual publication workflow](publication.md) requires a human user's
+explicit approval for its exact default-`main` SHA before any build. It resolves
+one shared lock, builds and smokes both native architectures, then applies the
+existing registry gates. It has no schedule or merge trigger. Future lock-only
+PR automation must not dispatch native builds. Human-token automation cannot be
+identified from GitHub actor context alone; do not use such credentials for
+automated dispatch. A protected-environment gate is not configured here.
 
 ## Verification evidence
 

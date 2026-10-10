@@ -22,8 +22,8 @@ verification; the authoritative tool inventory is the
   license, checksums, and compiler/source provenance.
 - The scratch OCI carrier provides pinned tools for read-only shared volumes.
   Tool inputs and licenses live under `bundles/toolbox/`.
-- Publication supports a durable published-tool baseline and skips unchanged
-  daily updates. Native build/smoke checks gate registry writes; the publication
+- Publication retains a durable published-tool baseline and is manual-only
+  from default `main` with the user's exact approved SHA. Native build/smoke checks gate registry writes; the publication
   guide describes provenance, newest-run checks, and collision handling.
 - A local Hugo site renders the existing guides using a verified official
   prebuilt dependency. Host documentation integration checks are opt-in.
@@ -38,8 +38,11 @@ The [verification record](development.md#verification-evidence) names historical
 native AMD64 and ARM64 CI results and their exact revisions. Those results do
 not verify every later change. The [local artifact checks](development.md#local-cli-artifacts)
 cover artifact preparation; they do not demonstrate registry publication or
-consumer activation. Collect checks for the final candidate, including both
-native architectures for changed tool/image behavior, before calling it ready.
+consumer activation. Obtain explicit user approval before collecting artifact, image, release, or
+documentation build evidence for the final candidate, including both native
+architectures for changed tool/image behavior, before calling it ready. Routine
+source tests and vet remain automatic. Pushes, merges, schedules and bots do not
+authorize builds; a future lock-only updater must not dispatch native builds.
 
 [Embedded dependency findings](development.md#embedded-dependency-findings)
 remain open in Gitleaks, Syft, and Trivy. The recorded upstream inspection found

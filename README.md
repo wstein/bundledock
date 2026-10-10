@@ -24,7 +24,9 @@ BundleDock is a proof of concept for Linux AMD64 and ARM64.
 
 ## Quick start
 
-You need Docker running and a local clone of this repository. From its root:
+You need Docker running and a local clone of this repository. Obtain the user's
+explicit approval for the build and smoke operation at the intended revision
+before running these commands from its root:
 
 ```sh
 make tools-build
@@ -77,10 +79,13 @@ helpers; optional voice resources are omitted.
 - [Upgrade tools](docs/tools.md#upgrade-the-lock): edit desired ranges, resolve a lock, rebuild, and initialize a new volume.
 - [Understand the bundle](docs/architecture.md): shared volumes, rollback, runtime dependencies, and measured voice savings.
 - [Develop and verify](docs/development.md): CLI commands, checks, smoke coverage, and revision-specific evidence.
-- [Publish to Quay](docs/publication.md): configure the repository namespace and robot account, then run **Publish toolbox** to publish `quay.io/bundledock/toolbox`.
+- [Publish to Quay](docs/publication.md): configure the repository namespace and robot account, then manually approve an exact `main` SHA and run **Publish toolbox** to publish `quay.io/bundledock/toolbox`.
 
-The [CI workflow](.github/workflows/ci.yml) checks pushes and pull requests and
-builds/smokes both native architectures. See the [verification record](docs/development.md#verification-evidence)
+The [CI workflow](.github/workflows/ci.yml) runs formatting, source tests and vet
+on pushes and pull requests. Artifact, image, release and documentation builds
+require explicit user approval. The manual publication workflow builds and smokes
+both native architectures only after approval of its exact default-`main` SHA.
+A push, merge, schedule or bot update never authorizes those builds. See the [verification record](docs/development.md#verification-evidence)
 for what has actually passed and the remaining limits. Quay publication and
 authenticated agent tasks require separate verification.
 

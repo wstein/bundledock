@@ -8,19 +8,37 @@ weight: 40
 
 [Back to BundleDock](../README.md)
 
-[The publication workflow](../.github/workflows/bundledock-toolbox.yml) checks all
-tools for their latest official stable prebuilt release within `tools.txt` ranges
-daily at 06:00 UTC (`0 6 * * *`), and through Actions → **Publish toolbox** →
-**Run workflow**. Only the repository default branch can publish. GitHub may delay
-scheduled runs; this is not an exact wall-clock delivery guarantee.
+[The publication workflow](../.github/workflows/bundledock-toolbox.yml) runs only
+through a human user's Actions → **Publish toolbox** → **Run workflow** action.
+There is no publication schedule, push/merge trigger, or automatic updater
+handoff. Obtain the user's explicit approval for the build and publication at
+an exact source revision, select default branch `main`, and enter that full
+40-character commit in `approved_sha`. The input must equal the workflow run's
+`github.sha`; a moved branch requires fresh review and approval of its new SHA.
+The workflow rejects other branches, non-user senders, bot actors and bot reruns
+before compilation or resolution. Each job rechecks approval, including partial
+reruns. Every checkout uses that immutable run SHA.
+
+A manual dispatch expresses approval for both native image builds/smokes and
+publication, including the fresh upstream resolution within the reviewed tool
+ranges. It is not approval to activate a consumer image. Automation must never
+invoke this workflow, including with a human-owned token. GitHub event context
+cannot distinguish a person's UI dispatch from automation using that person's
+credentials; the actor checks are not a protected-environment approval gate.
+No protected environment is configured or claimed by this repository. Restrict
+workflow dispatch credentials and repository writers separately. A future daily
+lock-only PR workflow must stop at source review and must not dispatch native
+builds on PR creation or merge.
+
 Publication runs share one concurrency group; an active run is allowed to finish.
 Before promotion, a read-only GitHub API check rejects a run superseded by a newer
 eligible run, including one whose native build failed. A newer run with successful
 resolution and skipped native jobs is a proven no-op and does not supersede an
 older changed publication. Unknown or unfinished eligibility fails closed, with
 bounded queries for the exact run attempt. This prevents an old queued run or rerun
-from rolling stable back. Start a fresh manual run to recover; when rerunning a
-run, choose **Re-run all jobs** so the resolver creates current-attempt artifacts.
+from rolling stable back. Obtain explicit user approval before a fresh manual run or rerun. When rerunning,
+choose **Re-run all jobs** so the resolver creates current-attempt artifacts;
+that approval applies to the same original run SHA.
 
 Set up the destination before the first publication:
 
@@ -51,12 +69,12 @@ or digest in `REPOSITORY_URL`. Other namespaces use the same prefix format and
 a robot username from that namespace.
 
 After setting these values, start **Publish toolbox** manually from
-the default branch and watch the resolver, both native jobs, and promotion in
+`main` with the approved full SHA and watch the resolver, both native jobs, and promotion in
 [Actions](https://github.com/wstein/bundledock/actions/workflows/bundledock-toolbox.yml).
 A successful run publishes a dated run-attempt tag, `stable` and `latest`; inspect its
 summary and artifacts for the immutable digest before choosing a deployment.
-Configuring these values also allows the daily schedule to publish subsequent
-tool updates. A manual dispatch always builds and publishes after validating the
+Configuring these values does not authorize or schedule a build or publication.
+An approved manual dispatch always builds and publishes after validating the
 baseline, even when tool assets are unchanged, so builder or base-image changes
 can be released deliberately. No registry publication has been verified until a
 configured run succeeds.
@@ -95,12 +113,10 @@ image title, source, revision, build time, run tag, lock hash, tool versions and
 `GITHUB_RUN_ID`, run number, attempt and source commit. The newest-run gate uses
 the full run ID to query GitHub; shortening the tag does not change that check.
 
-Scheduled publication compares the resolved tool and asset pins on both
-architectures with the existing `stable` image's published baseline, rather than
-the committed lock, which may predate earlier automated upgrades. An unchanged
-schedule skips both native jobs and promotion, including Docker builds, smoke,
-login and pushes. Input range or catalog metadata changes alone do not count as
-tool updates; changes to inventory, versions, URLs, checksums or verification do.
+The adapter retains the published-tool baseline comparison and fails closed if
+the existing `stable` provenance cannot be validated. Approved manual runs
+publish even when tool pins are unchanged. The adapter's historical scheduled
+no-op logic is not an enabled workflow trigger and does not authorize automation.
 New images carry `io.bundledock.tools.platforms-sha256`, a canonical digest of
 those pins, alongside the full-lock provenance hash. Both platform config labels
 must agree, and downloaded immutable manifests/configs must match their digests.
@@ -116,7 +132,7 @@ expired/deleted legacy artifacts, mismatched provenance, authentication failures
 and network errors stop publication, including manual dispatch. They never imply
 an empty baseline or silently bootstrap a first publication. A new destination
 requires a separately reviewed initial publication before this workflow can
-compare daily updates.
+validate subsequent approved publications.
 
 A native job pushes its exact tested image to `staging-<run-tag>-<architecture>`.
 If either architecture fails, final promotion is skipped. Once both pass, the
