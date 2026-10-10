@@ -14,6 +14,8 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -108,6 +110,25 @@ func (r resolver) metadata(ctx context.Context, raw string) ([]byte, http.Header
 func expand(pattern, version, arch string) string {
 	return strings.NewReplacer("{version}", version, "{arch}", arch).Replace(pattern)
 }
+
+var githubReleaseAlias = regexp.MustCompile(`^/repositories/[1-9][0-9]*/releases$`)
+
+func githubNextPage(raw, repository string) (string, error) {
+	u, err := url.Parse(raw)
+	path := "/repos/" + repository + "/releases"
+	if err != nil || u.Scheme != "https" || u.Host != "api.github.com" || u.User != nil || u.Fragment != "" || u.RawPath != "" || (u.Path != path && !githubReleaseAlias.MatchString(u.Path)) {
+		return "", fmt.Errorf("unsafe GitHub pagination URL")
+	}
+	query, err := url.ParseQuery(u.RawQuery)
+	page, pageErr := strconv.Atoi(query.Get("page"))
+	if err != nil || pageErr != nil || page < 1 || len(query) != 2 || len(query["page"]) != 1 || len(query["per_page"]) != 1 || query.Get("per_page") != "100" {
+		return "", fmt.Errorf("unsafe GitHub pagination URL")
+	}
+	// GitHub emits numeric repository aliases in Link headers. Carry only the
+	// page number onto the configured repository, never follow a foreign ID.
+	return "https://api.github.com" + path + "?per_page=100&page=" + strconv.Itoa(page), nil
+}
+
 func (r resolver) github(ctx context.Context, p toolconfig.Package, c toolconfig.Constraint) (release, error) {
 	next := "https://api.github.com/repos/" + p.Repository + "/releases?per_page=100&page=1"
 	seen := map[string]bool{}
@@ -146,11 +167,10 @@ func (r resolver) github(ctx context.Context, p toolconfig.Package, c toolconfig
 				continue
 			}
 			candidate := strings.Trim(strings.TrimSpace(parts[0]), "<>")
-			u, err := url.Parse(candidate)
-			if err != nil || u.Scheme != "https" || u.Host != "api.github.com" || u.Path != "/repos/"+p.Repository+"/releases" || u.User != nil {
-				return best, fmt.Errorf("unsafe GitHub pagination URL")
+			next, err = githubNextPage(candidate, p.Repository)
+			if err != nil {
+				return best, err
 			}
-			next = candidate
 		}
 	}
 	if best.Tag == "" {
