@@ -75,6 +75,7 @@ func openRoot(t *testing.T) (*os.Root, string) {
 func fixture(t *testing.T) (map[string][]byte, map[string]Spec, *httptest.Server) {
 	t.Helper()
 	payloads := map[string][]byte{
+		"bash":     []byte("Bash sources"),
 		"nu":       archive(t, member{"nu-0.116.1/nu", "nu executable", 0755, 0}),
 		"tmux":     archive(t, member{"tmux", "tmux executable", 0755, 0}),
 		"fish":     xzArchive(t, member{"fish", "fish executable", 0755, 0}),
@@ -129,6 +130,9 @@ func TestVendorBuildBothArchitectures(t *testing.T) {
 				if err := WriteFile(root, "bin/sqlite3", strings.NewReader("compiled sqlite"), 0755); err != nil {
 					t.Fatal(err)
 				}
+				if err := WriteFile(root, "bin/bash", strings.NewReader("compiled bash"), 0755); err != nil {
+					t.Fatal(err)
+				}
 				root.Close()
 				if err := Build(context.Background(), server.Client(), specs, testPackages(t), os.DirFS("../.."), arch, dst, io.Discard); err != nil {
 					t.Fatal(err)
@@ -144,6 +148,7 @@ func TestVendorBuildBothArchitectures(t *testing.T) {
 				"bin/ast-grep": {"ast-grep executable", 0755},
 				"bin/herdr":    {"herdr executable", 0755},
 				"bin/sqlite3":  {"compiled sqlite", 0755},
+				"bin/bash":     {"compiled bash", 0755},
 				"bin/yq":       {"yq executable", 0755},
 				"bin/jq":       {"jq executable", 0755}, "bin/rg": {"ripgrep executable", 0755}, "bin/fd": {"fd executable", 0755}, "bin/fdfind": {"fd executable", 0755},
 				"licenses/rg/LICENSE-MIT": {"rg license", 0644}, "licenses/rg/UNLICENSE": {"rg public domain", 0644}, "licenses/rg/COPYING": {"rg copying", 0644},
@@ -550,5 +555,20 @@ func TestTarXZMemberLimit(t *testing.T) {
 	root, _ := openRoot(t)
 	if err := Extract(root, "fish", p, bytes.NewReader(xzArchive(t, members...))); err == nil || !strings.Contains(err.Error(), "too many") {
 		t.Fatalf("member limit: %v", err)
+	}
+}
+
+func TestBuildRequiresCompiledBash(t *testing.T) {
+	_, tools, server := fixture(t)
+	root, dst := openRoot(t)
+	if err := WriteFile(root, "bin/sqlite3", strings.NewReader("compiled sqlite"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	err := Build(context.Background(), server.Client(), tools, testPackages(t), os.DirFS("../.."), "arm64", dst, io.Discard)
+	if err == nil || !strings.Contains(err.Error(), "compiled Bash") {
+		t.Fatalf("expected compiled Bash precondition, got %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(dst, "manifest.json")); !os.IsNotExist(err) {
+		t.Fatal("manifest written before compiled Bash exists")
 	}
 }

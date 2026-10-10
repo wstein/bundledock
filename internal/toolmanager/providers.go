@@ -254,6 +254,9 @@ func (r resolver) pin(ctx context.Context, raw string, hosts []string, expected,
 	return s, nil
 }
 func (r resolver) resolve(ctx context.Context, p toolconfig.Package, c toolconfig.Constraint) (map[string]toolconfig.Spec, error) {
+	if p.Provider == "bash" {
+		return r.bash(ctx, p, c)
+	}
 	if p.Provider == "antigravity" {
 		return r.antigravity(ctx, p, c)
 	}

@@ -35,7 +35,7 @@ func TestRepositoryIdentityAndBothArchitectures(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(c.Catalog.Packages) != 16 {
+	if len(c.Catalog.Packages) != 17 {
 		t.Fatal("catalog incomplete")
 	}
 	if err := c.Validate(); err != nil {
@@ -181,6 +181,47 @@ func TestShellAlternativeCatalogPins(t *testing.T) {
 		}
 	}
 }
+
+func TestBashSourcePinsAndRecipeBoundaries(t *testing.T) {
+	c, err := Load("../..")
+	if err != nil {
+		t.Fatal(err)
+	}
+	p, ok := c.Catalog.Packages["bash"]
+	if !ok || p.Provider != "bash" || p.Install.Kind != "bash-source" {
+		t.Fatal("missing fixed Bash source recipe")
+	}
+	for _, arch := range []string{"amd64", "arm64"} {
+		s := c.Lock.Platforms[arch]["bash"]
+		if s.Version != "5.3.20" || len(s.Patches) != 20 {
+			t.Fatalf("incomplete patched Bash: %+v", s)
+		}
+	}
+	for _, failure := range []string{"patch-order", "patch-count", "patch-host", "nested-kind"} {
+		t.Run(failure, func(t *testing.T) {
+			c, _ := Load("../..")
+			p := c.Catalog.Packages["bash"]
+			s := c.Lock.Platforms["amd64"]["bash"]
+			switch failure {
+			case "patch-order":
+				s.Patches[0], s.Patches[1] = s.Patches[1], s.Patches[0]
+			case "patch-count":
+				s.Patches = s.Patches[:19]
+			case "patch-host":
+				s.Patches[0].URL = "https://example.com/bash53-001"
+			case "nested-kind":
+				p.Install.Kind = "tar.gz"
+			}
+			c.Catalog.Packages["bash"] = p
+			c.Lock.Platforms["amd64"]["bash"] = s
+			c.Bind()
+			if err := c.Validate(); err == nil {
+				t.Fatal("accepted unsupported Bash source inputs")
+			}
+		})
+	}
+}
+
 func TestLoadInputsAllowsNarrowTmuxRanges(t *testing.T) {
 	for _, requirement := range []string{"tmux==3.7.3", "tmux>=3.7.3,<3.8.0"} {
 		t.Run(requirement, func(t *testing.T) {

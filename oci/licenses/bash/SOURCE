@@ -1,0 +1,6 @@
+Upstream: https://www.gnu.org/software/bash/
+Source: https://ftp.gnu.org/gnu/bash/bash-5.3.tar.gz
+Patched release: 5.3.20 (ordered bash53-001 through bash53-020)
+License: GPL-3.0-or-later
+Source and patches SHA256 pinned from HTTPS downloads through the official GNU mirror selector; signatures are not verified.
+The exact source URL and ordered patch URLs/checksums are retained in manifest.json.
