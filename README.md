@@ -1,11 +1,8 @@
-# Anchorage
+# BundleDock
 
-Anchorage is an early-stage project for a lightweight, AI-native development
-environment built on Docker, inspired by GitHub Codespaces.
-
-The first proof of concept will provide Codex, Claude Code, Google Antigravity
-(`agy`), and GitHub CLI (`gh`) inside development containers through a shared
-tool volume. GitHub CLI will support repository, issue, and pull request workflows.
+BundleDock is an early-stage OCI bundle builder. Its current tools profile packages
+pinned development CLIs and their required runtimes into a shared, read-only
+bundle for Linux containers. Additional bundle profiles are planned.
 
 ## Proof of concept
 
@@ -20,9 +17,9 @@ Start with a Debian/glibc container baseline and platform-specific Linux
 artifacts. Validate actual CLI execution and authentication, concurrent use by
 two containers, and upgrade and rollback behavior.
 
-The local OCI bundle and volume initializer are implemented. Registry publication
-and authenticated agent tasks are still planned. The Anchorage CLI can initialize
-and verify the shared tool volume.
+The local OCI tools bundle, version resolver, volume initializer, and registry
+publication workflow are implemented. Authenticated agent tasks remain unverified.
+The BundleDock CLI can initialize and verify the shared tool volume.
 
 ## OCI tool bundle
 
@@ -34,7 +31,7 @@ make tools-test
 make tools-smoke
 make tools-volume
 # Or, with a local Go toolchain:
-make run ARGS="tools volume --image anchorage/tools:poc"
+make run ARGS="tools volume --image workharbor-tools:poc"
 ```
 
 `tools.lock.json` pins vendor artifact URLs and checksums for Linux `amd64`
@@ -174,7 +171,7 @@ requests, and supplies registry credentials only after each native smoke passes.
 Check [GitHub runner availability and plan limits](https://docs.github.com/en/actions/how-tos/write-workflows/choose-where-workflows-run/choose-the-runner-for-a-job)
 for `ubuntu-24.04` (AMD64) and `ubuntu-24.04-arm` (ARM64).
 
-One resolver runs `anchorage tools upgrade` for all tools, then uploads the exact
+One resolver runs `bundledock tools upgrade` for all tools, then uploads the exact
 lock bytes and shared source commit, UTC build time, lock SHA256 and run tag.
 It never commits or pushes the resulting lock. Both native jobs consume that
 artifact, build `oci/Dockerfile` once, explicitly pull the consumer baseline and
@@ -281,7 +278,7 @@ consumer commands. Upstream notices are included under `/opt/workharbor/licenses
 uv packages no Python runtime or Python packages; keep its cache, environments,
 and any intentionally installed runtimes outside the shared tool volume.
 `oci/volume.sh` remains a small Docker-only host adapter so the devcontainer can
-initialize before a Go toolchain or Anchorage binary is available on the host.
+initialize before a Go toolchain or BundleDock binary is available on the host.
 
 ## Development
 
@@ -305,6 +302,12 @@ executables only. A separate writable volume, `anchorage-home-${devcontainerId}`
 persists `/home/vscode` across rebuilds and keeps each devcontainer's user state
 separate. Docker seeds a new home volume from the image's existing home directory.
 
+The legacy `anchorage-tools-<digest>` volume prefix, `anchorage-home-` home volume,
+and `anchorage-starship.fish` / `anchorage-herdr.fish` configuration filenames are
+retained intentionally so the rename reuses existing tool volumes, user state,
+and customized shell configuration. The output image remains `workharbor-tools`
+and its installed prefix remains `/opt/workharbor`.
+
 ```sh
 make run
 make run ARGS="--help"
@@ -314,21 +317,20 @@ make build
 ```
 
 The CLI uses [Cobra](https://github.com/spf13/cobra) and currently provides help,
-a development version identifier, `anchorage tools upgrade [tool]`, and
-`anchorage tools volume --image <image>`.
+a development version identifier, `bundledock tools upgrade [tool]`, and
+`bundledock tools volume --image <image>`.
 The volume command uses the host Docker CLI, resolves the image once to its immutable
-ID, and runs the initializer with networking disabled. Environment management
-commands are planned.
+ID, and runs the initializer with networking disabled.
 
 Make targets are thin wrappers around Go commands. Run `make help` for available
-targets. Builds write `bin/anchorage`; `make clean` removes the binary.
+targets. Builds write `bin/bundledock`; `make clean` removes the binary.
 
 Checks target `cmd` and `internal` explicitly because the CrewBook submodule
-contains Go evaluation fixtures that are not Anchorage packages.
+contains Go evaluation fixtures that are not BundleDock packages.
 
 ## Repository layout
 
-- `cmd/anchorage`: Go CLI entry point.
+- `cmd/bundledock`: Go CLI entry point.
 - `.devcontainer`: development container configuration.
 - `internal/toolconfig`, `internal/toolmanager`: shared declarative inputs and upstream lock resolution.
 - `cmd/tools-bundle`, `cmd/tools-init`: standard-library OCI build and initialization commands.

@@ -1,5 +1,5 @@
 {
-	"name": "Anchorage",
+	"name": "BundleDock",
 	"image": "mcr.microsoft.com/devcontainers/go:2-1.27-trixie",
 	"remoteUser": "vscode",
 	"initializeCommand": [
