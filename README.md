@@ -37,7 +37,7 @@ make tools-volume
 make run ARGS="tools volume --image anchorage/tools:poc"
 ```
 
-`oci/tools.lock.json` pins vendor artifact URLs and checksums for Linux `amd64`
+`tools.lock.json` pins vendor artifact URLs and checksums for Linux `amd64`
 and `arm64`. The bundle contains Codex (including native helpers), Claude Code,
 Antigravity, GitHub CLI, SQLite, jq, ripgrep, fd, ast-grep, Mike Farah yq, and uv
 (with uvx). Builds verify every download. The Debian base image
@@ -56,6 +56,56 @@ is pinned by digest; Debian packages still come from its current package reposit
 | ast-grep (`ast-grep`) | 0.45.3 |
 | Mike Farah yq (`yq`) | 4.54.1 |
 | uv (`uv`, `uvx`) | 0.13.0 |
+
+Run upgrades from the repository root:
+
+```sh
+make run ARGS="tools upgrade"       # resolve all tools
+make run ARGS="tools upgrade gh"    # resolve only GitHub CLI
+```
+
+`tools.txt` contains one desired requirement per line: `gh>=2.102.0,<3.0.0`
+or `gh==2.102.0`. Commas mean AND; ranges require inclusive lower and exclusive
+upper bounds. Versions must be complete stable `major.minor.patch` values;
+prereleases and build metadata are excluded. Comments start with `#`. The initial
+0.x requirements stop at the next minor version; other initial requirements stop
+at the next major version. Editing this file changes the desired range, not the
+installed tools.
+
+`tools.packages.json` is the trusted declarative package catalog. It names upstream
+providers, repositories, tag prefixes, platform aliases, asset templates, supported
+raw/tar/ZIP extraction, executable members, regular-file aliases, notices, and the
+built-in `sqlite-source` compiler kind. Recipes cannot execute shell commands.
+Both upgrade and build validate this catalog; the Dockerfile owns the fixed SQLite
+compile command. Review catalog edits as build inputs. A catalog change requires
+an upgrade of all tools so preserved pins cannot acquire a different recipe silently.
+
+Upgrades fetch fresh release metadata and select the numerically newest stable
+version within each requirement. GitHub release history is paginated. Claude and
+Antigravity combine official current manifests with historical GitHub releases.
+SQLite uses official release chronology dates and compact archive naming, including
+historical releases and backports. The chosen version must supply both architectures;
+missing assets, metadata errors, or checksum failures abort without selecting an
+older version. All selected downloads are hashed and verified before the lock is
+replaced atomically. A failed resolution leaves the previous lock bytes unchanged;
+a targeted upgrade preserves every other tool pin. An all-tool upgrade can create
+a missing lock or reconcile catalog additions and removals.
+
+Lock verification provenance distinguishes publisher SHA256/SHA512 and SQLite
+SHA3-256 checksums from `tls-download-sha256`: the latter pins bytes downloaded
+from official HTTPS when a release has no publisher checksum. It is a reproducibility
+pin, not an independent publisher authenticity proof. A present invalid publisher
+checksum always fails. Redirects require HTTPS and an official host; GitHub's release
+asset CDN is allowed. The migrated existing hashes and artifact URLs remain pinned.
+Canonical SHA256 digests bind the lock to desired requirements and catalog content;
+formatting and comments in `tools.txt` do not change its identity. Builds reject stale
+identity, incomplete platforms, unsupported recipes, and unsafe archive members.
+
+`tools upgrade` writes only `tools.lock.json`. Review and commit the diff, then run
+`make tools-build tools-smoke tools-volume` to build and initialize the new bundle.
+Existing images, volumes, running containers, and desired ranges are unaffected by
+resolution. `tools volume` remains the existing initialization command; no update
+alias or other tool-management commands are added.
 
 The original four agent tools and complete Codex assets occupied about 864 MiB
 uncompressed on ARM64; the added utilities increase that size. The volume is shared across workspaces on the same Docker host.
@@ -152,7 +202,8 @@ make build
 ```
 
 The CLI uses [Cobra](https://github.com/spf13/cobra) and currently provides help,
-a development version identifier, and `anchorage tools volume --image <image>`.
+a development version identifier, `anchorage tools upgrade [tool]`, and
+`anchorage tools volume --image <image>`.
 The volume command uses the host Docker CLI, resolves the image once to its immutable
 ID, and runs the initializer with networking disabled. Environment management
 commands are planned.
@@ -167,6 +218,7 @@ contains Go evaluation fixtures that are not Anchorage packages.
 
 - `cmd/anchorage`: Go CLI entry point.
 - `.devcontainer`: development container configuration.
+- `internal/toolconfig`, `internal/toolmanager`: shared declarative inputs and upstream lock resolution.
 - `cmd/tools-bundle`, `cmd/tools-init`: standard-library OCI build and initialization commands.
 - `internal`: bundle downloads/extraction, volume validation, and host Docker adapter.
 - `oci`: Dockerfile, artifact lock, Docker-only host adapter, and smoke test.
