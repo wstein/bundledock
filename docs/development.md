@@ -74,6 +74,54 @@ directory to clear downloaded archives while preserving the `public/` preview.
 To review a project-subpath build, run
 `bash scripts/hugo.sh --baseURL https://example.org/bundledock/`.
 
+### Manual GitHub Pages publication
+
+The [Publish documentation workflow](../.github/workflows/pages.yml) prepares
+the existing Hugo site for `https://wstein.github.io/bundledock/`. It runs only
+by manual dispatch from default branch `main`, with the full approved commit
+SHA in `approved_sha`. Pushes, pull requests, merges and schedules do not build
+or deploy documentation. Preparing or committing the workflow supplies no
+approval to run it, enable Pages, or change repository settings.
+
+Before the first deployment, the repository administrator must separately
+configure [Settings → Pages](https://github.com/wstein/bundledock/settings/pages)
+with **GitHub Actions** as the publishing source. Review the `github-pages`
+environment's deployment branches and any required reviewers in repository
+settings. This workflow names that environment but does not configure its
+protection rules or claim that required reviewers are present. See GitHub's
+[custom workflow requirements](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages).
+
+For each publication:
+
+1. Review the exact `main` revision and obtain explicit user approval for both
+   the documentation build and the Pages deployment at that full SHA.
+2. Open [Publish documentation in Actions](https://github.com/wstein/bundledock/actions/workflows/pages.yml),
+   choose **Run workflow** on `main`, and enter that SHA as `approved_sha`.
+   If `main` has moved, review and obtain approval for the new revision first.
+3. Inspect the build and deployment results and the environment URL. Treat the
+   site as published only after the deployment succeeds. Obtain fresh explicit
+   approval for reruns of the original SHA and choose **Re-run all jobs** so the
+   build creates the artifact for the new run attempt. A deployment-only rerun
+   cannot reuse an earlier attempt's artifact.
+
+Both jobs check out the immutable run SHA and independently run the existing
+publication approval gate before Hugo, artifact upload, or deployment. It
+rejects non-user senders, bot actors and bot reruns, including partial reruns.
+The build uses `make docs` and the checksum-verified official Hugo wrapper;
+`HUGO_BASEURL` supplies the project subpath while the local preview remains
+unchanged. Generated files remain ignored in `public/`. No Node installation,
+third-party theme, or separate deployment secret is required. Only the deploy
+job receives `pages: write` and `id-token: write`; source access stays read-only.
+
+The actor checks cannot distinguish a person's manual dispatch from automation
+using that person's credentials. Automation must never dispatch this workflow,
+including with a human-owned token; restrict dispatch credentials and repository
+writers separately. An optional reviewer gate on `github-pages` protects the
+deployment job only, after the documentation build. The manual dispatch and
+exact-SHA approval remain necessary before any build. Source tests check these
+workflow contracts without rendering or publishing the site; they do not
+establish that repository Pages settings or a live deployment work.
+
 ### Bundled Hugo verification
 
 The toolbox installs the official stable **standard** Hugo 0.167.0 prebuilt
