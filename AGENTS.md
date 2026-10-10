@@ -33,6 +33,11 @@ still pins an older image, so do not assume these commands exist in a running se
 | Use an alternative structured shell | `nu` (Nushell). |
 | Use an alternative terminal multiplexer | `tmux`. |
 | Customize a shell prompt | `starship`. |
+| Check spelling | `typos`. |
+| Check links | `lychee`. |
+| Detect secrets | `gitleaks`. |
+| Scan vulnerabilities and configuration | `trivy`. |
+| Generate software bills of materials | `syft`. |
 
 Keep HOME, caches, and virtual environments in writable locations outside the
 read-only `/opt/workharbor` tool bundle.

@@ -43,10 +43,10 @@ make run ARGS="tools volume --image bundledock-toolbox:poc"
 ```
 
 `tools.lock.json` pins vendor artifact URLs and checksums for Linux `amd64`
-and `arm64`. The bundle contains Codex (including native helpers), Claude Code,
+and `arm64`. The bundle contains twenty tools: Codex (including native helpers), Claude Code,
 Antigravity, GitHub CLI, jq, ripgrep, fd, ast-grep, Mike Farah yq, uv
 (with uvx), and [Herdr](https://github.com/herdrdev/herdr) for terminal workspaces
-and agent sessions, plus the Fish shell and Starship prompt, with Nushell and tmux available as alternatives. Builds verify every
+and agent sessions, plus the Fish shell and Starship prompt, with Nushell and tmux available as alternatives, and typos, lychee, Gitleaks, Trivy, and Syft for quality and security checks. Builds verify every
 download. The Debian base image is pinned by digest; Debian packages still come from its current package repositories.
 
 | Tool | Pinned version |
@@ -66,6 +66,11 @@ download. The Debian base image is pinned by digest; Debian packages still come 
 | Starship (`starship`) | 1.26.0 |
 | Nushell (`nu`) | 0.116.1 |
 | tmux (`tmux`) | 3.7c (official static builds) |
+| typos (`typos`) | 1.51.1 |
+| lychee (`lychee`) | 0.24.2 |
+| Gitleaks (`gitleaks`) | 8.30.1 |
+| Trivy (`trivy`) | 0.75.0 |
+| Syft (`syft`) | 1.54.1 |
 
 Nushell and tmux are opt-in commands. tmux uses the latest published stable
 [official static build](https://github.com/tmux/tmux-builds/releases/tag/v3.7c),
@@ -201,6 +206,20 @@ been exercised natively on ARM64, including syntax search, and offline uv cache 
 execution remain unverified. Before adopting the new bundle,
 run `make tools-build tools-smoke` on each supported architecture.
 
+For the five quality and security tools, all ten official AMD64/ARM64 archives
+were checked against publisher digests and passed the production extractor.
+The shared offline fixture script passed natively on ARM64; that native run did
+not enforce network isolation. AMD64 execution and Docker build/smoke remain
+unverified. To repeat release acceptance checks with downloaded official archives
+and a PATH containing the five executables:
+
+```sh
+BUNDLEDOCK_ARCHIVE_DIR=/path/to/archives \
+BUNDLEDOCK_SMOKE_PATH=/path/to/bin \
+go test ./internal/toolbundle -run 'TestQualitySecurity' -count=1
+```
+
+
 `tools-volume` prints a volume name derived from the resolved image ID. It copies
 the tools once and verifies their checksums on subsequent calls. Incomplete,
 nonempty, or mismatched volumes are rejected. Upgrades create a new image and
@@ -230,10 +249,17 @@ Keep authentication and writable tool state in the user's home directory or
 separate private volumes. No credentials are included in the image. The read-only mount prevents tools from updating the
 shared executables; Claude updates are also disabled with environment variables.
 
-The smoke test executes all fifteen tools and the `fdfind` and `uvx` companions
+The smoke test executes all twenty tools and the `fdfind` and `uvx` companions
 as a non-root user in two concurrent containers with networking disabled. It checks
 JSON and YAML processing, text search, file discovery, and Go syntax
-search. Nushell processes structured records. A headless tmux server uses an
+search. The quality and security fixtures verify a typo correction, a local HTML anchor,
+a redacted synthetic secret, embedded Dockerfile configuration findings, and a
+synthetic package in an SBOM. They scan only their generated local fixtures.
+Trivy configuration smoke uses embedded checks with check updates disabled and
+does not download a vulnerability database. Trivy vulnerability scans require
+separately managed databases and writable caches outside `/opt/workharbor`;
+no database is baked into the bundle. Syft update checks are disabled in smoke.
+Nushell processes structured records. A headless tmux server uses an
 isolated socket and the consumer's `/bin/bash`, then removes its session.
 Fish checks a pipeline, arithmetic, embedded functions and completions;
 Starship renders a minimal prompt and initializes within Fish using only writable
@@ -257,7 +283,8 @@ for `TARGETARCH`. Final manifests and checksums include the extracted executable
 and notices; build dependencies are excluded from the final tool tree.
 The image needs no Python or shell initializer.
 
-jq, ripgrep, fd, yq, uv, Fish, Starship, Nushell, and tmux use upstream static binaries.
+jq, ripgrep, fd, yq, uv, Fish, Starship, Nushell, tmux, typos, lychee,
+Gitleaks, Trivy, and Syft use upstream static binaries.
 Only Nushell's `nu` executable is installed; its optional plugins are omitted.
 tmux requires the consumer's terminfo database, such as Debian's `ncurses-base`;
 keep `TERM` appropriate for the terminal. Runtime compatibility with Alpine or
