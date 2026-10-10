@@ -8,6 +8,55 @@ import (
 	"testing"
 )
 
+func TestBuildStagesUseMinimalAlpineBases(t *testing.T) {
+	data, err := os.ReadFile("../../oci/Dockerfile")
+	if err != nil {
+		t.Fatal(err)
+	}
+	dockerfile := string(data)
+	stages := strings.Split(dockerfile[strings.Index(dockerfile, "FROM "):], "\nFROM ")
+	if len(stages) != 4 {
+		t.Fatalf("expected compiler, downloads, builder and carrier stages, got %d", len(stages))
+	}
+	compiler, downloads, builder := stages[0], stages[1], stages[2]
+	for _, stage := range []struct{ name, body, base string }{
+		{"compiler", compiler, "FROM --platform=$BUILDPLATFORM golang:1.24-alpine@sha256:"},
+		{"downloads", "FROM " + downloads, "FROM --platform=$BUILDPLATFORM alpine:3.23@sha256:"},
+	} {
+		if !strings.Contains(stage.body, stage.base) {
+			t.Errorf("%s must use a digest-pinned build-platform Alpine base", stage.name)
+		}
+	}
+	if !strings.Contains(downloads, "RUN apk add --no-cache ca-certificates\n") {
+		t.Error("downloads must install only HTTPS trust certificates without a package cache")
+	}
+	for _, unwanted := range []string{"apt-get", "debian:", "apk add --no-cache curl", "apk add --no-cache tar", "apk add --no-cache gcc"} {
+		if strings.Contains(dockerfile, unwanted) {
+			t.Errorf("unnecessary build dependency: %s", unwanted)
+		}
+	}
+	for _, required := range []string{
+		"COPY go.mod go.sum ./\nRUN go mod download\n",
+		"CGO_ENABLED=0 go build -trimpath -o /out/tools-bundle ./cmd/tools-bundle",
+	} {
+		if !strings.Contains(compiler, required) {
+			t.Errorf("compiler must retain %s", required)
+		}
+	}
+	for _, required := range []string{
+		"COPY --from=compiler /out/tools-bundle /usr/local/bin/tools-bundle",
+		"COPY tools.txt tools.packages.json tools.lock.json /build/",
+		"COPY oci/licenses /build/oci/licenses",
+	} {
+		if !strings.Contains(downloads, required) {
+			t.Errorf("downloads must retain %s", required)
+		}
+	}
+	if !strings.HasPrefix(builder, "downloads AS builder\nARG TARGETARCH\n") || !strings.Contains(builder, `RUN tools-bundle -arch "${TARGETARCH}"`) {
+		t.Error("builder must use the static Go downloader for the target architecture")
+	}
+}
+
 func TestScratchCarrierContract(t *testing.T) {
 	data, err := os.ReadFile("../../oci/Dockerfile")
 	if err != nil {
