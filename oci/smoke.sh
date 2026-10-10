@@ -56,8 +56,6 @@ check() {
             printf "%s\n" "add_newline = false" "format = \"\$character\"" "[character]" "success_symbol = \">\"" > "$STARSHIP_CONFIG"
             test "$(starship prompt --path "$HOME" --status 0)" = "> "
             fish --no-config -c "starship init fish | source; functions -q fish_prompt"
-            sqlite3 --version
-            test "$(sqlite3 :memory: "SELECT 6 * 7;")" = 42
             jq --version
             printf "%s\n" "{\"answer\":42}" | jq -e ".answer == 42"
             rg --version

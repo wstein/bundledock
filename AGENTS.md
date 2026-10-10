@@ -20,7 +20,6 @@ still pins an older image, so do not assume these commands exist in a running se
 | Find files by name | `fd` or its `fdfind` alias. |
 | Query code structure | `ast-grep`; use the full binary name, never `sg`. |
 | Process structured data | `jq` for JSON; `yq` for YAML. |
-| Query local databases | `sqlite3`. |
 | Manage Python environments and run Python tools | `uv` and `uvx`. |
 | Agent and GitHub workflows | `codex`, `claude`, `agy`, and `gh`. |
 | Manage terminal workspaces and agent sessions | `herdr`. |

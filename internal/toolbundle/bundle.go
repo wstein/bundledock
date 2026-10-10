@@ -45,7 +45,6 @@ func checksum(spec Spec) (hash.Hash, string, error) {
 }
 
 // Build downloads each artifact to a temporary file, verifies it, then extracts.
-// SQLite must already be compiled for arch at destination/bin/sqlite3.
 // A failed build leaves its incomplete output for inspection; use a fresh directory.
 func Build(ctx context.Context, client *http.Client, tools map[string]Spec, packages map[string]toolconfig.Package, notices fs.FS, arch, destination string, output io.Writer) error {
 	if client == nil {
@@ -59,30 +58,12 @@ func Build(ctx context.Context, client *http.Client, tools map[string]Spec, pack
 		return err
 	}
 	defer root.Close()
-	sqlite, err := OpenFile(root, "bin/sqlite3")
-	if err != nil {
-		return fmt.Errorf("compiled SQLite: %w", err)
-	}
-	info, err := sqlite.Stat()
-	closeErr := sqlite.Close()
-	if err != nil {
-		return err
-	}
-	if closeErr != nil {
-		return closeErr
-	}
-	if info.Mode().Perm()&0111 == 0 || info.Size() == 0 {
-		return fmt.Errorf("compiled SQLite must be a nonempty executable")
-	}
 	names := make([]string, 0, len(packages))
 	for name := range packages {
 		names = append(names, name)
 	}
 	sort.Strings(names)
 	for _, name := range names {
-		if packages[name].Install.Kind == "sqlite-source" {
-			continue
-		}
 		spec := tools[name]
 		fmt.Fprintln(output, "Installing", name, spec.Version)
 		if err := install(ctx, client, root, name, packages[name], spec); err != nil {
@@ -152,7 +133,7 @@ func install(ctx context.Context, client *http.Client, root *os.Root, name strin
 		return err
 	}
 	switch p.Install.Kind {
-	case "zip", "sqlite-source":
+	case "zip":
 		info, err := payload.Stat()
 		if err != nil {
 			return err
@@ -160,9 +141,6 @@ func install(ctx context.Context, client *http.Client, root *os.Root, name strin
 		selected := map[string]zipTarget{}
 		for member, target := range p.Install.Members {
 			mode := fs.FileMode(0755)
-			if p.Install.Kind == "sqlite-source" {
-				mode = 0644
-			}
 			selected[member] = zipTarget{target, mode}
 		}
 		if err := extractSelectedZIP(root, payload, info.Size(), selected); err != nil {

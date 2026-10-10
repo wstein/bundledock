@@ -38,7 +38,6 @@ type Package struct {
 	TagPrefix     string            `json:"tag_prefix,omitempty"`
 	BaseURL       string            `json:"base_url,omitempty"`
 	MetadataURL   string            `json:"metadata_url,omitempty"`
-	HistoryURL    string            `json:"history_url,omitempty"`
 	Normalization string            `json:"normalization"`
 	Architectures map[string]string `json:"architectures"`
 	Asset         string            `json:"asset"`
@@ -200,7 +199,7 @@ func ValidateSpec(s Spec) error {
 		return fmt.Errorf("invalid checksum")
 	}
 	switch s.Verification {
-	case "publisher-sha256", "publisher-sha512", "publisher-sha3-256", "tls-download-sha256":
+	case "publisher-sha256", "publisher-sha512", "tls-download-sha256":
 	default:
 		return fmt.Errorf("invalid verification provenance %q", s.Verification)
 	}
@@ -241,17 +240,13 @@ func (c Config) validate(strict bool) error {
 		if !ok {
 			return fmt.Errorf("catalog tool %s is absent from tools.txt", name)
 		}
-		if p.Normalization != "semver" && p.Normalization != "sqlite-compact" && p.Normalization != "tmux-release" {
+		if p.Normalization != "semver" && p.Normalization != "tmux-release" {
 			return fmt.Errorf("unknown normalization for %s", name)
 		}
 		switch p.Provider {
 		case "github", "claude", "antigravity":
 			if !repositoryName.MatchString(p.Repository) {
 				return fmt.Errorf("invalid repository for %s", name)
-			}
-		case "sqlite":
-			if p.Normalization != "sqlite-compact" {
-				return fmt.Errorf("SQLite requires sqlite-compact")
 			}
 		default:
 			return fmt.Errorf("unknown provider for %s", name)
@@ -260,12 +255,6 @@ func (c Config) validate(strict bool) error {
 		if p.Normalization == "tmux-release" && (name != "tmux" || p.Provider != "github" || p.Repository != "tmux/tmux-builds" || p.TagPrefix != "v") {
 			return fmt.Errorf("tmux-release is only supported for official tmux builds")
 		}
-		if p.Provider != "sqlite" && p.Normalization != "semver" && p.Normalization != "tmux-release" {
-			return fmt.Errorf("%s requires semver normalization", name)
-		}
-		if p.Provider == "sqlite" && (p.HistoryURL == "" || p.MetadataURL == "" || p.BaseURL == "" || p.Install.Kind != "sqlite-source") {
-			return fmt.Errorf("SQLite requires official history, metadata and named source compiler")
-		}
 		if p.Provider == "claude" && (p.BaseURL == "" || p.Install.Kind != "raw") {
 			return fmt.Errorf("Claude requires official base URL and raw binary recipe")
 		}
@@ -273,7 +262,7 @@ func (c Config) validate(strict bool) error {
 			return fmt.Errorf("Antigravity requires official updater metadata URL")
 		}
 		for _, template := range []string{p.Asset, p.Sidecar} {
-			expanded := strings.NewReplacer("{version}", "1.2.3", "{arch}", "arch", "{year}", "2026", "{compact}", "3010200", "{asset}", "asset").Replace(template)
+			expanded := strings.NewReplacer("{version}", "1.2.3", "{arch}", "arch", "{asset}", "asset").Replace(template)
 			if template != "" && (!validPath(expanded) || strings.ContainsAny(expanded, "{}")) {
 				return fmt.Errorf("invalid asset template for %s", name)
 			}
@@ -287,7 +276,7 @@ func (c Config) validate(strict bool) error {
 		if p.Verification != "official-or-download" {
 			return fmt.Errorf("unknown verification policy for %s", name)
 		}
-		for _, u := range []string{p.BaseURL, p.MetadataURL, p.HistoryURL} {
+		for _, u := range []string{p.BaseURL, p.MetadataURL} {
 			if u != "" {
 				if err := ValidateURL(u, p.AllowedHosts); err != nil {
 					return err
@@ -295,12 +284,9 @@ func (c Config) validate(strict bool) error {
 			}
 		}
 		switch p.Install.Kind {
-		case "raw", "tar.gz", "tar.xz", "zip", "sqlite-source":
+		case "raw", "tar.gz", "tar.xz", "zip":
 		default:
 			return fmt.Errorf("unknown install kind for %s", name)
-		}
-		if p.Install.Kind == "sqlite-source" && (name != "sqlite3" || p.Provider != "sqlite") {
-			return fmt.Errorf("sqlite-source is only supported for sqlite3")
 		}
 		if len(p.Install.Members) == 0 {
 			return fmt.Errorf("missing install members for %s", name)

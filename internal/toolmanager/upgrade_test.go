@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
-	"crypto/sha3"
 	"crypto/sha512"
 	"encoding/json"
 	"fmt"
@@ -139,7 +138,6 @@ func TestAllProvidersPaginationRangesAndVerification(t *testing.T) {
 	}
 	payload := []byte("official fixture")
 	sum := fmt.Sprintf("%x", sha256.Sum256(payload))
-	sha3sum := fmt.Sprintf("%x", sha3.Sum256(payload))
 	versions := map[string]string{}
 	repos := map[string]string{}
 	for n, p := range c.Catalog.Packages {
@@ -161,7 +159,7 @@ func TestAllProvidersPaginationRangesAndVerification(t *testing.T) {
 			}
 			assets := []asset{}
 			for _, arch := range []string{"amd64", "arm64"} {
-				name := expand(p.Asset, v, p.Architectures[arch], "", "")
+				name := expand(p.Asset, v, p.Architectures[arch])
 				a := asset{Name: name, URL: "https://github.com/" + p.Repository + "/releases/download/" + p.TagPrefix + v + "/" + name, Digest: "sha256:" + sum}
 				if n == "uv" || n == "starship" {
 					a.Digest = ""
@@ -187,15 +185,6 @@ func TestAllProvidersPaginationRangesAndVerification(t *testing.T) {
 			fmt.Fprint(w, versions["claude"])
 			return
 		}
-		if strings.HasSuffix(r.URL.Path, "/chronology.html") {
-			fmt.Fprintf(w, `<table id="chrontab"><tr><td>2026-10-09</td><td><a href="releaselog/3_54_1.html">%s</a></td></tr><tr><td>2027-01-01</td><td><a href="releaselog/3_51_3.html">3.51.3</a></td></tr></table>`, versions["sqlite3"])
-			return
-		}
-		if strings.HasSuffix(r.URL.Path, "/download.html") {
-			compact, _ := SQLiteCompact(versions["sqlite3"])
-			fmt.Fprintf(w, "PRODUCT,%s,2026/sqlite-amalgamation-%s.zip,16,%s\n", versions["sqlite3"], compact, sha3sum)
-			return
-		}
 		if strings.HasSuffix(r.URL.Path, ".sha256") {
 			fmt.Fprintln(w, sum)
 			return
@@ -217,9 +206,6 @@ func TestAllProvidersPaginationRangesAndVerification(t *testing.T) {
 				t.Fatalf("%s/%s: %+v", arch, n, s)
 			}
 			want := "publisher-sha256"
-			if n == "sqlite3" {
-				want = "publisher-sha3-256"
-			}
 			if n == "ast-grep" {
 				want = "tls-download-sha256"
 			}
@@ -242,44 +228,6 @@ func TestLatestMissingArchitectureDoesNotFallBack(t *testing.T) {
 		t.Fatal("changed lock")
 	}
 }
-func TestSQLiteHistoricalAndPublisherMismatch(t *testing.T) {
-	for _, mismatch := range []bool{false, true} {
-		t.Run(fmt.Sprint(mismatch), func(t *testing.T) {
-			dir := checkout(t)
-			before := readLock(t, dir)
-			client := fixtureClient(t, func(w http.ResponseWriter, r *http.Request) {
-				switch {
-				case strings.HasSuffix(r.URL.Path, "chronology.html"):
-					fmt.Fprint(w, `<tr><td>2026-10-09</td><td><a href="releaselog/3_54_0.html">3.54.0</a></td></tr>`)
-				case strings.HasSuffix(r.URL.Path, "download.html"):
-					if mismatch {
-						fmt.Fprintf(w, "PRODUCT,3.54.0,2026/sqlite-amalgamation-3540000.zip,10,%s\n", strings.Repeat("a", 64))
-					}
-				default:
-					fmt.Fprint(w, "historical official bytes")
-				}
-			})
-			err := Upgrade(context.Background(), client, dir, "sqlite3", &bytes.Buffer{})
-			if mismatch {
-				if err == nil || !bytes.Equal(before, readLock(t, dir)) {
-					t.Fatal("accepted mismatch or changed lock")
-				}
-				return
-			}
-			if err != nil {
-				t.Fatal(err)
-			}
-			c, err := toolconfig.Load(dir)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if c.Lock.Platforms["amd64"]["sqlite3"].Verification != "tls-download-sha256" {
-				t.Fatal("historical hash misrepresented")
-			}
-		})
-	}
-}
-
 func TestAntigravityCurrentManifestWinsOverHistoricalGitHub(t *testing.T) {
 	dir := checkout(t)
 	payload := []byte("current agy")
@@ -348,7 +296,7 @@ func TestChangedDesiredAndBootstrap(t *testing.T) {
 							}
 							assets := []asset{}
 							for _, arch := range []string{"amd64", "arm64"} {
-								name := expand(p.Asset, v, p.Architectures[arch], "", "")
+								name := expand(p.Asset, v, p.Architectures[arch])
 								assets = append(assets, asset{Name: name, URL: "https://github.com/" + p.Repository + "/" + name})
 							}
 							json.NewEncoder(w).Encode([]release{{Tag: p.TagPrefix + v, Assets: assets}})
@@ -367,13 +315,6 @@ func TestChangedDesiredAndBootstrap(t *testing.T) {
 				if strings.HasSuffix(r.URL.Path, "manifest.json") {
 					sum := fmt.Sprintf("%x", sha256.Sum256([]byte("binary")))
 					fmt.Fprintf(w, `{"platforms":{"linux-x64":{"checksum":"%s"},"linux-arm64":{"checksum":"%s"}}}`, sum, sum)
-					return
-				}
-				if strings.HasSuffix(r.URL.Path, "chronology.html") {
-					fmt.Fprint(w, `<tr><td>2026-10-09</td><td><a href="releaselog/3_54_0.html">3.54.0</a></td></tr>`)
-					return
-				}
-				if strings.HasSuffix(r.URL.Path, "download.html") {
 					return
 				}
 				fmt.Fprint(w, "binary")
@@ -521,7 +462,7 @@ func TestUpgradeAllRepairsChangedCatalogInventory(t *testing.T) {
 					v := fixtureReleaseVersion(p, c.Desired[n].Lower.String())
 					assets := []asset{}
 					for _, arch := range []string{"amd64", "arm64"} {
-						name := expand(p.Asset, v, p.Architectures[arch], "", "")
+						name := expand(p.Asset, v, p.Architectures[arch])
 						assets = append(assets, asset{Name: name, URL: "https://github.com/" + p.Repository + "/" + name})
 					}
 					json.NewEncoder(w).Encode([]release{{Tag: p.TagPrefix + v, Assets: assets}})
@@ -531,13 +472,6 @@ func TestUpgradeAllRepairsChangedCatalogInventory(t *testing.T) {
 		}
 		if strings.Contains(r.URL.Path, "/manifests/") {
 			json.NewEncoder(w).Encode(map[string]string{"version": "1.3.1"})
-			return
-		}
-		if strings.HasSuffix(r.URL.Path, "chronology.html") {
-			fmt.Fprint(w, `<tr><td>2026-10-09</td><td><a href="releaselog/3_54_0.html">3.54.0</a></td></tr>`)
-			return
-		}
-		if strings.HasSuffix(r.URL.Path, "download.html") {
 			return
 		}
 		fmt.Fprint(w, "binary")
@@ -571,26 +505,6 @@ func TestUpstreamRedirectPolicy(t *testing.T) {
 	}
 }
 
-func TestEmptySQLitePublisherChecksumFailsClosed(t *testing.T) {
-	dir := checkout(t)
-	before := readLock(t, dir)
-	client := fixtureClient(t, func(w http.ResponseWriter, r *http.Request) {
-		switch {
-		case strings.HasSuffix(r.URL.Path, "chronology.html"):
-			fmt.Fprint(w, `<tr><td>2026-10-09</td><td><a href="releaselog/3_54_0.html">3.54.0</a></td></tr>`)
-		case strings.HasSuffix(r.URL.Path, "download.html"):
-			fmt.Fprintln(w, "PRODUCT,3.54.0,2026/sqlite-amalgamation-3540000.zip,10,")
-		default:
-			fmt.Fprint(w, "binary")
-		}
-	})
-	if err := Upgrade(context.Background(), client, dir, "sqlite3", &bytes.Buffer{}); err == nil {
-		t.Fatal("accepted empty published SQLite hash")
-	}
-	if !bytes.Equal(before, readLock(t, dir)) {
-		t.Fatal("changed lock")
-	}
-}
 func TestTargetedUpgradeRequiresUnchangedCatalog(t *testing.T) {
 	dir := checkout(t)
 	c, _ := toolconfig.Load(dir)
@@ -629,7 +543,7 @@ func TestGitHubAuthenticationIsScopedToAPIHost(t *testing.T) {
 		}
 		fmt.Fprint(w, "[]")
 	})
-	for _, raw := range []string{"https://api.github.com/api-fixture", "https://github.com/artifact", "https://downloads.claude.ai/claude", "https://storage.googleapis.com/antigravity", "https://www.sqlite.org/archive"} {
+	for _, raw := range []string{"https://api.github.com/api-fixture", "https://github.com/artifact", "https://downloads.claude.ai/claude", "https://storage.googleapis.com/antigravity", "https://downloads.claude.ai/other-artifact"} {
 		resp, err := (resolver{client: client}).get(context.Background(), raw)
 		if err != nil {
 			t.Fatal(err)

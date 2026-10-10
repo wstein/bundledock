@@ -36,7 +36,7 @@ make run ARGS="tools volume --image workharbor-tools:poc"
 
 `tools.lock.json` pins vendor artifact URLs and checksums for Linux `amd64`
 and `arm64`. The bundle contains Codex (including native helpers), Claude Code,
-Antigravity, GitHub CLI, SQLite, jq, ripgrep, fd, ast-grep, Mike Farah yq, uv
+Antigravity, GitHub CLI, jq, ripgrep, fd, ast-grep, Mike Farah yq, uv
 (with uvx), and [Herdr](https://github.com/herdrdev/herdr) for terminal workspaces
 and agent sessions, plus the Fish shell and Starship prompt, with Nushell and tmux available as alternatives. Builds verify every
 download. The Debian base image is pinned by digest; Debian packages still come from its current package repositories.
@@ -47,7 +47,6 @@ download. The Debian base image is pinned by digest; Debian packages still come 
 | Claude Code | 2.1.296 |
 | Antigravity | 1.3.2 |
 | GitHub CLI | 2.102.0 |
-| SQLite (`sqlite3`) | 3.54.0 |
 | jq | 1.8.2 |
 | ripgrep (`rg`) | 15.2.0 |
 | fd (`fd`, `fdfind`) | 10.5.0 |
@@ -109,9 +108,8 @@ installed tools.
 `tools.packages.json` is the trusted declarative package catalog. It names upstream
 providers, repositories, tag prefixes, platform aliases, asset templates, supported
 raw/tar/ZIP extraction, executable members, regular-file aliases, notices, and the
-built-in `sqlite-source` compiler kind. Recipes cannot execute shell commands.
-Both upgrade and build validate this catalog; the Dockerfile owns the fixed SQLite
-compile command. Review catalog edits as build inputs. A catalog change requires
+extraction recipes. Recipes cannot execute shell commands.
+Both upgrade and build validate this catalog. Review catalog edits as build inputs. A catalog change requires
 an upgrade of all tools so preserved pins cannot acquire a different recipe silently.
 
 The native builder supports `tar.xz` with the checksum-pinned pure Go
@@ -129,16 +127,14 @@ sent only to `api.github.com`; artifact and other provider requests never receiv
 it. HTTP errors, including API rate limits, abort with the request URL and status.
 Claude and
 Antigravity combine official current manifests with historical GitHub releases.
-SQLite uses official release chronology dates and compact archive naming, including
-historical releases and backports. The chosen version must supply both architectures;
+The chosen version must supply both architectures;
 missing assets, metadata errors, or checksum failures abort without selecting an
 older version. All selected downloads are hashed and verified before the lock is
 replaced atomically. A failed resolution leaves the previous lock bytes unchanged;
 a targeted upgrade preserves every other tool pin. An all-tool upgrade can create
 a missing lock or reconcile catalog additions and removals.
 
-Lock verification provenance distinguishes publisher SHA256/SHA512 and SQLite
-SHA3-256 checksums from `tls-download-sha256`: the latter pins bytes downloaded
+Lock verification provenance distinguishes publisher SHA256/SHA512 checksums from `tls-download-sha256`: the latter pins bytes downloaded
 from official HTTPS when a release has no publisher checksum. It is a reproducibility
 pin, not an independent publisher authenticity proof. A present invalid publisher
 checksum always fails. Redirects require HTTPS and an official host; GitHub's release
@@ -213,8 +209,7 @@ The initial local build and smoke tests were run on Linux ARM64; AMD64 downloads
 are pinned but have not yet been built or runtime-verified. The Go port has been
 verified with local HTTP/archive fixtures for both architectures; its Docker build
 and runtime smoke test still need a Docker host. The additional utilities have
-been exercised natively on ARM64, including SQLite source compilation, queries,
-syntax search, and offline uv cache selection; their Docker smoke test and AMD64
+been exercised natively on ARM64, including syntax search, and offline uv cache selection; their Docker smoke test and AMD64
 execution remain unverified. Before adopting the new bundle,
 run `make tools-build tools-smoke` on each supported architecture.
 
@@ -247,9 +242,9 @@ Keep authentication and writable tool state in the user's home directory or
 separate private volumes. No credentials are included in the image. The read-only mount prevents tools from updating the
 shared executables; Claude updates are also disabled with environment variables.
 
-The smoke test executes all sixteen tools and the `fdfind` and `uvx` companions
+The smoke test executes all fifteen tools and the `fdfind` and `uvx` companions
 as a non-root user in two concurrent containers with networking disabled. It checks
-a SQLite query, JSON and YAML processing, text search, file discovery, and Go syntax
+JSON and YAML processing, text search, file discovery, and Go syntax
 search. Nushell processes structured records. A headless tmux server uses an
 isolated socket and the consumer's `/bin/bash`, then removes its session.
 Fish checks a pipeline, arithmetic, embedded functions and completions;
@@ -270,12 +265,8 @@ or `TOOLS_CONSUMER` when invoking Make to select another image or test consumer.
 The OCI build uses the repository root as context with `oci/Dockerfile.dockerignore`
 limiting it to the builder/initializer sources and artifact lock. Go compilation
 and artifact downloads run on `BUILDPLATFORM`; the initializer is cross-compiled
-for `TARGETARCH`. SQLite's checksum-pinned official amalgamation is extracted into
-a separate build-only directory and compiled in a target-platform Debian stage,
-without readline or other optional libraries. Its default extension loading and
-thread safety remain enabled. Final manifest/checksums include the compiled CLI;
-source files and build dependencies are excluded from the final tool tree.
-Cross-platform image builds need target execution support for that compile stage.
+for `TARGETARCH`. Final manifests and checksums include the extracted executables
+and notices; build dependencies are excluded from the final tool tree.
 The image needs no Python or shell initializer.
 
 jq, ripgrep, fd, yq, uv, Fish, Starship, Nushell, and tmux use upstream static binaries.
@@ -286,7 +277,7 @@ arbitrary consumer images is not established.
 Fish uses the official standalone archive with embedded functions and completions;
 its [tagged source](https://github.com/fish-shell/fish-shell/blob/4.9.3/src/autoload.rs)
 embeds `share`, so no external runtime data directory is required. External manual
-pages and local HTML documentation from a full Fish installation are omitted. SQLite and ast-grep use
+pages and local HTML documentation from a full Fish installation are omitted. ast-grep uses
 the compatible Debian consumer libraries. `fd` and `fdfind` are identical regular
 files so the volume needs no symlinks. ast-grep's `sg` alias is excluded to preserve
 consumer commands. Upstream notices are included under `/opt/workharbor/licenses`.

@@ -80,8 +80,7 @@ func fixture(t *testing.T) (map[string][]byte, map[string]Spec, *httptest.Server
 		"fish":     xzArchive(t, member{"fish", "fish executable", 0755, 0}),
 		"starship": archive(t, member{"starship", "starship executable", 0755, 0}),
 		"uv":       archive(t, member{"uv-1/uv", "uv executable", 0755, 0}, member{"uv-1/uvx", "uvx executable", 0755, 0}),
-		"ast-grep": sqliteArchive(t, member{"ast-grep", "ast-grep executable", 0755, 0}, member{"sg", "unwanted alias", 0755, 0}),
-		"sqlite3":  sqliteArchive(t, member{"sqlite/sqlite3.c", "sqlite source", 0644, 0}, member{"sqlite/shell.c", "shell source", 0644, 0}, member{"sqlite/sqlite3.h", "sqlite header", 0644, 0}, member{"sqlite/sqlite3ext.h", "extension header", 0644, 0}),
+		"ast-grep": zipArchive(t, member{"ast-grep", "ast-grep executable", 0755, 0}, member{"sg", "unwanted alias", 0755, 0}),
 		"claude":   []byte("claude executable"),
 		"herdr":    []byte("herdr executable"),
 		"yq":       []byte("yq executable"),
@@ -126,9 +125,6 @@ func TestVendorBuildBothArchitectures(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				if err := WriteFile(root, "bin/sqlite3", strings.NewReader("compiled sqlite"), 0755); err != nil {
-					t.Fatal(err)
-				}
 				root.Close()
 				if err := Build(context.Background(), server.Client(), specs, testPackages(t), os.DirFS("../.."), arch, dst, io.Discard); err != nil {
 					t.Fatal(err)
@@ -143,7 +139,6 @@ func TestVendorBuildBothArchitectures(t *testing.T) {
 				"bin/uv": {"uv executable", 0755}, "bin/uvx": {"uvx executable", 0755},
 				"bin/ast-grep": {"ast-grep executable", 0755},
 				"bin/herdr":    {"herdr executable", 0755},
-				"bin/sqlite3":  {"compiled sqlite", 0755},
 				"bin/yq":       {"yq executable", 0755},
 				"bin/jq":       {"jq executable", 0755}, "bin/rg": {"ripgrep executable", 0755}, "bin/fd": {"fd executable", 0755}, "bin/fdfind": {"fd executable", 0755},
 				"licenses/rg/LICENSE-MIT": {"rg license", 0644}, "licenses/rg/UNLICENSE": {"rg public domain", 0644}, "licenses/rg/COPYING": {"rg copying", 0644},
@@ -291,7 +286,7 @@ func TestDestinationLinksCannotEscape(t *testing.T) {
 	}
 }
 
-func sqliteArchive(t *testing.T, members ...member) []byte {
+func zipArchive(t *testing.T, members ...member) []byte {
 	t.Helper()
 	var b bytes.Buffer
 	w := zip.NewWriter(&b)
@@ -316,82 +311,6 @@ func sqliteArchive(t *testing.T, members ...member) []byte {
 	return b.Bytes()
 }
 
-func TestSQLiteSourceVerifiedExtraction(t *testing.T) {
-	payloads, tools, server := fixture(t)
-	root, sourceDir := openRoot(t)
-	if err := PrepareSQLiteSource(context.Background(), server.Client(), tools["sqlite3"], testPackages(t)["sqlite3"], sourceDir); err != nil {
-		t.Fatal(err)
-	}
-	for name, want := range map[string]string{"sqlite3.c": "sqlite source", "shell.c": "shell source", "sqlite3.h": "sqlite header", "sqlite3ext.h": "extension header"} {
-		f, err := OpenFile(root, name)
-		if err != nil {
-			t.Fatal(err)
-		}
-		got, err := io.ReadAll(f)
-		f.Close()
-		if err != nil || string(got) != want {
-			t.Fatalf("%s=%q err=%v", name, got, err)
-		}
-	}
-	// ZIP parsing must never happen before the source checksum has been verified.
-	payloads["sqlite3"] = []byte("unverified invalid zip")
-	root, _ = openRoot(t)
-	if err := install(context.Background(), server.Client(), root, "sqlite3", testPackages(t)["sqlite3"], tools["sqlite3"]); err == nil || !strings.Contains(err.Error(), "checksum mismatch") {
-		t.Fatalf("unexpected error: %v", err)
-	}
-}
-
-func TestSQLiteSourceSafety(t *testing.T) {
-	good := []member{{"sqlite/sqlite3.c", "source", 0644, 0}, {"sqlite/shell.c", "shell", 0644, 0}, {"sqlite/sqlite3.h", "header", 0644, 0}, {"sqlite/sqlite3ext.h", "header", 0644, 0}}
-	for _, test := range []struct {
-		name  string
-		extra member
-	}{
-		{"parent", member{"../escape", "x", 0644, 0}},
-		{"absolute", member{"/escape", "x", 0644, 0}},
-		{"symlink", member{"unselected", "x", 0644, tar.TypeSymlink}},
-		{"duplicate path", good[0]},
-		{"duplicate basename", member{"other/sqlite3.c", "x", 0644, 0}},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			payload := sqliteArchive(t, append(good, test.extra)...)
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.Write(payload) }))
-			defer server.Close()
-			sum := sha256.Sum256(payload)
-			root, _ := openRoot(t)
-			if err := install(context.Background(), server.Client(), root, "sqlite3", testPackages(t)["sqlite3"], Spec{URL: server.URL, SHA256: fmt.Sprintf("%x", sum)}); err == nil {
-				t.Fatal("accepted unsafe SQLite source archive")
-			}
-		})
-	}
-}
-
-func TestBuildRequiresCompiledSQLite(t *testing.T) {
-	_, tools, server := fixture(t)
-	for _, test := range []struct {
-		name string
-		mode os.FileMode
-		data string
-	}{
-		{"missing", 0, ""}, {"nonexecutable", 0644, "binary"}, {"empty", 0755, ""},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			root, dst := openRoot(t)
-			if test.mode != 0 {
-				if err := WriteFile(root, "bin/sqlite3", strings.NewReader(test.data), test.mode); err != nil {
-					t.Fatal(err)
-				}
-			}
-			if err := Build(context.Background(), server.Client(), tools, testPackages(t), os.DirFS("../.."), "arm64", dst, io.Discard); err == nil {
-				t.Fatal("accepted absent or unusable compiled SQLite")
-			}
-			if _, err := root.Stat("manifest.json"); !os.IsNotExist(err) {
-				t.Fatalf("manifest published before SQLite compilation: %v", err)
-			}
-		})
-	}
-}
-
 func TestAstGrepVerifiedZIP(t *testing.T) {
 	_, tools, server := fixture(t)
 	root, _ := openRoot(t)
@@ -408,7 +327,7 @@ func TestAstGrepVerifiedZIP(t *testing.T) {
 		{{"ast-grep", "binary", 0755, 0}, {"nested/ast-grep", "ambiguous", 0755, 0}},
 		{{"ast-grep", "not executable", 0644, 0}},
 	} {
-		payload := sqliteArchive(t, members...)
+		payload := zipArchive(t, members...)
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.Write(payload) }))
 		sum := sha256.Sum256(payload)
 		root, _ := openRoot(t)

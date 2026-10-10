@@ -253,34 +253,6 @@
         }
       }
     },
-    "sqlite3": {
-      "provider": "sqlite",
-      "base_url": "https://www.sqlite.org",
-      "history_url": "https://www.sqlite.org/chronology.html",
-      "metadata_url": "https://www.sqlite.org/download.html",
-      "normalization": "sqlite-compact",
-      "architectures": {
-        "amd64": "source",
-        "arm64": "source"
-      },
-      "asset": "{year}/sqlite-amalgamation-{compact}.zip",
-      "allowed_hosts": [
-        "www.sqlite.org"
-      ],
-      "verification": "official-or-download",
-      "install": {
-        "kind": "sqlite-source",
-        "members": {
-          "sqlite3.c": "sqlite3.c",
-          "shell.c": "shell.c",
-          "sqlite3.h": "sqlite3.h",
-          "sqlite3ext.h": "sqlite3ext.h"
-        }
-      },
-      "notices": [
-        "oci/licenses/sqlite3/NOTICE"
-      ]
-    },
     "herdr": {
       "provider": "github",
       "repository": "herdrdev/herdr",

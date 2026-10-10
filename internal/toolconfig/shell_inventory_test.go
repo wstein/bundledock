@@ -24,3 +24,21 @@ func TestBundledBashRemovedAndAlternativesPreserved(t *testing.T) {
 		}
 	}
 }
+
+func TestSQLiteRemovedFromBundleInputs(t *testing.T) {
+	c, err := Load("../..")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := c.Catalog.Packages["sqlite3"]; ok {
+		t.Fatal("SQLite remains in catalog")
+	}
+	if _, ok := c.Desired["sqlite3"]; ok {
+		t.Fatal("SQLite remains desired")
+	}
+	for _, arch := range []string{"amd64", "arm64"} {
+		if _, ok := c.Lock.Platforms[arch]["sqlite3"]; ok {
+			t.Fatal("SQLite remains locked")
+		}
+	}
+}

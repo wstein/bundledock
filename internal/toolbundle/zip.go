@@ -2,33 +2,12 @@ package toolbundle
 
 import (
 	"archive/zip"
-	"bundledock/internal/toolconfig"
-	"context"
 	"fmt"
 	"io"
 	"io/fs"
-	"net/http"
 	"os"
 	"path"
-	"time"
 )
-
-// PrepareSQLiteSource verifies the official amalgamation before opening its ZIP.
-// Sources are written to a build-only directory, separate from the final bundle.
-func PrepareSQLiteSource(ctx context.Context, client *http.Client, spec Spec, p toolconfig.Package, destination string) error {
-	if client == nil {
-		client = &http.Client{Timeout: 120 * time.Second}
-	}
-	if err := os.MkdirAll(destination, 0755); err != nil {
-		return err
-	}
-	root, err := os.OpenRoot(destination)
-	if err != nil {
-		return err
-	}
-	defer root.Close()
-	return install(ctx, client, root, "sqlite3", p, spec)
-}
 
 type zipTarget struct {
 	name string

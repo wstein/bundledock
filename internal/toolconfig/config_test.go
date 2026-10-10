@@ -35,7 +35,7 @@ func TestRepositoryIdentityAndBothArchitectures(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(c.Catalog.Packages) != 16 {
+	if len(c.Catalog.Packages) != 15 {
 		t.Fatal("catalog incomplete")
 	}
 	if err := c.Validate(); err != nil {
@@ -61,16 +61,13 @@ func TestRepositoryIdentityAndBothArchitectures(t *testing.T) {
 }
 
 func TestCatalogRejectsIncompleteAndUnsafeRecipes(t *testing.T) {
-	for _, kind := range []string{"provider", "platform", "shell", "template", "member", "alias", "sqlite-kind", "claude-base", "sqlite-history", "normalization"} {
+	for _, kind := range []string{"provider", "platform", "shell", "template", "member", "alias", "claude-base", "normalization"} {
 		t.Run(kind, func(t *testing.T) {
 			c, err := Load("../..")
 			if err != nil {
 				t.Fatal(err)
 			}
 			name := "gh"
-			if kind == "sqlite-history" || kind == "sqlite-kind" {
-				name = "sqlite3"
-			}
 			if kind == "claude-base" {
 				name = "claude"
 			}
@@ -88,12 +85,8 @@ func TestCatalogRejectsIncompleteAndUnsafeRecipes(t *testing.T) {
 				p.Install.Members["../bad"] = "bin/bad"
 			case "alias":
 				p.Install.Aliases = map[string]string{"bin/alias": "../outside"}
-			case "sqlite-kind":
-				p.Install.Kind = "tar.gz"
 			case "claude-base":
 				p.BaseURL = ""
-			case "sqlite-history":
-				p.HistoryURL = ""
 			case "normalization":
 				p.Normalization = "sqlite-compact"
 			}

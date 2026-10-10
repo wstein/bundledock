@@ -4,9 +4,7 @@ import (
 	"bundledock/internal/toolconfig"
 	"context"
 	"crypto/sha256"
-	"crypto/sha3"
 	"crypto/sha512"
-	"encoding/csv"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -16,8 +14,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"regexp"
-	"strconv"
 	"strings"
 )
 
@@ -109,8 +105,8 @@ func (r resolver) metadata(ctx context.Context, raw string) ([]byte, http.Header
 	}
 	return b, resp.Header, nil
 }
-func expand(pattern, version, arch, year, compact string) string {
-	return strings.NewReplacer("{version}", version, "{arch}", arch, "{year}", year, "{compact}", compact).Replace(pattern)
+func expand(pattern, version, arch string) string {
+	return strings.NewReplacer("{version}", version, "{arch}", arch).Replace(pattern)
 }
 func (r resolver) github(ctx context.Context, p toolconfig.Package, c toolconfig.Constraint) (release, error) {
 	next := "https://api.github.com/repos/" + p.Repository + "/releases?per_page=100&page=1"
@@ -211,8 +207,6 @@ func (r resolver) pin(ctx context.Context, raw string, hosts []string, expected,
 	var verify hash.Hash
 	if expected != "" {
 		switch provenance {
-		case "publisher-sha3-256":
-			verify = sha3.New256()
 		case "publisher-sha512":
 			verify = sha512.New()
 		default:
@@ -256,9 +250,6 @@ func (r resolver) pin(ctx context.Context, raw string, hosts []string, expected,
 func (r resolver) resolve(ctx context.Context, p toolconfig.Package, c toolconfig.Constraint) (map[string]toolconfig.Spec, error) {
 	if p.Provider == "antigravity" {
 		return r.antigravity(ctx, p, c)
-	}
-	if p.Provider == "sqlite" {
-		return r.sqlite(ctx, p, c)
 	}
 	rel, err := r.github(ctx, p, c)
 	if err != nil && !(p.Provider == "claude" && errors.Is(err, errNoRelease)) {
@@ -323,7 +314,7 @@ func (r resolver) githubAssets(ctx context.Context, p toolconfig.Package, rel re
 		version = strings.TrimPrefix(rel.Tag, p.TagPrefix)
 	}
 	for _, arch := range []string{"amd64", "arm64"} {
-		name := expand(p.Asset, version, p.Architectures[arch], "", "")
+		name := expand(p.Asset, version, p.Architectures[arch])
 		a, err := findAsset(rel, name)
 		if err != nil {
 			return nil, err
@@ -339,7 +330,7 @@ func (r resolver) githubAssets(ctx context.Context, p toolconfig.Package, rel re
 				return nil, fmt.Errorf("invalid published asset digest")
 			}
 		} else if p.Sidecar != "" {
-			sidecar := strings.ReplaceAll(expand(p.Sidecar, version, p.Architectures[arch], "", ""), "{asset}", name)
+			sidecar := strings.ReplaceAll(expand(p.Sidecar, version, p.Architectures[arch]), "{asset}", name)
 			for _, sa := range rel.Assets {
 				if sa.Name == sidecar {
 					if err := toolconfig.ValidateURL(sa.URL, p.AllowedHosts); err != nil {
@@ -365,88 +356,6 @@ func (r resolver) githubAssets(ctx context.Context, p toolconfig.Package, rel re
 		specs[arch] = s
 	}
 	return specs, nil
-}
-
-// SQLite's official chronology supplies historical release dates (including
-// backports); compact archive names are a named transformation, never shell code.
-var sqliteRow = regexp.MustCompile(`(?s)<tr[^>]*>(.*?)</tr>`)
-var sqliteDate = regexp.MustCompile(`\b([0-9]{4})-[0-9]{2}-[0-9]{2}\b`)
-var sqliteVersion = regexp.MustCompile(`releaselog/[0-9_]+\.html[^>]*>\s*([0-9]+\.[0-9]+\.[0-9]+)\s*<`)
-
-func SQLiteCompact(version string) (string, error) {
-	v, err := toolconfig.ParseVersion(version)
-	if err != nil {
-		return "", err
-	}
-	if v[1] > 99 || v[2] > 99 {
-		return "", fmt.Errorf("SQLite version cannot be compacted")
-	}
-	return strconv.FormatUint(v[0]*1000000+v[1]*10000+v[2]*100, 10), nil
-}
-func (r resolver) sqlite(ctx context.Context, p toolconfig.Package, c toolconfig.Constraint) (map[string]toolconfig.Spec, error) {
-	b, _, err := r.metadata(ctx, p.HistoryURL)
-	if err != nil {
-		return nil, err
-	}
-	var best, year string
-	var bestVersion toolconfig.Version
-	for _, row := range sqliteRow.FindAllSubmatch(b, -1) {
-		date := sqliteDate.FindSubmatch(row[1])
-		version := sqliteVersion.FindSubmatch(row[1])
-		if len(date) == 0 || len(version) == 0 {
-			continue
-		}
-		s := string(version[1])
-		if !c.Contains(s) {
-			continue
-		}
-		v, _ := toolconfig.ParseVersion(s)
-		if best == "" || v.Compare(bestVersion) > 0 {
-			best, year, bestVersion = s, string(date[1]), v
-		}
-	}
-	if best == "" {
-		return nil, fmt.Errorf("no stable SQLite release satisfies %s", c.String())
-	}
-	compact, err := SQLiteCompact(best)
-	if err != nil {
-		return nil, err
-	}
-	relative := expand(p.Asset, best, "", year, compact)
-	raw := p.BaseURL + "/" + relative
-	b, _, err = r.metadata(ctx, p.MetadataURL)
-	if err != nil {
-		return nil, err
-	}
-	expected := ""
-	for _, line := range strings.Split(string(b), "\n") {
-		if !strings.HasPrefix(strings.TrimSpace(line), "PRODUCT,") {
-			continue
-		}
-		record, err := csv.NewReader(strings.NewReader(strings.TrimSpace(line))).Read()
-		if err != nil {
-			return nil, err
-		}
-		if len(record) >= 3 && record[1] == best && record[2] == relative {
-			if len(record) < 5 {
-				return nil, fmt.Errorf("incomplete SQLite publisher metadata")
-			}
-			decoded, err := hex.DecodeString(record[4])
-			if err != nil || len(decoded) != 32 {
-				return nil, fmt.Errorf("invalid SQLite publisher checksum")
-			}
-			if expected != "" {
-				return nil, fmt.Errorf("ambiguous SQLite metadata")
-			}
-			expected = record[4]
-		}
-	}
-	s, err := r.pin(ctx, raw, p.AllowedHosts, expected, "publisher-sha3-256")
-	if err != nil {
-		return nil, err
-	}
-	s.Version = best
-	return map[string]toolconfig.Spec{"amd64": s, "arm64": s}, nil
 }
 
 // The official updater may publish before GitHub. Union current manifests with
