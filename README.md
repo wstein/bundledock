@@ -190,15 +190,20 @@ Mount the printed volume into a compatible development container:
 
 ```sh
 docker run --rm -it \
-  --mount type=volume,src=<printed-volume-name>,dst=/opt/anchorage,readonly,volume-nocopy \
+  --mount type=volume,src=<printed-volume-name>,dst=/opt/workharbor,readonly,volume-nocopy \
   --env DISABLE_UPDATES=1 --env DISABLE_AUTOUPDATER=1 \
   mcr.microsoft.com/devcontainers/go:2-1.27-trixie \
-  sh -c 'export PATH="/opt/anchorage/bin:$PATH"; exec bash'
+  sh -c 'export PATH="/opt/workharbor/bin:$PATH"; exec bash'
 ```
 
-The mount path must be `/opt/anchorage`. Keep authentication and writable tool
-state in the user's home directory or separate private volumes. No credentials
-are included in the image. The read-only mount prevents tools from updating the
+Use `/opt/workharbor` as the consumer mount path and put its `bin` directory on
+PATH. Bundle metadata and packaged assets use relative paths, so an existing
+image-derived volume can be mounted there without changing its image or volume
+identity. The initializer still mounts the volume at `/bundle` while copying or
+verifying it. New images read their source tree from `/opt/workharbor`; the
+initializer accepts `--source` and `--target` overrides for other locations.
+Keep authentication and writable tool state in the user's home directory or
+separate private volumes. No credentials are included in the image. The read-only mount prevents tools from updating the
 shared executables; Claude updates are also disabled with environment variables.
 
 The smoke test executes all twelve tools and the `fdfind` and `uvx` companions
@@ -231,7 +236,7 @@ The image needs no Python or shell initializer.
 jq, ripgrep, fd, yq, and uv use upstream static binaries. SQLite and ast-grep use
 the compatible Debian consumer libraries. `fd` and `fdfind` are identical regular
 files so the volume needs no symlinks. ast-grep's `sg` alias is excluded to preserve
-consumer commands. Upstream notices are included under `/opt/anchorage/licenses`.
+consumer commands. Upstream notices are included under `/opt/workharbor/licenses`.
 uv packages no Python runtime or Python packages; keep its cache, environments,
 and any intentionally installed runtimes outside the shared tool volume.
 `oci/volume.sh` remains a small Docker-only host adapter so the devcontainer can
@@ -247,6 +252,11 @@ Make inherits `GOFLAGS`; OCI build commands also pass `-trimpath` explicitly.
 The devcontainer pins the current local tool image by ID and initializes its
 read-only volume on the host before starting. This image must already exist in
 the host's Docker image store. Rebuild the devcontainer to activate the mount.
+The pinned older image keeps its original `/opt/anchorage` source tree and
+initializer; its volume is mounted at `/opt/workharbor` in the consumer. Moving
+the consumer mount does not add tools to that older inventory. No source override
+is needed for the pinned initializer.
+
 When selecting another bundle, update both the image ID in `initializeCommand`
 and the matching volume name in `.devcontainer/devcontainer.json`. Credentials
 remain in the container user's home directory; the shared tool volume stores

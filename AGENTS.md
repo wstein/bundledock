@@ -26,4 +26,4 @@ still pins an older image, so do not assume these commands exist in a running se
 | Manage terminal workspaces and agent sessions | `herdr`. |
 
 Keep HOME, caches, and virtual environments in writable locations outside the
-read-only `/opt/anchorage` tool bundle.
+read-only `/opt/workharbor` tool bundle.

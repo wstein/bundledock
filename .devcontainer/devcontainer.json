@@ -8,7 +8,7 @@
 		"sha256:ee5bb2d1e476ec4e8548efd755e6fc14786147b486a7a568cce9ddc5a30c7ddb"
 	],
 	"mounts": [
-		"type=volume,source=anchorage-tools-ee5bb2d1e476ec4e8548efd755e6fc14786147b486a7a568cce9ddc5a30c7ddb,target=/opt/anchorage,readonly,volume-nocopy",
+		"type=volume,source=anchorage-tools-ee5bb2d1e476ec4e8548efd755e6fc14786147b486a7a568cce9ddc5a30c7ddb,target=/opt/workharbor,readonly,volume-nocopy",
 		"type=volume,source=anchorage-home-${devcontainerId},target=/home/vscode"
 	],
 	"containerEnv": {
@@ -17,6 +17,6 @@
 		"DISABLE_AUTOUPDATER": "1"
 	},
 	"remoteEnv": {
-		"PATH": "/opt/anchorage/bin:${containerEnv:PATH}"
+		"PATH": "/opt/workharbor/bin:${containerEnv:PATH}"
 	}
 }

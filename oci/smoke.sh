@@ -14,11 +14,11 @@ docker run --rm --network none --mount "type=volume,src=$volume,dst=/bundle,volu
 check() {
     docker run --rm --network none --user 1000:1000 \
         --tmpfs /home/anchorage:exec,uid=1000,gid=1000,mode=0700 \
-        --mount "type=volume,src=$volume,dst=/opt/anchorage,readonly,volume-nocopy" \
+        --mount "type=volume,src=$volume,dst=/opt/workharbor,readonly,volume-nocopy" \
         --env HOME=/home/anchorage --env DISABLE_UPDATES=1 --env DISABLE_AUTOUPDATER=1 \
         --entrypoint /bin/sh "$consumer" -ec '
-            test -f /opt/anchorage/.ready
-            export PATH="/opt/anchorage/bin:$PATH"
+            test -f /opt/workharbor/.ready
+            export PATH="/opt/workharbor/bin:$PATH"
             codex --version
             timeout 45 codex app-server daemon start
             codex app-server daemon version
@@ -48,7 +48,7 @@ check() {
             uv --version
             uvx --version
             test "$(uv --offline cache dir)" = "$UV_CACHE_DIR"
-            if touch /opt/anchorage/write-test 2>/dev/null; then
+            if touch /opt/workharbor/write-test 2>/dev/null; then
                 echo "Unexpected write to tool volume" >&2
                 exit 1
             fi
