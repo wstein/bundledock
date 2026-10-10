@@ -57,13 +57,49 @@ The docs wrapper downloads only the official stable prebuilt Hugo 0.167.0 for
 Linux AMD64 or ARM64, verifies the publisher SHA256 in `.config/hugo.sha256`
 on every run, and extracts to a temporary directory removed when it exits.
 It needs Bash, curl, tar, and sha256sum; the documentation tests use Go.
-Hugo is a docs build dependency and is never added to the toolbox catalog.
+The toolbox also includes the official standard Hugo release. The docs wrapper
+keeps its verified fallback independent of the host PATH, so a different installed
+Hugo cannot silently change the documentation build.
 No Node, third-party theme, source compilation, deployment, or credentials are
 needed. The first build downloads its pinned archive; later builds use the
 verified cache in `.cache/hugo` (override with `HUGO_CACHE_DIR`). Remove that
 directory to clear downloaded archives while preserving the `public/` preview.
 To review a project-subpath build, run
 `bash scripts/hugo.sh --baseURL https://example.org/bundledock/`.
+
+### Bundled Hugo verification
+
+The toolbox installs the official stable **standard** Hugo 0.167.0 prebuilt
+release for Linux AMD64 and ARM64. Extended Hugo and source compilation are
+excluded. The lock records publisher SHA256 checksums; extraction retains the
+upstream Apache-2.0 `LICENSE` and release/checksum provenance under
+`licenses/hugo`. The other 22 tool pins are unchanged.
+
+Measured official archive and installed executable sizes:
+
+| Platform | Compressed archive bytes | Extracted `hugo` bytes |
+| --- | ---: | ---: |
+| AMD64 | 20,970,860 | 60,371,104 |
+| ARM64 | 19,354,090 | 57,082,016 |
+
+These sizes exclude installed notices and filesystem overhead. Both official
+archives passed locked-hash verification and extraction through the OCI builder.
+Native ARM64 version, minimal offline site generation, and the current BundleDock
+documentation build passed using the extracted binary's explicit path.
+Native AMD64 execution and Docker consumer smoke were unavailable in this ARM64
+host session; both platforms remain covered by the native OCI CI smoke matrix.
+The consumer smoke uses `/opt/bundledock/toolbox/bin/hugo` directly, with
+`--network none` and writable HOME/cache/output outside the read-only bundle.
+
+To repeat the optional official archive check without upstream requests, place
+the two locked archives in one directory and run:
+
+```sh
+BUNDLEDOCK_HUGO_ARCHIVE_DIR=/path/to/archives go test ./internal/toolbundle -run TestHugoOfficialArchives -v -count=1
+```
+
+The check verifies and extracts both architectures and executes version, minimal
+site, and current documentation builds on the native Linux architecture.
 
 ### Release review
 

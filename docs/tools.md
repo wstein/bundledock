@@ -41,6 +41,7 @@ and `arm64`; builds verify every download.
 | Syft (`syft`) | 1.54.1 |
 | bottom (`btm`) | 0.14.9 |
 | btop (`btop`) | 1.4.7 |
+| Hugo (`hugo`, standard) | 0.167.0 |
 
 Nushell and tmux are opt-in commands. tmux pins the published stable
 [official static build](https://github.com/tmux/tmux-builds/releases/tag/v3.7c),

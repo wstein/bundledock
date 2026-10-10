@@ -70,7 +70,7 @@ release:
 release-test:
 	sh scripts/release-test.sh
 
-# Hugo is a docs-only dependency; it is never included in the tool catalog.
+# The docs wrapper verifies its own pinned archive, independent of PATH.
 docs:
 	bash scripts/hugo.sh --panicOnWarning
 

@@ -45,6 +45,7 @@ still pins an older image, so do not assume these commands exist in a running se
 | Use an alternative terminal multiplexer | `tmux`. |
 | Monitor processes and system resources | `btm` (bottom) and `btop`. |
 | Customize a shell prompt | `starship`. |
+| Build static sites | `hugo` (standard). |
 | Check spelling | `typos`. |
 | Check links | `lychee`. |
 | Detect secrets | `gitleaks`. |
