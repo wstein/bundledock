@@ -41,6 +41,7 @@ type Publication struct {
 type Adapter struct {
 	Run          func(...string) ([]byte, error)
 	Architecture string
+	TagAbsent    func(image, tag string) error
 }
 
 var imagePattern = regexp.MustCompile(`^quay\.io/[a-z0-9]+(?:[._-][a-z0-9]+)*/toolbox$`)
@@ -253,6 +254,13 @@ func (a Adapter) verifyRemote(m Metadata, r Receipt) (string, error) {
 	return ref, nil
 }
 
+func (a Adapter) checkVersion(m Metadata) error {
+	if a.TagAbsent == nil {
+		return fmt.Errorf("registry version absence check required")
+	}
+	return a.TagAbsent(m.Image, m.Tag)
+}
+
 func (a Adapter) Push(m Metadata, lock string, r Receipt) (Receipt, error) {
 	var empty Receipt
 	if err := validate(m, lock); err != nil {
@@ -267,6 +275,9 @@ func (a Adapter) Push(m Metadata, lock string, r Receipt) (Receipt, error) {
 	}
 	if id != r.ImageID {
 		return empty, fmt.Errorf("smoked local image changed")
+	}
+	if err = a.checkVersion(m); err != nil {
+		return empty, err
 	}
 	staging := m.Image + ":staging-" + m.Tag + "-" + r.Architecture
 	if _, err = a.Run("docker", "tag", id, staging); err != nil {
@@ -310,6 +321,9 @@ func (a Adapter) Promote(m Metadata, lock string, receipts []Receipt) (Publicati
 			return result, err
 		}
 		args = append(args, ref)
+	}
+	if err := a.checkVersion(m); err != nil {
+		return result, err
 	}
 	if _, err := a.Run(args...); err != nil {
 		return result, err

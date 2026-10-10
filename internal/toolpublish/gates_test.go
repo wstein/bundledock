@@ -28,6 +28,16 @@ func fake(arch string) *fakeDocker {
 	return &fakeDocker{arch: arch, id: "sha256:" + strings.Repeat(letter, 64), digest: "sha256:" + strings.Repeat(letter, 63) + "c", indexDigest: "sha256:" + strings.Repeat("d", 64), remote: map[string]any{}}
 }
 
+func (f *fakeDocker) adapter() Adapter {
+	return Adapter{Run: f.run, Architecture: f.arch, TagAbsent: func(image, tag string) error {
+		f.calls = append(f.calls, []string{"check-tag-absent", image, tag})
+		if _, exists := f.remote[image+":"+tag]; exists {
+			return errors.New("version already exists")
+		}
+		return nil
+	}}
+}
+
 func prefix(args []string, want ...string) bool {
 	return len(args) >= len(want) && reflect.DeepEqual(args[:len(want)], want)
 }
@@ -140,7 +150,7 @@ func TestBuildSmokeThenPushExactImage(t *testing.T) {
 	if pull < 0 || smoke <= pull {
 		t.Fatalf("consumer must be pulled before exact-ID smoke: %v", f.calls)
 	}
-	p, err := (Adapter{Run: f.run}).Push(m, lock, r)
+	p, err := f.adapter().Push(m, lock, r)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -223,12 +233,12 @@ func TestReceiptAndLabelsBindBeforePush(t *testing.T) {
 		case "revision":
 			bad.Commit = strings.Repeat("e", 40)
 		}
-		if _, err := (Adapter{Run: f.run}).Push(m, lock, bad); err == nil {
+		if _, err := f.adapter().Push(m, lock, bad); err == nil {
 			t.Fatalf("accepted invalid %s receipt", field)
 		}
 	}
 	f.labels["io.bundledock.tools.lock-sha256"] = "wrong"
-	if _, err := (Adapter{Run: f.run}).Push(m, lock, r); err == nil {
+	if _, err := f.adapter().Push(m, lock, r); err == nil {
 		t.Fatal("accepted wrong image labels")
 	}
 	for _, c := range f.calls {
@@ -244,7 +254,7 @@ func publishedFixtures(t *testing.T, m Metadata, lock string) ([]Receipt, *fakeD
 	remote := map[string]any{}
 	for _, arch := range []string{"amd64", "arm64"} {
 		f, r := buildFixture(t, m, lock, arch)
-		p, err := (Adapter{Run: f.run}).Push(m, lock, r)
+		p, err := f.adapter().Push(m, lock, r)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -261,7 +271,7 @@ func publishedFixtures(t *testing.T, m Metadata, lock string) ([]Receipt, *fakeD
 func TestPromotionRequiresBothArchitecturesAndRegistryBinding(t *testing.T) {
 	m, lock := fixture(t)
 	receipts, f := publishedFixtures(t, m, lock)
-	a := Adapter{Run: f.run}
+	a := f.adapter()
 	badLock := receipts[1]
 	badLock.LockSHA256 = strings.Repeat("0", 64)
 	badCommit := receipts[1]
@@ -302,7 +312,7 @@ func TestBadPublishedIndexPreventsStable(t *testing.T) {
 	m, lock := fixture(t)
 	receipts, f := publishedFixtures(t, m, lock)
 	f.corruptIndex = true
-	if _, err := (Adapter{Run: f.run}).Promote(m, lock, receipts); err == nil {
+	if _, err := f.adapter().Promote(m, lock, receipts); err == nil {
 		t.Fatal("invalid published platform index promoted")
 	}
 	for _, c := range f.calls {
@@ -341,6 +351,76 @@ func TestShortVersionTags(t *testing.T) {
 	for _, tag := range []string{"2026.10.10-38069722044-4", "2026.10.10-b0.4", "2026.10.10-b12.0", "2026.10.10-b01.4", "2026.10.10-b12.-1", "2026.10.10-b12.abc"} {
 		if _, err := NewMetadata(lock, "quay.io/example/toolbox", tag, strings.Repeat("f", 40), "https://github.com/example/repo", "2026-10-10T03:17:00Z", "38069722044"); err == nil {
 			t.Errorf("accepted invalid tag %s", tag)
+		}
+	}
+}
+
+func TestExistingVersionPreventsRegistryWrites(t *testing.T) {
+	for _, operation := range []string{"push", "promote"} {
+		t.Run(operation, func(t *testing.T) {
+			m, lock := fixture(t)
+			var f *fakeDocker
+			var receipt Receipt
+			var receipts []Receipt
+			if operation == "push" {
+				f, receipt = buildFixture(t, m, lock, "amd64")
+			} else {
+				receipts, f = publishedFixtures(t, m, lock)
+			}
+			f.remote[m.Image+":"+m.Tag] = map[string]string{"digest": f.indexDigest}
+			f.calls = nil
+			var err error
+			if operation == "push" {
+				_, err = f.adapter().Push(m, lock, receipt)
+			} else {
+				_, err = f.adapter().Promote(m, lock, receipts)
+			}
+			if err == nil {
+				t.Error("existing immutable version accepted")
+			}
+			for _, c := range f.calls {
+				if prefix(c, "docker", "tag") || prefix(c, "docker", "push") || prefix(c, "docker", "buildx", "imagetools", "create") {
+					t.Errorf("existing version allowed registry mutation: %v", c)
+				}
+			}
+		})
+	}
+}
+
+func TestUnavailableVersionCheckPreventsRegistryWrites(t *testing.T) {
+	for _, operation := range []string{"push", "promote"} {
+		for _, missing := range []bool{false, true} {
+			t.Run(fmt.Sprintf("%s/missing=%t", operation, missing), func(t *testing.T) {
+				m, lock := fixture(t)
+				var f *fakeDocker
+				var receipt Receipt
+				var receipts []Receipt
+				if operation == "push" {
+					f, receipt = buildFixture(t, m, lock, "amd64")
+				} else {
+					receipts, f = publishedFixtures(t, m, lock)
+				}
+				a := f.adapter()
+				a.TagAbsent = func(string, string) error { return errors.New("registry unavailable") }
+				if missing {
+					a.TagAbsent = nil
+				}
+				f.calls = nil
+				var err error
+				if operation == "push" {
+					_, err = a.Push(m, lock, receipt)
+				} else {
+					_, err = a.Promote(m, lock, receipts)
+				}
+				if err == nil {
+					t.Error("unavailable version check accepted")
+				}
+				for _, c := range f.calls {
+					if prefix(c, "docker", "tag") || prefix(c, "docker", "push") || prefix(c, "docker", "buildx", "imagetools", "create") {
+						t.Errorf("failed check allowed mutation: %v", c)
+					}
+				}
+			})
 		}
 	}
 }

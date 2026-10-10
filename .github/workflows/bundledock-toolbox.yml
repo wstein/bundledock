@@ -85,6 +85,8 @@ jobs:
         run: printf '%s' "$REPOSITORY_TOKEN" | docker login quay.io --username "$REPOSITORY_USERNAME" --password-stdin
       - name: Push the exact smoked image to its run staging tag
         env:
+          REPOSITORY_USERNAME: ${{ vars.REPOSITORY_USERNAME }}
+          REPOSITORY_TOKEN: ${{ secrets.REPOSITORY_TOKEN }}
           ARCHITECTURE: ${{ matrix.architecture }}
         run: '"$RUNNER_TEMP/tools-publish" push --architecture "$ARCHITECTURE"'
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -137,6 +139,9 @@ jobs:
           REPOSITORY_TOKEN: ${{ secrets.REPOSITORY_TOKEN }}
         run: printf '%s' "$REPOSITORY_TOKEN" | docker login quay.io --username "$REPOSITORY_USERNAME" --password-stdin
       - name: Verify both platform manifests and promote version and stable
+        env:
+          REPOSITORY_USERNAME: ${{ vars.REPOSITORY_USERNAME }}
+          REPOSITORY_TOKEN: ${{ secrets.REPOSITORY_TOKEN }}
         run: '"$RUNNER_TEMP/tools-publish" promote'
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:

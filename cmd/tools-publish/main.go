@@ -109,7 +109,11 @@ func execute(args []string) error {
 	if err := artifactIdentity(meta, os.Getenv("GITHUB_RUN_ID"), os.Getenv("GITHUB_RUN_NUMBER"), os.Getenv("GITHUB_RUN_ATTEMPT"), os.Getenv("GITHUB_SHA")); err != nil {
 		return err
 	}
-	adapter := toolpublish.Adapter{Run: run}
+	adapter := toolpublish.Adapter{Run: run, TagAbsent: func(image, tag string) error {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+		defer cancel()
+		return toolpublish.CheckTagAbsent(ctx, nil, image, tag, os.Getenv("REPOSITORY_USERNAME"), os.Getenv("REPOSITORY_TOKEN"))
+	}}
 	switch args[0] {
 	case "newest":
 		id, err := strconv.ParseInt(os.Getenv("GITHUB_RUN_ID"), 10, 64)

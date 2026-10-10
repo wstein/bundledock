@@ -23,9 +23,15 @@ func TestPublicationWorkflowRepositoryConfiguration(t *testing.T) {
 		}
 	}
 	for _, mapping := range []string{"REPOSITORY_USERNAME: ${{ vars.REPOSITORY_USERNAME }}", "REPOSITORY_TOKEN: ${{ secrets.REPOSITORY_TOKEN }}"} {
-		if strings.Count(workflow, mapping) != 2 {
-			t.Fatalf("both native and promotion logins must use %s", mapping)
+		if strings.Count(workflow, mapping) != 4 {
+			t.Fatalf("native and promotion logins and absence checks must use %s", mapping)
 		}
+	}
+
+	smoke := strings.Index(workflow, "- name: Build once and smoke on the native architecture")
+	firstSecret := strings.Index(workflow, "REPOSITORY_TOKEN: ${{ secrets.REPOSITORY_TOKEN }}")
+	if smoke < 0 || firstSecret < smoke {
+		t.Fatal("registry credentials supplied before native smoke")
 	}
 	logins := 0
 	for _, line := range strings.Split(workflow, "\n") {
