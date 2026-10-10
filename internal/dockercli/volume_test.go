@@ -80,6 +80,9 @@ func TestFailuresStopDockerSequence(t *testing.T) {
 }
 func fakeDocker(t *testing.T, script string) {
 	t.Helper()
+	if _, err := exec.LookPath("sh"); err != nil {
+		t.Skip("requires sh: ", err)
+	}
 	dir := t.TempDir()
 	if err := os.WriteFile(filepath.Join(dir, "docker"), []byte("#!/bin/sh\n"+script), 0755); err != nil {
 		t.Fatal(err)
@@ -95,6 +98,9 @@ func TestProcessArgumentsAndFailure(t *testing.T) {
 	}
 }
 func TestProcessCancellation(t *testing.T) {
+	if _, err := exec.LookPath("sleep"); err != nil {
+		t.Skip("requires sleep: ", err)
+	}
 	fakeDocker(t, "exec sleep 30\n")
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Millisecond)
 	defer cancel()
