@@ -15,7 +15,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strings"
 	"testing"
 )
@@ -123,7 +122,7 @@ func TestSingleUpgradeBothArchitecturesAndAtomicFailure(t *testing.T) {
 					t.Fatal("not upgraded")
 				}
 				for n, s := range old.Lock.Platforms[a] {
-					if n != "gh" && !reflect.DeepEqual(c.Lock.Platforms[a][n], s) {
+					if n != "gh" && c.Lock.Platforms[a][n] != s {
 						t.Fatalf("changed %s", n)
 					}
 				}
@@ -150,9 +149,6 @@ func TestAllProvidersPaginationRangesAndVerification(t *testing.T) {
 		repos[p.Repository] = n
 	}
 	client := fixtureClient(t, func(w http.ResponseWriter, r *http.Request) {
-		if serveBashIndex(w, r, versions["bash"]) {
-			return
-		}
 		if strings.HasPrefix(r.URL.Path, "/repos/") {
 			repo := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/repos/"), "/releases")
 			n := repos[repo]
@@ -224,7 +220,7 @@ func TestAllProvidersPaginationRangesAndVerification(t *testing.T) {
 			if n == "sqlite3" {
 				want = "publisher-sha3-256"
 			}
-			if n == "ast-grep" || n == "bash" {
+			if n == "ast-grep" {
 				want = "tls-download-sha256"
 			}
 			if s.Verification != want {
@@ -342,9 +338,6 @@ func TestChangedDesiredAndBootstrap(t *testing.T) {
 				}
 			}
 			client := fixtureClient(t, func(w http.ResponseWriter, r *http.Request) {
-				if serveBashIndex(w, r, c.Desired["bash"].Lower.String()) {
-					return
-				}
 				if strings.HasPrefix(r.URL.Path, "/repos/") {
 					repo := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/repos/"), "/releases")
 					for n, p := range c.Catalog.Packages {
@@ -521,9 +514,6 @@ func TestUpgradeAllRepairsChangedCatalogInventory(t *testing.T) {
 		t.Fatal(err)
 	}
 	client := fixtureClient(t, func(w http.ResponseWriter, r *http.Request) {
-		if serveBashIndex(w, r, c.Desired["bash"].Lower.String()) {
-			return
-		}
 		if strings.HasPrefix(r.URL.Path, "/repos/") {
 			repo := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/repos/"), "/releases")
 			for n, p := range c.Catalog.Packages {
@@ -696,22 +686,4 @@ func fixtureReleaseVersion(p toolconfig.Package, canonical string) string {
 		return fmt.Sprintf("%d.%d", v[0], v[1])
 	}
 	return fmt.Sprintf("%d.%d%c", v[0], v[1], 'a'+v[2]-1)
-}
-
-func serveBashIndex(w http.ResponseWriter, r *http.Request, version string) bool {
-	base, prefix, count, err := toolconfig.BashBase(version)
-	if err != nil {
-		return false
-	}
-	switch r.URL.Path {
-	case "/gnu/bash/":
-		fmt.Fprintf(w, `<a href="bash-%s.tar.gz">source</a><a href="bash-%s-patches/">patches</a>`, base, base)
-		return true
-	case "/gnu/bash/bash-" + base + "-patches/":
-		for i := 1; i <= count; i++ {
-			fmt.Fprintf(w, `<a href="%s-%03d">patch</a>`, prefix, i)
-		}
-		return true
-	}
-	return false
 }

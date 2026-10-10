@@ -409,33 +409,6 @@
         "oci/licenses/tmux/SOURCE"
       ],
       "tag_prefix": "v"
-    },
-    "bash": {
-      "provider": "bash",
-      "base_url": "https://ftp.gnu.org/gnu/bash",
-      "normalization": "semver",
-      "architectures": {
-        "amd64": "source",
-        "arm64": "source"
-      },
-      "asset": "bash-{version}.tar.gz",
-      "allowed_hosts": [
-        "ftp.gnu.org"
-      ],
-      "verification": "official-or-download",
-      "install": {
-        "kind": "bash-source",
-        "members": {
-          "bash": "bin/bash"
-        }
-      },
-      "notices": [
-        "oci/licenses/bash/COPYING",
-        "oci/licenses/bash/COPYRIGHT.gcc-runtime",
-        "oci/licenses/bash/COPYRIGHT.glibc",
-        "oci/licenses/bash/COPYRIGHT.ncurses",
-        "oci/licenses/bash/SOURCE"
-      ]
     }
   }
 }

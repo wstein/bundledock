@@ -45,7 +45,7 @@ func checksum(spec Spec) (hash.Hash, string, error) {
 }
 
 // Build downloads each artifact to a temporary file, verifies it, then extracts.
-// Named source recipes must already be compiled for arch in destination/bin.
+// SQLite must already be compiled for arch at destination/bin/sqlite3.
 // A failed build leaves its incomplete output for inspection; use a fresh directory.
 func Build(ctx context.Context, client *http.Client, tools map[string]Spec, packages map[string]toolconfig.Package, notices fs.FS, arch, destination string, output io.Writer) error {
 	if client == nil {
@@ -74,30 +74,13 @@ func Build(ctx context.Context, client *http.Client, tools map[string]Spec, pack
 	if info.Mode().Perm()&0111 == 0 || info.Size() == 0 {
 		return fmt.Errorf("compiled SQLite must be a nonempty executable")
 	}
-	if p, ok := packages["bash"]; ok && p.Install.Kind == "bash-source" {
-		f, err := OpenFile(root, "bin/bash")
-		if err != nil {
-			return fmt.Errorf("compiled Bash: %w", err)
-		}
-		info, statErr := f.Stat()
-		closeErr := f.Close()
-		if statErr != nil {
-			return statErr
-		}
-		if closeErr != nil {
-			return closeErr
-		}
-		if info.Mode().Perm()&0111 == 0 || info.Size() == 0 {
-			return fmt.Errorf("compiled Bash must be a nonempty executable")
-		}
-	}
 	names := make([]string, 0, len(packages))
 	for name := range packages {
 		names = append(names, name)
 	}
 	sort.Strings(names)
 	for _, name := range names {
-		if packages[name].Install.Kind == "sqlite-source" || packages[name].Install.Kind == "bash-source" {
+		if packages[name].Install.Kind == "sqlite-source" {
 			continue
 		}
 		spec := tools[name]

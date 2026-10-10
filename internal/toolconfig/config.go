@@ -16,12 +16,11 @@ import (
 )
 
 type Spec struct {
-	Patches      []Input `json:"patches,omitempty"`
-	Version      string  `json:"version"`
-	URL          string  `json:"url"`
-	SHA256       string  `json:"sha256,omitempty"`
-	SHA512       string  `json:"sha512,omitempty"`
-	Verification string  `json:"verification,omitempty"`
+	Version      string `json:"version"`
+	URL          string `json:"url"`
+	SHA256       string `json:"sha256,omitempty"`
+	SHA512       string `json:"sha512,omitempty"`
+	Verification string `json:"verification,omitempty"`
 }
 type Lock struct {
 	Schema        int                        `json:"schema"`
@@ -136,9 +135,6 @@ func LoadInputs(directory string) (*Config, error) {
 			probeVersion = "v3.8"
 		}
 		s := Spec{Version: probeVersion, URL: "https://" + host + "/", SHA256: strings.Repeat("0", 64), Verification: "tls-download-sha256"}
-		if p.Provider == "bash" {
-			s = bashProbe(c.Desired[n].Lower.String(), p.BaseURL)
-		}
 		for _, a := range []string{"amd64", "arm64"} {
 			probe.Lock.Platforms[a][n] = s
 		}
@@ -253,10 +249,6 @@ func (c Config) validate(strict bool) error {
 			if !repositoryName.MatchString(p.Repository) {
 				return fmt.Errorf("invalid repository for %s", name)
 			}
-		case "bash":
-			if name != "bash" || p.Normalization != "semver" || p.BaseURL != "https://ftp.gnu.org/gnu/bash" || p.Install.Kind != "bash-source" || len(p.Install.Members) != 1 || p.Install.Members["bash"] != "bin/bash" || len(p.Install.Aliases) != 0 || p.Install.Preserve || p.Asset != "bash-{version}.tar.gz" || p.Architectures["amd64"] != "source" || p.Architectures["arm64"] != "source" {
-				return fmt.Errorf("Bash requires the fixed official source recipe")
-			}
 		case "sqlite":
 			if p.Normalization != "sqlite-compact" {
 				return fmt.Errorf("SQLite requires sqlite-compact")
@@ -303,12 +295,9 @@ func (c Config) validate(strict bool) error {
 			}
 		}
 		switch p.Install.Kind {
-		case "raw", "tar.gz", "tar.xz", "zip", "sqlite-source", "bash-source":
+		case "raw", "tar.gz", "tar.xz", "zip", "sqlite-source":
 		default:
 			return fmt.Errorf("unknown install kind for %s", name)
-		}
-		if p.Install.Kind == "bash-source" && (name != "bash" || p.Provider != "bash") {
-			return fmt.Errorf("bash-source is only supported for bash")
 		}
 		if p.Install.Kind == "sqlite-source" && (name != "sqlite3" || p.Provider != "sqlite") {
 			return fmt.Errorf("sqlite-source is only supported for sqlite3")
@@ -355,13 +344,6 @@ func (c Config) validate(strict bool) error {
 			}
 			if err := ValidateSpec(s); err != nil {
 				return fmt.Errorf("%s/%s: %w", arch, name, err)
-			}
-			if p.Provider == "bash" {
-				if err := ValidateBashInputs(s, p.BaseURL); err != nil {
-					return fmt.Errorf("%s/%s: %w", arch, name, err)
-				}
-			} else if len(s.Patches) != 0 {
-				return fmt.Errorf("patch inputs only supported for Bash")
 			}
 			if err := ValidateURL(s.URL, p.AllowedHosts); err != nil {
 				return err

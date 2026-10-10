@@ -33,18 +33,14 @@ check() {
             fish --no-config -c "type -q fish_prompt; and complete -C \"fish --no\" | string match --quiet \"*--no-config*\""
             nu --version
             test "$(nu --no-config-file --no-history -c "[{answer: 41} {answer: 42}] | where answer > 41 | get answer | first")" = 42
-            /opt/workharbor/bin/bash --noprofile --norc --version
-            expected_bash=$(jq -r .tools.bash.version /opt/workharbor/manifest.json)
-            test "$(/opt/workharbor/bin/bash --noprofile --norc -c "printf %s \"\$BASH_VERSION\"")" = "${expected_bash}(1)-release"
-            /opt/workharbor/bin/bash --noprofile --norc -c "set -euo pipefail; declare -A answer=([value]=42); test \"\${answer[value]}\" = 42; printf \"%s\\n\" 42 | { read -r value; test \"\$value\" = 42; }"
             tmux -V
             export TERM=xterm-256color
             tmux_socket="$HOME/tool-smoke-tmux.sock"
             trap "tmux -S \"$tmux_socket\" kill-server 2>/dev/null || :" EXIT
             tmux -S "$tmux_socket" -f /dev/null start-server \; \
-                set-option -g default-shell /opt/workharbor/bin/bash \; \
-                new-session -d -s bundledock-smoke "exec /opt/workharbor/bin/bash --noprofile --norc -c \"printf 42 > $HOME/tmux-answer; exec sleep 30\""
-            test "$(tmux -S "$tmux_socket" show-options -gv default-shell)" = /opt/workharbor/bin/bash
+                set-option -g default-shell /bin/bash \; \
+                new-session -d -s bundledock-smoke "exec /bin/bash --noprofile --norc -c \"printf 42 > $HOME/tmux-answer; exec sleep 30\""
+            test "$(tmux -S "$tmux_socket" show-options -gv default-shell)" = /bin/bash
             attempts=0
             until test -f "$HOME/tmux-answer"; do
                 attempts=$((attempts + 1))
