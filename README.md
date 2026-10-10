@@ -131,7 +131,10 @@ installed tools.
 `tools.packages.json` is the trusted declarative package catalog. It names upstream
 providers, repositories, tag prefixes, platform aliases, asset templates, supported
 raw/tar/ZIP extraction, executable members, regular-file aliases, notices, and the
-extraction recipes. Recipes cannot execute shell commands.
+extraction recipes. Preserved tar recipes can omit exact relative directories
+with `exclude_directories`; names are normalized paths, without glob matching.
+Every omitted entry still undergoes path, type, duplicate, payload and stream
+integrity validation. Recipes cannot execute shell commands.
 Both upgrade and build validate this catalog. Review catalog edits as build inputs. A catalog change requires
 an upgrade of all tools so preserved pins cannot acquire a different recipe silently.
 
@@ -266,8 +269,33 @@ Local verification of the publication adapter uses fake Docker commands in
 passed real builds and native smoke on both architectures as linked above.
 Quay publication still requires the first successful configured publication run.
 
-The original four agent tools and complete Codex assets occupied about 864 MiB
-uncompressed on ARM64; the added utilities increase that size. The volume is shared across workspaces on the same Docker host.
+Codex's optional voice helper and private runtime under `codex-resources/voice`
+are omitted. The CLI, code mode host, packaged ripgrep, bwrap, zsh and package
+metadata remain; voice features requiring that helper are unavailable. For the
+locked 0.162.1 official archives, the 38 omitted regular files save:
+
+| Platform | Omitted unpacked bytes | Share of Codex regular-file bytes |
+| --- | ---: | ---: |
+| AMD64 | 77,181,888 | 17.06% |
+| ARM64 | 80,512,453 | 19.73% |
+
+These are measured file payload savings, excluding filesystem overhead. The
+original compressed downloads (162,905,879 bytes AMD64; 153,057,922 bytes ARM64)
+and their hashes remain unchanged. Compressed OCI image savings are unmeasured.
+The volume is shared across workspaces on the same Docker host.
+
+Both complete official archives passed production checksum verification,
+extraction and volume initialization without voice. Native ARM64 also passed
+`codex --version` and daemon start/version/stop. To repeat these checks, place
+both locked archives in one directory and run:
+
+```sh
+BUNDLEDOCK_CODEX_ARCHIVE_DIR=/path/to/archives \
+BUNDLEDOCK_CODEX_NATIVE_SMOKE=1 \
+go test ./internal/toolvolume -run TestCodexOfficialArchivesWithoutVoice -count=1 -v
+```
+
+The runtime commands execute only for the host's matching Linux architecture.
 The initial local build and smoke tests were run on Linux ARM64. The Go port
 also passed local HTTP/archive fixtures for both architectures. The current
 locked toolbox has now passed real native Docker build and smoke on AMD64 and
@@ -334,7 +362,7 @@ Fish checks a pipeline, arithmetic, embedded functions and completions;
 Starship renders a minimal prompt and initializes within Fish using only writable
 consumer home state. uv uses a writable cache under each consumer's home; managed Python downloads
 are disabled, and its cache command runs offline. It also starts and stops Codex's
-local daemon to verify its complete native package is usable. It checks repeat initialization,
+local daemon to verify its retained native package is usable. It checks repeat initialization,
 read-only mounts, and rejection of changed, incomplete, or locked volumes. This verifies executable
 startup, not authentication, model requests, or agent sandbox behavior. Herdr
 only runs `--version`; its interactive UI, server, and agent integration need
