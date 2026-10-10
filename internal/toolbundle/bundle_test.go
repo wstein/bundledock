@@ -75,6 +75,8 @@ func openRoot(t *testing.T) (*os.Root, string) {
 func fixture(t *testing.T) (map[string][]byte, map[string]Spec, *httptest.Server) {
 	t.Helper()
 	payloads := map[string][]byte{
+		"fish":     xzArchive(t, member{"fish", "fish executable", 0755, 0}),
+		"starship": archive(t, member{"starship", "starship executable", 0755, 0}),
 		"uv":       archive(t, member{"uv-1/uv", "uv executable", 0755, 0}, member{"uv-1/uvx", "uvx executable", 0755, 0}),
 		"ast-grep": sqliteArchive(t, member{"ast-grep", "ast-grep executable", 0755, 0}, member{"sg", "unwanted alias", 0755, 0}),
 		"sqlite3":  sqliteArchive(t, member{"sqlite/sqlite3.c", "sqlite source", 0644, 0}, member{"sqlite/shell.c", "shell source", 0644, 0}, member{"sqlite/sqlite3.h", "sqlite header", 0644, 0}, member{"sqlite/sqlite3ext.h", "extension header", 0644, 0}),
@@ -134,6 +136,7 @@ func TestVendorBuildBothArchitectures(t *testing.T) {
 				data string
 				mode os.FileMode
 			}{
+				"bin/fish": {"fish executable", 0755}, "bin/starship": {"starship executable", 0755},
 				"bin/uv": {"uv executable", 0755}, "bin/uvx": {"uvx executable", 0755},
 				"bin/ast-grep": {"ast-grep executable", 0755},
 				"bin/herdr":    {"herdr executable", 0755},

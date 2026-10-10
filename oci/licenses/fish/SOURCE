@@ -1,0 +1,7 @@
+Upstream: https://github.com/fish-shell/fish-shell
+Licenses: GPL-2.0-only AND LGPL-2.0-or-later AND MIT AND PSF-2.0
+Pinned release: 4.9.3
+License sources: https://raw.githubusercontent.com/fish-shell/fish-shell/4.9.3/COPYING
+                 https://raw.githubusercontent.com/fish-shell/fish-shell/4.9.3/doc_src/license.rst
+Corresponding upstream source archive: https://github.com/fish-shell/fish-shell/releases/download/4.9.3/fish-4.9.3.tar.xz
+Standalone binary embeds share/functions and share/completions; no separate runtime tree.

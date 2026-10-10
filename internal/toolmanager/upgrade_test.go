@@ -163,7 +163,7 @@ func TestAllProvidersPaginationRangesAndVerification(t *testing.T) {
 			for _, arch := range []string{"amd64", "arm64"} {
 				name := expand(p.Asset, v, p.Architectures[arch], "", "")
 				a := asset{Name: name, URL: "https://github.com/" + p.Repository + "/releases/download/" + p.TagPrefix + v + "/" + name, Digest: "sha256:" + sum}
-				if n == "uv" {
+				if n == "uv" || n == "starship" {
 					a.Digest = ""
 					assets = append(assets, asset{Name: name + ".sha256", URL: a.URL + ".sha256"})
 				}

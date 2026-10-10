@@ -305,6 +305,57 @@
         "oci/licenses/herdr/LICENSE",
         "oci/licenses/herdr/SOURCE"
       ]
+    },
+    "fish": {
+      "provider": "github",
+      "repository": "fish-shell/fish-shell",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "x86_64",
+        "arm64": "aarch64"
+      },
+      "asset": "fish-{version}-linux-{arch}.tar.xz",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "tar.xz",
+        "members": {
+          "fish": "bin/fish"
+        }
+      },
+      "notices": [
+        "oci/licenses/fish/COPYING",
+        "oci/licenses/fish/license.rst",
+        "oci/licenses/fish/SOURCE"
+      ]
+    },
+    "starship": {
+      "provider": "github",
+      "repository": "starship/starship",
+      "tag_prefix": "v",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "x86_64",
+        "arm64": "aarch64"
+      },
+      "asset": "starship-{arch}-unknown-linux-musl.tar.gz",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "tar.gz",
+        "members": {
+          "starship": "bin/starship"
+        }
+      },
+      "notices": [
+        "oci/licenses/starship/LICENSE",
+        "oci/licenses/starship/SOURCE"
+      ],
+      "sidecar": "{asset}.sha256"
     }
   }
 }

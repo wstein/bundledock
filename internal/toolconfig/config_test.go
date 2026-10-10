@@ -33,7 +33,7 @@ func TestRepositoryIdentityAndBothArchitectures(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(c.Catalog.Packages) != 12 {
+	if len(c.Catalog.Packages) != 14 {
 		t.Fatal("catalog incomplete")
 	}
 	if err := c.Validate(); err != nil {
@@ -127,5 +127,23 @@ func TestCatalogAllowsTarXZ(t *testing.T) {
 	c.Bind()
 	if err := c.Validate(); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestFishAndStarshipCatalogPins(t *testing.T) {
+	c, err := Load("../..")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct{ name, kind, version string }{{"fish", "tar.xz", "4.9.3"}, {"starship", "tar.gz", "v1.26.0"}} {
+		p := c.Catalog.Packages[tc.name]
+		if p.Install.Kind != tc.kind || p.Install.Members[tc.name] != "bin/"+tc.name {
+			t.Fatalf("missing %s binary recipe", tc.name)
+		}
+		for _, arch := range []string{"amd64", "arm64"} {
+			if c.Lock.Platforms[arch][tc.name].Version != tc.version {
+				t.Fatalf("missing %s/%s pin", tc.name, arch)
+			}
+		}
 	}
 }
