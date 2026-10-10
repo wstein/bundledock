@@ -17,6 +17,7 @@ check() {
         --tmpfs /home/bundledock:exec,uid=1000,gid=1000,mode=0700 \
         --mount "type=volume,src=$volume,dst=/opt/workharbor,readonly,volume-nocopy" \
         --mount "type=bind,src=$script_dir/quality-security-smoke.sh,dst=/quality-security-smoke.sh,readonly" \
+        --mount "type=bind,src=$script_dir/process-monitors-smoke.sh,dst=/process-monitors-smoke.sh,readonly" \
         --env HOME=/home/bundledock --env DISABLE_UPDATES=1 --env DISABLE_AUTOUPDATER=1 \
         --entrypoint /bin/sh "$consumer" -ec '
             test -f /opt/workharbor/.ready
@@ -78,6 +79,7 @@ check() {
             uvx --version
             test "$(uv --offline cache dir)" = "$UV_CACHE_DIR"
             sh /quality-security-smoke.sh
+            sh /process-monitors-smoke.sh
             if touch /opt/workharbor/write-test 2>/dev/null; then
                 echo "Unexpected write to tool volume" >&2
                 exit 1
