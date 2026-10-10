@@ -2,7 +2,6 @@
 	"name": "Anchorage",
 	"image": "mcr.microsoft.com/devcontainers/go:2-1.27-trixie",
 	"remoteUser": "vscode",
-	"postCreateCommand": "sh .devcontainer/setup-python.sh",
 	"initializeCommand": [
 		"sh",
 		"${localWorkspaceFolder}/oci/volume.sh",
