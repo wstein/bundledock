@@ -44,7 +44,7 @@ type Adapter struct {
 	TagAbsent    func(image, tag string) error
 }
 
-var imagePattern = regexp.MustCompile(`^quay\.io/[a-z0-9]+(?:[._-][a-z0-9]+)*/toolbox$`)
+var imagePattern = regexp.MustCompile(`^quay\.io/[a-z0-9]+(?:[._-][a-z0-9]+)*/(toolbox|code-server)$`)
 var tagPattern = regexp.MustCompile(`^\d{4}\.\d{2}\.\d{2}-b[1-9]\d*\.[1-9]\d*$`)
 var runIDPattern = regexp.MustCompile(`^[1-9]\d*$`)
 var commitPattern = regexp.MustCompile(`^[a-f0-9]{40}$`)
@@ -72,7 +72,7 @@ func HashFile(path string) (string, error) {
 func NewMetadata(lock, image, tag, commit, source, created, runID string) (Metadata, error) {
 	m := Metadata{Image: image, Tag: tag, Commit: commit, Source: source, Created: created, RunID: runID}
 	if !imagePattern.MatchString(image) {
-		return m, fmt.Errorf("publication image must be quay.io/<namespace>/toolbox")
+		return m, fmt.Errorf("publication image must be quay.io/<namespace>/{toolbox,code-server}")
 	}
 	if !tagPattern.MatchString(tag) || !commitPattern.MatchString(commit) || !runIDPattern.MatchString(runID) {
 		return m, fmt.Errorf("invalid date/run/attempt tag, source commit or run ID")
@@ -128,7 +128,7 @@ func labels(m Metadata, lock, arch string) (map[string]string, error) {
 		return nil, err
 	}
 	return map[string]string{
-		"org.opencontainers.image.title": "bundledock-toolbox", "org.opencontainers.image.source": m.Source,
+		"org.opencontainers.image.title": "bundledock-" + bundleForImage(m.Image).Name, "org.opencontainers.image.source": m.Source,
 		"org.opencontainers.image.revision": m.Commit, "org.opencontainers.image.created": m.Created,
 		"org.opencontainers.image.version": m.Tag, "io.bundledock.tools.lock-sha256": m.LockSHA256,
 		"io.bundledock.tools.versions": string(encoded), "io.bundledock.github.run-id": m.RunID,
@@ -179,10 +179,13 @@ func (a Adapter) inspectLocal(m Metadata, lock, arch, ref string) (string, error
 // Smoke pulls the consumer before smoke.sh disables networking; the tool image
 // argument is an immutable local config ID, never a mutable build tag.
 func (a Adapter) Smoke(id, consumer string) error {
+	return a.smokeBundle(id, consumer, "bundles/toolbox/smoke.sh")
+}
+func (a Adapter) smokeBundle(id, consumer, script string) error {
 	if _, err := a.Run("docker", "pull", consumer); err != nil {
 		return err
 	}
-	_, err := a.Run("sh", "bundles/toolbox/smoke.sh", id, consumer)
+	_, err := a.Run("sh", script, id, consumer)
 	return err
 }
 
@@ -198,7 +201,8 @@ func (a Adapter) Build(m Metadata, lock, arch, consumer string) (Receipt, error)
 	if runtime.GOOS != "linux" || native != arch || (arch != "amd64" && arch != "arm64") {
 		return r, fmt.Errorf("native Linux architecture required")
 	}
-	args := []string{"docker", "build", "--pull", "--platform", "linux/" + arch, "-f", "bundles/toolbox/Dockerfile", "-t", "bundledock-toolbox:build-" + m.Tag + "-" + arch}
+	bundle := bundleForImage(m.Image)
+	args := []string{"docker", "build", "--pull", "--platform", "linux/" + arch, "-f", bundle.Directory + "/Dockerfile", "-t", "bundledock-" + bundle.Name + ":build-" + m.Tag + "-" + arch}
 	imageLabels, err := labels(m, lock, arch)
 	if err != nil {
 		return r, err
@@ -213,7 +217,7 @@ func (a Adapter) Build(m Metadata, lock, arch, consumer string) (Receipt, error)
 	if err != nil {
 		return r, err
 	}
-	if err = a.Smoke(id, consumer); err != nil {
+	if err = a.smokeBundle(id, consumer, bundle.Directory+"/smoke.sh"); err != nil {
 		return r, err
 	}
 	return Receipt{Metadata: m, Architecture: arch, ImageID: id, Smoked: true}, nil

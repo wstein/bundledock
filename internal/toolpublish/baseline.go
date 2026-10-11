@@ -6,12 +6,15 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"regexp"
 )
+
+var ErrBaselineAbsent = errors.New("published stable baseline absent")
 
 const platformsLabel = "io.bundledock.tools.platforms-sha256"
 
@@ -98,6 +101,9 @@ func PublishedToolDigest(ctx context.Context, client *http.Client, image, userna
 		} else if response.StatusCode == http.StatusOK {
 			b, err = readBounded(response.Body)
 		} else {
+			if kind == "manifests" && ref == "stable" && response.StatusCode == http.StatusNotFound {
+				return nil, ErrBaselineAbsent
+			}
 			return nil, fmt.Errorf("published baseline %s returned HTTP %d", kind, response.StatusCode)
 		}
 		if err != nil {

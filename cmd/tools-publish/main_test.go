@@ -214,3 +214,39 @@ func TestResolveUsesRepositoryURL(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateCodeServerLockWithoutPublicationEnvironment(t *testing.T) {
+	root, err := filepath.Abs("../..")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Chdir(root)
+	if err := execute([]string{"validate", "--bundle", "code-server"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := execute([]string{"validate", "--bundle", "../toolbox"}); err == nil {
+		t.Fatal("accepted unknown bundle")
+	}
+}
+
+func TestCodeServerBootstrapOnlyOnAuthenticatedMissingStable(t *testing.T) {
+	lock := "../../bundles/code-server/tools.lock.json"
+	for _, tc := range []struct {
+		name, bundle, event string
+		baselineErr         error
+		want, fail          bool
+	}{
+		{"initial code-server", "code-server", "workflow_dispatch", toolpublish.ErrBaselineAbsent, true, false},
+		{"toolbox absent", "toolbox", "workflow_dispatch", toolpublish.ErrBaselineAbsent, false, true},
+		{"scheduled absent", "code-server", "schedule", toolpublish.ErrBaselineAbsent, false, true},
+		{"lookup failure", "code-server", "workflow_dispatch", fmt.Errorf("registry unavailable"), false, true},
+		{"existing baseline", "code-server", "workflow_dispatch", nil, true, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := publicationDecisionForBundle(lock, tc.event, tc.bundle, func() (string, error) { return strings.Repeat("a", 64), tc.baselineErr })
+			if got != tc.want || (err != nil) != tc.fail {
+				t.Fatalf("got %v %v", got, err)
+			}
+		})
+	}
+}
