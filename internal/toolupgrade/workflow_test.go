@@ -33,6 +33,11 @@ func write(t *testing.T, name, content string) {
 }
 func fixture(t *testing.T) (string, []string) {
 	t.Helper()
+	for _, tool := range []string{"git", "bash", "sh"} {
+		if _, err := exec.LookPath(tool); err != nil {
+			t.Skip("requires ", tool, ": ", err)
+		}
+	}
 	root, err := filepath.Abs("../..")
 	if err != nil {
 		t.Fatal(err)
