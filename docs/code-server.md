@@ -101,11 +101,13 @@ The separate **Publish code-server** workflow
 (`.github/workflows/bundledock-code-server.yml`) is manual-only. It requires a
 human dispatch on default `main` with the exact full approved SHA. It uses the
 existing `REPOSITORY_URL` Quay namespace and publishes to its separate
-`code-server` repository, with distinct run/attempt artifacts. Native AMD64 and
-ARM64 builds must both pass the dedicated read-only volume and password-service
-smoke before staging or promotion. The publisher checks its own workflow
-identity before promotion. For an initial publication, only an authenticated
-HTTP 404 for this repository's `stable` manifest permits an absent baseline;
+`code-server` repository, with distinct run/attempt artifacts. Each native AMD64
+or ARM64 image stages only after its own dedicated read-only volume and
+password-service smoke passes. Final version, stable and latest tag
+promotion requires the entire native matrix to succeed; if one platform fails,
+the other platform may already have staged. The publisher checks its own
+workflow identity before promotion. For an initial publication, only an
+authenticated HTTP 404 for this repository's `stable` manifest permits an absent baseline;
 authentication, transport and other baseline failures stay closed. No workflow
 was dispatched as part of adding these source definitions.
 
