@@ -50,6 +50,49 @@ build feed; release suffixes compare numerically (`3.7a` = `3.7.1`, `3.7c` =
 `3.7.3`, `3.8` = `3.8.0`) while lock versions and asset URLs retain the upstream tag.
 No plugins or user configuration are installed for either alternative.
 
+## Propose upgrades with GitHub Actions
+
+The **Propose tool upgrades** workflow (`.github/workflows/tool-upgrade.yml`)
+is manual-only. After a human merges the workflow onto the repository default
+branch, open **Actions → Propose tool upgrades → Run workflow**, select that
+branch, keep `dry_run=true`, and optionally set `tool=gh` for a bounded first
+run. An empty tool input resolves every desired tool. The workflow refuses
+non-default-branch runs. A workflow that exists only on a topic branch cannot
+be dispatched as a new manual workflow; review and human merge come first.
+
+Dry runs use a read-only token, run the existing `tools upgrade` resolver, and
+show the proposed lock diff in the run summary. Resolution downloads official
+prebuilt archives for both AMD64 and ARM64 to verify their checksums; it does
+not execute those tools or build images, CLI releases, or documentation. An
+upstream error fails the run without creating a PR. No changes produce a
+successful no-op.
+
+Set `dry_run=false` only when you want a reviewable lock-only PR. A separate
+job requests `contents: write` and `pull-requests: write`, transfers only the
+resolved lock from that same run attempt, and creates its own
+`automation/tool-upgrade-<run-id>-<attempt>` branch. It never force-pushes,
+reuses another branch, merges a PR, schedules work, publishes tools, or activates
+a consumer image. Rerunning a changed attempt creates a separate topic; review
+existing topics before rerunning. An unsuccessful PR creation may leave its
+already-pushed topic branch for inspection.
+
+The current repository setting has default read-only workflow permissions and
+**Allow GitHub Actions to create and approve pull requests** disabled. Dry runs
+can run with that configuration. Before using write mode, an administrator
+must explicitly allow the requested token write permissions under any
+repository/organization policy and enable **Settings → Actions → General →
+Workflow permissions → Allow GitHub Actions to create and approve pull
+requests**. The checkbox permits PR creation; this workflow never approves
+reviews. If policy blocks the push or PR, the job fails with these prerequisites.
+The workflow does not change settings, install a PAT, or bypass policy.
+
+A PR opened with `GITHUB_TOKEN` does not automatically start ordinary
+`pull_request` workflows. Run the existing **CI** workflow manually on the
+new topic branch and complete human review before merging. A successful
+resolver or CI run verifies source and lock behavior, not native image smoke
+coverage. Building, publishing, or activating the new lock still requires
+separate explicit user approval of the operation and revision.
+
 ## Upgrade the lock
 
 Run upgrades from the repository root:
