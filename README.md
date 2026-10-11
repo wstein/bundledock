@@ -56,7 +56,7 @@ rebuild the toolbox and initialize its new volume before adopting these tools.
 
 ## Included tools
 
-The bundle pins 23 tools, with these companion commands:
+The bundle pins 24 tools, with these companion commands:
 
 | Use | Tools |
 | --- | --- |
@@ -65,6 +65,7 @@ The bundle pins 23 tools, with these companion commands:
 | Python environments | [uv and uvx](https://github.com/astral-sh/uv) |
 | Shells and terminal workspaces | [Herdr](https://github.com/herdrdev/herdr), [Fish](https://github.com/fish-shell/fish-shell), [Starship](https://github.com/starship/starship), [Nushell (`nu`)](https://github.com/nushell/nushell), [tmux](https://github.com/tmux/tmux-builds) |
 | Quality and security | [typos](https://github.com/crate-ci/typos), [lychee](https://github.com/lycheeverse/lychee), [Gitleaks](https://github.com/gitleaks/gitleaks), [Trivy](https://github.com/aquasecurity/trivy), [Syft](https://github.com/anchore/syft) |
+| Terminal editor | [Helix (`hx`)](https://github.com/helix-editor/helix) |
 | Static sites | [Hugo (standard)](https://github.com/gohugoio/hugo) |
 | Process monitoring | [bottom (`btm`)](https://github.com/ClementTsang/bottom), [btop](https://github.com/aristocratos/btop) |
 

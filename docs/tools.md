@@ -42,6 +42,7 @@ and `arm64`; builds verify every download.
 | Syft (`syft`) | 1.54.1 |
 | bottom (`btm`) | 0.14.9 |
 | btop (`btop`) | 1.4.7 |
+| Helix (`hx`) | 25.07.1 |
 | Hugo (`hugo`, standard) | 0.167.0 |
 <!-- END GENERATED TOOL INVENTORY -->
 
@@ -126,6 +127,37 @@ Prose outside the markers, historical verification records, badges and consumer
 pins are not generated. These commands edit or check Markdown source; they do
 not invoke Hugo or render a documentation site. The existing CI workflow calls
 `make check`, so a lock-only change with a stale table fails source verification.
+
+## Helix terminal editor
+
+The toolbox includes official stable [Helix 25.07.1](https://github.com/helix-editor/helix/releases/tag/25.07.1)
+Linux AMD64 and ARM64 prebuilts. `hx` launches the untouched binary with
+`HELIX_RUNTIME` pointing to the same mounted bundle's `lib/helix/runtime`.
+The whole runtime, compiled tree-sitter grammars, queries, themes and upstream
+notices are retained. User configuration belongs in writable
+`$XDG_CONFIG_HOME/helix` (normally `$HOME/.config/helix`); no user configuration
+is created by bundle initialization. Language servers, formatters and clipboard
+helpers are supplied by the consumer or installed in writable home locations.
+No grammar download, compilation or plugin installation is needed for the shipped
+runtime. Helix's official GNU/Linux prebuilts require compatible glibc; the
+stock Debian consumer remains the integration target.
+
+`tools init` copies and validates volume content; it cannot change the invoking
+shell's environment. Anchorage owns its consumer shell seeds, which default
+`EDITOR` to `hx` only when `hx` is available and `EDITOR` is unset, preserving
+user overrides and `VISUAL`. Existing custom seeds remain user-owned. Other
+consumers can opt in with `export EDITOR="${EDITOR-hx}"` after placing toolbox
+`bin` on PATH. The existing older pinned consumer image does not gain Helix
+until a separately approved build, publication and activation.
+
+Helix uses calendar release tags such as `25.07.1`. Its official-repository-only
+`helix-calendar` normalization compares this as `25.7.1`; a two-part release
+such as `25.07` compares as `25.7.0`. Desired requirements use canonical numeric
+versions (`helix==25.7.1`); the lock and download asset retain the original tag
+spelling. Generic SemVer parsing remains strict and prereleases are excluded.
+The `helix-runtime` extraction recipe accepts only a single stable Helix Linux
+release root, regular files and directories. Production extraction binds that
+root to the verified release pin. It does not permit archive links.
 
 ## Upgrade the lock
 
