@@ -1,0 +1,8 @@
+Official stable standalone code-server v4.141.0 (MIT).
+https://github.com/coder/code-server/releases/tag/v4.141.0
+https://github.com/coder/code-server/tree/v4.141.0
+
+The complete archive payload, including ThirdPartyNotices.txt, embedded
+VS Code notices, Node notices, dependency licenses and built-in extensions,
+is retained under payload/. Upstream relative links are preserved unchanged.
+No additional extensions are installed.

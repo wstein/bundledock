@@ -1,0 +1,23 @@
+{
+  "schema": 2,
+  "desired_digest": "67b3252c11bf0c5a3056e52d8ad98c322130a6871e5497fcfa1f6324bc5be7d2",
+  "catalog_digest": "ac07a1f1b62a30e865e0a82f677410785379fd2f32269a68a31f70d8c16a1238",
+  "platforms": {
+    "amd64": {
+      "code-server": {
+        "version": "v4.141.0",
+        "url": "https://github.com/coder/code-server/releases/download/v4.141.0/code-server-4.141.0-linux-amd64.tar.gz",
+        "sha256": "65bcd20b524d03eb1b5adb7f360244599ef0e5b74089a46a982d32c074b97a29",
+        "verification": "publisher-sha256"
+      }
+    },
+    "arm64": {
+      "code-server": {
+        "version": "v4.141.0",
+        "url": "https://github.com/coder/code-server/releases/download/v4.141.0/code-server-4.141.0-linux-arm64.tar.gz",
+        "sha256": "e5cc78da1d631c6cf6162f9b18eeaa8ee9d3239e1a88bb99d0602cdc5fa1852d",
+        "verification": "publisher-sha256"
+      }
+    }
+  }
+}

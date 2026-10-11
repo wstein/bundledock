@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "packages": {
+    "code-server": {
+      "provider": "github",
+      "repository": "coder/code-server",
+      "tag_prefix": "v",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "amd64",
+        "arm64": "arm64"
+      },
+      "asset": "code-server-{version}-linux-{arch}.tar.gz",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "tar.gz",
+        "profile": "code-server-standalone",
+        "members": {
+          "bin/code-server": "payload/bin/code-server"
+        },
+        "preserve": true
+      },
+      "notices": [
+        "licenses/code-server/LICENSE",
+        "licenses/code-server/SOURCE"
+      ]
+    }
+  }
+}
