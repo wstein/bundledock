@@ -33,6 +33,7 @@ LABELS = (
     ("syft", "Syft (`syft`)"),
     ("bottom", "bottom (`btm`)"),
     ("btop", "btop (`btop`)"),
+    ("helix", "Helix (`hx`)"),
     ("hugo", "Hugo (`hugo`, standard)"),
 )
 DISPLAY_SUFFIX = {"tmux": " (official static builds)"}

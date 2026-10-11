@@ -12,6 +12,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -229,6 +230,18 @@ func ValidateSpec(s Spec) error {
 }
 func (p Package) Version(tag string) (string, error) {
 	v := strings.TrimPrefix(tag, p.TagPrefix)
+	if p.Normalization == "helix-calendar" {
+		match := regexp.MustCompile(`^([1-9][0-9]*)\.(0?[1-9]|1[0-2])(?:\.(0|[1-9][0-9]*))?$`).FindStringSubmatch(v)
+		if match == nil {
+			return "", fmt.Errorf("unsupported Helix release %q", tag)
+		}
+		month, _ := strconv.Atoi(match[2])
+		patch := match[3]
+		if patch == "" {
+			patch = "0"
+		}
+		v = fmt.Sprintf("%s.%d.%s", match[1], month, patch)
+	}
 	if p.Normalization == "tmux-release" {
 		match := regexp.MustCompile(`^([0-9]+)\.([0-9]+)([a-z]?)$`).FindStringSubmatch(v)
 		if match == nil {
@@ -259,7 +272,7 @@ func (c Config) validate(strict bool) error {
 		if !ok {
 			return fmt.Errorf("catalog tool %s is absent from tools.txt", name)
 		}
-		if p.Normalization != "semver" && p.Normalization != "tmux-release" {
+		if p.Normalization != "semver" && p.Normalization != "tmux-release" && p.Normalization != "helix-calendar" {
 			return fmt.Errorf("unknown normalization for %s", name)
 		}
 		switch p.Provider {
@@ -271,6 +284,12 @@ func (c Config) validate(strict bool) error {
 			return fmt.Errorf("unknown provider for %s", name)
 		}
 
+		if p.Normalization == "helix-calendar" && (name != "helix" || p.Provider != "github" || p.Repository != "helix-editor/helix" || p.TagPrefix != "") {
+			return fmt.Errorf("helix-calendar is only supported for official Helix releases")
+		}
+		if p.Install.Profile == "helix-runtime" && (name != "helix" || p.Repository != "helix-editor/helix" || p.Normalization != "helix-calendar" || p.Install.Kind != "tar.xz" || !p.Install.Preserve || len(p.Install.Members) != 1 || p.Install.Members["hx"] != "lib/helix/hx" || len(p.Install.Aliases) != 0 || len(p.Install.ExcludeDirectories) != 0) {
+			return fmt.Errorf("invalid Helix runtime recipe")
+		}
 		if p.Normalization == "tmux-release" && (name != "tmux" || p.Provider != "github" || p.Repository != "tmux/tmux-builds" || p.TagPrefix != "v") {
 			return fmt.Errorf("tmux-release is only supported for official tmux builds")
 		}
@@ -307,7 +326,7 @@ func (c Config) validate(strict bool) error {
 		default:
 			return fmt.Errorf("unknown install kind for %s", name)
 		}
-		if p.Install.Profile != "" && (p.Install.Profile != "code-server-standalone" || len(c.Catalog.Packages) != 1 || name != "code-server" || p.Provider != "github" || p.Repository != "coder/code-server" || p.Install.Kind != "tar.gz" || !p.Install.Preserve || len(p.Install.Members) != 1 || p.Install.Members["bin/code-server"] != "payload/bin/code-server" || len(p.Install.Aliases) != 0 || len(p.Install.ExcludeDirectories) != 0) {
+		if p.Install.Profile != "" && p.Install.Profile != "helix-runtime" && (p.Install.Profile != "code-server-standalone" || len(c.Catalog.Packages) != 1 || name != "code-server" || p.Provider != "github" || p.Repository != "coder/code-server" || p.Install.Kind != "tar.gz" || !p.Install.Preserve || len(p.Install.Members) != 1 || p.Install.Members["bin/code-server"] != "payload/bin/code-server" || len(p.Install.Aliases) != 0 || len(p.Install.ExcludeDirectories) != 0) {
 			return fmt.Errorf("invalid standalone profile for %s", name)
 		}
 		if len(p.Install.Members) == 0 {
@@ -368,6 +387,12 @@ func (c Config) validate(strict bool) error {
 			}
 			if err := ValidateURL(s.URL, p.AllowedHosts); err != nil {
 				return err
+			}
+			if strict && p.Install.Profile == "helix-runtime" {
+				expected := "https://github.com/helix-editor/helix/releases/download/" + s.Version + "/helix-" + s.Version + "-" + p.Architectures[arch] + "-linux.tar.xz"
+				if s.URL != expected {
+					return fmt.Errorf("invalid Helix release URL for %s", arch)
+				}
 			}
 			v, err := p.Version(s.Version)
 			if err != nil || strict && !constraint.Contains(v) {

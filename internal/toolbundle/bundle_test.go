@@ -75,6 +75,7 @@ func openRoot(t *testing.T) (*os.Root, string) {
 func fixture(t *testing.T) (map[string][]byte, map[string]Spec, *httptest.Server) {
 	t.Helper()
 	payloads := map[string][]byte{
+		"helix":    helixArchive(t, "helix-25.07.1-x86_64-linux", "", 0),
 		"hugo":     archive(t, member{"hugo", "hugo executable", 0755, 0}, member{"LICENSE", "hugo license", 0644, 0}),
 		"typos":    archive(t, member{"./typos", "typos executable", 0755, 0}, member{"./LICENSE-MIT", "typos mit", 0644, 0}, member{"./LICENSE-APACHE", "typos apache", 0644, 0}),
 		"lychee":   archive(t, member{"lychee-x86_64-unknown-linux-musl/lychee", "lychee executable", 0755, 0}),
@@ -100,7 +101,11 @@ func fixture(t *testing.T) (map[string][]byte, map[string]Spec, *httptest.Server
 		"codex":    archive(t, member{"bin/codex", "codex cli", 0755, 0}, member{"codex-package.json", `{"entrypoint":"bin/codex"}`, 0644, 0}, member{"bin/codex-code-mode-host", "host", 0755, 0}, member{"codex-path/rg", "rg", 0755, 0}, member{"codex-resources/bwrap", "bwrap", 0755, 0}, member{"codex-resources/zsh/bin/zsh", "zsh", 0755, 0}, member{"codex-resources/voice/", "", 0755, tar.TypeDir}, member{"./codex-resources/voice/lib/example.so", "shared library", 0644, 0}, member{"codex-resources/voice-other/keep", "other resource", 0644, 0}, member{"empty/", "", 0755, tar.TypeDir}),
 	}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if data, ok := payloads[strings.TrimPrefix(r.URL.Path, "/")]; ok {
+		key := strings.TrimPrefix(r.URL.Path, "/")
+		if strings.HasPrefix(key, "helix-25.07.1-") {
+			key = "helix"
+		}
+		if data, ok := payloads[key]; ok {
 			w.Write(data)
 		} else {
 			http.NotFound(w, r)
@@ -110,6 +115,10 @@ func fixture(t *testing.T) (map[string][]byte, map[string]Spec, *httptest.Server
 	tools := map[string]Spec{}
 	for name, data := range payloads {
 		s := Spec{Version: "fixture", URL: server.URL + "/" + name}
+		if name == "helix" {
+			s.Version = "25.07.1"
+			s.URL = server.URL + "/helix-25.07.1-x86_64-linux.tar.xz"
+		}
 		if name == "agy" {
 			digest := sha512.Sum512(data)
 			s.SHA512 = hex.EncodeToString(digest[:])

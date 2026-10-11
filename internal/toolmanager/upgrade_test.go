@@ -146,7 +146,9 @@ func TestAllProvidersPaginationRangesAndVerification(t *testing.T) {
 	repos := map[string]string{}
 	for n, p := range c.Catalog.Packages {
 		v := c.Desired[n].Lower
-		v[2]++
+		if !c.Desired[n].Exact {
+			v[2]++
+		}
 		versions[n] = v.String()
 		repos[p.Repository] = n
 	}
@@ -301,7 +303,7 @@ func TestChangedDesiredAndBootstrap(t *testing.T) {
 							assets := []asset{}
 							for _, arch := range []string{"amd64", "arm64"} {
 								name := expand(p.Asset, v, p.Architectures[arch])
-								assets = append(assets, asset{Name: name, URL: "https://github.com/" + p.Repository + "/" + name})
+								assets = append(assets, asset{Name: name, URL: "https://github.com/" + p.Repository + "/releases/download/" + p.TagPrefix + v + "/" + name})
 							}
 							json.NewEncoder(w).Encode([]release{{Tag: p.TagPrefix + v, Assets: assets}})
 							return
@@ -467,7 +469,7 @@ func TestUpgradeAllRepairsChangedCatalogInventory(t *testing.T) {
 					assets := []asset{}
 					for _, arch := range []string{"amd64", "arm64"} {
 						name := expand(p.Asset, v, p.Architectures[arch])
-						assets = append(assets, asset{Name: name, URL: "https://github.com/" + p.Repository + "/" + name})
+						assets = append(assets, asset{Name: name, URL: "https://github.com/" + p.Repository + "/releases/download/" + p.TagPrefix + v + "/" + name})
 					}
 					json.NewEncoder(w).Encode([]release{{Tag: p.TagPrefix + v, Assets: assets}})
 					return
@@ -596,6 +598,10 @@ func TestNullGitHubDigestMeansUnpublished(t *testing.T) {
 
 // Fixture release tags retain tmux's native two-component/letter spelling.
 func fixtureReleaseVersion(p toolconfig.Package, canonical string) string {
+	if p.Normalization == "helix-calendar" {
+		v, _ := toolconfig.ParseVersion(canonical)
+		return fmt.Sprintf("%d.%02d.%d", v[0], v[1], v[2])
+	}
 	if p.Normalization != "tmux-release" {
 		return canonical
 	}
