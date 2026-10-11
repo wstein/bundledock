@@ -191,3 +191,9 @@ identity, incomplete platforms, unsupported recipes, and unsafe archive members.
 Existing images, volumes, running containers, and desired ranges are unaffected by
 resolution. `tools volume` remains the existing initialization command; no update
 alias or other tool-management commands are added.
+
+## Optional browser editor
+
+The [code-server bundle](code-server.md) provides a separate optional OCI
+carrier with its own lock and read-only volume. It does not change the toolbox
+or start a service automatically.

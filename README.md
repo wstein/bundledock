@@ -101,3 +101,6 @@ Upstream tool notices are kept in [bundles/toolbox/licenses](bundles/toolbox/lic
 and asset provenance are documented in [brand/README.md](brand/README.md).
 BundleDock's [source and full-history provenance](docs/development.md#repository-history)
 are independent of image publication and consumer activation.
+
+An optional [code-server carrier](docs/code-server.md) supplies the complete
+official standalone browser editor in a separate read-only volume.
