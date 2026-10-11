@@ -76,9 +76,8 @@ a consumer image. Rerunning a changed attempt creates a separate topic; review
 existing topics before rerunning. An unsuccessful PR creation may leave its
 already-pushed topic branch for inspection.
 
-The current repository setting has default read-only workflow permissions and
-**Allow GitHub Actions to create and approve pull requests** disabled. Dry runs
-can run with that configuration. Before using write mode, an administrator
+Dry runs work with default read-only workflow permissions and do not require
+permission to create pull requests. Before using write mode, an administrator
 must explicitly allow the requested token write permissions under any
 repository/organization policy and enable **Settings → Actions → General →
 Workflow permissions → Allow GitHub Actions to create and approve pull
