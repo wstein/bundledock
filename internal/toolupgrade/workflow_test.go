@@ -198,12 +198,12 @@ func TestWorkflowManualLeastPrivilege(t *testing.T) {
 		t.Fatal(err)
 	}
 	s := string(b)
-	for _, want := range []string{"workflow_dispatch:", "default: true", "contents: read", "persist-credentials: false", "if: ${{ !inputs.dry_run && needs.resolve.outputs.changed == 'true' }}", "pull-requests: write", "scripts/tool-upgrade.sh resolve", "scripts/tool-upgrade.sh publish"} {
+	for _, want := range []string{"workflow_dispatch:", "default: true", "contents: read", "persist-credentials: false", "pull-requests: write", "scripts/tool-upgrade.sh resolve", "scripts/tool-upgrade.sh publish"} {
 		if !strings.Contains(s, want) {
 			t.Errorf("missing %q", want)
 		}
 	}
-	for _, bad := range []string{"schedule:", "  push:", "pull_request:", "make build", "go build", "docker ", "tools-publish", "secrets.", "workflow_run:"} {
+	for _, bad := range []string{"  push:", "pull_request:", "make build", "go build", "docker ", "tools-publish", "secrets.", "workflow_run:"} {
 		if strings.Contains(s, bad) {
 			t.Errorf("forbidden %q", bad)
 		}
@@ -276,5 +276,48 @@ func TestPublisherRejectsUnrelatedDocumentation(t *testing.T) {
 	}
 	if branch := must(t, dir, nil, "git", "branch", "--show-current"); branch != "main\n" {
 		t.Fatal("created branch before rejecting artifact")
+	}
+}
+
+func TestWorkflowDailyAndManualWriteGates(t *testing.T) {
+	b, err := os.ReadFile("../../.github/workflows/tool-upgrade.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := string(b)
+	if strings.Count(s, "- cron: '0 6 * * *'") != 1 {
+		t.Fatal("expected exactly one daily 06:00 UTC schedule")
+	}
+	for _, changed := range []string{"steps.resolve.outputs.changed", "needs.resolve.outputs.changed"} {
+		gate := "if: ${{ " + changed + " == 'true' && (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && !inputs.dry_run)) }}"
+		if !strings.Contains(s, gate) {
+			t.Errorf("missing explicit changed-and-event write gate %q", gate)
+		}
+	}
+	if !strings.Contains(s, "if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)") {
+		t.Fatal("resolver must allow only schedule/manual on default branch")
+	}
+	if !strings.Contains(s, "TOOL: ${{ github.event_name == 'workflow_dispatch' && inputs.tool || '' }}") {
+		t.Fatal("scheduled runs must resolve all tools independently of manual inputs")
+	}
+}
+func TestPublisherNoChangeCreatesNothing(t *testing.T) {
+	dir, env := fixture(t)
+	for _, pair := range [][2]string{{"bundles/toolbox/tools.lock.json", "tools.lock.json"}, {"docs/tools.md", "tools.md"}} {
+		data, err := os.ReadFile(filepath.Join(dir, pair[0]))
+		if err != nil {
+			t.Fatal(err)
+		}
+		write(t, filepath.Join(value(env, "UPGRADE_RESULT"), pair[1]), string(data))
+	}
+	out, err := adapter(t, dir, env, "publish")
+	if err != nil {
+		t.Fatalf("no-op publish: %v %s", err, out)
+	}
+	if branch := must(t, dir, nil, "git", "branch", "--show-current"); branch != "main\n" {
+		t.Fatal("no-op created topic")
+	}
+	if _, err := os.Stat(value(env, "CALLS")); !os.IsNotExist(err) {
+		t.Fatal("no-op invoked external resolver or PR command")
 	}
 }
