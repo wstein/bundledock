@@ -17,6 +17,7 @@ Shared Go code remains at the repository root.
 `tools.lock.json` pins vendor artifact URLs and checksums for Linux `amd64`
 and `arm64`; builds verify every download.
 
+<!-- BEGIN GENERATED TOOL INVENTORY -->
 | Tool | Pinned version |
 | --- | --- |
 | Codex | 0.162.1 |
@@ -42,6 +43,7 @@ and `arm64`; builds verify every download.
 | bottom (`btm`) | 0.14.9 |
 | btop (`btop`) | 1.4.7 |
 | Hugo (`hugo`, standard) | 0.167.0 |
+<!-- END GENERATED TOOL INVENTORY -->
 
 Nushell and tmux are opt-in commands. tmux pins the published stable
 [official static build](https://github.com/tmux/tmux-builds/releases/tag/v3.7c),

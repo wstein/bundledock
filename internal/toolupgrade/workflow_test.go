@@ -33,7 +33,7 @@ func write(t *testing.T, name, content string) {
 }
 func fixture(t *testing.T) (string, []string) {
 	t.Helper()
-	for _, tool := range []string{"git", "bash", "sh"} {
+	for _, tool := range []string{"git", "bash", "sh", "python3"} {
 		if _, err := exec.LookPath(tool); err != nil {
 			t.Skip("requires ", tool, ": ", err)
 		}
@@ -50,7 +50,17 @@ func fixture(t *testing.T) (string, []string) {
 	if err := os.MkdirAll(filepath.Join(dir, "bundles/toolbox"), 0755); err != nil {
 		t.Fatal(err)
 	}
-	write(t, filepath.Join(dir, "bundles/toolbox/tools.lock.json"), "old lock\n")
+	for _, name := range []string{"bundles/toolbox/tools.lock.json", "bundles/toolbox/tools.packages.json", "docs/tools.md", "scripts/tool-inventory.py"} {
+		data, err := os.ReadFile(filepath.Join(root, name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		destination := filepath.Join(dir, name)
+		if err := os.MkdirAll(filepath.Dir(destination), 0755); err != nil {
+			t.Fatal(err)
+		}
+		write(t, destination, string(data))
+	}
 	write(t, filepath.Join(dir, "bundles/toolbox/tools.txt"), "gh>=2.0.0,<3.0.0\n")
 	must(t, dir, nil, "git", "add", ".")
 	must(t, dir, nil, "git", "commit", "-m", "fixture")
@@ -60,7 +70,16 @@ set -eu
 printf '%s\n' "$*" >> "$CALLS"
 case "$*" in 'run ./cmd/bundledock tools upgrade gh'|'run ./cmd/bundledock tools upgrade') ;; *) exit 41 ;; esac
 if [ "${FAIL_RESOLVER:-false}" = true ]; then exit 42; fi
-if [ "${NO_CHANGE:-false}" != true ]; then printf 'new lock\n' > bundles/toolbox/tools.lock.json; fi
+if [ "${NO_CHANGE:-false}" != true ]; then
+python3 - <<'PYTHON'
+import json
+from pathlib import Path
+p=Path('bundles/toolbox/tools.lock.json')
+lock=json.loads(p.read_text())
+for arch in ('amd64','arm64'): lock['platforms'][arch]['gh']['version']='v2.103.0'
+p.write_text(json.dumps(lock,indent=2)+'\n')
+PYTHON
+fi
 if [ "${EXTRA_EDIT:-false}" = true ]; then printf bad > extra-file; fi
 `)
 	write(t, filepath.Join(fake, "gh"), `#!/bin/sh
@@ -102,10 +121,10 @@ func TestResolveAndPublish(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if string(result) != "new lock\n" {
+	if !strings.Contains(string(result), `"version": "v2.103.0"`) {
 		t.Fatalf("result %s", result)
 	}
-	must(t, dir, nil, "git", "restore", "bundles/toolbox/tools.lock.json")
+	must(t, dir, nil, "git", "restore", "bundles/toolbox/tools.lock.json", "docs/tools.md")
 	remote := filepath.Join(t.TempDir(), "remote.git")
 	must(t, dir, nil, "git", "init", "--bare", remote)
 	must(t, dir, nil, "git", "remote", "add", "origin", remote)
@@ -114,8 +133,12 @@ func TestResolveAndPublish(t *testing.T) {
 		t.Fatalf("publish: %v\n%s", err, out)
 	}
 	got := must(t, dir, nil, "git", "show", "HEAD:bundles/toolbox/tools.lock.json")
-	if got != "new lock\n" {
+	if !strings.Contains(got, `"version": "v2.103.0"`) {
 		t.Fatal(got)
+	}
+	inventory := must(t, dir, nil, "git", "show", "HEAD:docs/tools.md")
+	if !strings.Contains(inventory, "| GitHub CLI | 2.103.0 |") {
+		t.Fatal("PR inventory missing updated version")
 	}
 	if branch := must(t, dir, nil, "git", "branch", "--show-current"); branch != "automation/tool-upgrade-123-1\n" {
 		t.Fatal(branch)
@@ -160,7 +183,7 @@ func TestDeniedPRExplainsPrerequisite(t *testing.T) {
 	if err != nil {
 		t.Fatalf("%v %s", err, out)
 	}
-	must(t, dir, nil, "git", "restore", "bundles/toolbox/tools.lock.json")
+	must(t, dir, nil, "git", "restore", "bundles/toolbox/tools.lock.json", "docs/tools.md")
 	remote := filepath.Join(t.TempDir(), "remote.git")
 	must(t, dir, nil, "git", "init", "--bare", remote)
 	must(t, dir, nil, "git", "remote", "add", "origin", remote)
@@ -197,5 +220,61 @@ func TestWorkflowManualLeastPrivilege(t *testing.T) {
 	resolve := strings.Split(strings.Split(s, "  resolve:\n")[1], "  publish:\n")[0]
 	if strings.Contains(resolve, ": write") {
 		t.Fatal("resolver has write permission")
+	}
+}
+
+func TestDocsOnlyDriftRepair(t *testing.T) {
+	dir, env := fixture(t)
+	path := filepath.Join(dir, "docs/tools.md")
+	b, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	write(t, path, strings.Replace(string(b), "| GitHub CLI | 2.102.0 |", "| GitHub CLI | 0.0.0 |", 1))
+	must(t, dir, nil, "git", "add", "docs/tools.md")
+	must(t, dir, nil, "git", "commit", "-m", "stale inventory fixture")
+	out, err := adapter(t, dir, append(env, "NO_CHANGE=true"), "resolve")
+	if err != nil {
+		t.Fatalf("resolve: %v %s", err, out)
+	}
+	outputs, err := os.ReadFile(value(env, "GITHUB_OUTPUT"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(outputs), "changed=true") {
+		t.Fatalf("docs drift ignored: %s", outputs)
+	}
+	must(t, dir, nil, "git", "restore", "docs/tools.md")
+	remote := filepath.Join(t.TempDir(), "remote.git")
+	must(t, dir, nil, "git", "init", "--bare", remote)
+	must(t, dir, nil, "git", "remote", "add", "origin", remote)
+	out, err = adapter(t, dir, env, "publish")
+	if err != nil {
+		t.Fatalf("publish: %v %s", err, out)
+	}
+	names := must(t, dir, nil, "git", "diff-tree", "--no-commit-id", "--name-only", "-r", "HEAD")
+	if names != "docs/tools.md\n" {
+		t.Fatalf("docs-only repair changed %s", names)
+	}
+}
+func TestPublisherRejectsUnrelatedDocumentation(t *testing.T) {
+	dir, env := fixture(t)
+	out, err := adapter(t, dir, env, "resolve")
+	if err != nil {
+		t.Fatalf("resolve: %v %s", err, out)
+	}
+	artifact := filepath.Join(value(env, "UPGRADE_RESULT"), "tools.md")
+	b, err := os.ReadFile(artifact)
+	if err != nil {
+		t.Fatal(err)
+	}
+	write(t, artifact, string(b)+"\nUnexpected unrelated prose edit.\n")
+	must(t, dir, nil, "git", "restore", "bundles/toolbox/tools.lock.json", "docs/tools.md")
+	out, err = adapter(t, dir, env, "publish")
+	if err == nil || !strings.Contains(out, "generated inventory") {
+		t.Fatalf("unrelated documentation accepted: %v %s", err, out)
+	}
+	if branch := must(t, dir, nil, "git", "branch", "--show-current"); branch != "main\n" {
+		t.Fatal("created branch before rejecting artifact")
 	}
 }
