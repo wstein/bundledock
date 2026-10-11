@@ -55,26 +55,33 @@ No plugins or user configuration are installed for either alternative.
 ## Propose upgrades with GitHub Actions
 
 The **Propose tool upgrades** workflow (`.github/workflows/tool-upgrade.yml`)
-is manual-only. After a human merges the workflow onto the repository default
-branch, open **Actions → Propose tool upgrades → Run workflow**, select that
-branch, keep `dry_run=true`, and optionally set `tool=gh` for a bounded first
-run. An empty tool input resolves every desired tool. The workflow refuses
-non-default-branch runs. A workflow that exists only on a topic branch cannot
-be dispatched as a new manual workflow; review and human merge come first.
+runs daily at **06:00 UTC** from the repository default branch. Scheduled runs
+resolve all desired stable tools within `tools.txt` constraints and open a
+reviewable PR only when the lock or its generated inventory changes. GitHub
+may delay scheduled runs; the cron time is not a delivery guarantee. The
+schedule starts after a human merges this workflow onto the default branch.
+
+For a manual test, open **Actions → Propose tool upgrades → Run workflow**,
+select the default branch, keep `dry_run=true`, and optionally set `tool=gh`
+for a bounded first run. An empty tool input resolves every desired tool.
+The workflow refuses non-default-branch runs. A new manual workflow must
+exist on the default branch before it can be dispatched.
 
 Dry runs use a read-only token, run the existing `tools upgrade` resolver, and
-show the proposed lock diff in the run summary. Resolution downloads official
+show the proposed lock and inventory diff in the run summary. Resolution downloads official
 prebuilt archives for both AMD64 and ARM64 to verify their checksums; it does
 not execute those tools or build images, CLI releases, or documentation. An
 upstream error fails the run without creating a PR. No changes produce a
-successful no-op.
+successful no-op. Stale inventory alone is a deliberate repair: it counts as
+a change even when the lock versions are already current.
 
-Set `dry_run=false` only when you want a reviewable lock-only PR. A separate
-job requests `contents: write` and `pull-requests: write`, transfers only the
-resolved lock from that same run attempt, and creates its own
+For manual runs, set `dry_run=false` when you want a reviewable lock and
+inventory PR; scheduled runs already propose actual changes. A separate job
+requests `contents: write` and `pull-requests: write`, transfers only the
+resolved lock and generated inventory from that same run attempt, and creates its own
 `automation/tool-upgrade-<run-id>-<attempt>` branch. It never force-pushes,
-reuses another branch, merges a PR, schedules work, publishes tools, or activates
-a consumer image. Rerunning a changed attempt creates a separate topic; review
+reuses another branch, merges a PR, publishes tools, or activates a consumer
+image. Rerunning a changed attempt creates a separate topic; review
 existing topics before rerunning. An unsuccessful PR creation may leave its
 already-pushed topic branch for inspection.
 
@@ -93,6 +100,32 @@ new topic branch and complete human review before merging. A successful
 resolver or CI run verifies source and lock behavior, not native image smoke
 coverage. Building, publishing, or activating the new lock still requires
 separate explicit user approval of the operation and revision.
+
+## Keep the source inventory consistent
+
+The pinned-version table above is managed between the
+`BEGIN GENERATED TOOL INVENTORY` and `END GENERATED TOOL INVENTORY` comments.
+Its versions come from `tools.lock.json` for both supported architectures;
+existing catalog tag prefixes determine the display version, and existing
+labels and row order remain presentation metadata. Missing catalog IDs or
+architecture version differences fail generation rather than omitting a tool.
+
+After changing a lock locally, run:
+
+```sh
+python3 scripts/tool-inventory.py          # update only the managed table
+python3 scripts/tool-inventory.py --check  # fail on drift without writing
+make check                                # includes the same source check
+```
+
+The upgrade workflow generates this table after resolution. Before opening a
+PR, the write job regenerates it from the checked-out documentation and resolved
+lock, then compares the transferred inventory byte for byte. It accepts only
+the lock and generated table changes; unrelated prose edits are rejected.
+Prose outside the markers, historical verification records, badges and consumer
+pins are not generated. These commands edit or check Markdown source; they do
+not invoke Hugo or render a documentation site. The existing CI workflow calls
+`make check`, so a lock-only change with a stale table fails source verification.
 
 ## Upgrade the lock
 
