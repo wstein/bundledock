@@ -19,7 +19,10 @@ import (
 func Initialize(source, target string, output io.Writer) error {
 	return initialize(source, target, output, copyBundle)
 }
-func initialize(source, target string, output io.Writer, copyFiles func(*os.Root, *os.Root) error) (err error) {
+func initialize(source, target string, output io.Writer, copyFiles func(*os.Root, *os.Root) error) error {
+	return initializeProfile(source, target, "", output, copyFiles)
+}
+func initializeProfile(source, target, profile string, output io.Writer, copyFiles func(*os.Root, *os.Root) error) (err error) {
 	dst, err := os.OpenRoot(target)
 	if err != nil {
 		return fmt.Errorf("mount a named volume at %s: %w", target, err)
@@ -38,6 +41,9 @@ func initialize(source, target string, output io.Writer, copyFiles func(*os.Root
 		return err
 	}
 	defer src.Close()
+	if _, err := toolbundle.BundleLinks(src, profile); err != nil {
+		return err
+	}
 	ready, err := dst.Lstat(".ready")
 	if err == nil {
 		if !ready.Mode().IsRegular() {
@@ -56,10 +62,10 @@ func initialize(source, target string, output io.Writer, copyFiles func(*os.Root
 				return fmt.Errorf("volume %s differs from bundle", name)
 			}
 		}
-		if err := verifyTree(src, dst); err != nil {
+		if err := verifyTreeProfile(src, dst, profile); err != nil {
 			return err
 		}
-		return verify(dst)
+		return verifyProfile(dst, profile)
 	}
 	if !os.IsNotExist(err) {
 		return err
@@ -82,10 +88,10 @@ func initialize(source, target string, output io.Writer, copyFiles func(*os.Root
 	if err := copyFiles(src, dst); err != nil {
 		return err
 	}
-	if err := verifyTree(src, dst); err != nil {
+	if err := verifyTreeProfile(src, dst, profile); err != nil {
 		return err
 	}
-	if err := verify(dst); err != nil {
+	if err := verifyProfile(dst, profile); err != nil {
 		return err
 	}
 	if err := toolbundle.WriteFile(dst, ".ready", bytes.NewReader(nil), 0644); err != nil {
@@ -102,8 +108,13 @@ func readFile(root *os.Root, name string) ([]byte, error) {
 	defer f.Close()
 	return io.ReadAll(f)
 }
-func copyBundle(src, dst *os.Root) error {
-	return fs.WalkDir(src.FS(), ".", func(name string, entry fs.DirEntry, err error) error {
+func copyBundle(src, dst *os.Root) error { return copyBundleProfile(src, dst, "") }
+func copyBundleProfile(src, dst *os.Root, profile string) error {
+	links, err := toolbundle.BundleLinks(src, profile)
+	if err != nil {
+		return err
+	}
+	err = fs.WalkDir(src.FS(), ".", func(name string, entry fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -115,6 +126,9 @@ func copyBundle(src, dst *os.Root) error {
 		}
 		if entry.IsDir() {
 			return toolbundle.MakeDirectory(dst, name)
+		}
+		if target, ok := links[name]; ok {
+			return toolbundle.CheckLink(src, name, target)
 		}
 		if !entry.Type().IsRegular() {
 			return fmt.Errorf("unsupported bundle file %q", name)
@@ -134,13 +148,36 @@ func copyBundle(src, dst *os.Root) error {
 		}
 		return toolbundle.WriteFile(dst, name, f, mode)
 	})
+	if err != nil {
+		return err
+	}
+	for name, target := range links {
+		if err := toolbundle.CheckLink(src, name, target); err != nil {
+			return err
+		}
+		if err := toolbundle.LinkTarget(dst, name, target); err != nil {
+			return err
+		}
+		if err := toolbundle.CheckPath(dst, name); err != nil {
+			return err
+		}
+		if err := dst.Symlink(target, name); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // verifyTree checks membership, structure and normalized modes against the
 // trusted image. SHA256SUMS alone cannot detect added files or chmod changes.
-func verifyTree(src, dst *os.Root) error {
+func verifyTree(src, dst *os.Root) error { return verifyTreeProfile(src, dst, "") }
+func verifyTreeProfile(src, dst *os.Root, profile string) error {
+	links, err := toolbundle.BundleLinks(src, profile)
+	if err != nil {
+		return err
+	}
 	expected := make(map[string]fs.FileMode)
-	err := fs.WalkDir(src.FS(), ".", func(name string, entry fs.DirEntry, err error) error {
+	err = fs.WalkDir(src.FS(), ".", func(name string, entry fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -149,6 +186,13 @@ func verifyTree(src, dst *os.Root) error {
 		}
 		if name == ".ready" || name == ".initializing" {
 			return fmt.Errorf("reserved bundle path %q", name)
+		}
+		if target, ok := links[name]; ok {
+			if err := toolbundle.CheckLink(src, name, target); err != nil {
+				return err
+			}
+			expected[name] = fs.ModeSymlink | 0777
+			return nil
 		}
 		if err := toolbundle.CheckPath(src, name); err != nil {
 			return err
@@ -181,6 +225,16 @@ func verifyTree(src, dst *os.Root) error {
 		if name == "." {
 			return nil
 		} // Volume mount permissions may differ.
+		if target, ok := links[name]; ok {
+			if err := toolbundle.CheckLink(dst, name, target); err != nil {
+				return err
+			}
+			if _, ok := expected[name]; !ok {
+				return fmt.Errorf("unexpected link %q", name)
+			}
+			delete(expected, name)
+			return nil
+		}
 		if err := toolbundle.CheckPath(dst, name); err != nil {
 			return err
 		}
@@ -234,7 +288,12 @@ func verifyTree(src, dst *os.Root) error {
 	return nil
 }
 
-func verify(root *os.Root) error {
+func verify(root *os.Root) error { return verifyProfile(root, "") }
+func verifyProfile(root *os.Root, profile string) error {
+	links, err := toolbundle.BundleLinks(root, profile)
+	if err != nil {
+		return err
+	}
 	sums, err := toolbundle.OpenFile(root, "SHA256SUMS")
 	if err != nil {
 		return err
@@ -258,7 +317,7 @@ func verify(root *os.Root) error {
 		}
 		previous = name
 		hasManifest = hasManifest || name == "manifest.json"
-		f, err := toolbundle.OpenFile(root, name)
+		f, err := toolbundle.OpenContent(root, name, links)
 		if err != nil {
 			return err
 		}

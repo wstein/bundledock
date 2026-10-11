@@ -53,6 +53,7 @@ type Package struct {
 	Notices       []string          `json:"notices,omitempty"`
 }
 type Install struct {
+	Profile            string            `json:"profile,omitempty"`
 	Kind               string            `json:"kind"`
 	Members            map[string]string `json:"members,omitempty"`
 	Aliases            map[string]string `json:"aliases,omitempty"`
@@ -305,6 +306,9 @@ func (c Config) validate(strict bool) error {
 		case "raw", "tar.gz", "tar.xz", "zip":
 		default:
 			return fmt.Errorf("unknown install kind for %s", name)
+		}
+		if p.Install.Profile != "" && (p.Install.Profile != "code-server-standalone" || len(c.Catalog.Packages) != 1 || name != "code-server" || p.Provider != "github" || p.Repository != "coder/code-server" || p.Install.Kind != "tar.gz" || !p.Install.Preserve || len(p.Install.Members) != 1 || p.Install.Members["bin/code-server"] != "payload/bin/code-server" || len(p.Install.Aliases) != 0 || len(p.Install.ExcludeDirectories) != 0) {
+			return fmt.Errorf("invalid standalone profile for %s", name)
 		}
 		if len(p.Install.Members) == 0 {
 			return fmt.Errorf("missing install members for %s", name)

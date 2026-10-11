@@ -86,6 +86,9 @@ func Build(ctx context.Context, client *http.Client, tools map[string]Spec, pack
 			}
 		}
 	}
+	if len(packages) == 1 && packages["code-server"].Install.Profile == StandaloneProfile {
+		return WriteStandaloneManifest(root, arch, tools)
+	}
 	return WriteManifest(root, arch, tools)
 }
 func install(ctx context.Context, client *http.Client, root *os.Root, name string, p toolconfig.Package, spec Spec) error {
@@ -158,6 +161,17 @@ func install(ctx context.Context, client *http.Client, root *os.Root, name strin
 		}
 		return copyAliases(root, p.Install.Aliases)
 	case "tar.gz", "tar.xz":
+		if p.Install.Profile == StandaloneProfile {
+			arch := "amd64"
+			if strings.HasSuffix(spec.URL, "-arm64.tar.gz") {
+				arch = "arm64"
+			}
+			if err := ValidateStandaloneSpec(spec, arch); err != nil {
+				return err
+			}
+			expectedRoot := "code-server-" + strings.TrimPrefix(spec.Version, "v") + "-linux-" + arch
+			return extractStandalone(root, payload, expectedRoot)
+		}
 		return Extract(root, name, p, payload)
 	default:
 		return fmt.Errorf("unsupported install kind %q", p.Install.Kind)
@@ -168,6 +182,9 @@ func install(ctx context.Context, client *http.Client, root *os.Root, name strin
 // Preserve keeps native package resources except declared directories; aliases
 // are independent regular files. Excluded entries undergo the same validation.
 func Extract(root *os.Root, tool string, p toolconfig.Package, source io.Reader) error {
+	if p.Install.Profile == StandaloneProfile {
+		return extractStandalone(root, source, "")
+	}
 	var decoded io.Reader
 	var limited *io.LimitedReader
 	switch p.Install.Kind {
@@ -300,11 +317,16 @@ func copyAliases(root *os.Root, aliases map[string]string) error {
 }
 
 func WriteManifest(root *os.Root, arch string, tools map[string]Spec) error {
+	return writeManifest(root, arch, tools, "", nil)
+}
+func writeManifest(root *os.Root, arch string, tools map[string]Spec, profile string, links map[string]string) error {
 	manifest := struct {
-		Schema   int             `json:"schema"`
-		Platform string          `json:"platform"`
-		Tools    map[string]Spec `json:"tools"`
-	}{1, "linux/" + arch, tools}
+		Schema   int               `json:"schema"`
+		Profile  string            `json:"profile,omitempty"`
+		Links    map[string]string `json:"links,omitempty"`
+		Platform string            `json:"platform"`
+		Tools    map[string]Spec   `json:"tools"`
+	}{1, profile, links, "linux/" + arch, tools}
 	data, err := json.MarshalIndent(manifest, "", "  ")
 	if err != nil {
 		return err
@@ -321,7 +343,7 @@ func WriteManifest(root *os.Root, arch string, tools map[string]Spec) error {
 		if entry.IsDir() {
 			return nil
 		}
-		if !entry.Type().IsRegular() {
+		if !entry.Type().IsRegular() && links[name] == "" {
 			return fmt.Errorf("unsupported bundle file %q", name)
 		}
 		if name != "SHA256SUMS" {
@@ -335,7 +357,7 @@ func WriteManifest(root *os.Root, arch string, tools map[string]Spec) error {
 	sort.Strings(names)
 	var sums bytes.Buffer
 	for _, name := range names {
-		f, err := OpenFile(root, name)
+		f, err := OpenContent(root, name, links)
 		if err != nil {
 			return err
 		}
