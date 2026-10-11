@@ -38,11 +38,12 @@ LABELS = (
 DISPLAY_SUFFIX = {"tmux": " (official static builds)"}
 
 
-def generated(root):
-    bundle = root / "bundles/toolbox"
+def generated(root, bundle_name="toolbox"):
+    bundle = root / "bundles" / bundle_name
+    labels = LABELS if bundle_name == "toolbox" else (("code-server", "code-server"),)
     lock = json.loads((bundle / "tools.lock.json").read_text())
     catalog = json.loads((bundle / "tools.packages.json").read_text())
-    ids = {tool for tool, _ in LABELS}
+    ids = {tool for tool, _ in labels}
     if set(catalog["packages"]) != ids:
         raise ValueError("inventory labels must cover the exact catalog IDs")
     platforms = lock["platforms"]
@@ -52,7 +53,7 @@ def generated(root):
         if set(platforms[architecture]) != ids:
             raise ValueError("inventory lock must cover the exact catalog IDs")
     rows = ["| Tool | Pinned version |", "| --- | --- |"]
-    for tool, label in LABELS:
+    for tool, label in labels:
         version = platforms["amd64"][tool]["version"]
         if version != platforms["arm64"][tool]["version"]:
             raise ValueError(f"{tool}: architecture versions differ")
@@ -62,7 +63,7 @@ def generated(root):
         if not re.fullmatch(r"[0-9]+\.[0-9]+(?:\.[0-9]+|[a-z])?", version):
             raise ValueError(f"{tool}: unsafe inventory version")
         rows.append(f"| {label} | {version}{DISPLAY_SUFFIX.get(tool, '')} |")
-    document = root / "docs/tools.md"
+    document = root / "docs" / ("tools.md" if bundle_name == "toolbox" else "code-server.md")
     # read_bytes/decode preserves all prose and line endings outside the region.
     source = document.read_bytes().decode("utf-8")
     if source.count(BEGIN) != 1 or source.count(END) != 1:
@@ -76,10 +77,11 @@ def generated(root):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=Path("."))
+    parser.add_argument("--bundle", choices=("toolbox", "code-server"), default="toolbox")
     parser.add_argument("--check", action="store_true", help="fail on drift without writing")
     args = parser.parse_args()
     try:
-        document, source, replacement = generated(args.root)
+        document, source, replacement = generated(args.root, args.bundle)
         if source != replacement:
             if args.check:
                 raise ValueError("tool inventory is stale; run python3 scripts/tool-inventory.py")
