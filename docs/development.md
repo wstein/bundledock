@@ -13,7 +13,8 @@ weight: 50
 Use the patched build toolchain in [`.go-version`](../.go-version) for local
 builds and checks of BundleDock's own programs. Refreshing that compiler does
 not update dependencies or Go runtime code embedded in downloaded third-party
-binaries. The module retains Go 1.24 source compatibility. The Anchorage umbrella provides an
+binaries. The module requires Go 1.25 or newer for descriptor-confined symbolic link
+operations in the optional code-server bundle profile. The Anchorage umbrella provides an
 optional consumer devcontainer; its integration and pinned image are maintained
 there. Make inherits `GOFLAGS`; OCI build commands pass `-trimpath` explicitly.
 

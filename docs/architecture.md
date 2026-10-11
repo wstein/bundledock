@@ -17,7 +17,7 @@ for downloads. The download stage installs only CA certificates from Alpine's
 package repositories; the static Go builder handles HTTPS downloads, checksum
 verification and archive extraction without adding curl, tar or a C compiler.
 CI uses the same patched Go release from `.go-version`; `go.mod` retains the
-minimum supported source toolchain of Go 1.24. Alpine is a build dependency,
+minimum supported source toolchain of Go 1.25. Alpine is a build dependency,
 independent of the consumer's Debian runtime
 libraries and compatibility requirements below.
 
