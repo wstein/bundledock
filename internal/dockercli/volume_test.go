@@ -169,3 +169,32 @@ func TestDockerAdapterRejectsInvalidVolumeNames(t *testing.T) {
 		}
 	}
 }
+
+func TestBundleVolumeUsesSeparateImageDerivedNamespace(t *testing.T) {
+	id := "sha256:" + strings.Repeat("c", 64)
+	var calls [][]string
+	runner := func(_ context.Context, out, _ io.Writer, args ...string) error {
+		calls = append(calls, append([]string(nil), args...))
+		if args[0] == "image" {
+			fmt.Fprintln(out, id)
+		}
+		return nil
+	}
+	if err := BundleVolume(context.Background(), runner, "code-server:local", "code-server", io.Discard, io.Discard); err != nil {
+		t.Fatal(err)
+	}
+	want := "bundledock-code-server-" + strings.Repeat("c", 64)
+	if calls[1][2] != want || !strings.Contains(calls[2][5], "src="+want+",") || calls[2][6] != id {
+		t.Fatalf("calls %#v", calls)
+	}
+}
+
+func TestBundleVolumeRejectsInvalidNamespaceBeforeDocker(t *testing.T) {
+	for _, name := range []string{"", "-flag", "a,b", "a/b", "has space", "UPPER", "a\nother"} {
+		called := false
+		runner := func(context.Context, io.Writer, io.Writer, ...string) error { called = true; return nil }
+		if err := BundleVolume(context.Background(), runner, "image", name, io.Discard, io.Discard); err == nil || called {
+			t.Fatalf("accepted %q or called Docker", name)
+		}
+	}
+}

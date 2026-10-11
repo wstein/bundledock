@@ -21,9 +21,18 @@ func Run(ctx context.Context, stdout, stderr io.Writer, args ...string) error {
 }
 
 var imageID = regexp.MustCompile(`^sha256:[0-9a-f]{64}$`)
+var bundleName = regexp.MustCompile(`^[a-z][a-z0-9-]*$`)
 
 // Volume resolves a mutable image reference once and initializes using that ID.
 func Volume(ctx context.Context, run Runner, image string, stdout, stderr io.Writer) error {
+	return BundleVolume(ctx, run, image, "toolbox", stdout, stderr)
+}
+
+// BundleVolume initializes a bundle-specific volume using the immutable image ID.
+func BundleVolume(ctx context.Context, run Runner, image, bundle string, stdout, stderr io.Writer) error {
+	if !bundleName.MatchString(bundle) {
+		return fmt.Errorf("invalid bundle name %q", bundle)
+	}
 	var resolved bytes.Buffer
 	if err := run(ctx, &resolved, stderr, "image", "inspect", "--format", "{{.Id}}", "--", image); err != nil {
 		return fmt.Errorf("inspect tools image: %w", err)
@@ -32,7 +41,7 @@ func Volume(ctx context.Context, run Runner, image string, stdout, stderr io.Wri
 	if !imageID.MatchString(id) {
 		return fmt.Errorf("Docker returned invalid image ID %q", id)
 	}
-	volume := "bundledock-toolbox-" + strings.TrimPrefix(id, "sha256:")
+	volume := "bundledock-" + bundle + "-" + strings.TrimPrefix(id, "sha256:")
 	if err := run(ctx, io.Discard, stderr, "volume", "create", volume); err != nil {
 		return fmt.Errorf("create tools volume: %w", err)
 	}

@@ -23,16 +23,22 @@ func TestToolsVolumeCommand(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
-	var output bytes.Buffer
-	cmd := newRootCommand()
-	cmd.SetOut(&output)
-	cmd.SetErr(&output)
-	cmd.SetArgs([]string{"tools", "volume", "--image", "local:fixture"})
-	if err := cmd.ExecuteContext(context.Background()); err != nil {
-		t.Fatal(err)
-	}
-	if want := "Tool volume initialized\nVolume: bundledock-toolbox-" + strings.Repeat("a", 64) + "\n"; output.String() != want {
-		t.Fatalf("output %q", output.String())
+	for _, bundle := range []string{"toolbox", "code-server"} {
+		var output bytes.Buffer
+		cmd := newRootCommand()
+		cmd.SetOut(&output)
+		cmd.SetErr(&output)
+		args := []string{"tools", "volume", "--image", "local:fixture"}
+		if bundle != "toolbox" {
+			args = append(args, "--bundle", bundle)
+		}
+		cmd.SetArgs(args)
+		if err := cmd.ExecuteContext(context.Background()); err != nil {
+			t.Fatal(err)
+		}
+		if want := "Tool volume initialized\nVolume: bundledock-" + bundle + "-" + strings.Repeat("a", 64) + "\n"; output.String() != want {
+			t.Fatalf("output %q", output.String())
+		}
 	}
 }
 func TestToolsRejectsUnexpectedArguments(t *testing.T) {
