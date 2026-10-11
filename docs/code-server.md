@@ -5,9 +5,17 @@ code-server standalone distribution for Linux AMD64 and ARM64. It is optional:
 the toolbox catalog, image pins, mount path, volume names and consumer
 configuration remain unchanged. No browser service starts automatically.
 
-The current lock pins code-server **4.141.0**, released October 8, 2026, with
-VS Code **1.141.0**, from the [official release](https://github.com/coder/code-server/releases/tag/v4.141.0).
-Each architecture uses its published SHA-256. The builder verifies the entire
+The current standalone pin comes from this bundle's own lock:
+
+<!-- BEGIN GENERATED TOOL INVENTORY -->
+| Tool | Pinned version |
+| --- | --- |
+| code-server | 4.141.0 |
+<!-- END GENERATED TOOL INVENTORY -->
+
+The initial 4.141.0 pin was released October 8, 2026, with VS Code 1.141.0;
+see the [official release](https://github.com/coder/code-server/releases/tag/v4.141.0).
+Each architecture has a pinned SHA-256. The builder verifies the entire
 archive before reading members. The full payload retains bundled Node, native
 modules, VS Code assets, built-in extensions, MIT license and all third-party
 notices under `/opt/bundledock/code-server/payload`.
@@ -83,9 +91,23 @@ Resolve only this bundle's inputs with:
 bundledock tools upgrade --directory bundles/code-server
 ```
 
-The daily toolbox lock updater does not include this optional bundle and does
-not build or publish it. Future stable archives must pass the same structural
-profile; changed archive layouts fail closed until reviewed.
+The separate code-server upgrade workflow runs daily at 06:00 UTC and offers
+manual dry runs by default. It proposes only this lock and its generated source
+inventory. The existing toolbox upgrade workflow stays separate. Neither
+upgrade workflow builds or publishes images. Future stable archives must pass
+the same structural profile; changed archive layouts fail closed until reviewed.
+
+The separate **Publish code-server** workflow
+(`.github/workflows/bundledock-code-server.yml`) is manual-only. It requires a
+human dispatch on default `main` with the exact full approved SHA. It uses the
+existing `REPOSITORY_URL` Quay namespace and publishes to its separate
+`code-server` repository, with distinct run/attempt artifacts. Native AMD64 and
+ARM64 builds must both pass the dedicated read-only volume and password-service
+smoke before staging or promotion. The publisher checks its own workflow
+identity before promotion. For an initial publication, only an authenticated
+HTTP 404 for this repository's `stable` manifest permits an absent baseline;
+authentication, transport and other baseline failures stay closed. No workflow
+was dispatched as part of adding these source definitions.
 
 The initial source implementation was checked with Go 1.27.2 on Linux ARM64.
 Both official 4.141.0 archives were downloaded privately, checksum verified,
