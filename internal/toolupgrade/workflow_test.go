@@ -50,7 +50,7 @@ func fixture(t *testing.T) (string, []string) {
 	if err := os.MkdirAll(filepath.Join(dir, "bundles/toolbox"), 0755); err != nil {
 		t.Fatal(err)
 	}
-	for _, name := range []string{"bundles/toolbox/tools.lock.json", "bundles/toolbox/tools.packages.json", "docs/tools.md", "scripts/tool-inventory.py"} {
+	for _, name := range []string{"bundles/toolbox/tools.lock.json", "bundles/toolbox/tools.packages.json", "docs/tools.md", "scripts/tool-inventory.py", "bundles/code-server/tools.txt", "bundles/code-server/tools.lock.json", "bundles/code-server/tools.packages.json", "docs/code-server.md"} {
 		data, err := os.ReadFile(filepath.Join(root, name))
 		if err != nil {
 			t.Fatal(err)
@@ -68,15 +68,19 @@ func fixture(t *testing.T) (string, []string) {
 	write(t, filepath.Join(fake, "go"), `#!/bin/sh
 set -eu
 printf '%s\n' "$*" >> "$CALLS"
-case "$*" in 'run ./cmd/bundledock tools upgrade gh'|'run ./cmd/bundledock tools upgrade') ;; *) exit 41 ;; esac
+case "$*" in 'run ./cmd/bundledock tools upgrade gh'|'run ./cmd/bundledock tools upgrade'|'run ./cmd/bundledock tools upgrade code-server --directory bundles/code-server'|'run ./cmd/bundledock tools upgrade --directory bundles/code-server'|'run ./cmd/tools-publish validate --bundle code-server') ;; *) exit 41 ;; esac
+case "$*" in 'run ./cmd/tools-publish validate --bundle code-server') exit 0 ;; esac
+case "$*" in *'--directory bundles/code-server') export RESOLVED_BUNDLE=code-server ;; *) export RESOLVED_BUNDLE=toolbox ;; esac
 if [ "${FAIL_RESOLVER:-false}" = true ]; then exit 42; fi
 if [ "${NO_CHANGE:-false}" != true ]; then
 python3 - <<'PYTHON'
-import json
+import json,os
 from pathlib import Path
-p=Path('bundles/toolbox/tools.lock.json')
+bundle=os.environ['RESOLVED_BUNDLE']
+p=Path('bundles')/bundle/'tools.lock.json'
 lock=json.loads(p.read_text())
-for arch in ('amd64','arm64'): lock['platforms'][arch]['gh']['version']='v2.103.0'
+if os.environ.get('NO_CHANGE_'+bundle.upper().replace('-','_'))!='true':
+ for arch in ('amd64','arm64'): lock['platforms'][arch]['code-server' if bundle=='code-server' else 'gh']['version']='v4.142.0' if bundle=='code-server' else 'v2.103.0'
 p.write_text(json.dumps(lock,indent=2)+'\n')
 PYTHON
 fi
@@ -319,5 +323,89 @@ func TestPublisherNoChangeCreatesNothing(t *testing.T) {
 	}
 	if _, err := os.Stat(value(env, "CALLS")); !os.IsNotExist(err) {
 		t.Fatal("no-op invoked external resolver or PR command")
+	}
+}
+
+func TestCodeServerResolveUsesIndependentInputsAndInventory(t *testing.T) {
+	dir, env := fixture(t)
+	env = append(env, "BUNDLE=code-server", "TOOL=code-server")
+	before := must(t, dir, nil, "git", "show", "HEAD:bundles/toolbox/tools.lock.json")
+	out, err := adapter(t, dir, env, "resolve")
+	if err != nil {
+		t.Fatalf("code-server resolve: %v %s", err, out)
+	}
+	if got := must(t, dir, nil, "git", "diff", "--", "bundles/toolbox/tools.lock.json", "docs/tools.md"); got != "" {
+		t.Fatal("code-server changed toolbox: " + got)
+	}
+	if got := must(t, dir, nil, "git", "show", "HEAD:bundles/toolbox/tools.lock.json"); got != before {
+		t.Fatal("changed baseline")
+	}
+	for name, want := range map[string]string{"code-server.lock.json": "v4.142.0", "code-server.md": "| code-server | 4.142.0 |"} {
+		b, err := os.ReadFile(filepath.Join(value(env, "UPGRADE_RESULT"), name))
+		if err != nil || !strings.Contains(string(b), want) {
+			t.Fatalf("artifact %s: %v %s", name, err, b)
+		}
+	}
+}
+
+func TestCodeServerArtifactFailuresStopBeforeTopicCreation(t *testing.T) {
+	for _, kind := range []string{"stale base", "extra artifact", "linked artifact", "prose edit", "wrong architecture"} {
+		t.Run(kind, func(t *testing.T) {
+			dir, env := fixture(t)
+			env = append(env, "BUNDLE=code-server", "TOOL=code-server")
+			if out, err := adapter(t, dir, env, "resolve"); err != nil {
+				t.Fatalf("%v %s", err, out)
+			}
+			result := value(env, "UPGRADE_RESULT")
+			switch kind {
+			case "stale base":
+				write(t, filepath.Join(result, "base.sha"), strings.Repeat("a", 40)+"\n")
+			case "extra artifact":
+				write(t, filepath.Join(result, "other.lock.json"), "unexpected")
+			case "linked artifact":
+				p := filepath.Join(result, "code-server.lock.json")
+				if err := os.Rename(p, p+".saved"); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.Symlink(p+".saved", p); err != nil {
+					t.Fatal(err)
+				}
+			case "prose edit":
+				p := filepath.Join(result, "code-server.md")
+				b, err := os.ReadFile(p)
+				if err != nil {
+					t.Fatal(err)
+				}
+				write(t, p, string(b)+"unrelated prose\n")
+			case "wrong architecture":
+				p := filepath.Join(result, "code-server.lock.json")
+				b, err := os.ReadFile(p)
+				if err != nil {
+					t.Fatal(err)
+				}
+				write(t, p, strings.Replace(string(b), "v4.142.0", "v4.143.0", 1))
+			}
+			must(t, dir, nil, "git", "restore", "bundles/code-server/tools.lock.json", "docs/code-server.md")
+			if out, err := adapter(t, dir, env, "publish"); err == nil {
+				t.Fatalf("accepted %s: %s", kind, out)
+			}
+			if branch := must(t, dir, nil, "git", "branch", "--show-current"); branch != "main\n" {
+				t.Fatal("created topic before rejection")
+			}
+		})
+	}
+}
+func TestCodeServerNoChangeCreatesNoProposal(t *testing.T) {
+	dir, env := fixture(t)
+	env = append(env, "BUNDLE=code-server", "TOOL=", "NO_CHANGE=true")
+	if out, err := adapter(t, dir, env, "resolve"); err != nil {
+		t.Fatalf("%v %s", err, out)
+	}
+	b, err := os.ReadFile(value(env, "GITHUB_OUTPUT"))
+	if err != nil || !strings.Contains(string(b), "changed=false") {
+		t.Fatalf("outputs %v %s", err, b)
+	}
+	if _, err := os.Stat(filepath.Join(value(env, "UPGRADE_RESULT"), "code-server.lock.json")); !os.IsNotExist(err) {
+		t.Fatal("no-op emitted proposal")
 	}
 }
