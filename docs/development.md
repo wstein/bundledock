@@ -366,3 +366,26 @@ read-only mounts, and rejection of changed, incomplete, or locked volumes. This 
 startup, not authentication, model requests, or agent sandbox behavior. Herdr
 only runs `--version`; its interactive UI, server, and agent integration need
 separate runtime testing.
+
+## Helix source verification
+
+Helix 25.07.1 official AMD64 and ARM64 release archives were downloaded read-only
+and verified against GitHub's published SHA256 asset digests. Each complete tar
+graph contains 1,523 entries (1,236 regular files and 287 directories), no links,
+and respectively 212,082,486 / 212,500,574 regular-file bytes. Both fit the existing
+XZ limits. Archive graph inspection does not demonstrate native runtime behavior.
+The checksum-verified official source archive supplies retained compiled grammar
+license notices; its sources are not built. MPL-2.0, grammar notices and provenance
+are in `bundles/toolbox/licenses/helix`, and all runtime notices remain in the payload.
+
+Source tests exercise synthetic dual-architecture release layouts, relocated
+launcher runtime selection, writable HOME and quoted arguments, full grammar/query/
+theme notice preservation, rejected foreign roots and links, calendar normalization
+and updater asset spelling. The smoke script's parser/query failures are tested with
+synthetic executables. The OCI smoke source now checks `hx --version`, writable
+Helix configuration, and Go grammar and highlight-query loading offline.
+
+No real Helix binary was executed or production archive extracted during this
+source-only change. Native AMD64/ARM64 image builds, read-only volume smoke, terminal
+editing and consumer compatibility remain deferred until explicit build approval
+for the intended source revision. Source checks do not establish release readiness.
