@@ -17,6 +17,7 @@ check() {
         --tmpfs /home/bundledock:exec,uid=1000,gid=1000,mode=0700 \
         --mount "type=volume,src=$volume,dst=/opt/bundledock/toolbox,readonly,volume-nocopy" \
         --mount "type=bind,src=$script_dir/quality-security-smoke.sh,dst=/quality-security-smoke.sh,readonly" \
+        --mount "type=bind,src=$script_dir/helix-smoke.sh,dst=/helix-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/hugo-smoke.sh,dst=/hugo-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/process-monitors-smoke.sh,dst=/process-monitors-smoke.sh,readonly" \
         --env HOME=/home/bundledock --env DISABLE_UPDATES=1 --env DISABLE_AUTOUPDATER=1 \
@@ -84,6 +85,7 @@ check() {
             uv --version
             uvx --version
             test "$(uv --offline cache dir)" = "$UV_CACHE_DIR"
+            sh /helix-smoke.sh
             sh /hugo-smoke.sh
             sh /quality-security-smoke.sh
             sh /process-monitors-smoke.sh

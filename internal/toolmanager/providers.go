@@ -332,7 +332,7 @@ func (r resolver) resolve(ctx context.Context, p toolconfig.Package, c toolconfi
 func (r resolver) githubAssets(ctx context.Context, p toolconfig.Package, rel release) (map[string]toolconfig.Spec, error) {
 	specs := map[string]toolconfig.Spec{}
 	version, _ := p.Version(rel.Tag)
-	if p.Normalization == "tmux-release" {
+	if p.Normalization == "tmux-release" || p.Normalization == "helix-calendar" {
 		version = strings.TrimPrefix(rel.Tag, p.TagPrefix)
 	}
 	for _, arch := range []string{"amd64", "arm64"} {

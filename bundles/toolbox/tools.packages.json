@@ -605,6 +605,33 @@
       "notices": [
         "licenses/hugo/SOURCE"
       ]
+    },
+    "helix": {
+      "provider": "github",
+      "repository": "helix-editor/helix",
+      "normalization": "helix-calendar",
+      "architectures": {
+        "amd64": "x86_64",
+        "arm64": "aarch64"
+      },
+      "asset": "helix-{version}-{arch}-linux.tar.xz",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "tar.xz",
+        "profile": "helix-runtime",
+        "preserve": true,
+        "members": {
+          "hx": "lib/helix/hx"
+        }
+      },
+      "notices": [
+        "licenses/helix/SOURCE",
+        "licenses/helix/LICENSE",
+        "licenses/helix/GRAMMAR-NOTICES"
+      ]
     }
   }
 }

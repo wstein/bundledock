@@ -172,6 +172,13 @@ func install(ctx context.Context, client *http.Client, root *os.Root, name strin
 			expectedRoot := "code-server-" + strings.TrimPrefix(spec.Version, "v") + "-linux-" + arch
 			return extractStandalone(root, payload, expectedRoot)
 		}
+		if p.Install.Profile == "helix-runtime" {
+			expectedRoot := strings.TrimSuffix(path.Base(spec.URL), ".tar.xz")
+			if !helixArchiveRoot.MatchString(expectedRoot) || !strings.HasPrefix(expectedRoot, "helix-"+spec.Version+"-") {
+				return fmt.Errorf("invalid Helix release URL")
+			}
+			return extract(root, name, p, payload, expectedRoot)
+		}
 		return Extract(root, name, p, payload)
 	default:
 		return fmt.Errorf("unsupported install kind %q", p.Install.Kind)
@@ -182,6 +189,9 @@ func install(ctx context.Context, client *http.Client, root *os.Root, name strin
 // Preserve keeps native package resources except declared directories; aliases
 // are independent regular files. Excluded entries undergo the same validation.
 func Extract(root *os.Root, tool string, p toolconfig.Package, source io.Reader) error {
+	return extract(root, tool, p, source, "")
+}
+func extract(root *os.Root, tool string, p toolconfig.Package, source io.Reader, expectedHelixRoot string) error {
 	if p.Install.Profile == StandaloneProfile {
 		return extractStandalone(root, source, "")
 	}
@@ -210,6 +220,7 @@ func Extract(root *os.Root, tool string, p toolconfig.Package, source io.Reader)
 	archive := tar.NewReader(decoded)
 	seen := map[string]bool{}
 	installed := map[string]bool{}
+	helixRoot := ""
 	for {
 		entry, err := archive.Next()
 		if err == io.EOF {
@@ -234,9 +245,27 @@ func Extract(root *os.Root, tool string, p toolconfig.Package, source io.Reader)
 			return fmt.Errorf("duplicate archive path %q", name)
 		}
 		seen[name] = true
+		if p.Install.Profile == "helix-runtime" {
+			parts := strings.SplitN(name, "/", 2)
+			if !helixArchiveRoot.MatchString(parts[0]) || expectedHelixRoot != "" && parts[0] != expectedHelixRoot || helixRoot != "" && helixRoot != parts[0] {
+				return fmt.Errorf("invalid Helix archive root %q", name)
+			}
+			helixRoot = parts[0]
+			if len(parts) == 1 {
+				if entry.Typeflag != tar.TypeDir {
+					return fmt.Errorf("Helix root must be a directory")
+				}
+				continue
+			}
+			name = parts[1]
+		}
 		if entry.Typeflag == tar.TypeDir {
 			if p.Install.Preserve && !p.Install.Excludes(name) {
-				if err := mkdir(root, name); err != nil {
+				directory := name
+				if p.Install.Profile == "helix-runtime" {
+					directory = "lib/helix/" + name
+				}
+				if err := mkdir(root, directory); err != nil {
 					return err
 				}
 			}
@@ -268,6 +297,9 @@ func Extract(root *os.Root, tool string, p toolconfig.Package, source io.Reader)
 			}
 		} else if p.Install.Preserve {
 			target = name
+			if p.Install.Profile == "helix-runtime" {
+				target = "lib/helix/" + name
+			}
 		} else {
 			for _, notice := range p.Install.ArchiveNotices {
 				if path.Base(name) == notice {
@@ -295,6 +327,9 @@ func Extract(root *os.Root, tool string, p toolconfig.Package, source io.Reader)
 	}
 	if len(installed) != len(p.Install.Members) {
 		return fmt.Errorf("expected %d %s executable(s), found %d", len(p.Install.Members), tool, len(installed))
+	}
+	if p.Install.Profile == "helix-runtime" {
+		return writeHelixLauncher(root)
 	}
 	return copyAliases(root, p.Install.Aliases)
 }

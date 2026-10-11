@@ -1,7 +1,7 @@
 {
   "schema": 2,
-  "desired_digest": "78447b2b4d14f460b58d82c291e475d00ba393bb0db81321815d3a7ed0a939cf",
-  "catalog_digest": "beab025c2ae74040aaacb4145031f411cf0d58a7933e37816d49df11045f8b2e",
+  "desired_digest": "43a9c55fec69ffdfd7bc360db3088037064b1ad17f92edb2e4a62515edf1069d",
+  "catalog_digest": "28fc43a921e292cfc06e09c8ff99802f995c916fd1a3c4b285fa432d3d599d62",
   "platforms": {
     "amd64": {
       "agy": {
@@ -141,6 +141,12 @@
         "url": "https://github.com/mikefarah/yq/releases/download/v4.54.1/yq_linux_amd64",
         "sha256": "8e34fc298390875de416e6a4afcb8cabeceb25d9aa8506c1a2f9353cf702ea5f",
         "verification": "tls-download-sha256"
+      },
+      "helix": {
+        "version": "25.07.1",
+        "url": "https://github.com/helix-editor/helix/releases/download/25.07.1/helix-25.07.1-x86_64-linux.tar.xz",
+        "sha256": "3f08e63ecd388fff657ad39722f88bb03dcf326f1f2da2700d99e1dc40ab2e8b",
+        "verification": "publisher-sha256"
       }
     },
     "arm64": {
@@ -281,6 +287,12 @@
         "url": "https://github.com/mikefarah/yq/releases/download/v4.54.1/yq_linux_arm64",
         "sha256": "189088da0c6429ec5178dfaab1a114805f6cab0b61b165ab236efedf1d57a71b",
         "verification": "tls-download-sha256"
+      },
+      "helix": {
+        "version": "25.07.1",
+        "url": "https://github.com/helix-editor/helix/releases/download/25.07.1/helix-25.07.1-aarch64-linux.tar.xz",
+        "sha256": "ce23fa8d395e633e3e54c052012f11965d91d8d5c2bfa659685f50430b4f8175",
+        "verification": "publisher-sha256"
       }
     }
   }
