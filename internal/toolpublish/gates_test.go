@@ -491,3 +491,38 @@ func TestAliasFailureDoesNotReportSuccessfulPublication(t *testing.T) {
 		}
 	}
 }
+
+func TestCodeServerBuildUsesDedicatedCarrierAndSmoke(t *testing.T) {
+	lock := "../../bundles/code-server/tools.lock.json"
+	m, err := NewMetadata(lock, "quay.io/example/code-server", "2026.10.10-b12.1", strings.Repeat("a", 40), "https://github.com/example/repo", "2026-10-10T03:17:00Z", "123")
+	if err != nil {
+		t.Fatal(err)
+	}
+	f := fake("amd64")
+	r, err := f.adapter().Build(m, lock, "amd64", "consumer:test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	build, smoke := false, false
+	for _, args := range f.calls {
+		if prefix(args, "docker", "build") {
+			build = true
+			if args[6] != "bundles/code-server/Dockerfile" || !strings.HasPrefix(args[8], "bundledock-code-server:build-") {
+				t.Fatalf("wrong build %v", args)
+			}
+		}
+		if prefix(args, "sh") {
+			smoke = true
+			if !reflect.DeepEqual(args, []string{"sh", "bundles/code-server/smoke.sh", r.ImageID, "consumer:test"}) {
+				t.Fatalf("wrong smoke %v", args)
+			}
+		}
+	}
+	if !build || !smoke || f.labels["org.opencontainers.image.title"] != "bundledock-code-server" {
+		t.Fatal("missing dedicated native path")
+	}
+	f.failSmoke = true
+	if _, err := f.adapter().Build(m, lock, "amd64", "consumer:test"); err == nil {
+		t.Fatal("accepted failed code-server smoke")
+	}
+}

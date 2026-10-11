@@ -107,7 +107,7 @@ func PublishedLockArtifact(ctx context.Context, client *http.Client, repository,
 			return nil, err
 		}
 		for _, artifact := range list.Artifacts {
-			if artifact.Name == "resolved-tools-"+attempt {
+			if artifact.Name == bundleForImage(m.Image).Artifact+"-"+attempt {
 				if artifact.Expired || artifact.ID < 1 || artifactID != 0 {
 					return nil, fmt.Errorf("legacy published lock artifact expired or ambiguous")
 				}

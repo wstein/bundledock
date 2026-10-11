@@ -6,6 +6,7 @@ import (
 	"bundledock/internal/toolpublish"
 	"context"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -49,18 +50,23 @@ func copyFile(source, destination string) error {
 func resolve(directory string, meta toolpublish.Metadata, runner func(...string) ([]byte, error)) error {
 	// This is the only upstream resolution in a workflow run. No repository write
 	// or push follows; all other jobs download this one lock/provenance artifact.
-	if _, err := runner("go", "run", "./cmd/bundledock", "tools", "upgrade"); err != nil {
+	bundle := toolpublish.BundleForMetadata(meta)
+	args := []string{"go", "run", "./cmd/bundledock", "tools", "upgrade"}
+	if bundle.Name != "toolbox" {
+		args = append(args, "--directory", bundle.Directory)
+	}
+	if _, err := runner(args...); err != nil {
 		return err
 	}
 	var err error
-	meta.LockSHA256, err = toolpublish.HashFile(toolconfig.ToolboxLock)
+	meta.LockSHA256, err = toolpublish.HashFile(bundle.Directory + "/tools.lock.json")
 	if err != nil {
 		return err
 	}
 	if err = os.Mkdir(directory, 0700); err != nil {
 		return err
 	}
-	if err = copyFile(toolconfig.ToolboxLock, filepath.Join(directory, "tools.lock.json")); err != nil {
+	if err = copyFile(bundle.Directory+"/tools.lock.json", filepath.Join(directory, "tools.lock.json")); err != nil {
 		return err
 	}
 	return writeJSON(filepath.Join(directory, "provenance.json"), meta)
@@ -92,11 +98,20 @@ func publicationDecision(lock, event string, baseline func() (string, error)) (b
 	return event == "workflow_dispatch" || fresh != published, nil
 }
 
+func publicationDecisionForBundle(lock, event, bundle string, baseline func() (string, error)) (bool, error) {
+	publish, err := publicationDecision(lock, event, baseline)
+	if bundle == "code-server" && event == "workflow_dispatch" && errors.Is(err, toolpublish.ErrBaselineAbsent) {
+		return true, nil
+	}
+	return publish, err
+}
+
 func execute(args []string) error {
 	if len(args) == 0 {
 		return fmt.Errorf("expected resolve, plan, build, push, newest or promote")
 	}
 	flags := flag.NewFlagSet("tools-publish "+args[0], flag.ContinueOnError)
+	bundleName := flags.String("bundle", "toolbox", "publication bundle (toolbox or code-server)")
 	directory := flags.String("directory", "resolved", "resolved artifact directory")
 	arch := flags.String("architecture", "", "native target architecture")
 	consumer := flags.String("consumer", "mcr.microsoft.com/devcontainers/go:2-1.27-trixie", "consumer baseline")
@@ -107,16 +122,24 @@ func execute(args []string) error {
 	if flags.NArg() != 0 {
 		return fmt.Errorf("unexpected positional arguments")
 	}
+	bundle, err := toolpublish.SelectBundle(*bundleName)
+	if err != nil {
+		return err
+	}
+	if args[0] == "validate" {
+		_, err := toolconfig.Load(bundle.Directory)
+		return err
+	}
 	lock := filepath.Join(*directory, "tools.lock.json")
 	provenance := filepath.Join(*directory, "provenance.json")
 	if args[0] == "resolve" {
-		image, err := toolpublish.RepositoryImage(os.Getenv("REPOSITORY_URL"))
+		image, err := toolpublish.RepositoryImageForBundle(os.Getenv("REPOSITORY_URL"), bundle.Name)
 		if err != nil {
 			return err
 		}
 		now := time.Now().UTC()
 		tag := now.Format("2006.01.02") + "-b" + os.Getenv("GITHUB_RUN_NUMBER") + "." + os.Getenv("GITHUB_RUN_ATTEMPT")
-		meta, err := toolpublish.NewMetadata(toolconfig.ToolboxLock, image, tag, os.Getenv("GITHUB_SHA"), os.Getenv("GITHUB_SERVER_URL")+"/"+os.Getenv("GITHUB_REPOSITORY"), now.Format("2006-01-02T15:04:05Z"), os.Getenv("GITHUB_RUN_ID"))
+		meta, err := toolpublish.NewMetadata(bundle.Directory+"/tools.lock.json", image, tag, os.Getenv("GITHUB_SHA"), os.Getenv("GITHUB_SERVER_URL")+"/"+os.Getenv("GITHUB_REPOSITORY"), now.Format("2006-01-02T15:04:05Z"), os.Getenv("GITHUB_RUN_ID"))
 		if err != nil {
 			return err
 		}
@@ -129,6 +152,9 @@ func execute(args []string) error {
 	if err := artifactIdentity(meta, os.Getenv("GITHUB_RUN_ID"), os.Getenv("GITHUB_RUN_NUMBER"), os.Getenv("GITHUB_RUN_ATTEMPT"), os.Getenv("GITHUB_SHA")); err != nil {
 		return err
 	}
+	if !strings.HasSuffix(meta.Image, "/"+bundle.Name) {
+		return fmt.Errorf("artifact belongs to a different bundle")
+	}
 	adapter := toolpublish.Adapter{Run: run, TagAbsent: func(image, tag string) error {
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 		defer cancel()
@@ -138,7 +164,7 @@ func execute(args []string) error {
 	case "plan":
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 		defer cancel()
-		publish, err := publicationDecision(lock, os.Getenv("GITHUB_EVENT_NAME"), func() (string, error) {
+		publish, err := publicationDecisionForBundle(lock, os.Getenv("GITHUB_EVENT_NAME"), bundle.Name, func() (string, error) {
 			return toolpublish.PublishedToolDigest(ctx, nil, meta.Image, os.Getenv("REPOSITORY_USERNAME"), os.Getenv("REPOSITORY_TOKEN"), func(published toolpublish.Metadata) ([]byte, error) {
 				return toolpublish.PublishedLockArtifact(ctx, nil, os.Getenv("GITHUB_REPOSITORY"), os.Getenv("DEFAULT_BRANCH"), os.Getenv("GITHUB_TOKEN"), published)
 			})
@@ -173,9 +199,12 @@ func execute(args []string) error {
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 		defer cancel()
-		return toolpublish.CheckNewest(ctx, nil, os.Getenv("GITHUB_REPOSITORY"), os.Getenv("DEFAULT_BRANCH"), id, attempt, meta.Commit, os.Getenv("GITHUB_TOKEN"))
+		return toolpublish.CheckNewestForWorkflow(ctx, nil, os.Getenv("GITHUB_REPOSITORY"), os.Getenv("DEFAULT_BRANCH"), id, attempt, meta.Commit, os.Getenv("GITHUB_TOKEN"), bundle.Workflow)
 	case "build":
-		if err := copyFile(lock, toolconfig.ToolboxLock); err != nil {
+		if err := copyFile(lock, bundle.Directory+"/tools.lock.json"); err != nil {
+			return err
+		}
+		if _, err := toolconfig.Load(bundle.Directory); err != nil {
 			return err
 		}
 		result, err := adapter.Build(meta, lock, *arch, *consumer)

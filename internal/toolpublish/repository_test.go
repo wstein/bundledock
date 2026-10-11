@@ -23,3 +23,13 @@ func TestRepositoryImageRejectsAmbiguousDestinations(t *testing.T) {
 		}
 	}
 }
+
+func TestCodeServerRepositoryAndNativeBuildSelection(t *testing.T) {
+	image, err := RepositoryImageForBundle("quay.io/example", "code-server")
+	if err != nil || image != "quay.io/example/code-server" {
+		t.Fatalf("image %q %v", image, err)
+	}
+	if _, err := RepositoryImageForBundle("quay.io/example", "../toolbox"); err == nil {
+		t.Fatal("accepted unsafe bundle")
+	}
+}

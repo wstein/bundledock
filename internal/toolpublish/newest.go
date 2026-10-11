@@ -28,6 +28,17 @@ type workflowRun struct {
 // to retry publication, rather than allowing an old source revision to roll back
 // stable. The authenticated client never follows redirects off api.github.com.
 func CheckNewest(ctx context.Context, client *http.Client, repository, branch string, id, attempt int64, commit, token string) error {
+	return checkNewest(ctx, client, repository, branch, id, attempt, commit, token, "")
+}
+
+// CheckNewestForWorkflow also binds the run to its selected publication workflow.
+func CheckNewestForWorkflow(ctx context.Context, client *http.Client, repository, branch string, id, attempt int64, commit, token, workflow string) error {
+	if workflow != "bundledock-toolbox.yml" && workflow != "bundledock-code-server.yml" {
+		return fmt.Errorf("invalid publication workflow")
+	}
+	return checkNewest(ctx, client, repository, branch, id, attempt, commit, token, workflow)
+}
+func checkNewest(ctx context.Context, client *http.Client, repository, branch string, id, attempt int64, commit, token, workflow string) error {
 	if id < 1 || attempt < 1 || branch == "" || !commitPattern.MatchString(commit) || token == "" {
 		return fmt.Errorf("complete GitHub run identity and token required")
 	}
@@ -42,6 +53,17 @@ func CheckNewest(ctx context.Context, client *http.Client, repository, branch st
 	}
 	if current.ID != id || current.Attempt != attempt || current.Commit != commit || current.Branch != branch || current.WorkflowID < 1 || current.Number < 1 || (current.Event != "schedule" && current.Event != "workflow_dispatch") {
 		return fmt.Errorf("current run identity is no longer eligible for publication")
+	}
+	if workflow != "" {
+		var expected struct {
+			ID int64 `json:"id"`
+		}
+		if err := get("/actions/workflows/"+workflow, &expected); err != nil {
+			return err
+		}
+		if expected.ID < 1 || current.WorkflowID != expected.ID {
+			return fmt.Errorf("run belongs to another publication workflow")
+		}
 	}
 	if _, err := time.Parse(time.RFC3339, current.Created); err != nil {
 		return fmt.Errorf("invalid GitHub run creation time")
