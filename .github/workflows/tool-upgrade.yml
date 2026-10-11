@@ -47,12 +47,14 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           UPGRADE_RESULT: ${{ runner.temp }}/tool-upgrade
         run: bash scripts/tool-upgrade.sh resolve
-      - name: Transfer the resolved lock to the PR job
+      - name: Transfer the resolved lock and generated inventory to the PR job
         if: ${{ !inputs.dry_run && steps.resolve.outputs.changed == 'true' }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: tool-upgrade-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/tool-upgrade/tools.lock.json
+          path: |
+            ${{ runner.temp }}/tool-upgrade/tools.lock.json
+            ${{ runner.temp }}/tool-upgrade/tools.md
           if-no-files-found: error
           retention-days: 1
 
@@ -73,7 +75,7 @@ jobs:
         with:
           name: tool-upgrade-${{ github.run_attempt }}
           path: ${{ runner.temp }}/tool-upgrade
-      - name: Create a lock-only topic branch and reviewable pull request
+      - name: Create a lock and inventory topic branch and reviewable pull request
         env:
           GH_TOKEN: ${{ github.token }}
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}

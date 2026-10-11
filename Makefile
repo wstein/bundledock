@@ -58,6 +58,7 @@ fmt:
 	$(GO) fmt $(PACKAGES)
 
 check:
+	python3 scripts/tool-inventory.py --check
 	@test -z "$$($(GOFMT) -l cmd internal)" || { echo 'Go source needs formatting; run make fmt'; exit 1; }
 	$(MAKE) test vet
 

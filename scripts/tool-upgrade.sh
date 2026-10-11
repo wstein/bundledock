@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Lock resolution and PR creation only. Never build, publish or activate tools.
+# Lock/inventory resolution and PR creation only. Never build, publish or activate tools.
 set -euo pipefail
 lock=bundles/toolbox/tools.lock.json
+inventory=docs/tools.md
 : "${UPGRADE_RESULT:?set UPGRADE_RESULT to a temporary directory}"
 : "${GITHUB_OUTPUT:?set GITHUB_OUTPUT}"
 : "${GITHUB_STEP_SUMMARY:?set GITHUB_STEP_SUMMARY}"
@@ -22,6 +23,16 @@ require_lock_only() {
   fi
 }
 
+require_proposal_only() {
+  local line
+  while IFS= read -r line; do
+    if [[ -n "$line" && "$line" != " M $lock" && "$line" != " M $inventory" ]]; then
+      echo 'Refusing upgrade: only the tool lock and generated inventory may change.' >&2
+      exit 1
+    fi
+  done < <(git status --porcelain --untracked-files=all)
+}
+
 case "${1:-}" in
   resolve)
     require_clean
@@ -39,16 +50,19 @@ case "${1:-}" in
       go run ./cmd/bundledock tools upgrade
     fi
     require_lock_only
+    python3 scripts/tool-inventory.py
+    require_proposal_only
     mkdir -p "$UPGRADE_RESULT"
-    git diff -- "$lock" > "$UPGRADE_RESULT/lock.diff"
-    if git diff --quiet -- "$lock"; then
+    git diff -- "$lock" "$inventory" > "$UPGRADE_RESULT/lock.diff"
+    if git diff --quiet -- "$lock" "$inventory"; then
       echo 'changed=false' >> "$GITHUB_OUTPUT"
-      echo 'No tool lock changes; no branch or pull request will be created.' >> "$GITHUB_STEP_SUMMARY"
+      echo 'No tool lock or inventory changes; no branch or pull request will be created.' >> "$GITHUB_STEP_SUMMARY"
     else
       cp "$lock" "$UPGRADE_RESULT/tools.lock.json"
+      cp "$inventory" "$UPGRADE_RESULT/tools.md"
       echo 'changed=true' >> "$GITHUB_OUTPUT"
       {
-        echo '## Proposed tool lock changes'
+        echo '## Proposed tool lock and inventory changes'
         echo
         echo 'Resolution verified official upstream archives for both supported architectures. Review the lock diff before merging. No image, CLI release, documentation build or activation was run.'
         echo
@@ -66,17 +80,25 @@ case "${1:-}" in
     : "${GITHUB_RUN_ATTEMPT:?set GITHUB_RUN_ATTEMPT}"
     [[ "$GITHUB_RUN_ID" =~ ^[0-9]+$ && "$GITHUB_RUN_ATTEMPT" =~ ^[0-9]+$ ]] || exit 1
     [[ -f "$UPGRADE_RESULT/tools.lock.json" && ! -L "$UPGRADE_RESULT/tools.lock.json" ]] || exit 1
+    [[ -f "$UPGRADE_RESULT/tools.md" && ! -L "$UPGRADE_RESULT/tools.md" ]] || exit 1
     cp "$UPGRADE_RESULT/tools.lock.json" "$lock"
-    require_lock_only
-    if git diff --quiet -- "$lock"; then
-      echo 'No tool lock changes; no branch or pull request will be created.' >> "$GITHUB_STEP_SUMMARY"
+    # Generate from the checked-out prose and transferred lock. Never copy an
+    # artifact's entire Markdown document into the source tree unchecked.
+    python3 scripts/tool-inventory.py
+    if ! cmp -s "$inventory" "$UPGRADE_RESULT/tools.md"; then
+      echo 'Refusing PR: documentation artifact differs from the generated inventory.' >&2
+      exit 1
+    fi
+    require_proposal_only
+    if git diff --quiet -- "$lock" "$inventory"; then
+      echo 'No tool lock or inventory changes; no branch or pull request will be created.' >> "$GITHUB_STEP_SUMMARY"
       exit 0
     fi
     branch="automation/tool-upgrade-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
     git switch -c "$branch"
     git config user.name 'github-actions[bot]'
     git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-    git add -- "$lock"
+    git add -- "$lock" "$inventory"
     git commit -m 'chore(tools): upgrade stable tool lock'
     # No force pushes, branch reuse, PATs or changes to repository settings.
     if ! git push origin "HEAD:refs/heads/$branch"; then
@@ -85,7 +107,7 @@ case "${1:-}" in
     fi
     body="$UPGRADE_RESULT/pr-body.md"
     cat > "$body" <<BODY
-Resolve official stable tool releases within the existing tools.txt constraints and update only tools.lock.json. Both supported architectures were resolved and verified by the existing BundleDock manager.
+Resolve official stable tool releases within the existing tools.txt constraints and update only tools.lock.json and the generated version inventory in docs/tools.md. No other documentation content changes. Both supported architectures were resolved and verified by the existing BundleDock manager.
 
 Review the lock diff and run the required source checks before merging. This workflow performs no image, CLI release or documentation build, publication, or consumer activation. Those operations need separate explicit approval.
 
