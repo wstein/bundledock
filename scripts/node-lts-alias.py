@@ -18,6 +18,14 @@ import urllib.request
 _SPEC = importlib.util.spec_from_file_location('bundle_tags', Path(__file__).with_name('bundle-git-tags.py'))
 tags = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(tags)
+PHASE = 'startup'
+
+
+def checkpoint(name):
+    global PHASE
+    PHASE = name
+
+
 INDEX_TYPE = 'application/vnd.oci.image.index.v1+json'
 INDEX_TYPES = (INDEX_TYPE, 'application/vnd.docker.distribution.manifest.list.v2+json')
 RECORD = dict(bundle='node', image='quay.io/bundledock/node', source=tags.SOURCE,
@@ -72,18 +80,26 @@ class Registry:
 
 def promote(registry, before_write=lambda: None):
     r = tags.validate_record(RECORD)
+    checkpoint('published-index-platforms')
     tags.verify_registry(r, registry)
     data = registry.get('manifests', r['digest'])
     index = tags.decode_digest(data, r['digest'])
     if index.get('schemaVersion') != 2 or index.get('mediaType') not in INDEX_TYPES:
         raise ValueError('expected image index')
+    checkpoint('historical-config-attempt')
     for descriptor in index['manifests']:
         manifest = tags.decode_digest(registry.get('manifests', descriptor['digest']), descriptor['digest'])
         config = tags.decode_digest(registry.get('blobs', manifest['config']['digest']), manifest['config']['digest'])
-        if config['config']['Labels'].get('io.bundledock.github.run-attempt') != '1':
+        # This fixed historical date publication predates the attempt label;
+        # its exact successful workflow attempt is verified separately.
+        labels = config['config']['Labels']
+        key = 'io.bundledock.github.run-attempt'
+        if key in labels and labels[key] != str(r['attempt']):
             raise ValueError('OCI workflow attempt mismatch')
+    checkpoint('preserved-aliases-before')
     for ref in ('stable', 'latest'):
         tags.decode_digest(registry.get('manifests', ref), r['digest'])
+    checkpoint('lts-alias-before')
     absent = False
     try:
         tags.decode_digest(registry.get('manifests', 'lts'), r['digest'])
@@ -96,23 +112,36 @@ def promote(registry, before_write=lambda: None):
         if not isinstance(errors, list) or len(errors) != 1 or errors[0].get('code') != 'MANIFEST_UNKNOWN':
             raise
         absent = True
+    checkpoint('approved-source-recheck')
     before_write()
     if absent:
+        checkpoint('lts-alias-copy')
         registry.put_lts(data)
+    checkpoint('aliases-after')
     for ref in (r['tag'], r['digest'], 'stable', 'latest', 'lts'):
         tags.decode_digest(registry.get('manifests', ref), r['digest'])
     return 'copied' if absent else 'already present'
 
 
 def main():
+    checkpoint('approved-source')
     guard()
+    checkpoint('publication-run')
     tags.verify_run(tags.validate_record(RECORD), backfill=True)
-    print(promote(Registry(), before_write=guard))
+    checkpoint('registry-auth')
+    registry = Registry()
+    print(promote(registry, before_write=guard))
+
+
+def run():
+    try:
+        main()
+    except Exception as error:
+        # Only local stage/type and numeric status: never stringify exceptions,
+        # response bodies, credentials or signed URLs.
+        status = f' HTTP {error.code}' if isinstance(error, urllib.error.HTTPError) else ''
+        raise SystemExit(f'Node LTS alias failed at {PHASE}: {type(error).__name__}{status}; no automatic retry') from None
 
 
 if __name__ == '__main__':
-    try:
-        main()
-    except (ValueError, KeyError, TypeError, AttributeError, subprocess.CalledProcessError, urllib.error.URLError):
-        # No credentials, response bodies or signed URLs in diagnostics.
-        raise SystemExit('Node LTS alias verification/copy failed; no automatic retry')
+    run()
