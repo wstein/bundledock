@@ -373,6 +373,30 @@
         "licenses/typos/SOURCE"
       ]
     },
+    "leaf": {
+      "provider": "github",
+      "repository": "RivoLink/leaf",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "x86_64",
+        "arm64": "arm64"
+      },
+      "asset": "leaf-linux-{arch}",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "raw",
+        "members": {
+          "leaf": "bin/leaf"
+        }
+      },
+      "notices": [
+        "licenses/leaf/LICENSE",
+        "licenses/leaf/SOURCE"
+      ]
+    },
     "lychee": {
       "provider": "github",
       "repository": "lycheeverse/lychee",

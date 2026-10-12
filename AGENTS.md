@@ -87,6 +87,7 @@ still pins an older image, so do not assume these commands exist in a running se
 | Use an alternative terminal multiplexer | `tmux`. |
 | Monitor processes and system resources | `btm` (bottom) and `btop`. |
 | Customize a shell prompt | `starship`. |
+| Preview Markdown in the terminal | `leaf`. |
 | Edit text in the terminal | `hx` (Helix). |
 | Build static sites | `hugo` (standard). |
 | Check shell scripts | `shellcheck`, `shfmt`. |

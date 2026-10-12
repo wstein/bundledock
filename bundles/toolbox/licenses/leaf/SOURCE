@@ -1,0 +1,8 @@
+Upstream: https://github.com/RivoLink/leaf
+License: MIT
+Pinned release: 1.29.0
+Release: https://github.com/RivoLink/leaf/releases/tag/1.29.0
+Full LICENSE: https://raw.githubusercontent.com/RivoLink/leaf/1.29.0/LICENSE
+LICENSE SHA256: 98c9cd0ac4bcc0b30d8cbb7c09a311196dea27b158c65d6caadfb073c090af71
+Official Linux AMD64/ARM64 raw binaries verified against release API SHA256 digests and checksums.txt on 2026-10-12 by read-only inspection. No upstream binaries were executed or modified.
+Both ELF binaries require libgcc_s.so.1, libm.so.6 and libc.so.6, plus their architecture's glibc loader. Native consumer compatibility remains unverified pending an explicitly approved image build and smoke run.
