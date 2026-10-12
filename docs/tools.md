@@ -103,7 +103,12 @@ A PR opened with `GITHUB_TOKEN` does not automatically start ordinary
 new topic branch and complete human review before merging. A successful
 resolver or CI run verifies source and lock behavior, not native image smoke
 coverage. Building, publishing, or activating the new lock still requires
-separate explicit user approval of the operation and revision.
+explicit human approval of the operation and revision. After a merged toolbox
+updater PR passes push CI on current `main`, the [publication workflow](publication.md)
+may request protected-environment approval before any artifact compiler or native
+work. It publishes the exact merged lock; it does not resolve newer releases.
+Other bundle publishers remain manual-only, and publication does not activate
+a consumer image.
 
 ## Keep the source inventory consistent
 

@@ -202,7 +202,7 @@ adapter tests without building an OCI image.
 - `bundles/toolbox/`: Dockerfile, smoke/volume adapters, licenses and bundle inputs.
 - `bundles/toolbox/{tools.txt,tools.packages.json,tools.lock.json}`: desired versions, trusted recipes, and verified pins.
 - `.github/workflows/ci.yml`: pull request and push formatting, source tests and vet.
-- `.github/workflows/bundledock-toolbox.yml`: user-approved manual two-platform build and publication.
+- `.github/workflows/bundledock-toolbox.yml`: manually approved or protected-environment-approved toolbox publication.
 - `assets`, `brand`: approved brand assets, licensed font sources, and generation provenance.
 
 ## Repository history
@@ -224,13 +224,17 @@ Its test compilation verifies source without creating CLI release artifacts,
 OCI images, or a documentation site. Automatic native image and CLI artifact
 builds are disabled.
 
-The [manual publication workflow](publication.md) requires a human user's
-explicit approval for its exact default-`main` SHA before any build. It resolves
-one shared lock, builds and smokes both native architectures, then applies the
-existing registry gates. It has no schedule or merge trigger. Future lock-only
-PR automation must not dispatch native builds. Human-token automation cannot be
-identified from GitHub actor context alone; do not use such credentials for
-automated dispatch. A protected-environment gate is not configured here.
+The [toolbox publication workflow](publication.md) requires explicit human approval
+before any artifact compiler or native work. Manual dispatch binds approval to
+its exact default-`main` SHA. Successful source CI after a merged lock-only bot
+toolbox upgrade may prepare a read-only request for the protected
+`toolbox-publication` environment, with exactly `wstein` as required reviewer,
+admin bypass disabled and a main-only branch policy. It freezes the merged lock
+and revalidates current main and protection after approval and before promotion.
+An absent or unreadable environment fails closed. The workflow does not configure
+repository settings. Other bundle publishers remain manual-only. Human-token
+automation cannot be identified from actor context alone; do not use such
+credentials for automated dispatch.
 
 ## Verification evidence
 
