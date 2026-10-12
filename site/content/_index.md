@@ -1,4 +1,4 @@
 ---
 title: BundleDock
-description: Build an OCI toolbox of pinned development CLIs for shared, read-only use in Linux containers.
+description: Choose pinned utilities, runtimes, an editor and agents in OCI bundles for shared, read-only use in Linux containers.
 ---

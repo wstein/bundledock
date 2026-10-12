@@ -1,4 +1,11 @@
+---
+title: Codex bundle
+description: Use the official Codex package and native helpers with writable consumer state.
+---
+
 # Optional Codex bundle
+
+[All bundles](bundles.md)
 
 `bundles/codex` supplies the official stable prebuilt Codex package for Linux
 AMD64 and ARM64, with an independent catalog, lock, carrier image and volume

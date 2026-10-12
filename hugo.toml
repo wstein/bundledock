@@ -32,7 +32,7 @@ disableKinds = ['taxonomy', 'term', 'RSS']
 [[module.mounts]]
   source = 'docs'
   target = 'content/guides'
-  files = ['architecture.md', 'development.md', 'publication.md', 'toolbox.md']
+  files = ['architecture.md', 'development.md', 'publication.md', 'bundles.md', 'toolbox.md', 'opentofu.md', 'bun.md', 'node.md', 'node-current.md', 'code-server.md', 'agy.md', 'claude.md', 'codex.md']
 [[module.mounts]]
   source = 'site/layouts'
   target = 'layouts'
@@ -47,6 +47,10 @@ disableKinds = ['taxonomy', 'term', 'RSS']
   name = 'CLI & quick start'
   pageRef = '/cli'
   weight = 10
+[[menus.main]]
+  name = 'Bundle overview'
+  pageRef = '/guides/bundles'
+  weight = 15
 [[menus.main]]
   name = 'Tool catalog'
   pageRef = '/guides/toolbox'
