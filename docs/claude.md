@@ -2,8 +2,8 @@
 
 `bundles/claude` supplies the official stable Linux AMD64 and ARM64 Claude Code
 prebuilt with its own catalog, lock, carrier image, volume and
-`/opt/bundledock/claude` root. This preparation copies the existing toolbox's
-2.1.296 pins exactly. Toolbox inputs and consumer configuration are unchanged.
+`/opt/bundledock/claude` root. Its 2.1.296 pins are retained unchanged from the original
+toolbox split. The source toolbox no longer includes this agent.
 
 <!-- BEGIN PUBLISHED BUNDLE -->
 <!-- publication-record: {"attempt":"1","commit":"6515f2abea611eb117748cfca2ab1d87cbc25377","created":"2026-10-12T17:48:11Z","digest":"sha256:4b02222a4954f174a46af2a7ef732c2f0ff7b7bb7b462875491dd80aabf1940f","image":"quay.io/bundledock/claude","lock_sha256":"2b738df043a9e6cfe45e5a744c7d22358e9b2cf8eaa00a143afa8225e44cefd2","reference":"quay.io/bundledock/claude@sha256:4b02222a4954f174a46af2a7ef732c2f0ff7b7bb7b462875491dd80aabf1940f","run_attempt":"1","run_id":"38286530356","source":"https://github.com/wstein/bundledock","tag":"2.1.296-b1"} -->
