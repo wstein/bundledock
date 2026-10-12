@@ -8,7 +8,7 @@ import (
 )
 
 func TestHelixSmokeChecksParserAndQueries(t *testing.T) {
-	script, err := filepath.Abs("../../bundles/toolbox/helix-smoke.sh")
+	script, err := filepath.Abs("../../bundles/toolbox/scripts/helix-smoke.sh")
 	if err != nil {
 		t.Fatal(err)
 	}

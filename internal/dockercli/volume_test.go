@@ -129,7 +129,7 @@ func TestCanceledContextPropagatesToRunner(t *testing.T) {
 func TestDockerOnlyCompatibilityAdapter(t *testing.T) {
 	id := "sha256:" + strings.Repeat("b", 64)
 	fakeDocker(t, "case \"$1\" in\nimage) printf '%s\\n' '"+id+"' ;;\nvolume) printf 'create output is discarded\\n' ;;\nrun) printf 'Tool volume initialized\\n' ;;\nesac\n")
-	command := exec.Command("sh", "../../bundles/toolbox/volume.sh", "local:fixture")
+	command := exec.Command("sh", "../../bundles/toolbox/scripts/volume.sh", "local:fixture")
 	data, err := command.CombinedOutput()
 	if err != nil {
 		t.Fatalf("adapter failed: %v %s", err, data)
@@ -146,7 +146,7 @@ func TestDockerAdapterExplicitLegacyVolume(t *testing.T) {
 	t.Setenv("DOCKER_CALLS", log)
 	fakeDocker(t, "printf '%s\\n' \"$*\" >> \"$DOCKER_CALLS\"\ncase \"$1\" in\nimage) printf '%s\\n' '"+id+"' ;;\nesac\n")
 	legacy := "anchorage-tools-" + strings.Repeat("b", 64)
-	output, err := exec.Command("sh", "../../bundles/toolbox/volume.sh", id, legacy).CombinedOutput()
+	output, err := exec.Command("sh", "../../bundles/toolbox/scripts/volume.sh", id, legacy).CombinedOutput()
 	if err != nil {
 		t.Fatalf("adapter: %v %s", err, output)
 	}
@@ -163,7 +163,7 @@ func TestDockerAdapterRejectsInvalidVolumeNames(t *testing.T) {
 	id := "sha256:" + strings.Repeat("b", 64)
 	fakeDocker(t, "case \"$1\" in\nimage) printf '%s\\n' '"+id+"' ;;\n*) printf 'unexpected mutation\\n' ;;\nesac\n")
 	for _, name := range []string{"-option", "has space", "a,b", "a/b", "a\nother"} {
-		output, err := exec.Command("sh", "../../bundles/toolbox/volume.sh", id, name).CombinedOutput()
+		output, err := exec.Command("sh", "../../bundles/toolbox/scripts/volume.sh", id, name).CombinedOutput()
 		if err == nil || !strings.Contains(string(output), "Invalid Docker volume name") || strings.Contains(string(output), "unexpected mutation") {
 			t.Fatalf("accepted %q: %v %s", name, err, output)
 		}

@@ -257,8 +257,23 @@ func TestPreservedArchiveDirectoryExclusions(t *testing.T) {
 	}
 }
 
+func TestRepositoryBundleScriptLayout(t *testing.T) {
+	for _, bundle := range []string{"toolbox", "code-server", "node", "node-current", "bun", "codex", "agy", "claude", "opentofu"} {
+		t.Run(bundle, func(t *testing.T) {
+			root := filepath.Join("../../bundles", bundle)
+			if _, err := os.Stat(filepath.Join(root, "scripts/smoke.sh")); err != nil {
+				t.Fatal(err)
+			}
+			obsolete, err := filepath.Glob(filepath.Join(root, "*.sh"))
+			if err != nil || len(obsolete) != 0 {
+				t.Fatalf("bundle-root shell scripts: %v, %v", obsolete, err)
+			}
+		})
+	}
+}
+
 func TestRepositoryToolboxLayout(t *testing.T) {
-	for _, name := range []string{"packages.txt", "packages.catalog.json", "packages.lock.json", "Dockerfile", "Dockerfile.dockerignore", "smoke.sh", "volume.sh"} {
+	for _, name := range []string{"packages.txt", "packages.catalog.json", "packages.lock.json", "Dockerfile", "Dockerfile.dockerignore", "scripts/smoke.sh", "scripts/volume.sh"} {
 		if _, err := os.Stat(filepath.Join("../../bundles/toolbox", name)); err != nil {
 			t.Fatal(err)
 		}

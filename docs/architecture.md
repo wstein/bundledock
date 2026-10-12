@@ -75,7 +75,7 @@ initializer accepts `--source` and `--target` overrides for other locations.
 Older images retain their own initializer and source prefix; their relative
 volume contents can also be mounted at `/opt/bundledock/toolbox`. New volume names use
 `bundledock-toolbox-<digest>`. To select an existing legacy volume by name, run
-`sh bundles/toolbox/volume.sh <original-image> <existing-volume-name>`.
+`sh bundles/toolbox/scripts/volume.sh <original-image> <existing-volume-name>`.
 Keep authentication and writable tool state in the user's home directory or
 separate private volumes. No credentials are included in the image. The read-only mount prevents tools from updating the
 shared executables; Claude updates are also disabled with environment variables.
@@ -113,5 +113,5 @@ files so the volume needs no symlinks. ast-grep's `sg` alias is excluded to pres
 consumer commands. Upstream notices are included under `/opt/bundledock/toolbox/licenses`.
 uv packages no Python runtime or Python packages; keep its cache, environments,
 and any intentionally installed runtimes outside the shared tool volume.
-`bundles/toolbox/volume.sh` remains a small Docker-only host adapter so the devcontainer can
+`bundles/toolbox/scripts/volume.sh` remains a small Docker-only host adapter so the devcontainer can
 initialize before a Go toolchain or BundleDock binary is available on the host.

@@ -49,7 +49,7 @@ bundle-volume:
 	sh scripts/bundle-volume.sh "$$IMAGE" "$(BUNDLE)"
 
 bundle-smoke:
-	sh bundles/$(BUNDLE)/smoke.sh "$$IMAGE" "$$CONSUMER"
+	sh bundles/$(BUNDLE)/scripts/smoke.sh "$$IMAGE" "$$CONSUMER"
 
 build:
 	$(GO) build -o $(BINARY) ./cmd/bundledock
