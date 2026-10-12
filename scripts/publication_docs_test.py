@@ -138,3 +138,19 @@ class PublicationDocsTest(unittest.TestCase):
             self.assertNotIn('pull-requests: write',default)
             self.assertIn('pull-requests: write',ceiling)
             self.assertIn('actions: write',ceiling)
+
+class SemanticPublicationDocsTest(PublicationDocsTest):
+    def test_semantic_receipt_and_legacy_migration(self):
+        for item in [self.receipt,*self.receipt['platforms']]:
+            item.update(image='quay.io/bundledock/node',tag='24.21.0-b1',run_attempt='3')
+        self.receipt['reference']='quay.io/bundledock/node@'+self.receipt['digest']
+        record=self.module.validate(self.receipt,'node','quay.io/bundledock/node','a'*40,'123','3')
+        old=dict(record,tag='2026.10.12-b1.1',attempt='1'); old.pop('run_attempt')
+        source=self.module.BEGIN+self.module.render(old)+self.module.END
+        updated=self.module.replacement(source,record)
+        self.assertIn('24.21.0-b1',updated)
+        with self.assertRaises(ValueError): self.module.replacement(updated,old)
+        newer=dict(record,tag='24.21.0-b2')
+        self.module.replacement(updated,newer)
+        self.receipt['platforms'][0]['run_attempt']='2'
+        with self.assertRaises(ValueError): self.module.validate(self.receipt,'node','quay.io/bundledock/node','a'*40,'123','3')

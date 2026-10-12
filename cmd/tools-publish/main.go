@@ -136,6 +136,30 @@ func resolve(directory string, meta toolpublish.Metadata, runner func(...string)
 	return resolveFrozen(directory, meta)
 }
 
+// resolveSingleton names the artifact only after upstream discovery has ended.
+func resolveSingleton(directory string, meta toolpublish.Metadata, frozen bool, attempt string, runner func(...string) ([]byte, error), allocate func(string, []byte) (string, error)) error {
+	bundle := toolpublish.BundleForMetadata(meta)
+	if !frozen {
+		if _, err := runner("go", "run", "./cmd/bundledock", "tools", "upgrade", "--directory", bundle.Directory); err != nil {
+			return err
+		}
+	}
+	lock := bundle.Directory + "/tools.lock.json"
+	data, err := os.ReadFile(lock)
+	if err != nil {
+		return err
+	}
+	tag, err := allocate(meta.Image, data)
+	if err != nil {
+		return err
+	}
+	meta, err = toolpublish.NewMetadata(lock, meta.Image, tag, meta.Commit, meta.Source, meta.Created, meta.RunID, attempt)
+	if err != nil {
+		return err
+	}
+	return resolveFrozen(directory, meta)
+}
+
 // resolveFrozen copies the reviewed lock without upstream discovery or commands.
 func resolveFrozen(directory string, meta toolpublish.Metadata) error {
 	bundle := toolpublish.BundleForMetadata(meta)
@@ -168,7 +192,11 @@ func publicationCommit(bundle string) (string, error) {
 }
 
 func artifactIdentity(meta toolpublish.Metadata, id, number, attempt, commit string) error {
-	if id == "" || number == "" || attempt == "" || meta.RunID != id || !strings.HasSuffix(meta.Tag, "-b"+number+"."+attempt) || meta.Commit != commit {
+	versionIdentity := number != "" && strings.HasSuffix(meta.Tag, "-b"+number+"."+attempt)
+	if meta.RunAttempt != "" {
+		versionIdentity = meta.RunAttempt == attempt
+	}
+	if id == "" || attempt == "" || meta.RunID != id || !versionIdentity || meta.Commit != commit {
 		return fmt.Errorf("artifact belongs to another run, attempt or revision; re-run all jobs")
 	}
 	return nil
@@ -251,6 +279,25 @@ func execute(args []string) error {
 		meta, err := toolpublish.NewMetadata(bundle.Directory+"/tools.lock.json", image, tag, commit, os.Getenv("GITHUB_SERVER_URL")+"/"+os.Getenv("GITHUB_REPOSITORY"), now.Format("2006-01-02T15:04:05Z"), os.Getenv("GITHUB_RUN_ID"))
 		if err != nil {
 			return err
+		}
+		if bundle.Name != "toolbox" {
+			return resolveSingleton(*directory, meta, *frozen, os.Getenv("GITHUB_RUN_ATTEMPT"), run, func(image string, data []byte) (string, error) {
+				// Source tags reserve packaging revisions even if an OCI tag is removed.
+				refs, err := run("git", "ls-remote", "--tags", "origin", "refs/tags/"+bundle.Name+"/*")
+				if err != nil {
+					return "", err
+				}
+				reserved := []string{}
+				for _, line := range strings.Split(string(refs), "\n") {
+					fields := strings.Fields(line)
+					if len(fields) == 2 && !strings.HasSuffix(fields[1], "^{}") {
+						reserved = append(reserved, strings.TrimPrefix(fields[1], "refs/tags/"+bundle.Name+"/"))
+					}
+				}
+				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+				defer cancel()
+				return toolpublish.AllocateSingletonTag(ctx, nil, image, data, os.Getenv("REPOSITORY_USERNAME"), os.Getenv("REPOSITORY_TOKEN"), reserved...)
+			})
 		}
 		if *frozen {
 			return resolveFrozen(*directory, meta)

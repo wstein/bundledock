@@ -19,6 +19,7 @@ SOURCE = 'https://github.com/wstein/bundledock'
 BUNDLES = ('toolbox', 'code-server', 'node', 'bun', 'codex', 'agy', 'claude')
 DIGEST = re.compile(r'sha256:[0-9a-f]{64}\Z')
 VERSION = re.compile(r'(\d{4}\.\d{2}\.\d{2})-b([1-9]\d*)\.([1-9]\d*)\Z')
+SINGLETON = re.compile(r'(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)-b[1-9]\d*\Z')
 LEGACY = re.compile(r'(\d{4}\.\d{2}\.\d{2})-([1-9]\d*)-([1-9]\d*)\Z')
 
 
@@ -30,20 +31,32 @@ def validate_record(record, legacy=False):
         raise ValueError('unexpected source repository or revision')
     if not DIGEST.fullmatch(r.get('digest', '')) or not re.fullmatch('[1-9][0-9]*', r.get('run_id', '')):
         raise ValueError('invalid index digest or workflow run')
-    match = VERSION.fullmatch(r.get('tag', ''))
-    r['legacy'] = False
+    r.update(validate_version(r.get('tag', ''), r['run_id'], legacy))
+    if SINGLETON.fullmatch(r['tag']):
+        if r['bundle'] == 'toolbox' or not isinstance(r.get('run_attempt'), str) or not re.fullmatch('[1-9][0-9]*', r['run_attempt']):
+            raise ValueError('singleton version requires explicit workflow attempt')
+        r['attempt'] = int(r['run_attempt'])
+    return r
+
+
+def validate_version(tag, run_id, legacy=False):
+    """Validate immutable version identity independently of deployment namespace."""
+    if SINGLETON.fullmatch(tag):
+        return {'legacy': False, 'attempt': None, 'run_number': None}
+    match = VERSION.fullmatch(tag)
+    fields = {'legacy': False}
     if not match and legacy:
-        match = LEGACY.fullmatch(r.get('tag', ''))
-        r['legacy'] = True
-        if match and match[2] != r['run_id']:
+        match = LEGACY.fullmatch(tag)
+        fields['legacy'] = True
+        if match and match[2] != run_id:
             raise ValueError('legacy run ID mismatch')
     if not match:
         raise ValueError('expected an immutable version tag')
     import datetime
     datetime.datetime.strptime(match[1], '%Y.%m.%d')
-    r['attempt'] = int(match[3])
-    r['run_number'] = None if r['legacy'] else int(match[2])
-    return r
+    fields['attempt'] = int(match[3])
+    fields['run_number'] = None if fields['legacy'] else int(match[2])
+    return fields
 
 
 def tag_name(r):
@@ -100,13 +113,15 @@ class Registry:
         self.token = json.loads(request(url, headers))['token']
 
     def get(self, kind, ref):
-        if kind not in ('manifests', 'blobs') or not (DIGEST.fullmatch(ref) or VERSION.fullmatch(ref) or LEGACY.fullmatch(ref) or ref in ('stable', 'latest')):
+        if kind not in ('manifests', 'blobs') or not (DIGEST.fullmatch(ref) or VERSION.fullmatch(ref) or SINGLETON.fullmatch(ref) or LEGACY.fullmatch(ref) or ref in ('stable', 'latest')):
             raise ValueError('invalid registry metadata request')
         headers = {'Authorization':'Bearer '+self.token, 'Accept':'application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.oci.image.manifest.v1+json, application/vnd.docker.distribution.manifest.v2+json'}
         return request(f'https://quay.io/v2/{self.path}/{kind}/{ref}', headers, signed_blob=kind=='blobs')
 
 
 def verify_labels(r, labels):
+    if SINGLETON.fullmatch(r['tag']) and labels.get('io.bundledock.github.run-attempt') != str(r['attempt']):
+        raise ValueError('OCI workflow attempt mismatch')
     for key, field in [('source','source'), ('revision','commit'), ('version','tag')]:
         if labels.get('org.opencontainers.image.'+key) != r[field]:
             raise ValueError('OCI '+key+' mismatch')
@@ -245,7 +260,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--publication', type=argparse.FileType('r'))
     parser.add_argument('--bundle', required=True, choices=BUNDLES)
-    for name in ('tag','digest','commit','run-id'):
+    for name in ('tag','digest','commit','run-id','run-attempt'):
         parser.add_argument('--'+name)
     parser.add_argument('--backfill', action='store_true')
     parser.add_argument('--legacy-version', action='store_true')
@@ -256,7 +271,7 @@ def main():
         record['bundle'] = args.bundle
     else:
         record = dict(bundle=args.bundle, image='quay.io/bundledock/'+args.bundle,
-                      source=SOURCE, tag=args.tag, digest=args.digest, commit=args.commit, run_id=args.run_id)
+                      source=SOURCE, tag=args.tag, digest=args.digest, commit=args.commit, run_id=args.run_id, run_attempt=args.run_attempt)
     if args.legacy_version and not args.backfill:
         parser.error('--legacy-version is restricted to backfill')
     r = validate_record(record, legacy=args.legacy_version)

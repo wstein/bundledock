@@ -165,13 +165,16 @@ func PublishedToolDigest(ctx context.Context, client *http.Client, image, userna
 			return "", fmt.Errorf("published config platform mismatch")
 		}
 		l := config.Config.Labels
-		m := Metadata{Image: image, RunID: l["io.bundledock.github.run-id"], Tag: l["org.opencontainers.image.version"], Commit: l["org.opencontainers.image.revision"], Source: l["org.opencontainers.image.source"], Created: l["org.opencontainers.image.created"], LockSHA256: l["io.bundledock.tools.lock-sha256"]}
+		m := Metadata{Image: image, RunID: l["io.bundledock.github.run-id"], RunAttempt: l["io.bundledock.github.run-attempt"], Tag: l["org.opencontainers.image.version"], Commit: l["org.opencontainers.image.revision"], Source: l["org.opencontainers.image.source"], Created: l["org.opencontainers.image.created"], LockSHA256: l["io.bundledock.tools.lock-sha256"]}
 		old := legacyTagPattern.FindStringSubmatch(m.Tag)
 		if m.RunID == "" && old != nil {
 			m.RunID = old[1]
 		}
 		if !runIDPattern.MatchString(m.RunID) || (!tagPattern.MatchString(m.Tag) && old == nil) || !commitPattern.MatchString(m.Commit) || !hashPattern.MatchString(m.LockSHA256) {
 			return "", fmt.Errorf("published baseline lacks valid provenance")
+		}
+		if singletonTagPattern.MatchString(m.Tag) && (!runIDPattern.MatchString(m.RunAttempt) || bundleForImage(image).Name == "toolbox") {
+			return "", fmt.Errorf("published singleton attempt missing")
 		}
 		digest := l[platformsLabel]
 		if digest != "" && !hashPattern.MatchString(digest) {

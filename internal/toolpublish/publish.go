@@ -16,6 +16,7 @@ import (
 type Metadata struct {
 	Image      string `json:"image"`
 	RunID      string `json:"run_id"`
+	RunAttempt string `json:"run_attempt,omitempty"`
 	Tag        string `json:"tag"`
 	Commit     string `json:"commit"`
 	Source     string `json:"source"`
@@ -45,7 +46,7 @@ type Adapter struct {
 }
 
 var imagePattern = regexp.MustCompile(`^quay\.io/[a-z0-9]+(?:[._-][a-z0-9]+)*/(toolbox|code-server|node|bun|codex|agy|claude)$`)
-var tagPattern = regexp.MustCompile(`^\d{4}\.\d{2}\.\d{2}-b[1-9]\d*\.[1-9]\d*$`)
+var tagPattern = regexp.MustCompile(`^(?:\d{4}\.\d{2}\.\d{2}-b[1-9]\d*\.[1-9]\d*|(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)-b[1-9]\d*)$`)
 var runIDPattern = regexp.MustCompile(`^[1-9]\d*$`)
 var commitPattern = regexp.MustCompile(`^[a-f0-9]{40}$`)
 var digestPattern = regexp.MustCompile(`^sha256:[a-f0-9]{64}$`)
@@ -69,13 +70,27 @@ func HashFile(path string) (string, error) {
 	return hex.EncodeToString(sum[:]), nil
 }
 
-func NewMetadata(lock, image, tag, commit, source, created, runID string) (Metadata, error) {
+func NewMetadata(lock, image, tag, commit, source, created, runID string, attempt ...string) (Metadata, error) {
 	m := Metadata{Image: image, Tag: tag, Commit: commit, Source: source, Created: created, RunID: runID}
 	if !imagePattern.MatchString(image) {
 		return m, fmt.Errorf("publication image must be quay.io/<namespace>/{toolbox,code-server,node,bun,codex,agy,claude}")
 	}
 	if !tagPattern.MatchString(tag) || !commitPattern.MatchString(commit) || !runIDPattern.MatchString(runID) {
 		return m, fmt.Errorf("invalid date/run/attempt tag, source commit or run ID")
+	}
+	if singletonTagPattern.MatchString(tag) {
+		if bundleForImage(image).Name == "toolbox" || len(attempt) != 1 || !runIDPattern.MatchString(attempt[0]) {
+			return m, fmt.Errorf("singleton tag requires workflow attempt")
+		}
+		m.RunAttempt = attempt[0]
+		data, err := os.ReadFile(lock)
+		if err != nil {
+			return m, err
+		}
+		version, err := SingletonVersion(data, bundleForImage(image).Name)
+		if err != nil || !strings.HasPrefix(tag, version+"-b") {
+			return m, fmt.Errorf("version tag differs from frozen upstream lock")
+		}
 	}
 	if _, err := time.Parse("2006-01-02T15:04:05Z", created); err != nil {
 		return m, err
@@ -88,8 +103,15 @@ func NewMetadata(lock, image, tag, commit, source, created, runID string) (Metad
 	return m, err
 }
 
+func metadataAttempt(m Metadata) []string {
+	if m.RunAttempt != "" {
+		return []string{m.RunAttempt}
+	}
+	return nil
+}
+
 func validate(m Metadata, lock string) error {
-	expected, err := NewMetadata(lock, m.Image, m.Tag, m.Commit, m.Source, m.Created, m.RunID)
+	expected, err := NewMetadata(lock, m.Image, m.Tag, m.Commit, m.Source, m.Created, m.RunID, metadataAttempt(m)...)
 	if err != nil {
 		return err
 	}
@@ -132,7 +154,8 @@ func labels(m Metadata, lock, arch string) (map[string]string, error) {
 		"org.opencontainers.image.revision": m.Commit, "org.opencontainers.image.created": m.Created,
 		"org.opencontainers.image.version": m.Tag, "io.bundledock.tools.lock-sha256": m.LockSHA256,
 		"io.bundledock.tools.versions": string(encoded), "io.bundledock.github.run-id": m.RunID,
-		platformsLabel: semantic,
+		"io.bundledock.github.run-attempt": m.RunAttempt,
+		platformsLabel:                     semantic,
 	}, nil
 }
 

@@ -50,12 +50,17 @@ func TestToolDigestTracksAssetsNotInputRanges(t *testing.T) {
 	}
 }
 
-func registryBaseline(t *testing.T, semantic string, legacy bool, corrupt bool) (*http.Client, Metadata) {
+func registryBaseline(t *testing.T, semantic string, legacy bool, corrupt bool, singletonAttempt ...string) (*http.Client, Metadata) {
 	t.Helper()
 	lock := testLock(t)
 	m := Metadata{Image: "quay.io/example/toolbox", RunID: "123", Tag: "2026.10.10-b12.4", Commit: strings.Repeat("a", 40), Source: "https://github.com/example/repo", Created: "2026-10-10T03:17:00Z", LockSHA256: fmt.Sprintf("%x", sha256.Sum256(lock))}
 	if legacy {
 		m.Tag = "2026.10.10-123-4"
+	}
+	if len(singletonAttempt) > 0 {
+		m.Image = "quay.io/example/codex"
+		m.Tag = "0.162.1-b2"
+		m.RunAttempt = singletonAttempt[0]
 	}
 	objects := map[string]string{}
 	object := func(v any) string {
@@ -67,6 +72,9 @@ func registryBaseline(t *testing.T, semantic string, legacy bool, corrupt bool) 
 	var manifests []any
 	for _, arch := range []string{"amd64", "arm64"} {
 		labels := map[string]string{"io.bundledock.tools.lock-sha256": m.LockSHA256, "io.bundledock.github.run-id": m.RunID, "org.opencontainers.image.version": m.Tag, "org.opencontainers.image.revision": m.Commit, "org.opencontainers.image.source": m.Source, "org.opencontainers.image.created": m.Created}
+		if m.RunAttempt != "" {
+			labels["io.bundledock.github.run-attempt"] = m.RunAttempt
+		}
 		if !legacy {
 			labels["io.bundledock.tools.platforms-sha256"] = semantic
 		} else {
@@ -87,7 +95,7 @@ func registryBaseline(t *testing.T, semantic string, legacy bool, corrupt bool) 
 		}
 		body, status := "", 200
 		if r.URL.Path == "/v2/auth" {
-			if r.URL.Query().Get("scope") != "repository:example/toolbox:pull" {
+			if r.URL.Query().Get("scope") != "repository:"+strings.TrimPrefix(m.Image, "quay.io/")+":pull" {
 				t.Fatal("non-pull registry scope")
 			}
 			body = `{"token":"read-token"}`
@@ -156,5 +164,20 @@ func TestPublishedBaselineFailsClosed(t *testing.T) {
 				t.Fatalf("unsafe baseline result %v", err)
 			}
 		})
+	}
+}
+
+func TestSingletonBaselineRequiresIndependentAttempt(t *testing.T) {
+	want, _ := ToolDigest(testLock(t))
+	for _, attempt := range []string{"7", "", "0"} {
+		client, meta := registryBaseline(t, want, false, false, attempt)
+		got, err := PublishedToolDigest(context.Background(), client, meta.Image, "robot", "secret", nil)
+		if attempt == "7" {
+			if err != nil || got != want {
+				t.Fatalf("semantic baseline %q: %v", got, err)
+			}
+		} else if err == nil {
+			t.Fatal("accepted singleton baseline without valid attempt")
+		}
 	}
 }

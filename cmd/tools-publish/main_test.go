@@ -451,3 +451,63 @@ func TestAgentInitialPublicationRequiresManualDispatch(t *testing.T) {
 		}
 	}
 }
+
+func TestResolveSingletonNamesTheResolvedLockOnce(t *testing.T) {
+	original, err := os.ReadFile("../../bundles/codex/tools.lock.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Chdir(t.TempDir())
+	if err := os.MkdirAll("bundles/codex", 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile("bundles/codex/tools.lock.json", original, 0600); err != nil {
+		t.Fatal(err)
+	}
+	meta, err := toolpublish.NewMetadata("bundles/codex/tools.lock.json", "quay.io/example/codex", "2026.10.12-b999.7", strings.Repeat("a", 40), "https://github.com/example/repo", "2026-10-12T00:00:00Z", "123")
+	if err != nil {
+		t.Fatal(err)
+	}
+	changed := []byte(strings.ReplaceAll(string(original), "rust-v0.162.1", "rust-v0.163.0"))
+	calls := 0
+	runner := func(args ...string) ([]byte, error) {
+		calls++
+		return nil, os.WriteFile("bundles/codex/tools.lock.json", changed, 0600)
+	}
+	allocate := func(image string, data []byte) (string, error) {
+		if string(data) != string(changed) {
+			t.Fatal("allocated before upstream resolution")
+		}
+		return "0.163.0-b1", nil
+	}
+	if err := resolveSingleton("resolved", meta, false, "7", runner, allocate); err != nil {
+		t.Fatal(err)
+	}
+	if calls != 1 {
+		t.Fatalf("resolved %d times", calls)
+	}
+	var got toolpublish.Metadata
+	if err := readJSON("resolved/provenance.json", &got); err != nil {
+		t.Fatal(err)
+	}
+	if got.Tag != "0.163.0-b1" || got.RunAttempt != "7" {
+		t.Fatalf("wrong artifact: %+v", got)
+	}
+	if err := artifactIdentity(got, "123", "2345", "7", meta.Commit); err != nil {
+		t.Fatal(err)
+	}
+	if err := artifactIdentity(got, "123", "2345", "8", meta.Commit); err == nil {
+		t.Fatal("accepted another attempt")
+	}
+	data, err := os.ReadFile("resolved/tools.lock.json")
+	if err != nil || string(data) != string(changed) {
+		t.Fatal("artifact lock changed")
+	}
+	calls = 0
+	if err := resolveSingleton("frozen", got, true, "8", runner, allocate); err != nil {
+		t.Fatal(err)
+	}
+	if calls != 0 {
+		t.Fatal("frozen publication resolved upstream")
+	}
+}

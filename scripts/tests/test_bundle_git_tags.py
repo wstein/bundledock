@@ -115,6 +115,17 @@ class GitTests(ProvenanceTests):
         os.chdir(self.previous)
         self.temporary.cleanup()
 
+    def test_semantic_tag_preserves_legacy_and_rejects_conflict(self):
+        old = self.record_data
+        tags.create_tag(old)
+        r = tags.validate_record(dict(old, tag='24.21.0-b1', run_attempt='3'))
+        tags.create_tag(r)
+        self.assertEqual(tags.create_tag(r), 'already present')
+        with self.assertRaises(ValueError):
+            tags.create_tag(dict(r, digest='sha256:'+'c'*64))
+        self.assertTrue(tags.remote_tag(old))
+        self.assertTrue(tags.remote_tag(r))
+
     def test_create_and_idempotency_without_local_tags(self):
         r = self.record_data
         self.assertFalse(tags.remote_tag(r))
@@ -214,6 +225,16 @@ class RunTests(ProvenanceTests):
         with patch.object(tags,'request',return_value=tags.json.dumps(run).encode()):
             tags.verify_run(r,True)
 
+    def test_semantic_attempt_does_not_infer_run_number(self):
+        from unittest.mock import patch
+        r = tags.validate_record(self.record(tag='24.21.0-b2',run_attempt='3'))
+        run = dict(self.run_data(r),run_number=999,run_attempt=3)
+        with patch.object(tags,'request',return_value=tags.json.dumps(run).encode()):
+            tags.verify_run(r,True)
+        run['run_attempt']=2
+        with patch.object(tags,'request',return_value=tags.json.dumps(run).encode()), self.assertRaises(ValueError):
+            tags.verify_run(r,True)
+
     def test_current_workflow_context(self):
         from unittest.mock import patch
         r = tags.validate_record(self.record())
@@ -285,3 +306,24 @@ class RedirectTests(unittest.TestCase):
             with self.subTest(target=target), patch.object(tags.urllib.request,'build_opener',return_value=opener), self.assertRaises(ValueError):
                 tags.request('https://quay.io/blob',{'Authorization':'Bearer secret'},True)
             self.assertEqual(opener.open.call_count,1)
+
+class SemanticVersionTests(ProvenanceTests):
+    def test_semantic_source_tag_binds_explicit_attempt(self):
+        r = tags.validate_record(self.record(tag='24.21.0-b2', run_attempt='7'))
+        self.assertEqual(tags.tag_name(r), 'node/24.21.0-b2')
+        self.assertIsNone(r['run_number'])
+        self.assertEqual(r['attempt'], 7)
+        self.assertIn('/attempts/7', tags.annotation(r))
+        for attempt in (None, '', '0', '01', 'bad'):
+            with self.subTest(attempt=attempt), self.assertRaises(ValueError):
+                tags.validate_record(self.record(tag='24.21.0-b2', run_attempt=attempt))
+        with self.assertRaises(ValueError):
+            tags.validate_record(self.record(bundle='toolbox',image='quay.io/bundledock/toolbox', tag='24.21.0-b2',run_attempt='7'))
+
+    def test_semantic_labels_bind_attempt(self):
+        r = tags.validate_record(self.record(tag='24.21.0-b2',run_attempt='7'))
+        labels = {'org.opencontainers.image.'+key:r[field] for key,field in [('source','source'),('revision','commit'),('version','tag')]}
+        labels.update({'io.bundledock.github.run-id':'123','io.bundledock.github.run-attempt':'7'})
+        tags.verify_labels(r,labels)
+        labels['io.bundledock.github.run-attempt']='8'
+        with self.assertRaises(ValueError): tags.verify_labels(r,labels)

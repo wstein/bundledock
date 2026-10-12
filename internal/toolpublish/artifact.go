@@ -78,6 +78,9 @@ func PublishedLockArtifact(ctx context.Context, client *http.Client, repository,
 	if old := legacyTagPattern.FindStringSubmatch(m.Tag); old != nil {
 		attempt, ok = old[2], true
 	}
+	if singletonTagPattern.MatchString(m.Tag) {
+		attempt, ok = m.RunAttempt, true
+	}
 	if !ok || !runIDPattern.MatchString(attempt) {
 		return nil, fmt.Errorf("published attempt missing from tag")
 	}
