@@ -25,7 +25,11 @@ concurrency:
 
 jobs:
   preflight:
-    if: github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_run'
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main' &&
+       (github.event.workflow_run.event == 'push' || github.event.workflow_run.event == 'workflow_dispatch'))
     permissions:
       contents: read
       actions: read
@@ -36,6 +40,7 @@ jobs:
       sha: ${{ steps.source.outputs.sha }}
       pr_url: ${{ steps.source.outputs.pr_url }}
       artifact: ${{ steps.source.outputs.artifact }}
+      eligible: ${{ steps.source.outputs.eligible }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -53,9 +58,10 @@ jobs:
           TRIGGERING_ACTOR: ${{ github.triggering_actor }}
         run: |
           if [ "$GITHUB_EVENT_NAME" = workflow_run ]; then
-            python3 scripts/bundle-publication.py --bundle "$BUNDLE"
+            python3 scripts/bundle-publication.py --bundle "$BUNDLE" --mode preflight
           else
             sh scripts/approve-publication.sh
+            echo "eligible=true" >> "$GITHUB_OUTPUT"
             echo "sha=$APPROVED_SHA" >> "$GITHUB_OUTPUT"
             python3 scripts/bundle-publication.py --bundle "$BUNDLE" --mode config
           fi
@@ -69,7 +75,7 @@ jobs:
       publish: ${{ steps.plan.outputs.publish }}
     needs: preflight
     if: >-
-      needs.preflight.result == 'success' &&
+      needs.preflight.result == 'success' && needs.preflight.outputs.eligible == 'true' &&
       ((github.event_name == 'workflow_dispatch' &&
         github.event.repository.default_branch == 'main' &&
         github.ref == 'refs/heads/main' && github.event.sender.type == 'User' &&
@@ -140,7 +146,7 @@ jobs:
       actions: read
       pull-requests: read
     if: >-
-      needs.preflight.result == 'success' &&
+      needs.preflight.result == 'success' && needs.preflight.outputs.eligible == 'true' &&
       ((github.event_name == 'workflow_dispatch' &&
         github.event.repository.default_branch == 'main' &&
         github.ref == 'refs/heads/main' && github.event.sender.type == 'User' &&
@@ -218,7 +224,7 @@ jobs:
 
   promote:
     if: >-
-      needs.preflight.result == 'success' &&
+      needs.preflight.result == 'success' && needs.preflight.outputs.eligible == 'true' &&
       ((github.event_name == 'workflow_dispatch' &&
         github.event.repository.default_branch == 'main' &&
         github.ref == 'refs/heads/main' && github.event.sender.type == 'User' &&
