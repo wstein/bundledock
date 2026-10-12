@@ -3,6 +3,7 @@ package toolconfig
 import (
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 )
@@ -295,5 +296,36 @@ func TestPackageFilenamesLoadAllBundleInputs(t *testing.T) {
 				t.Fatal("package input identity differs across loaders")
 			}
 		})
+	}
+}
+
+func TestPackageListsHaveMaintenanceHeaderAndAlphabeticKeys(t *testing.T) {
+	paths, err := filepath.Glob("../../bundles/*/packages.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(paths) != 8 {
+		t.Fatalf("expected all eight package lists, got %d", len(paths))
+	}
+	const header = "# package list should be sorted alphabetically for easier maintenance."
+	for _, path := range paths {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(string(data), header+"\n") {
+			t.Errorf("%s: missing maintenance header", path)
+		}
+		var names []string
+		for _, line := range strings.Split(string(data), "\n") {
+			line = strings.TrimSpace(line)
+			if line == "" || strings.HasPrefix(line, "#") {
+				continue
+			}
+			names = append(names, strings.FieldsFunc(line, func(r rune) bool { return strings.ContainsRune("<>= \t", r) })[0])
+		}
+		if !sort.StringsAreSorted(names) {
+			t.Errorf("%s: package keys are not alphabetic: %v", path, names)
+		}
 	}
 }

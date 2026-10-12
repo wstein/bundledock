@@ -1,1 +1,2 @@
+# package list should be sorted alphabetically for easier maintenance.
 bun>=1.4.3,<2.0.0
