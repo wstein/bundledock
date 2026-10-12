@@ -5,11 +5,13 @@ and ARM64 prebuilts and their bundled npm/npx. The existing `node` bundle
 continues to supply Node.js 24 LTS with its existing catalog, lock, image,
 volume and consumer configuration.
 
+<!-- BEGIN PUBLISHED BUNDLE -->
 **Planned, unpublished:** no Node Current image or publication receipt has
 been verified. First publication requires separate explicit approval of the
 exact full source revision and intended build/publication operation. No Quay
 repository setup, image build, workflow dispatch, source tag or consumer
 activation is part of this source change.
+<!-- END PUBLISHED BUNDLE -->
 
 <!-- BEGIN GENERATED TOOL INVENTORY -->
 | Tool | Pinned version |
