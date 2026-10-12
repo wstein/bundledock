@@ -38,8 +38,8 @@ the repository root, choosing the additional checks that cover your change:
 | Go or build behavior | `make check`; `make build` only with explicit user approval |
 | Local CLI release artifacts | `make release-test` |
 | Documentation site or rendered guides | `make docs-test` |
-| Tool extraction, catalog, or volumes | `make tools-test`, plus Docker checks below |
-| OCI image, tool pins, or consumer compatibility | `make tools-build tools-smoke` on native Linux AMD64 and ARM64 |
+| Tool extraction, catalog, or volumes | `make bundle-test`, plus Docker checks below |
+| OCI image, tool pins, or consumer compatibility | `make bundle-build bundle-smoke` on native Linux AMD64 and ARM64 |
 
 `make check` checks Go formatting, tests, and vet. Routine test compilation is
 allowed. All artifact, image, CLI release, and documentation builds require

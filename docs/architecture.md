@@ -49,7 +49,7 @@ The volume is shared across workspaces on the same Docker host.
 
 ## Shared volumes
 
-`tools-volume` prints a volume name derived from the resolved image ID. It copies
+`bundle-volume` prints a volume name derived from the resolved image ID. It copies
 the tools once and verifies their checksums on subsequent calls. Incomplete,
 nonempty, or mismatched volumes are rejected. Upgrades create a new image and
 volume; rollback selects the previous image. Volumes are local to each Docker host.
@@ -60,11 +60,11 @@ Initialization never removes an existing lock or retries a partial nonempty volu
 
 Follow the [quick start](../README.md#quick-start) to mount the printed volume.
 
-Bundle roots use `/opt/bundledock/<bundle-name>`. The current bundle is
-`toolbox`: mount it read-only at `/opt/bundledock/toolbox` and put
-`/opt/bundledock/toolbox/bin` on PATH. Each bundle keeps its own metadata,
-assets and licenses inside its root. Additional bundles can use sibling roots
-and separate volumes without overlapping mounts; no additional bundle is shipped.
+Bundle roots use `/opt/bundledock/<bundle-name>`. For example, mount the
+`toolbox` read-only at `/opt/bundledock/toolbox` and put
+`/opt/bundledock/toolbox/bin` on PATH. The optional [code-server](code-server.md),
+[Node.js](node.md) and [Bun](bun.md) bundles use sibling roots and separate
+volumes. Each bundle keeps its own metadata, assets and licenses inside its root.
 The builder accepts `--destination` for another root. Bundle metadata and packaged
 assets use relative paths, so an existing image-derived volume can be mounted there
 without changing its image or volume identity. The initializer still mounts the volume at `/bundle` while copying or
@@ -82,8 +82,12 @@ shared executables; Claude updates are also disabled with environment variables.
 
 The supported initial consumer baseline is the Debian Trixie Go devcontainer.
 Other images must supply compatible system libraries, Git, and CA certificates;
-mounting this volume does not install those dependencies. Override `TOOLS_IMAGE`
-or `TOOLS_CONSUMER` when invoking Make to select another image or test consumer.
+mounting this volume does not install those dependencies. Override `IMAGE`
+or `CONSUMER` when invoking Make to select another image or test consumer.
+The shared `bundle-build`, `bundle-smoke` and `bundle-volume` targets accept
+`BUNDLE=toolbox|code-server|node|bun` (default `toolbox`). Each bundle uses its own
+Dockerfile and smoke script; volume initialization uses the resolved immutable
+image ID and preserves the `bundledock-<bundle>-<digest>` naming convention.
 
 The OCI build uses the repository root as context with `bundles/toolbox/Dockerfile.dockerignore`
 limiting it to the builder/initializer sources and artifact lock. Go compilation

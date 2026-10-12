@@ -55,8 +55,9 @@ source revision. These commands are a manual recipe, not a publication or
 activation workflow:
 
 ```sh
-docker build -f bundles/code-server/Dockerfile -t bundledock-code-server:poc .
-bundledock tools volume --image bundledock-code-server:poc --bundle code-server
+make bundle-build BUNDLE=code-server
+make bundle-smoke BUNDLE=code-server
+make bundle-volume BUNDLE=code-server
 ```
 
 The initializer resolves the image tag once and prints a volume named

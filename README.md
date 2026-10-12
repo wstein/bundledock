@@ -29,7 +29,7 @@ toolbox by its immutable multi-platform index digest, then initialize its volume
 ```sh
 TOOLBOX_IMAGE=quay.io/bundledock/toolbox@sha256:40bae37ef7fd7b8e7131803850801ed41cfb23a6ef774bc2e40f95ee81e59a1c
 docker pull "$TOOLBOX_IMAGE"
-sh bundles/toolbox/volume.sh "$TOOLBOX_IMAGE"
+make bundle-volume BUNDLE=toolbox IMAGE="$TOOLBOX_IMAGE"
 ```
 
 This example is toolbox version `2026.10.10-b4.1`, published from
