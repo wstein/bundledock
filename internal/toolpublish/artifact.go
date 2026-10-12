@@ -145,7 +145,8 @@ func PublishedLockArtifact(ctx context.Context, client *http.Client, repository,
 	}
 	var lock []byte
 	for _, file := range archive.File {
-		if file.Name == "tools.lock.json" {
+		// Older published archives retain their original filename.
+		if file.Name == "packages.lock.json" || file.Name == "tools.lock.json" {
 			if lock != nil {
 				return nil, fmt.Errorf("duplicate lock in legacy archive")
 			}

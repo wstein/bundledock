@@ -85,7 +85,7 @@ func ParseDesired(r io.Reader) (Desired, error) {
 		s = strings.ReplaceAll(s, "\t", "")
 		m := requirement.FindStringSubmatch(s)
 		if m == nil {
-			return nil, fmt.Errorf("tools.txt line %d: expected name==x.y.z, name>=x.y.z or name>=x.y.z,<x.y.z", line)
+			return nil, fmt.Errorf("packages.txt line %d: expected name==x.y.z, name>=x.y.z or name>=x.y.z,<x.y.z", line)
 		}
 		if _, ok := desired[m[1]]; ok {
 			return nil, fmt.Errorf("duplicate tool %s", m[1])
@@ -115,7 +115,7 @@ func ParseDesired(r io.Reader) (Desired, error) {
 		return nil, err
 	}
 	if len(desired) == 0 {
-		return nil, fmt.Errorf("empty tools.txt")
+		return nil, fmt.Errorf("empty packages.txt")
 	}
 	return desired, nil
 }

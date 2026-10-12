@@ -21,7 +21,7 @@ func TestNodeChannelPromotionIsolation(t *testing.T) {
 			if err != nil || image != "quay.io/example/node" {
 				t.Fatalf("shared repository: %s %v", image, err)
 			}
-			lock := "../../" + b.Directory + "/tools.lock.json"
+			lock := "../../" + b.Directory + "/packages.lock.json"
 			data, _ := os.ReadFile(lock)
 			version, _ := SingletonVersion(data, name)
 			m, err := NewMetadataForBundle(name, lock, image, version+"-b1", strings.Repeat("a", 40), "https://github.com/example/repo", "2026-10-12T00:00:00Z", "123", "1")
@@ -106,7 +106,7 @@ func TestNodeSharedSourceReservations(t *testing.T) {
 func TestNodeAllocationSharesAuthenticatedRepository(t *testing.T) {
 	for _, name := range []string{"node-current", "node"} {
 		t.Run(name, func(t *testing.T) {
-			lock, err := os.ReadFile("../../bundles/node-current/tools.lock.json")
+			lock, err := os.ReadFile("../../bundles/node-current/packages.lock.json")
 			if err != nil {
 				t.Fatal(err)
 			}

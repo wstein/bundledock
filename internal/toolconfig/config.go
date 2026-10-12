@@ -19,7 +19,7 @@ import (
 // ToolboxDirectory is the repository-relative home of the default tool bundle.
 const ToolboxDirectory = "bundles/toolbox"
 
-const ToolboxLock = ToolboxDirectory + "/tools.lock.json"
+const ToolboxLock = ToolboxDirectory + "/packages.lock.json"
 
 type Spec struct {
 	Version      string `json:"version"`
@@ -124,7 +124,7 @@ func LoadForUpgrade(directory string) (*Config, error) { return load(directory, 
 // LoadInputs validates trusted declarative inputs independently of an existing lock.
 func LoadInputs(directory string) (*Config, error) {
 	c := new(Config)
-	f, err := os.Open(filepath.Join(directory, "tools.txt"))
+	f, err := os.Open(filepath.Join(directory, "packages.txt"))
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +133,7 @@ func LoadInputs(directory string) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	f, err = os.Open(filepath.Join(directory, "tools.packages.json"))
+	f, err = os.Open(filepath.Join(directory, "packages.catalog.json"))
 	if err != nil {
 		return nil, err
 	}
@@ -172,7 +172,7 @@ func load(directory string, strict bool) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	f, err := os.Open(filepath.Join(directory, "tools.lock.json"))
+	f, err := os.Open(filepath.Join(directory, "packages.lock.json"))
 	if err != nil {
 		return nil, err
 	}
@@ -263,7 +263,7 @@ func (c Config) validate(strict bool) error {
 		return fmt.Errorf("unsupported catalog/lock schema")
 	}
 	if strict && (c.Lock.DesiredDigest != c.DesiredDigest() || c.Lock.CatalogDigest != c.CatalogDigest()) {
-		return fmt.Errorf("tools.lock.json identity differs from tools.txt or tools.packages.json; run bundledock tools upgrade (desired %s/%s catalog %s/%s)", c.Lock.DesiredDigest, c.DesiredDigest(), c.Lock.CatalogDigest, c.CatalogDigest())
+		return fmt.Errorf("packages.lock.json identity differs from packages.txt or packages.catalog.json; run bundledock tools upgrade (desired %s/%s catalog %s/%s)", c.Lock.DesiredDigest, c.DesiredDigest(), c.Lock.CatalogDigest, c.CatalogDigest())
 	}
 	if len(c.Desired) != len(c.Catalog.Packages) || len(c.Lock.Platforms) != 2 {
 		return fmt.Errorf("desired tools, catalog and both lock architectures must agree")
@@ -271,7 +271,7 @@ func (c Config) validate(strict bool) error {
 	for name, p := range c.Catalog.Packages {
 		constraint, ok := c.Desired[name]
 		if !ok {
-			return fmt.Errorf("catalog tool %s is absent from tools.txt", name)
+			return fmt.Errorf("catalog tool %s is absent from packages.txt", name)
 		}
 		if p.Normalization != "semver" && p.Normalization != "tmux-release" && p.Normalization != "helix-calendar" {
 			return fmt.Errorf("unknown normalization for %s", name)

@@ -144,7 +144,7 @@ func resolveSingleton(directory string, meta toolpublish.Metadata, frozen bool, 
 			return err
 		}
 	}
-	lock := bundle.Directory + "/tools.lock.json"
+	lock := bundle.Directory + "/packages.lock.json"
 	data, err := os.ReadFile(lock)
 	if err != nil {
 		return err
@@ -164,14 +164,14 @@ func resolveSingleton(directory string, meta toolpublish.Metadata, frozen bool, 
 func resolveFrozen(directory string, meta toolpublish.Metadata) error {
 	bundle := toolpublish.BundleForMetadata(meta)
 	var err error
-	meta.LockSHA256, err = toolpublish.HashFile(bundle.Directory + "/tools.lock.json")
+	meta.LockSHA256, err = toolpublish.HashFile(bundle.Directory + "/packages.lock.json")
 	if err != nil {
 		return err
 	}
 	if err = os.Mkdir(directory, 0700); err != nil {
 		return err
 	}
-	if err = copyFile(bundle.Directory+"/tools.lock.json", filepath.Join(directory, "tools.lock.json")); err != nil {
+	if err = copyFile(bundle.Directory+"/packages.lock.json", filepath.Join(directory, "packages.lock.json")); err != nil {
 		return err
 	}
 	return writeJSON(filepath.Join(directory, "provenance.json"), meta)
@@ -257,7 +257,7 @@ func execute(args []string) error {
 		_, err := toolconfig.Load(bundle.Directory)
 		return err
 	}
-	lock := filepath.Join(*directory, "tools.lock.json")
+	lock := filepath.Join(*directory, "packages.lock.json")
 	provenance := filepath.Join(*directory, "provenance.json")
 	commit, err := publicationCommit(bundle.Name)
 	if err != nil {
@@ -276,7 +276,7 @@ func execute(args []string) error {
 		}
 		now := time.Now().UTC()
 		tag := now.Format("2006.01.02") + "-b" + os.Getenv("GITHUB_RUN_NUMBER") + "." + os.Getenv("GITHUB_RUN_ATTEMPT")
-		meta, err := toolpublish.NewMetadataForBundle(bundle.Name, bundle.Directory+"/tools.lock.json", image, tag, commit, os.Getenv("GITHUB_SERVER_URL")+"/"+os.Getenv("GITHUB_REPOSITORY"), now.Format("2006-01-02T15:04:05Z"), os.Getenv("GITHUB_RUN_ID"))
+		meta, err := toolpublish.NewMetadataForBundle(bundle.Name, bundle.Directory+"/packages.lock.json", image, tag, commit, os.Getenv("GITHUB_SERVER_URL")+"/"+os.Getenv("GITHUB_REPOSITORY"), now.Format("2006-01-02T15:04:05Z"), os.Getenv("GITHUB_RUN_ID"))
 		if err != nil {
 			return err
 		}
@@ -362,7 +362,7 @@ func execute(args []string) error {
 		defer cancel()
 		return toolpublish.CheckNewestForWorkflow(ctx, nil, os.Getenv("GITHUB_REPOSITORY"), os.Getenv("DEFAULT_BRANCH"), id, attempt, os.Getenv("GITHUB_SHA"), os.Getenv("GITHUB_TOKEN"), bundle.Workflow)
 	case "build":
-		if err := copyFile(lock, bundle.Directory+"/tools.lock.json"); err != nil {
+		if err := copyFile(lock, bundle.Directory+"/packages.lock.json"); err != nil {
 			return err
 		}
 		if _, err := toolconfig.Load(bundle.Directory); err != nil {

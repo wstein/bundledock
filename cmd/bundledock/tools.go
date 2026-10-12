@@ -22,7 +22,7 @@ func newToolsCommandWithClient(client *http.Client) *cobra.Command {
 	volume.Flags().StringVar(&image, "image", image, "OCI tool bundle image")
 	volume.Flags().StringVar(&bundle, "bundle", bundle, "bundle name used for the image-derived volume namespace")
 	directory := toolconfig.ToolboxDirectory
-	upgrade := &cobra.Command{Use: "upgrade [tool]", Short: "Resolve the newest stable versions within tools.txt into tools.lock.json", Args: cobra.MaximumNArgs(1), RunE: func(cmd *cobra.Command, args []string) error {
+	upgrade := &cobra.Command{Use: "upgrade [tool]", Short: "Resolve the newest stable versions within packages.txt into packages.lock.json", Args: cobra.MaximumNArgs(1), RunE: func(cmd *cobra.Command, args []string) error {
 		tool := ""
 		if len(args) > 0 {
 			tool = args[0]

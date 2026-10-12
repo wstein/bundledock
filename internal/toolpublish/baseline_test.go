@@ -14,7 +14,7 @@ import (
 
 func testLock(t *testing.T) []byte {
 	t.Helper()
-	b, err := os.ReadFile("../../bundles/toolbox/tools.lock.json")
+	b, err := os.ReadFile("../../bundles/toolbox/packages.lock.json")
 	if err != nil {
 		t.Fatal(err)
 	}

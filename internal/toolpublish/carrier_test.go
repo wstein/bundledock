@@ -45,7 +45,7 @@ func TestBuildStagesUseMinimalAlpineBases(t *testing.T) {
 	}
 	for _, required := range []string{
 		"COPY --from=compiler /out/tools-bundle /usr/local/bin/tools-bundle",
-		"COPY bundles/toolbox/tools.txt bundles/toolbox/tools.packages.json bundles/toolbox/tools.lock.json /build/",
+		"COPY bundles/toolbox/packages.txt bundles/toolbox/packages.catalog.json bundles/toolbox/packages.lock.json /build/",
 		"COPY bundles/toolbox/licenses /build/licenses",
 	} {
 		if !strings.Contains(downloads, required) {

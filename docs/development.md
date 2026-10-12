@@ -200,7 +200,7 @@ adapter tests without building an OCI image.
 - `cmd/tools-bundle`, `cmd/tools-init`, `cmd/tools-publish`: build, initialization, and publication adapters.
 - `internal`: package catalog, upstream resolution, bundle extraction, volume validation, and Docker adapters.
 - `bundles/toolbox/`: Dockerfile, smoke/volume adapters, licenses and bundle inputs.
-- `bundles/toolbox/{tools.txt,tools.packages.json,tools.lock.json}`: desired versions, trusted recipes, and verified pins.
+- `bundles/toolbox/{packages.txt,packages.catalog.json,packages.lock.json}`: desired versions, trusted recipes, and verified pins.
 - `.github/workflows/ci.yml`: pull request and push formatting, source tests and vet.
 - `.github/workflows/bundledock-*.yml`: named entrypoints for shared approved bundle publication.
 - `assets`, `brand`: approved brand assets, licensed font sources, and generation provenance.

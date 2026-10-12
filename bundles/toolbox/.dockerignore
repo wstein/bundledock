@@ -1,6 +1,6 @@
 *
 !Dockerfile
-!tools.lock.json
+!packages.lock.json
 !install.py
 !package.py
 !init-volume.sh

@@ -12,15 +12,23 @@ import (
 )
 
 func TestLegacyArtifactUsesExactAttemptAndCredentialFreeDownload(t *testing.T) {
-	for _, scenario := range []string{"legacy tag", "current tag", "expired", "wrong revision", "download gone", "unsafe download", "duplicate lock"} {
+	for _, scenario := range []string{"legacy tag", "current tag", "package filename", "mixed filenames", "expired", "wrong revision", "download gone", "unsafe download", "duplicate lock"} {
 		t.Run(scenario, func(t *testing.T) {
 			lock := testLock(t)
 			var archive bytes.Buffer
 			writer := zip.NewWriter(&archive)
-			f, _ := writer.Create("tools.lock.json")
+			filename := "tools.lock.json"
+			if scenario == "package filename" {
+				filename = "packages.lock.json"
+			}
+			f, _ := writer.Create(filename)
 			f.Write(lock)
-			if scenario == "duplicate lock" {
-				f, _ = writer.Create("tools.lock.json")
+			if scenario == "duplicate lock" || scenario == "mixed filenames" {
+				duplicate := filename
+				if scenario == "mixed filenames" {
+					duplicate = "packages.lock.json"
+				}
+				f, _ = writer.Create(duplicate)
 				f.Write(lock)
 			}
 			writer.Close()
@@ -67,7 +75,7 @@ func TestLegacyArtifactUsesExactAttemptAndCredentialFreeDownload(t *testing.T) {
 				return &http.Response{StatusCode: status, Body: io.NopCloser(strings.NewReader(body)), Header: headers}, nil
 			})}
 			got, err := PublishedLockArtifact(context.Background(), client, "example/repo", "main", "private-token", m)
-			wantErr := scenario != "legacy tag" && scenario != "current tag"
+			wantErr := scenario != "legacy tag" && scenario != "current tag" && scenario != "package filename"
 			if (err != nil) != wantErr || (!wantErr && (!bytes.Equal(got, lock) || downloads != 1)) {
 				t.Fatalf("got %v downloads=%d", err, downloads)
 			}
