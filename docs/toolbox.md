@@ -247,7 +247,7 @@ formatting and comments in `tools.txt` do not change its identity. Builds reject
 identity, incomplete platforms, unsupported recipes, and unsafe archive members.
 
 `tools upgrade` writes only `tools.lock.json`. Review and commit the diff, then run
-`make tools-build tools-smoke tools-volume` to build and initialize the new bundle.
+`make bundle-build bundle-smoke bundle-volume` to build and initialize the new bundle.
 Existing images, volumes, running containers, and desired ranges are unaffected by
 resolution. `tools volume` remains the existing initialization command; no update
 alias or other tool-management commands are added.

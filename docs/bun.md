@@ -59,7 +59,9 @@ explicit approval for the intended operation and source revision. After an
 approved image build:
 
 ```sh
-bundledock tools volume --image bundledock-bun:poc --bundle bun
+make bundle-build BUNDLE=bun
+make bundle-smoke BUNDLE=bun
+make bundle-volume BUNDLE=bun
 ```
 
 Mount the printed `bundledock-bun-<full image ID>` volume read-only at

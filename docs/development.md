@@ -191,7 +191,7 @@ This validates local artifact preparation; native AMD64 execution, Docker image
 checks and publication remain separate checks.
 
 Checks target this repository's `cmd` and `internal` Go packages.
-`make tools-test` runs the focused CLI, catalog, extraction, volume, and Docker
+`make bundle-test` runs the focused CLI, catalog, extraction, volume, and Docker
 adapter tests without building an OCI image.
 
 ## Repository layout
@@ -258,7 +258,7 @@ Local Docker was unavailable in the implementation environment. Publication
 adapter checks use fake Docker commands in `make check`; they do not establish
 Quay publication. Interactive TUI use, authenticated agent workflows, model
 requests, and agent sandbox behavior remain unverified. Before adopting a
-changed lock or consumer baseline, run `make tools-build tools-smoke` on each
+changed lock or consumer baseline, run `make bundle-build bundle-smoke` on each
 supported architecture.
 
 ### Process monitors

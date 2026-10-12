@@ -60,7 +60,9 @@ explicit approval for their intended operation and source revision. After an
 approved image build and volume initialization:
 
 ```sh
-bundledock tools volume --image bundledock-node:poc --bundle node
+make bundle-build BUNDLE=node
+make bundle-smoke BUNDLE=node
+make bundle-volume BUNDLE=node
 ```
 
 Mount the printed image-derived `bundledock-node-<full image ID>` volume
