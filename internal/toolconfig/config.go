@@ -276,6 +276,10 @@ func (c Config) validate(strict bool) error {
 			return fmt.Errorf("unknown normalization for %s", name)
 		}
 		switch p.Provider {
+		case "node":
+			if name != "node" || p.BaseURL != "https://nodejs.org/dist" || p.MetadataURL != "https://nodejs.org/dist/index.json" || p.TagPrefix != "v" || p.Asset != "node-v{version}-linux-{arch}.tar.gz" || p.Architectures["amd64"] != "x64" || p.Architectures["arm64"] != "arm64" || len(p.AllowedHosts) != 1 || p.AllowedHosts[0] != "nodejs.org" || p.Install.Profile != "node-runtime" {
+				return fmt.Errorf("invalid official Node recipe")
+			}
 		case "github", "claude", "antigravity":
 			if !repositoryName.MatchString(p.Repository) {
 				return fmt.Errorf("invalid repository for %s", name)
@@ -326,7 +330,10 @@ func (c Config) validate(strict bool) error {
 		default:
 			return fmt.Errorf("unknown install kind for %s", name)
 		}
-		if p.Install.Profile != "" && p.Install.Profile != "helix-runtime" && (p.Install.Profile != "code-server-standalone" || len(c.Catalog.Packages) != 1 || name != "code-server" || p.Provider != "github" || p.Repository != "coder/code-server" || p.Install.Kind != "tar.gz" || !p.Install.Preserve || len(p.Install.Members) != 1 || p.Install.Members["bin/code-server"] != "payload/bin/code-server" || len(p.Install.Aliases) != 0 || len(p.Install.ExcludeDirectories) != 0) {
+		if p.Install.Profile == "node-runtime" && (name != "node" || len(c.Catalog.Packages) != 1 || p.Provider != "node" || p.Install.Kind != "tar.gz" || !p.Install.Preserve || len(p.Install.Members) != 1 || p.Install.Members["bin/node"] != "payload/bin/node" || len(p.Install.Aliases) != 0 || len(p.Install.ExcludeDirectories) != 0) {
+			return fmt.Errorf("invalid Node runtime recipe")
+		}
+		if p.Install.Profile != "" && p.Install.Profile != "helix-runtime" && p.Install.Profile != "node-runtime" && (p.Install.Profile != "code-server-standalone" || len(c.Catalog.Packages) != 1 || name != "code-server" || p.Provider != "github" || p.Repository != "coder/code-server" || p.Install.Kind != "tar.gz" || !p.Install.Preserve || len(p.Install.Members) != 1 || p.Install.Members["bin/code-server"] != "payload/bin/code-server" || len(p.Install.Aliases) != 0 || len(p.Install.ExcludeDirectories) != 0) {
 			return fmt.Errorf("invalid standalone profile for %s", name)
 		}
 		if len(p.Install.Members) == 0 {
@@ -387,6 +394,12 @@ func (c Config) validate(strict bool) error {
 			}
 			if err := ValidateURL(s.URL, p.AllowedHosts); err != nil {
 				return err
+			}
+			if strict && p.Install.Profile == "node-runtime" {
+				expected := p.BaseURL + "/" + s.Version + "/node-" + s.Version + "-linux-" + p.Architectures[arch] + ".tar.gz"
+				if s.URL != expected || s.Verification != "publisher-sha256" {
+					return fmt.Errorf("invalid official Node pin")
+				}
 			}
 			if strict && p.Install.Profile == "helix-runtime" {
 				expected := "https://github.com/helix-editor/helix/releases/download/" + s.Version + "/helix-" + s.Version + "-" + p.Architectures[arch] + "-linux.tar.xz"
