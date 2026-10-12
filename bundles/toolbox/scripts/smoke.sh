@@ -24,6 +24,7 @@ check() {
         --mount "type=bind,src=$script_dir/utilities-smoke.sh,dst=/utilities-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/helix-smoke.sh,dst=/helix-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/vcs-versions-smoke.sh,dst=/vcs-versions-smoke.sh,readonly" \
+        --mount "type=bind,src=$script_dir/leaf-smoke.sh,dst=/leaf-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/jujutsu-smoke.sh,dst=/jujutsu-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/hugo-smoke.sh,dst=/hugo-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/process-monitors-smoke.sh,dst=/process-monitors-smoke.sh,readonly" \
@@ -112,6 +113,8 @@ check() {
             sh /vcs-versions-smoke.sh
             stage "Jujutsu isolated Git-backed workspace"
             sh /jujutsu-smoke.sh
+            stage "Leaf Markdown preview"
+            sh /leaf-smoke.sh
             stage "Hugo"
             sh /hugo-smoke.sh
             stage "quality and security tools"
