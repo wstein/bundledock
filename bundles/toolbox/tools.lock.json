@@ -1,7 +1,7 @@
 {
   "schema": 2,
-  "desired_digest": "43a9c55fec69ffdfd7bc360db3088037064b1ad17f92edb2e4a62515edf1069d",
-  "catalog_digest": "28fc43a921e292cfc06e09c8ff99802f995c916fd1a3c4b285fa432d3d599d62",
+  "desired_digest": "4c8bb9f91f25e1ec2e9a6b7cab5b3e9b1b405c921d6185a1d82b3f37bd5c0d54",
+  "catalog_digest": "a8dbbcdbf3cf2b10cd8a237638ba4d02074f8c5284c9f452a5c8b6e8fe7abce6",
   "platforms": {
     "amd64": {
       "agy": {
@@ -15,6 +15,12 @@
         "url": "https://github.com/ast-grep/ast-grep/releases/download/0.45.3/app-x86_64-unknown-linux-gnu.zip",
         "sha256": "f8ac830881339d1edee6b2652f54798c0f4da5a827f2db38a08ee31117783ce8",
         "verification": "tls-download-sha256"
+      },
+      "bat": {
+        "version": "v0.26.1",
+        "url": "https://github.com/sharkdp/bat/releases/download/v0.26.1/bat-v0.26.1-x86_64-unknown-linux-musl.tar.gz",
+        "sha256": "0dcd8ac79732c0d5b136f11f4ee00e581440e16a44eab5b3105b611bbf2cf191",
+        "verification": "publisher-sha256"
       },
       "bottom": {
         "version": "0.14.9",
@@ -52,6 +58,12 @@
         "sha256": "8f643d10ad1abb0ef7072764c01ceb5cf61b2d373fda400cf60f0bad69b7e095",
         "verification": "publisher-sha256"
       },
+      "fzf": {
+        "version": "v0.74.5",
+        "url": "https://github.com/junegunn/fzf/releases/download/v0.74.5/fzf-0.74.5-linux_amd64.tar.gz",
+        "sha256": "d47d7f882972c7d674dbbba998ffa4116e68379616ffac7695d0671e9a722c5f",
+        "verification": "publisher-sha256"
+      },
       "gh": {
         "version": "v2.102.0",
         "url": "https://github.com/cli/cli/releases/download/v2.102.0/gh_2.102.0_linux_amd64.tar.gz",
@@ -62,6 +74,12 @@
         "version": "v8.30.1",
         "url": "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz",
         "sha256": "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb",
+        "verification": "publisher-sha256"
+      },
+      "helix": {
+        "version": "25.07.1",
+        "url": "https://github.com/helix-editor/helix/releases/download/25.07.1/helix-25.07.1-x86_64-linux.tar.xz",
+        "sha256": "3f08e63ecd388fff657ad39722f88bb03dcf326f1f2da2700d99e1dc40ab2e8b",
         "verification": "publisher-sha256"
       },
       "herdr": {
@@ -92,6 +110,12 @@
         "version": "0.116.1",
         "url": "https://github.com/nushell/nushell/releases/download/0.116.1/nu-0.116.1-x86_64-unknown-linux-musl.tar.gz",
         "sha256": "13ef75df08df30f8d7b031df538e82a52c6e74ce839b1a9091c3a3f1969c3742",
+        "verification": "publisher-sha256"
+      },
+      "regctl": {
+        "version": "v0.11.6",
+        "url": "https://github.com/regclient/regclient/releases/download/v0.11.6/regctl-linux-amd64",
+        "sha256": "8e0e62a497fcdb8048d18aa927a139613176ba0531f412bc541044e28f9856bd",
         "verification": "publisher-sha256"
       },
       "rg": {
@@ -141,12 +165,6 @@
         "url": "https://github.com/mikefarah/yq/releases/download/v4.54.1/yq_linux_amd64",
         "sha256": "8e34fc298390875de416e6a4afcb8cabeceb25d9aa8506c1a2f9353cf702ea5f",
         "verification": "tls-download-sha256"
-      },
-      "helix": {
-        "version": "25.07.1",
-        "url": "https://github.com/helix-editor/helix/releases/download/25.07.1/helix-25.07.1-x86_64-linux.tar.xz",
-        "sha256": "3f08e63ecd388fff657ad39722f88bb03dcf326f1f2da2700d99e1dc40ab2e8b",
-        "verification": "publisher-sha256"
       }
     },
     "arm64": {
@@ -161,6 +179,12 @@
         "url": "https://github.com/ast-grep/ast-grep/releases/download/0.45.3/app-aarch64-unknown-linux-gnu.zip",
         "sha256": "b39cfbc58da4b869a88b8a4bc57bd5deb0d24541e704cf7c257da7b53ec81c8f",
         "verification": "tls-download-sha256"
+      },
+      "bat": {
+        "version": "v0.26.1",
+        "url": "https://github.com/sharkdp/bat/releases/download/v0.26.1/bat-v0.26.1-aarch64-unknown-linux-musl.tar.gz",
+        "sha256": "6369242c584065f195fb20cb36fbd7cb63ae690605bbe89868a7596b596c2c23",
+        "verification": "publisher-sha256"
       },
       "bottom": {
         "version": "0.14.9",
@@ -198,6 +222,12 @@
         "sha256": "57349f0111728c64b703a84e611aa97ff4d1fa8466385d64e67bd5bc3ffa49fc",
         "verification": "publisher-sha256"
       },
+      "fzf": {
+        "version": "v0.74.5",
+        "url": "https://github.com/junegunn/fzf/releases/download/v0.74.5/fzf-0.74.5-linux_arm64.tar.gz",
+        "sha256": "cf058001da21724a469b714a29cf4aab9cbe860d218a0d6c1b5b661efad7784c",
+        "verification": "publisher-sha256"
+      },
       "gh": {
         "version": "v2.102.0",
         "url": "https://github.com/cli/cli/releases/download/v2.102.0/gh_2.102.0_linux_arm64.tar.gz",
@@ -208,6 +238,12 @@
         "version": "v8.30.1",
         "url": "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_arm64.tar.gz",
         "sha256": "e4a487ee7ccd7d3a7f7ec08657610aa3606637dab924210b3aee62570fb4b080",
+        "verification": "publisher-sha256"
+      },
+      "helix": {
+        "version": "25.07.1",
+        "url": "https://github.com/helix-editor/helix/releases/download/25.07.1/helix-25.07.1-aarch64-linux.tar.xz",
+        "sha256": "ce23fa8d395e633e3e54c052012f11965d91d8d5c2bfa659685f50430b4f8175",
         "verification": "publisher-sha256"
       },
       "herdr": {
@@ -238,6 +274,12 @@
         "version": "0.116.1",
         "url": "https://github.com/nushell/nushell/releases/download/0.116.1/nu-0.116.1-aarch64-unknown-linux-musl.tar.gz",
         "sha256": "b103770c00bf322c409caa007aad44882d1cc5d24d82f719f877812ac33d6ad1",
+        "verification": "publisher-sha256"
+      },
+      "regctl": {
+        "version": "v0.11.6",
+        "url": "https://github.com/regclient/regclient/releases/download/v0.11.6/regctl-linux-arm64",
+        "sha256": "a9b71a3ee79b2d1dbbd7d51fd5e8fa214722c192864235d3d8764463c751a1ff",
         "verification": "publisher-sha256"
       },
       "rg": {
@@ -287,12 +329,6 @@
         "url": "https://github.com/mikefarah/yq/releases/download/v4.54.1/yq_linux_arm64",
         "sha256": "189088da0c6429ec5178dfaab1a114805f6cab0b61b165ab236efedf1d57a71b",
         "verification": "tls-download-sha256"
-      },
-      "helix": {
-        "version": "25.07.1",
-        "url": "https://github.com/helix-editor/helix/releases/download/25.07.1/helix-25.07.1-aarch64-linux.tar.xz",
-        "sha256": "ce23fa8d395e633e3e54c052012f11965d91d8d5c2bfa659685f50430b4f8175",
-        "verification": "publisher-sha256"
       }
     }
   }
