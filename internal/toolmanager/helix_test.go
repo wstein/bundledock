@@ -11,7 +11,7 @@ import (
 	"testing"
 )
 
-func TestHelixUpdateRetainsCalendarAssetSpelling(t *testing.T) {
+func TestHelixMinimumUpdateRetainsCalendarAssetSpelling(t *testing.T) {
 	c, err := toolconfig.Load("../../bundles/toolbox")
 	if err != nil {
 		t.Fatal(err)
@@ -22,7 +22,7 @@ func TestHelixUpdateRetainsCalendarAssetSpelling(t *testing.T) {
 	client := fixtureClient(t, func(w http.ResponseWriter, r *http.Request) {
 		if strings.Contains(r.URL.Path, "/repos/") {
 			var releases []any
-			for _, tag := range []string{"25.07.1", "25.07.2", "25.08.1-rc1", "25.06.9"} {
+			for _, tag := range []string{"25.07.1", "26.01.1", "26.02.1-rc1", "25.06.9"} {
 				var assets []any
 				for _, arch := range []string{"x86_64", "aarch64"} {
 					name := "helix-" + tag + "-" + arch + "-linux.tar.xz"
@@ -38,11 +38,7 @@ func TestHelixUpdateRetainsCalendarAssetSpelling(t *testing.T) {
 		requested = append(requested, r.URL.Path)
 		w.Write(payload)
 	})
-	desired, err := toolconfig.ParseDesired(strings.NewReader("helix>=25.7.0,<25.8.0\n"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	pins, err := (resolver{client}).resolve(context.Background(), c.Catalog.Packages["helix"], desired["helix"])
+	pins, err := (resolver{client}).resolve(context.Background(), c.Catalog.Packages["helix"], c.Desired["helix"])
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -51,7 +47,7 @@ func TestHelixUpdateRetainsCalendarAssetSpelling(t *testing.T) {
 	}
 	for _, arch := range []string{"amd64", "arm64"} {
 		s := pins[arch]
-		if s.Version != "25.07.2" || !strings.Contains(s.URL, "/25.07.2/helix-25.07.2-") || s.Verification != "publisher-sha256" {
+		if s.Version != "26.01.1" || !strings.Contains(s.URL, "/26.01.1/helix-26.01.1-") || s.Verification != "publisher-sha256" {
 			t.Fatalf("%s pin: %+v", arch, s)
 		}
 	}
