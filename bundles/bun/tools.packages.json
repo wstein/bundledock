@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "packages": {
+    "bun": {
+      "provider": "github",
+      "repository": "oven-sh/bun",
+      "tag_prefix": "bun-v",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "x64-baseline",
+        "arm64": "aarch64"
+      },
+      "asset": "bun-linux-{arch}.zip",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "sidecar": "SHASUMS256.txt",
+      "install": {
+        "profile": "bun-runtime",
+        "kind": "zip",
+        "members": {
+          "bun": "payload/bun"
+        },
+        "preserve": true
+      },
+      "notices": [
+        "licenses/bun/LICENSE.md",
+        "licenses/bun/SOURCE"
+      ]
+    }
+  }
+}

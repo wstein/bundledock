@@ -1,0 +1,23 @@
+{
+  "schema": 2,
+  "desired_digest": "0c75500ff40201b9cbd23cd84b7f8b855f4bd2eb68f03d1b3e7203917a551f1b",
+  "catalog_digest": "a2b7104b16c2e3c0f35292ffd612bf972ad3468026634454e0b98eb2895a655d",
+  "platforms": {
+    "amd64": {
+      "bun": {
+        "version": "bun-v1.4.3",
+        "url": "https://github.com/oven-sh/bun/releases/download/bun-v1.4.3/bun-linux-x64-baseline.zip",
+        "sha256": "1fc2edac843102909e3a1be1d8d9802cc6071cf074e67e88231f4ffe0f8b397b",
+        "verification": "publisher-sha256"
+      }
+    },
+    "arm64": {
+      "bun": {
+        "version": "bun-v1.4.3",
+        "url": "https://github.com/oven-sh/bun/releases/download/bun-v1.4.3/bun-linux-aarch64.zip",
+        "sha256": "efa9813da5ed72423bf847f916e8d2c47c0d776add972354026a75e10da9aa21",
+        "verification": "publisher-sha256"
+      }
+    }
+  }
+}

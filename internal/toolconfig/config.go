@@ -330,10 +330,15 @@ func (c Config) validate(strict bool) error {
 		default:
 			return fmt.Errorf("unknown install kind for %s", name)
 		}
+		if name == "bun" || p.Install.Profile == "bun-runtime" {
+			if name != "bun" || len(c.Catalog.Packages) != 1 || p.Provider != "github" || p.Repository != "oven-sh/bun" || p.TagPrefix != "bun-v" || p.Normalization != "semver" || p.Asset != "bun-linux-{arch}.zip" || p.Architectures["amd64"] != "x64-baseline" || p.Architectures["arm64"] != "aarch64" || len(p.AllowedHosts) != 1 || p.AllowedHosts[0] != "github.com" || p.BaseURL != "" || p.MetadataURL != "" || p.Sidecar != "SHASUMS256.txt" || p.Install.Profile != "bun-runtime" || p.Install.Kind != "zip" || !p.Install.Preserve || len(p.Install.Members) != 1 || p.Install.Members["bun"] != "payload/bun" || len(p.Install.Aliases) != 0 || len(p.Install.ExcludeDirectories) != 0 {
+				return fmt.Errorf("invalid official Bun runtime recipe")
+			}
+		}
 		if p.Install.Profile == "node-runtime" && (name != "node" || len(c.Catalog.Packages) != 1 || p.Provider != "node" || p.Install.Kind != "tar.gz" || !p.Install.Preserve || len(p.Install.Members) != 1 || p.Install.Members["bin/node"] != "payload/bin/node" || len(p.Install.Aliases) != 0 || len(p.Install.ExcludeDirectories) != 0) {
 			return fmt.Errorf("invalid Node runtime recipe")
 		}
-		if p.Install.Profile != "" && p.Install.Profile != "helix-runtime" && p.Install.Profile != "node-runtime" && (p.Install.Profile != "code-server-standalone" || len(c.Catalog.Packages) != 1 || name != "code-server" || p.Provider != "github" || p.Repository != "coder/code-server" || p.Install.Kind != "tar.gz" || !p.Install.Preserve || len(p.Install.Members) != 1 || p.Install.Members["bin/code-server"] != "payload/bin/code-server" || len(p.Install.Aliases) != 0 || len(p.Install.ExcludeDirectories) != 0) {
+		if p.Install.Profile != "" && p.Install.Profile != "helix-runtime" && p.Install.Profile != "node-runtime" && p.Install.Profile != "bun-runtime" && (p.Install.Profile != "code-server-standalone" || len(c.Catalog.Packages) != 1 || name != "code-server" || p.Provider != "github" || p.Repository != "coder/code-server" || p.Install.Kind != "tar.gz" || !p.Install.Preserve || len(p.Install.Members) != 1 || p.Install.Members["bin/code-server"] != "payload/bin/code-server" || len(p.Install.Aliases) != 0 || len(p.Install.ExcludeDirectories) != 0) {
 			return fmt.Errorf("invalid standalone profile for %s", name)
 		}
 		if len(p.Install.Members) == 0 {
@@ -358,7 +363,7 @@ func (c Config) validate(strict bool) error {
 				return fmt.Errorf("alias target is not installed for %s", name)
 			}
 		}
-		if p.Install.Preserve && p.Install.Kind != "tar.gz" && p.Install.Kind != "tar.xz" {
+		if p.Install.Preserve && p.Install.Kind != "tar.gz" && p.Install.Kind != "tar.xz" && p.Install.Profile != "bun-runtime" {
 			return fmt.Errorf("preserve requires tar.gz or tar.xz")
 		}
 		if len(p.Install.ExcludeDirectories) > 0 && !p.Install.Preserve {
@@ -394,6 +399,12 @@ func (c Config) validate(strict bool) error {
 			}
 			if err := ValidateURL(s.URL, p.AllowedHosts); err != nil {
 				return err
+			}
+			if strict && p.Install.Profile == "bun-runtime" {
+				expected := "https://github.com/oven-sh/bun/releases/download/" + s.Version + "/bun-linux-" + p.Architectures[arch] + ".zip"
+				if !strings.HasPrefix(s.Version, "bun-v") || s.URL != expected || s.Verification != "publisher-sha256" || s.SHA256 == "" {
+					return fmt.Errorf("invalid official Bun pin")
+				}
 			}
 			if strict && p.Install.Profile == "node-runtime" {
 				expected := p.BaseURL + "/" + s.Version + "/node-" + s.Version + "-linux-" + p.Architectures[arch] + ".tar.gz"
