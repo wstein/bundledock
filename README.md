@@ -92,7 +92,7 @@ Markdown sources in this repository:
 - [Tool catalog and upgrades](https://wstein.github.io/bundledock/guides/toolbox/) ([source](docs/toolbox.md)): pinned versions and lock updates.
 - [Architecture](https://wstein.github.io/bundledock/guides/architecture/) ([source](docs/architecture.md)): shared volumes, rollback, and consumer requirements.
 - [Development and verification](https://wstein.github.io/bundledock/guides/development/) ([source](docs/development.md)): CLI commands, checks, and recorded coverage.
-- [Publication](https://wstein.github.io/bundledock/guides/publication/) ([source](docs/publication.md)): Quay setup and manual approval of an exact `main` SHA.
+- [Publication](https://wstein.github.io/bundledock/guides/publication/) ([source](docs/publication.md)): Quay setup, updater approval and manual exact-SHA publication.
 
 The [CI workflow](.github/workflows/ci.yml) runs formatting, source tests and vet.
 Maintainers can find build approval, publication and verification details in the
