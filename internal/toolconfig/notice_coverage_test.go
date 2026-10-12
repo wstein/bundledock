@@ -25,6 +25,20 @@ func TestEveryCatalogPackageRetainsDirectUpstreamNotices(t *testing.T) {
 		}
 		for name, p := range c.Catalog.Packages {
 			t.Run(filepath.Base(directory)+"/"+name, func(t *testing.T) {
+				// Generic tar extraction and supplemental copying both create
+				// licenses/<tool>/<basename> exclusively. Avoid a recipe that
+				// asks those two phases to create the same destination.
+				if !p.Install.Preserve && (p.Install.Kind == "tar.gz" || p.Install.Kind == "tar.xz") {
+					archiveNames := map[string]bool{}
+					for _, notice := range p.Install.ArchiveNotices {
+						archiveNames[filepath.Base(notice)] = true
+					}
+					for _, notice := range p.Notices {
+						if archiveNames[filepath.Base(notice)] {
+							t.Fatalf("archive and supplemental notices collide at licenses/%s/%s", name, filepath.Base(notice))
+						}
+					}
+				}
 				hasLicense := false
 				candidates := append(append([]string{}, p.Install.ArchiveNotices...), p.Notices...)
 				for _, notice := range candidates {
