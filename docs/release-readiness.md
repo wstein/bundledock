@@ -25,7 +25,8 @@ verification; the authoritative tool inventory is the
 - Publication retains a durable published-tool baseline. The current
   [approval flow](publication.md) accepts one exact-head updater PR approval by
   wstein for source CI, guarded merge and frozen-lock publication across all
-  four bundles. Manual publication of an exact approved `main` SHA remains
+  seven bundles, with first agent-carrier publication requiring separate
+  exact-revision operation approval. Manual publication of an exact approved `main` SHA remains
   available. Native build/smoke checks gate registry writes.
 - A local Hugo site renders the existing guides using a verified official
   prebuilt dependency. Host documentation integration checks are opt-in.

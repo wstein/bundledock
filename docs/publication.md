@@ -8,14 +8,22 @@ weight: 40
 
 [Back to BundleDock](../README.md)
 
-The four named **Publish toolbox**, **Publish code-server**, **Publish node** and
-**Publish bun** entrypoints call one shared publication workflow. Their existing
+The seven named **Publish toolbox**, **Publish code-server**, **Publish node**,
+**Publish bun**, **Publish codex**, **Publish agy** and **Publish claude** entrypoints call one shared publication workflow. Their existing
 names, filenames, bundle-specific native smoke checks and manual exact-SHA
-fallback remain. The four **Propose … upgrades** entrypoints call one shared
+fallback remain. The seven **Propose … upgrades** entrypoints call one shared
 source-only updater, retaining the daily 06:50 UTC schedule and manual dry-run
 default.
 
-For an automatic upgrade, review the lock and generated inventory in the
+The new agent carriers have no verified publication receipts yet. Their first
+publication requires separate explicit approval for the exact full source SHA
+and build/publication operation, plus verified repository visibility and robot
+access. An updater cannot bootstrap an absent baseline; only approved manual
+dispatch can do so. Native runtime coverage remains unverified until that run.
+Toolbox keeps all three agents until Anchorage consumers are prepared and a
+separate approved change removes them.
+
+For a later automatic upgrade, review the lock and generated inventory in the
 `github-actions[bot]` updater PR and approve its exact head as **wstein**. That
 single approval authorizes the remaining sequence without another intervention:
 
@@ -210,10 +218,10 @@ local checks and the scope of historical native CI results.
 
 ## Source tags for published bundles
 
-After successful image promotion, each of the toolbox, code-server, node and bun
+After successful image promotion, each of the toolbox, code-server, node, bun, codex, agy and claude
 workflows creates an annotated Git tag `<bundle>/<immutable-version>` at the
 image's exact source commit, for example `node/2026.10.12-b1.1`. Approval of that
-publication includes this source tag. All four bundles support the exact-head
+publication includes this source tag. All seven bundles support the exact-head
 review and merged-updater approval path described above; the shared read-only
 source approval gate is revalidated before automatic tagging. The controller
 workflow SHA remains distinct from the approved image source SHA, and both must
