@@ -68,12 +68,12 @@ consumer project’s instructions to adopt a published bundle.
 
 ## Toolbox source catalog
 
-The current source catalog pins 27 tools, with these companion commands. This
+The current source catalog pins 24 tools, with these companion commands. This
 describes the desired source inventory; published images retain their own pins:
 
 | Use | Tools |
 | --- | --- |
-| Agents and GitHub | [Codex](https://github.com/openai/codex), [Claude Code](https://github.com/anthropics/claude-code), [Antigravity (`agy`)](https://github.com/google-antigravity/antigravity-cli), [GitHub CLI (`gh`)](https://github.com/cli/cli) |
+| GitHub workflows | [GitHub CLI (`gh`)](https://github.com/cli/cli) |
 | Search and structured data | [ripgrep (`rg`)](https://github.com/BurntSushi/ripgrep), [fd (`fd`, `fdfind`)](https://github.com/sharkdp/fd), [ast-grep](https://github.com/ast-grep/ast-grep), [jq](https://github.com/jqlang/jq), [yq](https://github.com/mikefarah/yq) |
 | Interactive filtering and file viewing | [fzf](https://github.com/junegunn/fzf), [bat](https://github.com/sharkdp/bat) |
 | OCI registries | [regctl](https://github.com/regclient/regclient) |
@@ -84,8 +84,10 @@ describes the desired source inventory; published images retain their own pins:
 | Static sites | [Hugo (standard)](https://github.com/gohugoio/hugo) |
 | Process monitoring | [bottom (`btm`)](https://github.com/ClementTsang/bottom), [btop](https://github.com/aristocratos/btop) |
 
-See [pinned versions and upgrades](docs/toolbox.md). Codex includes its native
-helpers; optional voice resources are omitted.
+See [pinned versions and upgrades](docs/toolbox.md). Agents are supplied by the
+separate [Codex](docs/codex.md), [Antigravity](docs/agy.md) and
+[Claude Code](docs/claude.md) bundles. Codex retains its native helpers while
+omitting optional voice resources.
 
 ## Contributing
 

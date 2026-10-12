@@ -84,5 +84,6 @@ absent baseline is accepted only after authenticated registry HTTP 404 in that
 manual operation. Successful approved publication includes an annotated
 `codex/<immutable-version>` source tag and a verified documentation receipt.
 
-Toolbox still contains Codex, Antigravity and Claude. Prepare Anchorage consumers
-before any separately approved removal; no consumer activation is included here.
+The source toolbox no longer includes Codex, Antigravity or Claude. Their
+standalone pins and notices are unchanged. The previously published toolbox
+receipt retains its original contents until a separately approved publication.
