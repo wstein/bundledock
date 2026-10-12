@@ -50,7 +50,7 @@ func fixture(t *testing.T) (string, []string) {
 	if err := os.MkdirAll(filepath.Join(dir, "bundles/toolbox"), 0755); err != nil {
 		t.Fatal(err)
 	}
-	for _, name := range []string{"bundles/toolbox/tools.lock.json", "bundles/toolbox/tools.packages.json", "docs/toolbox.md", "scripts/tool-inventory.py", "bundles/code-server/tools.txt", "bundles/code-server/tools.lock.json", "bundles/code-server/tools.packages.json", "docs/code-server.md", "bundles/node/tools.txt", "bundles/node/tools.lock.json", "bundles/node/tools.packages.json", "docs/node.md", "bundles/bun/tools.txt", "bundles/bun/tools.lock.json", "bundles/bun/tools.packages.json", "docs/bun.md"} {
+	for _, name := range []string{"bundles/toolbox/tools.lock.json", "bundles/toolbox/tools.packages.json", "docs/toolbox.md", "scripts/tool-inventory.py", "bundles/code-server/tools.txt", "bundles/code-server/tools.lock.json", "bundles/code-server/tools.packages.json", "docs/code-server.md", "bundles/node/tools.txt", "bundles/node/tools.lock.json", "bundles/node/tools.packages.json", "docs/node.md", "bundles/bun/tools.txt", "bundles/bun/tools.lock.json", "bundles/bun/tools.packages.json", "docs/bun.md", "bundles/codex/tools.txt", "bundles/codex/tools.packages.json", "bundles/codex/tools.lock.json", "docs/codex.md", "bundles/agy/tools.txt", "bundles/agy/tools.packages.json", "bundles/agy/tools.lock.json", "docs/agy.md", "bundles/claude/tools.txt", "bundles/claude/tools.packages.json", "bundles/claude/tools.lock.json", "docs/claude.md"} {
 		data, err := os.ReadFile(filepath.Join(root, name))
 		if err != nil {
 			t.Fatal(err)
@@ -68,9 +68,9 @@ func fixture(t *testing.T) (string, []string) {
 	write(t, filepath.Join(fake, "go"), `#!/bin/sh
 set -eu
 printf '%s\n' "$*" >> "$CALLS"
-case "$*" in 'run ./cmd/bundledock tools upgrade gh'|'run ./cmd/bundledock tools upgrade'|'run ./cmd/bundledock tools upgrade code-server --directory bundles/code-server'|'run ./cmd/bundledock tools upgrade --directory bundles/code-server'|'run ./cmd/tools-publish validate --bundle code-server'|'run ./cmd/bundledock tools upgrade node --directory bundles/node'|'run ./cmd/bundledock tools upgrade --directory bundles/node'|'run ./cmd/tools-publish validate --bundle node'|'run ./cmd/bundledock tools upgrade bun --directory bundles/bun'|'run ./cmd/bundledock tools upgrade --directory bundles/bun'|'run ./cmd/tools-publish validate --bundle bun') ;; *) exit 41 ;; esac
-case "$*" in 'run ./cmd/tools-publish validate --bundle code-server'|'run ./cmd/tools-publish validate --bundle node'|'run ./cmd/tools-publish validate --bundle bun') exit 0 ;; esac
-case "$*" in *'--directory bundles/bun') export RESOLVED_BUNDLE=bun ;; *'--directory bundles/node') export RESOLVED_BUNDLE=node ;; *'--directory bundles/code-server') export RESOLVED_BUNDLE=code-server ;; *) export RESOLVED_BUNDLE=toolbox ;; esac
+case "$*" in 'run ./cmd/bundledock tools upgrade gh'|'run ./cmd/bundledock tools upgrade'|'run ./cmd/bundledock tools upgrade code-server --directory bundles/code-server'|'run ./cmd/bundledock tools upgrade --directory bundles/code-server'|'run ./cmd/tools-publish validate --bundle code-server'|'run ./cmd/bundledock tools upgrade node --directory bundles/node'|'run ./cmd/bundledock tools upgrade --directory bundles/node'|'run ./cmd/tools-publish validate --bundle node'|'run ./cmd/bundledock tools upgrade bun --directory bundles/bun'|'run ./cmd/bundledock tools upgrade --directory bundles/bun'|'run ./cmd/bundledock tools upgrade codex --directory bundles/codex'|'run ./cmd/bundledock tools upgrade --directory bundles/codex'|'run ./cmd/tools-publish validate --bundle codex'|'run ./cmd/bundledock tools upgrade agy --directory bundles/agy'|'run ./cmd/bundledock tools upgrade --directory bundles/agy'|'run ./cmd/tools-publish validate --bundle agy'|'run ./cmd/bundledock tools upgrade claude --directory bundles/claude'|'run ./cmd/bundledock tools upgrade --directory bundles/claude'|'run ./cmd/tools-publish validate --bundle claude'|'run ./cmd/tools-publish validate --bundle bun') ;; *) exit 41 ;; esac
+case "$*" in 'run ./cmd/tools-publish validate --bundle agy'|'run ./cmd/tools-publish validate --bundle claude'|'run ./cmd/tools-publish validate --bundle codex'|'run ./cmd/tools-publish validate --bundle code-server'|'run ./cmd/tools-publish validate --bundle node'|'run ./cmd/tools-publish validate --bundle bun') exit 0 ;; esac
+case "$*" in *'--directory bundles/agy') export RESOLVED_BUNDLE=agy ;; *'--directory bundles/claude') export RESOLVED_BUNDLE=claude ;; *'--directory bundles/codex') export RESOLVED_BUNDLE=codex ;; *'--directory bundles/bun') export RESOLVED_BUNDLE=bun ;; *'--directory bundles/node') export RESOLVED_BUNDLE=node ;; *'--directory bundles/code-server') export RESOLVED_BUNDLE=code-server ;; *) export RESOLVED_BUNDLE=toolbox ;; esac
 if [ "${FAIL_RESOLVER:-false}" = true ]; then exit 42; fi
 if [ "${NO_CHANGE:-false}" != true ]; then
 python3 - <<'PYTHON'
@@ -80,7 +80,7 @@ bundle=os.environ['RESOLVED_BUNDLE']
 p=Path('bundles')/bundle/'tools.lock.json'
 lock=json.loads(p.read_text())
 if os.environ.get('NO_CHANGE_'+bundle.upper().replace('-','_'))!='true':
- for arch in ('amd64','arm64'): lock['platforms'][arch]['gh' if bundle=='toolbox' else bundle]['version']={'code-server':'v4.142.0','node':'v24.22.0','toolbox':'v2.103.0','bun':'bun-v1.4.4'}[bundle]
+ for arch in ('amd64','arm64'): lock['platforms'][arch]['gh' if bundle=='toolbox' else bundle]['version']={'code-server':'v4.142.0','node':'v24.22.0','toolbox':'v2.103.0','bun':'bun-v1.4.4','codex':'rust-v0.162.2','agy':'1.3.4','claude':'2.1.297'}[bundle]
 p.write_text(json.dumps(lock,indent=2)+'\n')
 PYTHON
 fi
@@ -151,6 +151,9 @@ func TestResolveAndPublish(t *testing.T) {
 		t.Fatal(title)
 	}
 	body, err := os.ReadFile(filepath.Join(value(env, "UPGRADE_RESULT"), "pr-body.md"))
+	if err == nil && !strings.Contains(string(body), "Initial publication of Codex, Antigravity and Claude carriers requires separate explicit approval") {
+		t.Fatal("updater PR body omits first-publication approval boundary")
+	}
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -606,4 +609,34 @@ func upgradeWorkflowSource() ([]byte, error) {
 		return nil, err
 	}
 	return append(wrapper, body...), nil
+}
+
+func TestAgentUpdatersScopeAndRejectCrossBundleArtifacts(t *testing.T) {
+	for _, name := range []string{"codex", "agy", "claude"} {
+		t.Run(name, func(t *testing.T) {
+			dir, env := fixture(t)
+			env = append(env, "BUNDLE="+name, "TOOL="+name)
+			if out, err := adapter(t, dir, env, "resolve"); err != nil {
+				t.Fatalf("resolve: %v %s", err, out)
+			}
+			if got := must(t, dir, nil, "git", "diff", "--", "bundles/toolbox", "docs/toolbox.md"); got != "" {
+				t.Fatal("agent updater changed toolbox", got)
+			}
+			result := value(env, "UPGRADE_RESULT")
+			for _, file := range []string{name + ".lock.json", name + ".md", "base.sha"} {
+				if _, err := os.Stat(filepath.Join(result, file)); err != nil {
+					t.Fatal(err)
+				}
+			}
+			// A different carrier's transferred lock must stop before any branch or PR.
+			write(t, filepath.Join(result, "node.lock.json"), "unrelated")
+			must(t, dir, nil, "git", "restore", "bundles/"+name+"/tools.lock.json", "docs/"+name+".md")
+			if out, err := adapter(t, dir, env, "publish"); err == nil {
+				t.Fatal("accepted cross-bundle proposal", out)
+			}
+			if got := must(t, dir, nil, "git", "branch", "--show-current"); got != "main\n" {
+				t.Fatal("created branch before rejection")
+			}
+		})
+	}
 }

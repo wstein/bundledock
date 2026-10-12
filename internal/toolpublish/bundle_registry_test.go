@@ -19,7 +19,7 @@ func TestPrecompilerRegistryMatchesNativeSelection(t *testing.T) {
 	if err = json.Unmarshal(output, &registry); err != nil {
 		t.Fatal(err)
 	}
-	if len(registry) != 4 {
+	if len(registry) != 7 {
 		t.Fatal("unexpected bundle choices")
 	}
 	for name, settings := range registry {
@@ -29,6 +29,23 @@ func TestPrecompilerRegistryMatchesNativeSelection(t *testing.T) {
 		}
 		if settings["name"] != bundle.Name || settings["directory"] != bundle.Directory || settings["workflow"] != bundle.Workflow || settings["artifact"] != bundle.Artifact || settings["lock"] != bundle.Directory+"/tools.lock.json" {
 			t.Fatal("precompiler registry differs for", name)
+		}
+	}
+}
+
+func TestAgentBundleSelection(t *testing.T) {
+	for _, name := range []string{"codex", "agy", "claude"} {
+		b, err := SelectBundle(name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if b.Directory != "bundles/"+name || b.Workflow != "bundledock-"+name+".yml" || b.Artifact != "resolved-"+name {
+			t.Fatal(b)
+		}
+		image := "quay.io/bundledock/" + name
+		got, err := RepositoryImageForBundle("quay.io/bundledock", name)
+		if err != nil || got != image || BundleForMetadata(Metadata{Image: image}) != b {
+			t.Fatalf("wrong agent image selection: %s %v", got, err)
 		}
 	}
 }

@@ -31,7 +31,7 @@ class WorkflowTests(unittest.TestCase):
                 self.assertNotIn('contents: write',body)
 
     def test_thin_callers_allow_tag_permission_without_build_tokens(self):
-        for bundle in ('toolbox','code-server','node','bun'):
+        for bundle in ('toolbox','code-server','node','bun','codex','agy','claude'):
             workflow=(ROOT/'.github/workflows'/('bundledock-'+bundle+'.yml')).read_text()
             default, job=workflow.split('\njobs:\n')
             with self.subTest(bundle=bundle):

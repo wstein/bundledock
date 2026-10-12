@@ -143,7 +143,7 @@ func TestNewerNoopJobPaginationIsBounded(t *testing.T) {
 
 func TestNewestWorkflowRunBindsEachBundleCaller(t *testing.T) {
 	current := `{"id":123,"run_number":10,"run_attempt":2,"event":"workflow_run","head_branch":"main","head_sha":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","created_at":"2026-10-10T03:17:00Z","workflow_id":77}`
-	for _, workflow := range []string{"bundledock-toolbox.yml", "bundledock-node.yml", "bundledock-bun.yml", "bundledock-code-server.yml"} {
+	for _, workflow := range []string{"bundledock-toolbox.yml", "bundledock-node.yml", "bundledock-bun.yml", "bundledock-code-server.yml", "bundledock-codex.yml", "bundledock-agy.yml", "bundledock-claude.yml"} {
 		client := &http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
 			body := current
 			if strings.Contains(r.URL.Path, "/workflows/") {

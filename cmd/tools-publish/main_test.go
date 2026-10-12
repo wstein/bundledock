@@ -392,7 +392,7 @@ func TestMergedBundlePlanUsesBaseline(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, bundle := range []string{"toolbox", "node", "bun", "code-server"} {
+	for _, bundle := range []string{"toolbox", "node", "bun", "code-server", "codex", "agy", "claude"} {
 		publish, err := publicationDecisionForBundle(path, "workflow_run", bundle, func() (string, error) { return digest, nil })
 		if err != nil || publish {
 			t.Fatalf("unchanged merged lock publication=%v error=%v", publish, err)
@@ -408,7 +408,7 @@ func TestMergedBundlePlanUsesBaseline(t *testing.T) {
 }
 
 func TestFrozenPublicationUsesExactLockForEveryBundle(t *testing.T) {
-	for _, name := range []string{"toolbox", "code-server", "node", "bun"} {
+	for _, name := range []string{"toolbox", "code-server", "node", "bun", "codex", "agy", "claude"} {
 		t.Run(name, func(t *testing.T) {
 			bundle, err := toolpublish.SelectBundle(name)
 			if err != nil {
@@ -437,5 +437,17 @@ func TestFrozenPublicationUsesExactLockForEveryBundle(t *testing.T) {
 				t.Fatal("frozen bytes changed", err)
 			}
 		})
+	}
+}
+
+func TestAgentInitialPublicationRequiresManualDispatch(t *testing.T) {
+	for _, bundle := range []string{"codex", "agy", "claude"} {
+		for _, event := range []string{"workflow_dispatch", "workflow_run", "schedule"} {
+			publish, err := publicationDecisionForBundle("../../bundles/toolbox/tools.lock.json", event, bundle, func() (string, error) { return "", toolpublish.ErrBaselineAbsent })
+			manual := event == "workflow_dispatch"
+			if publish != manual || (err == nil) != manual {
+				t.Fatalf("%s %s absent baseline: publish=%v err=%v", bundle, event, publish, err)
+			}
+		}
 	}
 }
