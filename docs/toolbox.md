@@ -33,7 +33,7 @@ The source inventory below describes the current lock; this publication retains 
 
 The default bundle lives in `bundles/toolbox/`: `packages.txt`,
 `packages.catalog.json`, `packages.lock.json`, its Dockerfile, smoke scripts and licenses.
-Shared Go code remains at the repository root. The source toolbox contains 33
+Shared Go code remains at the repository root. The source toolbox contains 34
 common tools. Codex, Antigravity and Claude are supplied by their separate
 [Codex](codex.md), [Antigravity](agy.md) and [Claude Code](claude.md) bundles.
 The published toolbox recorded above still includes those agents; this source
@@ -63,6 +63,7 @@ and `arm64`; builds verify every download.
 | jq | 1.8.2 |
 | Jujutsu (`jj`) | 0.46.0 |
 | just (`just`) | 1.58.0 |
+| lazygit (`lazygit`) | 0.66.1 |
 | lychee (`lychee`) | 0.24.2 |
 | Mike Farah yq (`yq`) | 4.54.1 |
 | Nushell (`nu`) | 0.116.1 |
@@ -297,6 +298,21 @@ completion directory. regctl assets are raw executables. These recipes retain
 the existing extractor's rejection of archive links. Source tests use synthetic
 artifacts and smoke stubs. Native execution, OCI builds/smoke, vulnerability scans
 and consumer activation remain unverified pending separate approval.
+
+## lazygit terminal interface
+
+The source toolbox includes [lazygit 0.66.1](https://github.com/jesseduffield/lazygit/releases/tag/v0.66.1)
+from official Linux AMD64 and ARM64 prebuilts. Run `lazygit` inside a Git repository
+to open its terminal interface. User configuration belongs in writable HOME;
+BundleDock does not open the interface or change shell/editor defaults.
+
+Both archives were SHA256 checked against the official release API digests and
+`checksums.txt` on 2026-10-12. The full upstream MIT license is retained. Source
+tests cover stable resolution and both installation recipes. Consumer smoke
+uses only `lazygit --version` in a private temporary directory with a cleared
+environment; no interactive session is started. Native execution and OCI
+build/smoke remain unverified until separately authorized. The pinned consumer
+image is unchanged.
 
 ## Jujutsu version control
 

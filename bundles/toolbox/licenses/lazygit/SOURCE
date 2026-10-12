@@ -1,0 +1,7 @@
+Upstream: https://github.com/jesseduffield/lazygit
+License: MIT
+Pinned release: v0.66.1
+Release: https://github.com/jesseduffield/lazygit/releases/tag/v0.66.1
+Checksums: https://github.com/jesseduffield/lazygit/releases/download/v0.66.1/checksums.txt
+Full LICENSE retained from each official release archive.
+Official AMD64/ARM64 release API SHA256 digests and checksums.txt verified against downloaded archives by read-only inspection on 2026-10-12. No upstream binaries were executed or modified.

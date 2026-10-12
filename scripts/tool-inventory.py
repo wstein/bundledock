@@ -11,6 +11,7 @@ END = "<!-- END GENERATED TOOL INVENTORY -->"
 # Existing display labels only. Versions come exclusively from the
 # lock; exact catalog coverage prevents a new tool from being silently omitted.
 LABELS = (
+    ("lazygit", "lazygit (`lazygit`)"),
     ("jj", "Jujutsu (`jj`)"),
     ("shellcheck", "ShellCheck (`shellcheck`)"),
     ("shfmt", "shfmt (`shfmt`)"),

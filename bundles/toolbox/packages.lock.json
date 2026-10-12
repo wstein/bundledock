@@ -1,7 +1,7 @@
 {
   "schema": 2,
-  "desired_digest": "2ee9cfe15eb6bcf25f772fc06d784a253ac064d0fc4c6498ceb5e32d86a629eb",
-  "catalog_digest": "890614637ab55a9f6a22cbc567ddbbb10abf504e836a39ebe93be3709f506b4d",
+  "desired_digest": "c141185edce35436a2932eed02a8acbfab24790b76fcc8a3d08ed43e9ce9bdef",
+  "catalog_digest": "3fba22992e15450ca4edd0b0799a725251af492ae148968acb53c31c90194f19",
   "platforms": {
     "amd64": {
       "ast-grep": {
@@ -200,6 +200,12 @@
         "version": "v2.8.0",
         "url": "https://github.com/watchexec/watchexec/releases/download/v2.8.0/watchexec-2.8.0-x86_64-unknown-linux-musl.tar.xz",
         "sha256": "35ea667cbe4bc96c23ba2a1f46c94c46bc385b67165e3bf621c0e7e4959aa99b",
+        "verification": "publisher-sha256"
+      },
+      "lazygit": {
+        "version": "v0.66.1",
+        "url": "https://github.com/jesseduffield/lazygit/releases/download/v0.66.1/lazygit_0.66.1_linux_x86_64.tar.gz",
+        "sha256": "7b3f30c2c06a42cf575280f907e58d7ea08411408b6b62bc926bc91cbc6c3f46",
         "verification": "publisher-sha256"
       }
     },
@@ -400,6 +406,12 @@
         "version": "v2.8.0",
         "url": "https://github.com/watchexec/watchexec/releases/download/v2.8.0/watchexec-2.8.0-aarch64-unknown-linux-musl.tar.xz",
         "sha256": "3961878b21e3c1729279322f4007dd5bbf0032110fbcb5e7b983946a9ceb3bf6",
+        "verification": "publisher-sha256"
+      },
+      "lazygit": {
+        "version": "v0.66.1",
+        "url": "https://github.com/jesseduffield/lazygit/releases/download/v0.66.1/lazygit_0.66.1_linux_arm64.tar.gz",
+        "sha256": "add91327af13343f37d2d610512d0982ef5c75da5cc962b5159748adc8a11a86",
         "verification": "publisher-sha256"
       }
     }
