@@ -120,17 +120,14 @@ reviews. If policy blocks the push or PR, the job fails with these prerequisites
 The workflow does not change settings, install a PAT, or bypass policy.
 
 A PR opened with `GITHUB_TOKEN` does not automatically start ordinary
-`pull_request` workflows. Run the existing **CI** workflow manually on the
-new topic branch and complete human review before merging. A successful
-resolver or CI run verifies source and lock behavior, not native image smoke
-coverage. Building, publishing, or activating the new lock still requires
-approval of the operation and revision. For each bundle, wstein’s approval of
-the exact updater PR revision authorizes the reviewed lock’s publication after
-source CI and merge. The [publication workflow](publication.md) validates that
-approval and the merged source before native work; no second approval prompt
-is required. Manual publication of an exact approved `main` SHA remains available.
-Publication uses the reviewed lock without resolving newer releases and does
-not activate a consumer image.
+`pull_request` workflows. For each bundle, **wstein** approves the exact updater
+PR head once; the trusted controller then runs source CI, performs the guarded
+merge and authorizes publication of that reviewed lock. See the
+[approval and publication flow](publication.md). Changed heads or unrelated
+source changes require new review. A successful resolver or source CI run does
+not establish native image smoke coverage. Manual publication of an exact
+approved `main` SHA remains available. Publication does not activate a consumer
+image.
 
 ## Keep the source inventory consistent
 

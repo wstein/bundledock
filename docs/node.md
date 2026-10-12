@@ -94,8 +94,11 @@ by default. It proposes only the Node lock and generated source inventory,
 validates transferred lock/base SHA and artifact membership, and never builds
 or dispatches native publication.
 
-`bundledock-node.yml` is manual-only and requires a human dispatch on default
-main with the full approved source SHA matching the run. It publishes to the
+`bundledock-node.yml` supports the shared [automatic updater approval
+flow](publication.md): one exact-head approval by **wstein** authorizes source
+CI, guarded merge and frozen-lock publication. Manual dispatch on default
+`main` with the full approved source SHA matching the run remains available.
+It publishes to the
 existing Quay namespace's separate `node` repository with separate artifacts
 and workflow identity. Only an authenticated exact HTTP 404 for this stable
 manifest permits the initial absent baseline. Each native AMD64/ARM64 image

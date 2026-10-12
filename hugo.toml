@@ -49,7 +49,7 @@ disableKinds = ['taxonomy', 'term', 'RSS']
   weight = 10
 [[menus.main]]
   name = 'Tool catalog'
-  pageRef = '/guides/tools'
+  pageRef = '/guides/toolbox'
   weight = 20
 [[menus.main]]
   name = 'Architecture'

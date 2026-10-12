@@ -101,8 +101,11 @@ Bun lock and generated source inventory. The transfer validates base SHA,
 artifact membership and pins before creating a topic. It never builds an
 image or dispatches publication.
 
-`bundledock-bun.yml` requires human manual dispatch on default `main`, with
-the full explicitly approved source SHA matching the run. It uses the existing
+`bundledock-bun.yml` supports the shared [automatic updater approval
+flow](publication.md): one exact-head approval by **wstein** authorizes source
+CI, guarded merge and frozen-lock publication. Manual dispatch on default
+`main` with the full explicitly approved source SHA matching the run remains
+available. It uses the existing
 Quay namespace's separate `bun` repository, artifacts and workflow identity.
 Only an authenticated exact HTTP 404 for this repository's stable manifest
 permits the initial absent baseline. Native AMD64 and ARM64 builds each require

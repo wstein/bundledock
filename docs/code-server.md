@@ -119,8 +119,11 @@ upgrade workflow builds or publishes images. Future stable archives must pass
 the same structural profile; changed archive layouts fail closed until reviewed.
 
 The separate **Publish code-server** workflow
-(`.github/workflows/bundledock-code-server.yml`) is manual-only. It requires a
-human dispatch on default `main` with the exact full approved SHA. It uses the
+(`.github/workflows/bundledock-code-server.yml`) supports the shared
+[automatic updater approval flow](publication.md): one exact-head approval by
+**wstein** authorizes source CI, guarded merge and frozen-lock publication.
+Manual dispatch on default `main` with the exact full approved SHA remains
+available. It uses the
 existing `REPOSITORY_URL` Quay namespace and publishes to its separate
 `code-server` repository, with distinct run/attempt artifacts. Each native AMD64
 or ARM64 image stages only after its own dedicated read-only volume and
