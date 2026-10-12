@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -86,6 +87,42 @@ func checkout(t *testing.T) string {
 	}
 	return dir
 }
+
+// Generic prebuilt fixtures exercise moving releases independently of the exact
+// source exception; dedicated git-trim tests cover its fail-closed updater.
+func checkoutPrebuilts(t *testing.T) string {
+	t.Helper()
+	dir := checkout(t)
+	c, err := toolconfig.Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	delete(c.Desired, "git-trim")
+	delete(c.Catalog.Packages, "git-trim")
+	for arch := range c.Lock.Platforms {
+		delete(c.Lock.Platforms[arch], "git-trim")
+	}
+	c.Bind()
+	var desired strings.Builder
+	for name, v := range c.Desired {
+		fmt.Fprintln(&desired, name+v.String())
+	}
+	catalog, err := json.Marshal(c.Catalog)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lock, err := json.Marshal(c.Lock)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for n, b := range map[string][]byte{"packages.txt": []byte(desired.String()), "packages.catalog.json": catalog, "packages.lock.json": lock} {
+		if err := os.WriteFile(filepath.Join(dir, n), b, 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	return dir
+}
+
 func readLock(t *testing.T, dir string) []byte {
 	t.Helper()
 	b, err := os.ReadFile(filepath.Join(dir, "packages.lock.json"))
@@ -159,7 +196,7 @@ func TestSingleUpgradeBothArchitecturesAndAtomicFailure(t *testing.T) {
 					t.Fatal("not upgraded")
 				}
 				for n, s := range old.Lock.Platforms[a] {
-					if n != "gh" && c.Lock.Platforms[a][n] != s {
+					if n != "gh" && !reflect.DeepEqual(c.Lock.Platforms[a][n], s) {
 						t.Fatalf("changed %s", n)
 					}
 				}
@@ -169,7 +206,7 @@ func TestSingleUpgradeBothArchitecturesAndAtomicFailure(t *testing.T) {
 }
 
 func TestAllProvidersPaginationRangesAndVerification(t *testing.T) {
-	dir := checkout(t)
+	dir := checkoutPrebuilts(t)
 	c, err := toolconfig.Load(dir)
 	if err != nil {
 		t.Fatal(err)
@@ -306,7 +343,7 @@ func TestAntigravityCurrentManifestWinsOverHistoricalGitHub(t *testing.T) {
 func TestChangedDesiredAndBootstrap(t *testing.T) {
 	for _, bootstrap := range []bool{false, true} {
 		t.Run(fmt.Sprint(bootstrap), func(t *testing.T) {
-			dir := checkout(t)
+			dir := checkoutPrebuilts(t)
 			c, _ := toolconfig.Load(dir)
 			if bootstrap {
 				if err := os.Remove(filepath.Join(dir, "packages.lock.json")); err != nil {
@@ -472,7 +509,7 @@ func TestAntigravityCurrentManifestSameVersion(t *testing.T) {
 	}
 }
 func TestUpgradeAllRepairsChangedCatalogInventory(t *testing.T) {
-	dir := checkout(t)
+	dir := checkoutPrebuilts(t)
 	c, _ := toolconfig.Load(dir)
 	delete(c.Catalog.Packages, "claude")
 	delete(c.Desired, "claude")

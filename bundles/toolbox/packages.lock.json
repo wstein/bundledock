@@ -1,7 +1,7 @@
 {
   "schema": 2,
-  "desired_digest": "447b49b9ac001baf4ae33403e345879005cc7a5b4b75b5fac5ec770ffe683236",
-  "catalog_digest": "878868fd66beeb546dc4b8c6127290aa75b1a6286c5c4c8af80889461e9c8a1c",
+  "desired_digest": "0304174c091acdb8c5a342ebb2dc8f7c594e9eb131274f3a4ac2f5a1c195cfce",
+  "catalog_digest": "f89f1c4f86826a7fafaef264a16501ac3ac924b4945c3fac319e5d1cf4ce5b3e",
   "platforms": {
     "amd64": {
       "ast-grep": {
@@ -213,6 +213,19 @@
         "url": "https://github.com/git-lfs/git-lfs/releases/download/v3.8.0/git-lfs-linux-amd64-v3.8.0.tar.gz",
         "sha256": "e455e00f15d9b95661b8d53498ffb0c3367962cf1ec73c31ab7369516cd6ab8d",
         "verification": "publisher-sha256"
+      },
+      "git-trim": {
+        "version": "v0.4.3",
+        "url": "https://codeload.github.com/foriequal0/git-trim/tar.gz/65288617a637029573a5c3517abcb95b050ea02b",
+        "sha256": "dffccf97f3801976a647f5d03629d49f17d3b930b322ee1056239084093b4e53",
+        "verification": "tls-download-sha256",
+        "source": {
+          "commit": "65288617a637029573a5c3517abcb95b050ea02b",
+          "cargo_lock_sha256": "86abff4cefcfcfa8c55b163c900030f820f036d2ad092f51a765e81c2ddb25f3",
+          "builder": "rust:1.75.0-bookworm@sha256:87f3b2f93b82995443a1a558c234212dafe79cfdc3af956539610560369ddcd0",
+          "recipe": "git-trim-v0.4.3-rust1.75-bookworm-v1",
+          "source_date_epoch": 1670865239
+        }
       }
     },
     "arm64": {
@@ -425,6 +438,19 @@
         "url": "https://github.com/git-lfs/git-lfs/releases/download/v3.8.0/git-lfs-linux-arm64-v3.8.0.tar.gz",
         "sha256": "ac9c8efac980bb0505ead384d087e2acb6486fd8498691a2165fa174ec6118c2",
         "verification": "publisher-sha256"
+      },
+      "git-trim": {
+        "version": "v0.4.3",
+        "url": "https://codeload.github.com/foriequal0/git-trim/tar.gz/65288617a637029573a5c3517abcb95b050ea02b",
+        "sha256": "dffccf97f3801976a647f5d03629d49f17d3b930b322ee1056239084093b4e53",
+        "verification": "tls-download-sha256",
+        "source": {
+          "commit": "65288617a637029573a5c3517abcb95b050ea02b",
+          "cargo_lock_sha256": "86abff4cefcfcfa8c55b163c900030f820f036d2ad092f51a765e81c2ddb25f3",
+          "builder": "rust:1.75.0-bookworm@sha256:87f3b2f93b82995443a1a558c234212dafe79cfdc3af956539610560369ddcd0",
+          "recipe": "git-trim-v0.4.3-rust1.75-bookworm-v1",
+          "source_date_epoch": 1670865239
+        }
       }
     }
   }

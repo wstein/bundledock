@@ -1,0 +1,4 @@
+Full project MIT/Apache-2.0 license text retained from the same upstream paw project at the parent paw 1.0.0 registry release.
+The macro/raw crates declare MIT OR Apache-2.0 but omit full notices. Their historical GitHub source commits are unavailable.
+Official project crate: https://static.crates.io/crates/paw/paw-1.0.0.crate
+Crate SHA256: 09c0fc9b564dbc3dc2ed7c92c0c144f4de340aa94514ce2b446065417c4084e9
