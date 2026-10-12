@@ -1,0 +1,42 @@
+name: Build and smoke toolbox
+
+on:
+  workflow_dispatch:
+    inputs:
+      approved_sha:
+        description: Full current main SHA explicitly approved for toolbox build and smoke
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  native:
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - architecture: amd64
+            runner: ubuntu-24.04
+          - architecture: arm64
+            runner: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          # Guard code comes from the dispatch revision, never unchecked input.
+          ref: ${{ github.sha }}
+      - name: Require approval of the exact checked-out current main before building
+        env:
+          APPROVED_SHA: ${{ inputs.approved_sha }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          SENDER_TYPE: ${{ github.event.sender.type }}
+          TRIGGERING_ACTOR: ${{ github.triggering_actor }}
+        run: sh scripts/approve-build.sh
+      - name: Build the toolbox locally
+        run: make bundle-build BUNDLE=toolbox IMAGE=bundledock-toolbox:build-only
+      - name: Smoke the local toolbox in the stock Go consumer
+        run: make bundle-smoke BUNDLE=toolbox IMAGE=bundledock-toolbox:build-only CONSUMER=mcr.microsoft.com/devcontainers/go:2-1.27-trixie@sha256:8f1c83128e4bce9d745b1dc0f28f8c027e303d3886e2434966ff135296c41770
