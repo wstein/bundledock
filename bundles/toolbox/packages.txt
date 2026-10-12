@@ -5,6 +5,7 @@ ast-grep>=0.45.3
 bat>=0.26.1
 bottom>=0.14.9
 btop>=1.4.7
+deadbranch>=0.4.0
 delta>=0.20.1
 fd>=10.5.0
 fish>=4.9.3

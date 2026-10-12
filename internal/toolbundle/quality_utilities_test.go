@@ -24,7 +24,7 @@ func TestQualityUtilitiesInstallExecutablesAndFullNotices(t *testing.T) {
 			payloads := map[string][]byte{}
 			packages := map[string]toolconfig.Package{}
 			specs := map[string]Spec{}
-			for _, name := range []string{"shellcheck", "shfmt", "just", "ruff", "delta", "watchexec", "hyperfine", "age"} {
+			for _, name := range []string{"deadbranch", "shellcheck", "shfmt", "just", "ruff", "delta", "watchexec", "hyperfine", "age"} {
 				p := c.Catalog.Packages[name]
 				packages[name] = p
 				var files []member

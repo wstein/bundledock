@@ -7,7 +7,7 @@ func TestQualityUtilitiesOfficialRecipes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for name, repo := range map[string]string{"shellcheck": "koalaman/shellcheck", "shfmt": "mvdan/sh", "just": "casey/just", "ruff": "astral-sh/ruff", "delta": "dandavison/delta", "watchexec": "watchexec/watchexec", "hyperfine": "sharkdp/hyperfine", "age": "FiloSottile/age"} {
+	for name, repo := range map[string]string{"deadbranch": "armgabrielyan/deadbranch", "shellcheck": "koalaman/shellcheck", "shfmt": "mvdan/sh", "just": "casey/just", "ruff": "astral-sh/ruff", "delta": "dandavison/delta", "watchexec": "watchexec/watchexec", "hyperfine": "sharkdp/hyperfine", "age": "FiloSottile/age"} {
 		t.Run(name, func(t *testing.T) {
 			p, ok := c.Catalog.Packages[name]
 			if !ok {

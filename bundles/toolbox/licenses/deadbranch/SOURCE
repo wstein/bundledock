@@ -1,0 +1,8 @@
+Upstream: https://github.com/armgabrielyan/deadbranch
+Pinned release: v0.4.0
+Source: https://github.com/armgabrielyan/deadbranch/tree/v0.4.0
+Official release: https://github.com/armgabrielyan/deadbranch/releases/tag/v0.4.0
+AMD64 musl and ARM64 GNU archives verified against official release API SHA256
+digests by read-only archive inspection on 2026-10-12. Both archives retain their
+full MIT LICENSE, README.md and deadbranch.1. No upstream binary was executed,
+modified or compiled. ARM64 requires compatible GNU libc/runtime libraries.

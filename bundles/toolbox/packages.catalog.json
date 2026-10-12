@@ -887,6 +887,35 @@
       "notices": [
         "licenses/age/SOURCE"
       ]
+    },
+    "deadbranch": {
+      "provider": "github",
+      "repository": "armgabrielyan/deadbranch",
+      "tag_prefix": "v",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "x86_64-unknown-linux-musl",
+        "arm64": "aarch64-unknown-linux-gnu"
+      },
+      "asset": "deadbranch-{version}-{arch}.tar.gz",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "tar.gz",
+        "members": {
+          "deadbranch": "bin/deadbranch"
+        },
+        "archive_notices": [
+          "LICENSE",
+          "README.md",
+          "deadbranch.1"
+        ]
+      },
+      "notices": [
+        "licenses/deadbranch/SOURCE"
+      ]
     }
   }
 }
