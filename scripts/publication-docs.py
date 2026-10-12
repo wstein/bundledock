@@ -15,6 +15,9 @@ SOURCE = 'https://github.com/' + REPOSITORY
 _SPEC = importlib.util.spec_from_file_location('bundle_config', Path(__file__).with_name('bundle-config.py'))
 _CONFIG = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(_CONFIG)
+_TAG_SPEC = importlib.util.spec_from_file_location('bundle_git_tags', Path(__file__).with_name('bundle-git-tags.py'))
+_TAGS = importlib.util.module_from_spec(_TAG_SPEC)
+_TAG_SPEC.loader.exec_module(_TAGS)
 BUNDLES = {name: _CONFIG.select_bundle(name)['inventory'] for name in _CONFIG.BUNDLES}
 BEGIN = '<!-- BEGIN PUBLISHED BUNDLE -->'
 END = '<!-- END PUBLISHED BUNDLE -->'
@@ -36,11 +39,17 @@ def validate(receipt, bundle, image, sha, run_id, attempt):
     require(isinstance(receipt, dict), 'Receipt must be an object')
     require(receipt.get('image') == image and receipt.get('commit') == sha and receipt.get('source') == SOURCE and receipt.get('run_id') == run_id, 'Wrong publication provenance')
     tag = receipt.get('tag', '')
-    require(isinstance(tag, str) and re.fullmatch(TAG, tag), 'Invalid publication version')
-    require(tag.rsplit('.', 1)[1] == attempt, 'Wrong publication attempt')
+    require(isinstance(tag, str), 'Invalid publication version')
+    version = _TAGS.validate_version(tag, run_id)
+    semantic = _TAGS.SINGLETON.fullmatch(tag) is not None
+    if semantic:
+        require(bundle != 'toolbox' and receipt.get('run_attempt') == attempt, 'Wrong singleton publication attempt')
+    else:
+        require(str(version['attempt']) == attempt, 'Wrong publication attempt')
     try:
         datetime.strptime(receipt.get('created', ''), '%Y-%m-%dT%H:%M:%SZ')
-        datetime.strptime(tag[:10], '%Y.%m.%d')
+        if not semantic:
+            datetime.strptime(tag[:10], '%Y.%m.%d')
     except (TypeError, ValueError) as error:
         raise ValueError('Invalid publication date') from error
     require(isinstance(receipt.get('lock_sha256'), str) and re.fullmatch(r'[0-9a-f]{64}', receipt['lock_sha256']), 'Invalid lock SHA256')
@@ -50,18 +59,22 @@ def validate(receipt, bundle, image, sha, run_id, attempt):
     platforms = receipt.get('platforms')
     require(isinstance(platforms, list) and len(platforms) == 2, 'Both platform receipts required')
     require({p.get('architecture') for p in platforms if isinstance(p, dict)} == {'amd64', 'arm64'}, 'Wrong platform set')
+    fields = FIELDS + (('run_attempt',) if semantic else ())
     for platform in platforms:
-        require(all(platform.get(key) == receipt[key] for key in FIELDS), 'Platform provenance differs')
+        require(all(platform.get(key) == receipt[key] for key in fields), 'Platform provenance differs')
         require(platform.get('smoked') is True, 'Platform smoke missing')
         for key in ('image_id', 'digest'):
             require(isinstance(platform.get(key), str) and re.fullmatch(DIGEST, platform[key]), 'Invalid platform digest')
-    return {**{key: receipt[key] for key in FIELDS}, 'digest': digest, 'reference': receipt['reference'], 'attempt': attempt}
+    return {**{key: receipt[key] for key in fields}, 'digest': digest, 'reference': receipt['reference'], 'attempt': attempt}
 
 
 def version_key(tag):
+    if _TAGS.SINGLETON.fullmatch(tag):
+        upstream, revision = tag.split('-b')
+        return (1, *map(int, upstream.split('.')), int(revision))
     match = re.fullmatch(TAG, tag)
     require(match is not None, 'Invalid previous publication version')
-    return (match[1], int(match[2]), int(match[3]))
+    return (0, match[1], int(match[2]), int(match[3]))
 
 
 def render(record):
