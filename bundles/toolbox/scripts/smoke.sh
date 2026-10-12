@@ -23,6 +23,7 @@ check() {
         --mount "type=bind,src=$script_dir/quality-utilities-smoke.sh,dst=/quality-utilities-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/utilities-smoke.sh,dst=/utilities-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/helix-smoke.sh,dst=/helix-smoke.sh,readonly" \
+        --mount "type=bind,src=$script_dir/vcs-versions-smoke.sh,dst=/vcs-versions-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/jujutsu-smoke.sh,dst=/jujutsu-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/hugo-smoke.sh,dst=/hugo-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/process-monitors-smoke.sh,dst=/process-monitors-smoke.sh,readonly" \
@@ -106,6 +107,8 @@ check() {
             sh /quality-utilities-smoke.sh
             stage "Helix editor"
             sh /helix-smoke.sh
+            stage "noninteractive VCS versions"
+            sh /vcs-versions-smoke.sh
             stage "Jujutsu isolated Git-backed workspace"
             sh /jujutsu-smoke.sh
             stage "Hugo"

@@ -914,6 +914,34 @@
       "notices": [
         "licenses/age/SOURCE"
       ]
+    },
+    "lazygit": {
+      "provider": "github",
+      "repository": "jesseduffield/lazygit",
+      "tag_prefix": "v",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "x86_64",
+        "arm64": "arm64"
+      },
+      "asset": "lazygit_{version}_linux_{arch}.tar.gz",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "sidecar": "checksums.txt",
+      "install": {
+        "kind": "tar.gz",
+        "members": {
+          "lazygit": "bin/lazygit"
+        },
+        "archive_notices": [
+          "LICENSE"
+        ]
+      },
+      "notices": [
+        "licenses/lazygit/SOURCE"
+      ]
     }
   }
 }
