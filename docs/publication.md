@@ -290,10 +290,13 @@ opens a normal `publication-docs/<bundle>/<version>` PR for the corresponding
 bundle guide. Its managed publication section records the immutable version,
 index digest, exact source SHA, workflow run and digest-pinned pull example.
 The generated tool table remains the current source inventory, separate from
-the published record. Version badges read Quay directly and need no README bot
-commit.
+the published record. Most version badges read Quay directly and need no README bot commit. Node
+badges read the managed `docs/node-published.json` and
+`docs/node-current-published.json` metadata, updated in the same publication PR
+as the corresponding guide. They refresh after that PR is merged and the badge
+cache expires; they do not display the current source lock.
 
-This job edits Markdown source only. It creates a topic from fresh `main` using
+This job edits Markdown and publication metadata source only. It creates a topic from fresh `main` using
 GitHub's create-only reference API, never advances an existing topic, and reuses
 an existing PR only when its tree, parent, head and target match. Conflicting
 records, newer published versions, moved main or topic refs and malformed
@@ -303,10 +306,10 @@ The docs job has contents, pull-request and Actions write permission; earlier
 compiler and native jobs retain read permissions. No documentation build,
 automatic docs merge or consumer activation is performed by this job.
 
-The optional [Node Current carrier](node-current.md) is planned and unpublished.
-Its first publication requires separate exact-revision build/publication approval;
-an updater approval cannot bootstrap an absent baseline. Existing Node LTS pins
-and consumer activation remain unchanged.
+The [Node Current carrier](node-current.md#published-bundle) has a verified
+publication recorded in its guide. First publication requires separate
+exact-revision build/publication approval; an updater approval cannot bootstrap
+an absent baseline. Consumer activation remains a separate operation.
 
 ### Shared Node repository
 
@@ -325,8 +328,23 @@ is rejected. Alias updates are sequential and cannot roll back an earlier alias
 if a later write fails; a successful receipt requires every selected alias to
 resolve to the tested immutable index.
 
-The README Node badges identify channels and link to their verified publication
-records. They intentionally do not select the first version tag from the shared
-repository, which can belong to either channel. The managed guide is the source
-of the verified version and digest. Current remains unpublished until a separately
-approved exact-revision build and publication succeeds.
+The README Node badges label LTS and Current and display only the published
+upstream version, without the packaging `-bN` suffix. Their managed JSON metadata
+retains the immutable tag, digest, source revision and run alongside that value.
+Each channel updates only its own guide and metadata in one create-only PR tree;
+merging that publication PR makes the new badge value available without editing
+the README. Quay exposes alias digests and per-platform labels separately, so a
+single dynamic badge request cannot derive an upstream version from an alias.
+The badges link to the matching `lts` and `current` tags in the shared Quay
+repository.
+
+Semantic publication receipts supply the upstream version. Historical date tags
+alone yield `unknown`; they must never be interpreted as Node versions or
+replaced with a desired source pin. The seeded LTS value `24.21.0` was verified
+from `io.bundledock.tools.versions` on both published platform manifests
+([AMD64](https://quay.io/api/v1/repository/bundledock/node/manifest/sha256:4a6ab359131bb115c5c2281c444eee32922cd70fd3b2102ff8631f04ec8233f9/labels),
+[ARM64](https://quay.io/api/v1/repository/bundledock/node/manifest/sha256:a99c41a8b8ec7861867c30b81466ba549c13e0e41435eea267c416075456b5cd/labels))
+in the recorded LTS index. Reapplying that exact historical publication preserves
+its verified value; a different historical identity falls back to `unknown`.
+Unpublished channels have no published metadata and an unavailable badge rather
+than a version copied from their source inventory.

@@ -13,7 +13,9 @@ its consumer requirements and measured runtime coverage.
 
 ## Bundles
 
-Each published version badge links to its bundle on [quay.io](https://quay.io/organization/bundledock).
+Published version badges link to [quay.io](https://quay.io/organization/bundledock).
+Node badges show the upstream version recorded by the latest merged publication
+update; packaging revisions remain in the bundle guides.
 
 ### Utilities
 
@@ -26,8 +28,8 @@ Each published version badge links to its bundle on [quay.io](https://quay.io/or
 | Bundle | Purpose and guide | Published version | Publication workflow |
 | --- | --- | --- | --- |
 | Bun | [Bun runtime and bunx](docs/bun.md) | [![Published bun version](https://img.shields.io/badge/dynamic/regex?url=https%3A%2F%2Fquay.io%2Fapi%2Fv1%2Frepository%2Fbundledock%2Fbun%2Ftag%2F%3FonlyActiveTags%3Dtrue%26limit%3D100%26page%3D1&search=%22name%22%5Cs%2A%3A%5Cs%2A%22%28%5Cd%2B%5C.%5Cd%2B%5C.%5Cd%2B-b%5Cd%2B%7C%5Cd%7B4%7D%5C.%5Cd%7B2%7D%5C.%5Cd%7B2%7D-%28%3F%3Ab%5Cd%2B%5C.%5Cd%2B%7C%5Cd%2B-%5Cd%2B%29%29%22&replace=%241&label=version&color=5eead4&labelColor=0b2545)](https://quay.io/repository/bundledock/bun?tab=tags) | [![Publish bun](https://github.com/wstein/bundledock/actions/workflows/bundledock-bun.yml/badge.svg?branch=main)](https://github.com/wstein/bundledock/actions/workflows/bundledock-bun.yml) |
-| Node.js | [Node.js LTS with npm/npx](docs/node.md) | [![Node LTS publication](https://img.shields.io/badge/Node-LTS-5eead4?labelColor=0b2545)](docs/node.md#published-bundle) | [![Publish node](https://github.com/wstein/bundledock/actions/workflows/bundledock-node.yml/badge.svg?branch=main)](https://github.com/wstein/bundledock/actions/workflows/bundledock-node.yml) |
-| Node.js Current | [Node.js Current — planned, unpublished](docs/node-current.md) | [![Node Current publication pending](https://img.shields.io/badge/Current-unpublished-64748b?labelColor=0b2545)](docs/node-current.md#published-bundle) | [![Publish node-current](https://github.com/wstein/bundledock/actions/workflows/bundledock-node-current.yml/badge.svg?branch=main)](https://github.com/wstein/bundledock/actions/workflows/bundledock-node-current.yml) |
+| Node.js | [Node.js LTS with npm/npx](docs/node.md) | [![Published Node LTS version](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fwstein%2Fbundledock%2Fmain%2Fdocs%2Fnode-published.json&query=%24.upstream_version&label=LTS&color=5eead4&labelColor=0b2545)](https://quay.io/repository/bundledock/node?tab=tags&tag=lts) | [![Publish node](https://github.com/wstein/bundledock/actions/workflows/bundledock-node.yml/badge.svg?branch=main)](https://github.com/wstein/bundledock/actions/workflows/bundledock-node.yml) |
+| Node.js Current | [Node.js Current with npm/npx](docs/node-current.md) | [![Published Node Current version](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fwstein%2Fbundledock%2Fmain%2Fdocs%2Fnode-current-published.json&query=%24.upstream_version&label=Current&color=5eead4&labelColor=0b2545)](https://quay.io/repository/bundledock/node?tab=tags&tag=current) | [![Publish node-current](https://github.com/wstein/bundledock/actions/workflows/bundledock-node-current.yml/badge.svg?branch=main)](https://github.com/wstein/bundledock/actions/workflows/bundledock-node-current.yml) |
 
 ### Editors
 
