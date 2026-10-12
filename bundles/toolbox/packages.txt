@@ -11,7 +11,7 @@ fish>=4.9.3
 fzf>=0.74.5
 gh>=2.102.0
 gitleaks>=8.30.1
-helix==25.7.1
+helix>=25.7.1
 herdr>=0.9.3
 hugo>=0.167.0
 hyperfine>=2.0.0
