@@ -36,7 +36,7 @@ func TestRepositoryIdentityAndBothArchitectures(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(c.Catalog.Packages) != 27 {
+	if len(c.Catalog.Packages) != 24 {
 		t.Fatal("catalog incomplete")
 	}
 	if err := c.Validate(); err != nil {
@@ -71,6 +71,10 @@ func TestCatalogRejectsIncompleteAndUnsafeRecipes(t *testing.T) {
 			name := "gh"
 			if kind == "claude-base" {
 				name = "claude"
+				c, err = Load("../../bundles/claude")
+				if err != nil {
+					t.Fatal(err)
+				}
 			}
 			p := c.Catalog.Packages[name]
 			switch kind {
@@ -227,7 +231,7 @@ func TestQualitySecurityCatalogPins(t *testing.T) {
 func TestPreservedArchiveDirectoryExclusions(t *testing.T) {
 	for _, dir := range []string{"codex-resources/voice", "", ".", "../voice", "/voice", "codex-resources/../voice", "./voice", "voice/", "voice\\lib", "voice\nlib", "bin"} {
 		t.Run(dir, func(t *testing.T) {
-			c, err := Load("../../bundles/toolbox")
+			c, err := Load("../../bundles/codex")
 			if err != nil {
 				t.Fatal(err)
 			}

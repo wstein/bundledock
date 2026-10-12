@@ -43,7 +43,7 @@ func bundle(t *testing.T) string {
 	if err := gz.Close(); err != nil {
 		t.Fatal(err)
 	}
-	c, err := toolconfig.Load("../../bundles/toolbox")
+	c, err := toolconfig.Load("../../bundles/codex")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -27,23 +27,15 @@ check() {
         --env HOME=/home/bundledock --env DISABLE_UPDATES=1 --env DISABLE_AUTOUPDATER=1 \
         --entrypoint /bin/sh "$consumer" -ec '
             stage() { printf "Toolbox consumer smoke stage: %s\n" "$1" >&2; }
-            stage "ready manifest and Codex helpers"
+            stage "ready manifest and standalone agent exclusion"
             test -f /opt/bundledock/toolbox/.ready
-            test ! -e /opt/bundledock/toolbox/codex-resources/voice
-            test -f /opt/bundledock/toolbox/codex-package.json
-            for helper in bin/codex-code-mode-host codex-path/rg codex-resources/bwrap codex-resources/zsh/bin/zsh; do
-                test -x "/opt/bundledock/toolbox/$helper"
+            for agent in codex codex-code-mode-host agy claude; do
+                test ! -e "/opt/bundledock/toolbox/bin/$agent"
             done
+            test ! -e /opt/bundledock/toolbox/codex-resources
+            test ! -e /opt/bundledock/toolbox/codex-path
+            test ! -e /opt/bundledock/toolbox/codex-package.json
             export PATH="/opt/bundledock/toolbox/bin:$PATH"
-            stage "Codex CLI and app-server"
-            codex --version
-            timeout 45 codex app-server daemon start
-            codex app-server daemon version
-            codex app-server daemon stop
-            stage "Claude CLI"
-            claude --version
-            stage "Antigravity CLI"
-            agy --version
             stage "GitHub CLI"
             gh --version
             stage "herdr"
