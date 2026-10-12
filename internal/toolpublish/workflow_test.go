@@ -24,8 +24,8 @@ func TestPublicationWorkflowRepositoryConfiguration(t *testing.T) {
 		}
 	}
 	for _, mapping := range []string{"REPOSITORY_USERNAME: ${{ vars.REPOSITORY_USERNAME }}", "REPOSITORY_TOKEN: ${{ secrets.REPOSITORY_TOKEN }}"} {
-		if strings.Count(workflow, mapping) != 6 {
-			t.Fatalf("baseline, native/promotion gates and tag provenance verification must use %s", mapping)
+		if strings.Count(workflow, mapping) != 7 {
+			t.Fatalf("resolution, baseline, native/promotion gates and tag provenance verification must use %s", mapping)
 		}
 	}
 
@@ -67,6 +67,32 @@ func TestPublicationWorkflowRepositoryConfiguration(t *testing.T) {
 	}
 	if logins != 2 {
 		t.Fatalf("expected native and promotion logins, got %d", logins)
+	}
+}
+
+func TestResolverReceivesPullCredentialsForVersionAllocation(t *testing.T) {
+	data, err := os.ReadFile("../../.github/workflows/bundle-publish.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	workflow := string(data)
+	start := strings.Index(workflow, "      - name: Resolve all tools once\n")
+	if start < 0 {
+		t.Fatal("resolver step missing")
+	}
+	step := workflow[start:]
+	end := strings.Index(step[1:], "\n      - ")
+	if end < 0 {
+		t.Fatal("resolver step boundary missing")
+	}
+	step = step[:end+1]
+	for _, mapping := range []string{"REPOSITORY_USERNAME: ${{ vars.REPOSITORY_USERNAME }}", "REPOSITORY_TOKEN: ${{ secrets.REPOSITORY_TOKEN }}"} {
+		if !strings.Contains(step, mapping) {
+			t.Fatalf("resolver cannot allocate registry-backed versions without %s", mapping)
+		}
+	}
+	if strings.Contains(step, "docker login") || strings.Contains(step, " push ") {
+		t.Fatal("resolution must only read registry metadata")
 	}
 }
 

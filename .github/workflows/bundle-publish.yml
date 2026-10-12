@@ -115,6 +115,9 @@ jobs:
       - name: Resolve all tools once
         env:
           REPOSITORY_URL: ${{ vars.REPOSITORY_URL }}
+          # Singleton version allocation requests only a pull-scoped token.
+          REPOSITORY_USERNAME: ${{ vars.REPOSITORY_USERNAME }}
+          REPOSITORY_TOKEN: ${{ secrets.REPOSITORY_TOKEN }}
           # Manager sends this read-only token only to api.github.com.
           GITHUB_TOKEN: ${{ github.token }}
         run: |
