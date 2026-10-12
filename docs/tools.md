@@ -26,6 +26,9 @@ and `arm64`; builds verify every download.
 | GitHub CLI | 2.102.0 |
 | jq | 1.8.2 |
 | ripgrep (`rg`) | 15.2.0 |
+| fzf (`fzf`) | 0.74.5 |
+| bat (`bat`) | 0.26.1 |
+| regctl (`regctl`) | 0.11.6 |
 | fd (`fd`, `fdfind`) | 10.5.0 |
 | ast-grep (`ast-grep`) | 0.45.3 |
 | Mike Farah yq (`yq`) | 4.54.1 |
@@ -223,6 +226,34 @@ identity, incomplete platforms, unsupported recipes, and unsafe archive members.
 Existing images, volumes, running containers, and desired ranges are unaffected by
 resolution. `tools volume` remains the existing initialization command; no update
 alias or other tool-management commands are added.
+
+## Optional toolbox utilities
+
+`fzf` filters lists; for example, `printf 'alpha\nbeta\n' | fzf --filter beta`
+works without an interactive terminal. Shell key bindings and completion are
+opt-in through `fzf --bash`, `fzf --zsh` or `fzf --fish`; source the chosen output
+in your own shell configuration only if desired. BundleDock never edits dotfiles.
+
+`bat` includes upstream embedded syntax and theme assets. Use
+`bat --paging=never --style=plain file` for predictable noninteractive output.
+Its pager is optional and consumer supplied; no editor or pager default is set.
+Upstream completion scripts, manual, README and changelog are retained under
+`licenses/bat/` for optional use, alongside the decoded upstream syntax/theme
+notices and their inventory. Custom configuration and caches belong in writable
+HOME, outside the read-only toolbox.
+
+`regctl` is the official registry client only; regbot and regsync are excluded.
+Credentials and state belong in writable HOME (`~/.regctl/`), with optional
+`REGCTL_CONFIG` pointing to a writable config file. Offline smoke uses only
+version/help and reference parsing; it never logs in or contacts a registry.
+
+The six Linux AMD64/ARM64 release artifacts were downloaded and SHA256 checked
+against the official release API digests on 2026-10-12. Both fzf archives contain
+one regular binary; both bat archives contain only regular files and one
+completion directory. regctl assets are raw executables. These recipes retain
+the existing extractor's rejection of archive links. Source tests use synthetic
+artifacts and smoke stubs. Native execution, OCI builds/smoke, vulnerability scans
+and consumer activation remain unverified pending separate approval.
 
 ## Optional browser editor
 
