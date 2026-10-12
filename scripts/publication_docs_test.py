@@ -149,6 +149,78 @@ class PublicationDocsTest(unittest.TestCase):
                     if mode!='current': self.assertTrue(any('expected_head_sha='+head in call for call in calls))
                 if mode=='identical': self.assertFalse(any(call[:3]==('gh','pr','create') for call in calls))
 
+    def test_node_metadata_tracks_receipt_not_source_inventory(self):
+        for bundle, tag, upstream in [('node', '24.21.0-b2', '24.21.0'),
+                                      ('node-current', '26.11.1-b1', '26.11.1'),
+                                      ('node', '2026.10.12-b1.1', 'unknown')]:
+            with self.subTest(bundle=bundle, tag=tag), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory); (root/'docs').mkdir()
+                record = dict(self.validate(), bundle=bundle, tag=tag,
+                              image='quay.io/bundledock/node')
+                record['reference'] = record['image']+'@'+record['digest']
+                guide = root/self.module.BUNDLES[bundle]
+                guide.write_text(self.module.BEGIN+'\n'+self.module.END+'\nsource inventory: 999.0.0\n')
+                self.assertTrue(self.module.update(root, bundle, record))
+                metadata = json.loads((root/('docs/'+bundle+'-published.json')).read_text())
+                self.assertEqual(metadata['upstream_version'], upstream)
+                for key in ('tag', 'digest', 'commit', 'image'):
+                    self.assertEqual(metadata[key], record[key])
+                self.assertEqual(metadata['bundle'], bundle)
+                self.assertFalse(self.module.update(root, bundle, record))
+                # Restore stale metadata while the guide is already current.
+                (root/('docs/'+bundle+'-published.json')).write_text('{}\n')
+                self.assertTrue(self.module.update(root, bundle, record))
+                self.assertEqual(json.loads((root/('docs/'+bundle+'-published.json')).read_text()), metadata)
+
+    def test_legacy_metadata_preserves_only_matching_verified_publication(self):
+        record = dict(self.validate(), bundle='node')
+        previous = json.loads(self.module.metadata('node', record))
+        previous['upstream_version'] = '24.21.0'
+        self.assertEqual(json.loads(self.module.metadata('node', record, json.dumps(previous)))['upstream_version'], '24.21.0')
+        for key in ('tag', 'digest', 'commit', 'image'):
+            with self.subTest(key=key):
+                changed = dict(previous); changed[key] = 'different'
+                self.assertEqual(json.loads(self.module.metadata('node', record, json.dumps(changed)))['upstream_version'], 'unknown')
+
+    def test_node_proposal_includes_managed_json_even_when_guide_is_current(self):
+        record = dict(self.validate(), bundle='node-current', tag='26.11.1-b2',
+                      image='quay.io/bundledock/node')
+        source = self.module.BEGIN+'\n'+self.module.END
+        desired = self.module.replacement(source, record)
+        for guide in (source, desired):
+            with self.subTest(current=guide == desired), tempfile.TemporaryDirectory() as directory:
+                base = '1'*40
+                def fake_command(*args):
+                    if args[:2] == ('gh', 'api'): return 'main'
+                    if args[:3] == ('git', 'remote', 'get-url'): return self.module.SOURCE
+                    if args[:2] == ('git', 'rev-parse'): return base
+                    return ''
+                def fake_api(path, payload=None):
+                    if path == 'git/commits/'+base: return {'tree': {'sha': '2'*40}}
+                    self.assertEqual(path, 'git/trees')
+                    changes = {item['path']: item['content'] for item in payload['tree']}
+                    self.assertEqual(json.loads(changes.pop('docs/node-current-published.json'))['upstream_version'], '26.11.1')
+                    self.assertEqual(changes, {} if guide == desired else {'docs/node-current.md': desired})
+                    raise RuntimeError('checked proposal tree')
+                old = Path.cwd()
+                try:
+                    with patch.object(self.module, 'command', side_effect=fake_command), patch.object(self.module, 'api', side_effect=fake_api), patch.object(self.module, 'source_at', side_effect=lambda base, path: '{}' if path.endswith('.json') else guide):
+                        with self.assertRaisesRegex(RuntimeError, 'checked proposal tree'):
+                            self.module.propose(Path(directory), 'node-current', record)
+                finally:
+                    self.module.os.chdir(old)
+
+    def test_linked_metadata_rejected_before_guide_write(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); (root/'docs').mkdir()
+            guide = root/'docs/node.md'
+            source = self.module.BEGIN+'\n'+self.module.END
+            guide.write_text(source)
+            (root/'docs/node-published.json').symlink_to(root/'elsewhere')
+            with self.assertRaises(ValueError):
+                self.module.update(root, 'node', dict(self.validate(), tag='24.21.0-b1'))
+            self.assertEqual(guide.read_text(), source)
+
     def test_git_source_read_preserves_crlf(self):
         source=b'\r\n before  \r\n<!-- BEGIN PUBLISHED BUNDLE -->\r\n<!-- END PUBLISHED BUNDLE -->\r\nafter  \r\n\r\n'
         with patch.object(self.module.subprocess,'check_output',return_value=source) as call:
