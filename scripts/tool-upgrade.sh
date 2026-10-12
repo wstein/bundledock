@@ -6,8 +6,8 @@ set -euo pipefail
 : "${GITHUB_STEP_SUMMARY:?set GITHUB_STEP_SUMMARY}"
 case "${BUNDLE:-toolbox}" in
   toolbox) bundles=(toolbox) ;;
-  code-server) bundles=(code-server) ;;
-  *) echo 'BUNDLE must be toolbox or code-server.' >&2; exit 1 ;;
+  code-server|node) bundles=("$BUNDLE") ;;
+  *) echo 'BUNDLE must be toolbox, code-server or node.' >&2; exit 1 ;;
 esac
 locks=() inventories=() artifacts=()
 for bundle in "${bundles[@]}"; do
@@ -16,8 +16,8 @@ for bundle in "${bundles[@]}"; do
     inventories+=(docs/tools.md)
     artifacts+=(tools.lock.json tools.md)
   else
-    inventories+=(docs/code-server.md)
-    artifacts+=(code-server.lock.json code-server.md)
+    inventories+=("docs/$bundle.md")
+    artifacts+=("$bundle.lock.json" "$bundle.md")
   fi
 done
 paths=("${locks[@]}" "${inventories[@]}")
@@ -54,7 +54,7 @@ if sys.argv[2]=='resolve':
     if root.exists() and any(root.iterdir()): raise SystemExit('Artifact directory must be empty')
 else:
     expected=set(sys.argv[3:])
-    if "code-server.lock.json" in expected: expected.add("base.sha")
+    if "code-server.lock.json" in expected or "node.lock.json" in expected: expected.add("base.sha")
     if not root.is_dir(): raise SystemExit('Missing artifact directory')
     actual={p.name for p in root.iterdir()}
     if not expected<=actual or actual-expected-{'lock.diff'}: raise SystemExit('Unexpected or missing artifact files')
@@ -94,7 +94,7 @@ case "${1:-}" in
         cp "${locks[i]}" "$UPGRADE_RESULT/${artifacts[2*i]}"
         cp "${inventories[i]}" "$UPGRADE_RESULT/${artifacts[2*i+1]}"
       done
-      if [[ ${bundles[0]} == code-server ]]; then git rev-parse HEAD > "$UPGRADE_RESULT/base.sha"; fi
+      if [[ ${bundles[0]} != toolbox ]]; then git rev-parse HEAD > "$UPGRADE_RESULT/base.sha"; fi
       echo 'changed=true' >> "$GITHUB_OUTPUT"
       {
         echo '## Proposed tool lock and inventory changes'
@@ -115,7 +115,7 @@ case "${1:-}" in
     : "${GITHUB_RUN_ATTEMPT:?set GITHUB_RUN_ATTEMPT}"
     [[ $GITHUB_RUN_ID =~ ^[0-9]+$ && $GITHUB_RUN_ATTEMPT =~ ^[0-9]+$ ]] || exit 1
     check_result publish
-    if [[ ${bundles[0]} == code-server ]]; then
+    if [[ ${bundles[0]} != toolbox ]]; then
       base=$(cat "$UPGRADE_RESULT/base.sha")
       if [[ ! $base =~ ^[0-9a-f]{40}$ || $base != "$(git rev-parse HEAD)" ]]; then
         echo 'Refusing stale proposal: artifact base differs from checkout.' >&2; exit 1
@@ -124,7 +124,7 @@ case "${1:-}" in
     for i in "${!bundles[@]}"; do
       bundle=${bundles[i]}
       cp "$UPGRADE_RESULT/${artifacts[2*i]}" "${locks[i]}"
-      if [[ $bundle == code-server ]]; then go run ./cmd/tools-publish validate --bundle code-server; fi
+      if [[ $bundle != toolbox ]]; then go run ./cmd/tools-publish validate --bundle "$bundle"; fi
       # Generate from checked-out prose. Never accept unrelated artifact prose.
       python3 scripts/tool-inventory.py --bundle "$bundle"
       if ! cmp -s "${inventories[i]}" "$UPGRADE_RESULT/${artifacts[2*i+1]}"; then
@@ -136,13 +136,13 @@ case "${1:-}" in
       echo 'No tool lock or inventory changes; no branch or pull request will be created.' >> "$GITHUB_STEP_SUMMARY"; exit 0
     fi
     branch="automation/tool-upgrade-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
-    if [[ ${bundles[0]} == code-server ]]; then branch="automation/code-server-upgrade-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"; fi
+    if [[ ${bundles[0]} != toolbox ]]; then branch="automation/${bundles[0]}-upgrade-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"; fi
     git switch -c "$branch"
     git config user.name 'github-actions[bot]'
     git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
     git add -- "${paths[@]}"
     title='chore(tools): upgrade stable tool lock'
-    if [[ ${bundles[0]} == code-server ]]; then title='chore(code-server): upgrade stable standalone lock'; fi
+    if [[ ${bundles[0]} != toolbox ]]; then title="chore(${bundles[0]}): upgrade stable runtime lock"; fi
     git commit -m "$title"
     if ! git push origin "HEAD:refs/heads/$branch"; then
       echo 'Topic push failed. An administrator must explicitly permit GITHUB_TOKEN contents:write under repository/organization Actions policy. This workflow does not change permissions or use a PAT.' >&2; exit 1

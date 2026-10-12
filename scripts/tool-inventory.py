@@ -41,7 +41,7 @@ DISPLAY_SUFFIX = {"tmux": " (official static builds)"}
 
 def generated(root, bundle_name="toolbox"):
     bundle = root / "bundles" / bundle_name
-    labels = LABELS if bundle_name == "toolbox" else (("code-server", "code-server"),)
+    labels = LABELS if bundle_name == "toolbox" else ((bundle_name, bundle_name),)
     lock = json.loads((bundle / "tools.lock.json").read_text())
     catalog = json.loads((bundle / "tools.packages.json").read_text())
     ids = {tool for tool, _ in labels}
@@ -64,7 +64,7 @@ def generated(root, bundle_name="toolbox"):
         if not re.fullmatch(r"[0-9]+\.[0-9]+(?:\.[0-9]+|[a-z])?", version):
             raise ValueError(f"{tool}: unsafe inventory version")
         rows.append(f"| {label} | {version}{DISPLAY_SUFFIX.get(tool, '')} |")
-    document = root / "docs" / ("tools.md" if bundle_name == "toolbox" else "code-server.md")
+    document = root / "docs" / ("tools.md" if bundle_name == "toolbox" else bundle_name+".md")
     # read_bytes/decode preserves all prose and line endings outside the region.
     source = document.read_bytes().decode("utf-8")
     if source.count(BEGIN) != 1 or source.count(END) != 1:
@@ -78,7 +78,7 @@ def generated(root, bundle_name="toolbox"):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=Path("."))
-    parser.add_argument("--bundle", choices=("toolbox", "code-server"), default="toolbox")
+    parser.add_argument("--bundle", choices=("toolbox", "code-server", "node"), default="toolbox")
     parser.add_argument("--check", action="store_true", help="fail on drift without writing")
     args = parser.parse_args()
     try:
