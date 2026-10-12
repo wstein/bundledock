@@ -9,6 +9,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -17,10 +18,84 @@ import (
 	"time"
 )
 
+// diagnosticOutput bounds error text and removes known workflow credentials.
+// Command arguments are deliberately omitted: they can contain credentials.
+func diagnosticOutput(output []byte) string {
+	text := string(output)
+	for _, key := range []string{"REPOSITORY_TOKEN", "GITHUB_TOKEN", "GH_TOKEN"} {
+		if value := os.Getenv(key); value != "" {
+			text = strings.ReplaceAll(text, value, "[REDACTED]")
+		}
+	}
+	const limit = 8192
+	if len(text) > limit {
+		text = text[:limit] + "\n[output truncated]"
+	}
+	return text
+}
+
+// diagnosticTail keeps only the last output bytes; Write still accepts the
+// entire stream so it can be paired with the original live stderr writer.
+type diagnosticTail struct {
+	data      []byte
+	truncated bool
+}
+
+func (tail *diagnosticTail) Write(data []byte) (int, error) {
+	const limit = 8192
+	size := len(data)
+	if len(tail.data)+size > limit {
+		tail.truncated = true
+	}
+	if size >= limit {
+		tail.data = append(tail.data[:0], data[size-limit:]...)
+	} else {
+		excess := len(tail.data) + size - limit
+		if excess > 0 {
+			tail.data = tail.data[excess:]
+		}
+		tail.data = append(tail.data, data...)
+	}
+	return size, nil
+}
+func (tail *diagnosticTail) text() string {
+	text := string(tail.data)
+	if tail.truncated {
+		// Trimming can cut through a credential before whole-value redaction.
+		// Remove any known credential suffix at the capture's initial boundary.
+		longest := 0
+		for _, key := range []string{"REPOSITORY_TOKEN", "GITHUB_TOKEN", "GH_TOKEN"} {
+			value := os.Getenv(key)
+			for cut := 0; cut < len(value); cut++ {
+				suffix := value[cut:]
+				if len(suffix) > longest && strings.HasPrefix(text, suffix) {
+					longest = len(suffix)
+				}
+			}
+		}
+		if longest > 0 {
+			text = "[REDACTED]" + text[longest:]
+		}
+	}
+	text = diagnosticOutput([]byte(text))
+	if tail.truncated {
+		return "[earlier stderr truncated]\n" + text
+	}
+	return text
+}
+
 func run(args ...string) ([]byte, error) {
+	if len(args) == 0 {
+		return nil, fmt.Errorf("external command required")
+	}
 	cmd := exec.Command(args[0], args[1:]...)
-	cmd.Stderr = os.Stderr
-	return cmd.Output()
+	var stderr diagnosticTail
+	cmd.Stderr = io.MultiWriter(os.Stderr, &stderr)
+	output, err := cmd.Output()
+	if err != nil {
+		return output, fmt.Errorf("%s failed: %w\nstdout:\n%s\nstderr:\n%s", filepath.Base(args[0]), err, diagnosticOutput(output), stderr.text())
+	}
+	return output, nil
 }
 
 func readJSON(path string, value any) error {
