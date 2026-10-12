@@ -19,7 +19,7 @@ func TestPrecompilerRegistryMatchesNativeSelection(t *testing.T) {
 	if err = json.Unmarshal(output, &registry); err != nil {
 		t.Fatal(err)
 	}
-	if len(registry) != 8 {
+	if len(registry) != 9 {
 		t.Fatal("unexpected bundle choices")
 	}
 	for name, settings := range registry {
@@ -34,7 +34,7 @@ func TestPrecompilerRegistryMatchesNativeSelection(t *testing.T) {
 }
 
 func TestAgentBundleSelection(t *testing.T) {
-	for _, name := range []string{"codex", "agy", "claude"} {
+	for _, name := range []string{"codex", "agy", "claude", "opentofu"} {
 		b, err := SelectBundle(name)
 		if err != nil {
 			t.Fatal(err)

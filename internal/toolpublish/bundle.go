@@ -13,7 +13,7 @@ func SelectBundle(name string) (Bundle, error) {
 		name = "toolbox"
 	}
 	switch name {
-	case "toolbox", "code-server", "node", "node-current", "bun", "codex", "agy", "claude":
+	case "toolbox", "code-server", "node", "node-current", "bun", "codex", "agy", "claude", "opentofu":
 		repository, aliases, artifact := name, "stable latest", "resolved-"+name
 		if name == "toolbox" {
 			artifact = "resolved-tools"

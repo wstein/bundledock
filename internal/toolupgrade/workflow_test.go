@@ -62,7 +62,7 @@ func fixture(t *testing.T) (string, []string) {
 	if err := os.MkdirAll(filepath.Join(dir, "bundles/toolbox"), 0755); err != nil {
 		t.Fatal(err)
 	}
-	for _, name := range []string{"bundles/toolbox/packages.lock.json", "bundles/toolbox/packages.catalog.json", "docs/toolbox.md", "scripts/tool-inventory.py", "bundles/code-server/packages.txt", "bundles/code-server/packages.lock.json", "bundles/code-server/packages.catalog.json", "docs/code-server.md", "bundles/node/packages.txt", "bundles/node/packages.lock.json", "bundles/node/packages.catalog.json", "docs/node.md", "bundles/node-current/packages.txt", "bundles/node-current/packages.lock.json", "bundles/node-current/packages.catalog.json", "docs/node-current.md", "bundles/bun/packages.txt", "bundles/bun/packages.lock.json", "bundles/bun/packages.catalog.json", "docs/bun.md", "bundles/codex/packages.txt", "bundles/codex/packages.catalog.json", "bundles/codex/packages.lock.json", "docs/codex.md", "bundles/agy/packages.txt", "bundles/agy/packages.catalog.json", "bundles/agy/packages.lock.json", "docs/agy.md", "bundles/claude/packages.txt", "bundles/claude/packages.catalog.json", "bundles/claude/packages.lock.json", "docs/claude.md"} {
+	for _, name := range []string{"bundles/toolbox/packages.lock.json", "bundles/toolbox/packages.catalog.json", "docs/toolbox.md", "scripts/tool-inventory.py", "bundles/code-server/packages.txt", "bundles/code-server/packages.lock.json", "bundles/code-server/packages.catalog.json", "docs/code-server.md", "bundles/node/packages.txt", "bundles/node/packages.lock.json", "bundles/node/packages.catalog.json", "docs/node.md", "bundles/node-current/packages.txt", "bundles/node-current/packages.lock.json", "bundles/node-current/packages.catalog.json", "docs/node-current.md", "bundles/bun/packages.txt", "bundles/bun/packages.lock.json", "bundles/bun/packages.catalog.json", "docs/bun.md", "bundles/codex/packages.txt", "bundles/codex/packages.catalog.json", "bundles/codex/packages.lock.json", "docs/codex.md", "bundles/agy/packages.txt", "bundles/agy/packages.catalog.json", "bundles/agy/packages.lock.json", "docs/agy.md", "bundles/claude/packages.txt", "bundles/claude/packages.catalog.json", "bundles/claude/packages.lock.json", "docs/claude.md", "bundles/opentofu/packages.txt", "bundles/opentofu/packages.catalog.json", "bundles/opentofu/packages.lock.json", "docs/opentofu.md"} {
 		data, err := os.ReadFile(filepath.Join(root, name))
 		if err != nil {
 			t.Fatal(err)
@@ -80,9 +80,9 @@ func fixture(t *testing.T) (string, []string) {
 	write(t, filepath.Join(fake, "go"), `#!/bin/sh
 set -eu
 printf '%s\n' "$*" >> "$CALLS"
-case "$*" in 'run ./cmd/bundledock tools upgrade gh'|'run ./cmd/bundledock tools upgrade'|'run ./cmd/bundledock tools upgrade code-server --directory bundles/code-server'|'run ./cmd/bundledock tools upgrade --directory bundles/code-server'|'run ./cmd/tools-publish validate --bundle code-server'|'run ./cmd/bundledock tools upgrade node --directory bundles/node'|'run ./cmd/bundledock tools upgrade node --directory bundles/node-current'|'run ./cmd/bundledock tools upgrade --directory bundles/node-current'|'run ./cmd/bundledock tools upgrade --directory bundles/node'|'run ./cmd/tools-publish validate --bundle node'|'run ./cmd/tools-publish validate --bundle node-current'|'run ./cmd/bundledock tools upgrade bun --directory bundles/bun'|'run ./cmd/bundledock tools upgrade --directory bundles/bun'|'run ./cmd/bundledock tools upgrade codex --directory bundles/codex'|'run ./cmd/bundledock tools upgrade --directory bundles/codex'|'run ./cmd/tools-publish validate --bundle codex'|'run ./cmd/bundledock tools upgrade agy --directory bundles/agy'|'run ./cmd/bundledock tools upgrade --directory bundles/agy'|'run ./cmd/tools-publish validate --bundle agy'|'run ./cmd/bundledock tools upgrade claude --directory bundles/claude'|'run ./cmd/bundledock tools upgrade --directory bundles/claude'|'run ./cmd/tools-publish validate --bundle claude'|'run ./cmd/tools-publish validate --bundle bun') ;; *) exit 41 ;; esac
-case "$*" in 'run ./cmd/tools-publish validate --bundle agy'|'run ./cmd/tools-publish validate --bundle claude'|'run ./cmd/tools-publish validate --bundle codex'|'run ./cmd/tools-publish validate --bundle code-server'|'run ./cmd/tools-publish validate --bundle node'|'run ./cmd/tools-publish validate --bundle node-current'|'run ./cmd/tools-publish validate --bundle bun') exit 0 ;; esac
-case "$*" in *'--directory bundles/node-current') export RESOLVED_BUNDLE=node-current ;; *'--directory bundles/agy') export RESOLVED_BUNDLE=agy ;; *'--directory bundles/claude') export RESOLVED_BUNDLE=claude ;; *'--directory bundles/codex') export RESOLVED_BUNDLE=codex ;; *'--directory bundles/bun') export RESOLVED_BUNDLE=bun ;; *'--directory bundles/node') export RESOLVED_BUNDLE=node ;; *'--directory bundles/code-server') export RESOLVED_BUNDLE=code-server ;; *) export RESOLVED_BUNDLE=toolbox ;; esac
+case "$*" in 'run ./cmd/bundledock tools upgrade opentofu --directory bundles/opentofu'|'run ./cmd/bundledock tools upgrade --directory bundles/opentofu'|'run ./cmd/tools-publish validate --bundle opentofu'|'run ./cmd/bundledock tools upgrade gh'|'run ./cmd/bundledock tools upgrade'|'run ./cmd/bundledock tools upgrade code-server --directory bundles/code-server'|'run ./cmd/bundledock tools upgrade --directory bundles/code-server'|'run ./cmd/tools-publish validate --bundle code-server'|'run ./cmd/bundledock tools upgrade node --directory bundles/node'|'run ./cmd/bundledock tools upgrade node --directory bundles/node-current'|'run ./cmd/bundledock tools upgrade --directory bundles/node-current'|'run ./cmd/bundledock tools upgrade --directory bundles/node'|'run ./cmd/tools-publish validate --bundle node'|'run ./cmd/tools-publish validate --bundle node-current'|'run ./cmd/bundledock tools upgrade bun --directory bundles/bun'|'run ./cmd/bundledock tools upgrade --directory bundles/bun'|'run ./cmd/bundledock tools upgrade codex --directory bundles/codex'|'run ./cmd/bundledock tools upgrade --directory bundles/codex'|'run ./cmd/tools-publish validate --bundle codex'|'run ./cmd/bundledock tools upgrade agy --directory bundles/agy'|'run ./cmd/bundledock tools upgrade --directory bundles/agy'|'run ./cmd/tools-publish validate --bundle agy'|'run ./cmd/bundledock tools upgrade claude --directory bundles/claude'|'run ./cmd/bundledock tools upgrade --directory bundles/claude'|'run ./cmd/tools-publish validate --bundle claude'|'run ./cmd/tools-publish validate --bundle bun') ;; *) exit 41 ;; esac
+case "$*" in 'run ./cmd/tools-publish validate --bundle opentofu'|'run ./cmd/tools-publish validate --bundle agy'|'run ./cmd/tools-publish validate --bundle claude'|'run ./cmd/tools-publish validate --bundle codex'|'run ./cmd/tools-publish validate --bundle code-server'|'run ./cmd/tools-publish validate --bundle node'|'run ./cmd/tools-publish validate --bundle node-current'|'run ./cmd/tools-publish validate --bundle bun') exit 0 ;; esac
+case "$*" in *'--directory bundles/opentofu') export RESOLVED_BUNDLE=opentofu ;; *'--directory bundles/node-current') export RESOLVED_BUNDLE=node-current ;; *'--directory bundles/agy') export RESOLVED_BUNDLE=agy ;; *'--directory bundles/claude') export RESOLVED_BUNDLE=claude ;; *'--directory bundles/codex') export RESOLVED_BUNDLE=codex ;; *'--directory bundles/bun') export RESOLVED_BUNDLE=bun ;; *'--directory bundles/node') export RESOLVED_BUNDLE=node ;; *'--directory bundles/code-server') export RESOLVED_BUNDLE=code-server ;; *) export RESOLVED_BUNDLE=toolbox ;; esac
 if [ "${FAIL_RESOLVER:-false}" = true ]; then exit 42; fi
 if [ "${NO_CHANGE:-false}" != true ]; then
 python3 - <<'PYTHON'
@@ -92,7 +92,7 @@ bundle=os.environ['RESOLVED_BUNDLE']
 p=Path('bundles')/bundle/'packages.lock.json'
 lock=json.loads(p.read_text())
 if os.environ.get('NO_CHANGE_'+bundle.upper().replace('-','_'))!='true':
- for arch in ('amd64','arm64'): lock['platforms'][arch]['gh' if bundle=='toolbox' else 'node' if bundle=='node-current' else bundle]['version']={'node-current':'v26.12.0','code-server':'v4.142.0','node':'v24.22.0','toolbox':'v2.103.0','bun':'bun-v1.4.4','codex':'rust-v0.162.2','agy':'1.3.4','claude':'2.1.297'}[bundle]
+ for arch in ('amd64','arm64'): lock['platforms'][arch]['gh' if bundle=='toolbox' else 'node' if bundle=='node-current' else bundle]['version']={'node-current':'v26.12.0','code-server':'v4.142.0','node':'v24.22.0','toolbox':'v2.103.0','bun':'bun-v1.4.4','codex':'rust-v0.162.2','agy':'1.3.4','claude':'2.1.297','opentofu':'v1.13.2'}[bundle]
 p.write_text(json.dumps(lock,indent=2)+'\n')
 PYTHON
 fi
@@ -121,7 +121,7 @@ func adapter(t *testing.T, dir string, env []string, phase string) (string, erro
 }
 
 func TestFixtureIgnoresParentBundle(t *testing.T) {
-	for _, bundle := range []string{"codex", "agy", "claude"} {
+	for _, bundle := range []string{"codex", "agy", "claude", "opentofu"} {
 		t.Run(bundle, func(t *testing.T) {
 			t.Setenv("BUNDLE", bundle)
 			dir, env := fixture(t)
@@ -704,7 +704,7 @@ func upgradeWorkflowSource() ([]byte, error) {
 }
 
 func TestAgentUpdatersScopeAndRejectCrossBundleArtifacts(t *testing.T) {
-	for _, name := range []string{"codex", "agy", "claude"} {
+	for _, name := range []string{"codex", "agy", "claude", "opentofu"} {
 		t.Run(name, func(t *testing.T) {
 			dir, env := fixture(t)
 			env = append(env, "BUNDLE="+name, "TOOL="+name)

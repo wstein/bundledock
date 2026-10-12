@@ -14,7 +14,7 @@ release readiness.
 
 Builds and releases require explicit user approval of the intended operation
 and source revision. The approved automation exception covers toolbox,
-code-server, Node LTS, Node Current, Bun, Codex, Antigravity and Claude updater PRs authored by `github-actions[bot]`, changing
+code-server, Node LTS, Node Current, Bun, Codex, Antigravity, Claude and OpenTofu updater PRs authored by `github-actions[bot]`, changing
 only their own lock and generated inventory. A latest non-dismissed `wstein`
 APPROVED review of the exact updater head authorizes source CI, a protected
 SHA-guarded rebase merge, and publication of that exact frozen lock. Source CI
@@ -22,11 +22,12 @@ must succeed on the approved head and GitHub's required `check` protection must
 be satisfied. Changed heads, a main advance, unrelated files, stale approvals,
 and an approved tree differing from the merged tree stop automation; do not
 rewrite the updater head or bypass protection. There is no later environment
-approval. Initial publication of Node Current, Codex, Antigravity and Claude carriers requires
+approval. Initial publication of Node Current, Codex, Antigravity, Claude and OpenTofu carriers requires
 separate explicit approval of the exact full source revision and intended
 build/publication operation; an updater PR cannot authorize a first publication.
 Verify repository visibility and robot access before that operation. Existing environment settings remain untouched. Manual publication
-retains exact full-SHA human dispatch. Source PRs, documentation PRs, schedules,
+retains exact full-SHA human dispatch. OpenTofu initial publication requires
+this manual gate; a bot updater cannot bootstrap an absent stable baseline. Source PRs, documentation PRs, schedules,
 bot activity and local commits alone supply no artifact build approval.
 Tagging and publication must follow the explicitly authorized workflow scope;
 consumer activation remains a separate explicit authorization. Successful approved

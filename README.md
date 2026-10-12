@@ -31,6 +31,12 @@ update; packaging revisions remain in the bundle guides.
 | Node.js | [Node.js LTS with npm/npx](docs/node.md) | [![Published Node LTS version](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fwstein%2Fbundledock%2Fmain%2Fdocs%2Fnode-published.json&query=%24.upstream_version&label=LTS&color=5eead4&labelColor=0b2545)](https://quay.io/repository/bundledock/node?tab=tags&tag=lts) | [![Publish node](https://github.com/wstein/bundledock/actions/workflows/bundledock-node.yml/badge.svg?branch=main)](https://github.com/wstein/bundledock/actions/workflows/bundledock-node.yml) |
 | Node.js Current | [Node.js Current with npm/npx](docs/node-current.md) | [![Published Node Current version](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fwstein%2Fbundledock%2Fmain%2Fdocs%2Fnode-current-published.json&query=%24.upstream_version&label=Current&color=5eead4&labelColor=0b2545)](https://quay.io/repository/bundledock/node?tab=tags&tag=current) | [![Publish node-current](https://github.com/wstein/bundledock/actions/workflows/bundledock-node-current.yml/badge.svg?branch=main)](https://github.com/wstein/bundledock/actions/workflows/bundledock-node-current.yml) |
 
+### Infrastructure
+
+| Bundle | Purpose and guide | Published version | Publication workflow |
+| --- | --- | --- | --- |
+| OpenTofu | [Official OpenTofu CLI — source prepared, publication pending](docs/opentofu.md) | [![Registry OpenTofu version (publication pending)](https://img.shields.io/badge/dynamic/regex?url=https%3A%2F%2Fquay.io%2Fapi%2Fv1%2Frepository%2Fbundledock%2Fopentofu%2Ftag%2F%3FonlyActiveTags%3Dtrue%26limit%3D100%26page%3D1&search=%22name%22%5Cs%2A%3A%5Cs%2A%22%28%5Cd%2B%5C.%5Cd%2B%5C.%5Cd%2B-b%5Cd%2B%7C%5Cd%7B4%7D%5C.%5Cd%7B2%7D%5C.%5Cd%7B2%7D-%28%3F%3Ab%5Cd%2B%5C.%5Cd%2B%7C%5Cd%2B-%5Cd%2B%29%29%22&replace=%241&label=version&color=5eead4&labelColor=0b2545)](https://quay.io/repository/bundledock/opentofu?tab=tags) | [![Publish opentofu](https://github.com/wstein/bundledock/actions/workflows/bundledock-opentofu.yml/badge.svg?branch=main)](https://github.com/wstein/bundledock/actions/workflows/bundledock-opentofu.yml) |
+
 ### Editors
 
 | Bundle | Purpose and guide | Published version | Publication workflow |

@@ -46,7 +46,7 @@ type Adapter struct {
 	TagAbsent    func(image, tag string) error
 }
 
-var imagePattern = regexp.MustCompile(`^quay\.io/[a-z0-9]+(?:[._-][a-z0-9]+)*/(toolbox|code-server|node|bun|codex|agy|claude)$`)
+var imagePattern = regexp.MustCompile(`^quay\.io/[a-z0-9]+(?:[._-][a-z0-9]+)*/(toolbox|code-server|node|bun|codex|agy|claude|opentofu)$`)
 var tagPattern = regexp.MustCompile(`^(?:\d{4}\.\d{2}\.\d{2}-b[1-9]\d*\.[1-9]\d*|(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)-b[1-9]\d*)$`)
 var runIDPattern = regexp.MustCompile(`^[1-9]\d*$`)
 var commitPattern = regexp.MustCompile(`^[a-f0-9]{40}$`)
@@ -85,7 +85,7 @@ func newMetadata(bundle, lock, image, tag, commit, source, created, runID string
 		return m, err
 	}
 	if !imagePattern.MatchString(image) {
-		return m, fmt.Errorf("publication image must be quay.io/<namespace>/{toolbox,code-server,node,bun,codex,agy,claude}")
+		return m, fmt.Errorf("publication image must be quay.io/<namespace>/{toolbox,code-server,node,bun,codex,agy,claude,opentofu}")
 	}
 	if !tagPattern.MatchString(tag) || !commitPattern.MatchString(commit) || !runIDPattern.MatchString(runID) {
 		return m, fmt.Errorf("invalid date/run/attempt tag, source commit or run ID")

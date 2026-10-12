@@ -272,7 +272,7 @@ func TestRepositoryToolboxLayout(t *testing.T) {
 
 // Package input filenames are shared by strict loading, upgrades and image builders.
 func TestPackageFilenamesLoadAllBundleInputs(t *testing.T) {
-	for _, bundle := range []string{"toolbox", "code-server", "node", "node-current", "bun", "codex", "agy", "claude"} {
+	for _, bundle := range []string{"toolbox", "code-server", "node", "node-current", "bun", "codex", "agy", "claude", "opentofu"} {
 		t.Run(bundle, func(t *testing.T) {
 			dir := t.TempDir()
 			for _, name := range []string{"packages.txt", "packages.catalog.json", "packages.lock.json"} {
@@ -308,8 +308,8 @@ func TestPackageListsHaveMaintenanceHeaderAndAlphabeticKeys(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(paths) != 8 {
-		t.Fatalf("expected all eight package lists, got %d", len(paths))
+	if len(paths) != 9 {
+		t.Fatalf("expected all nine package lists, got %d", len(paths))
 	}
 	const header = "# package list should be sorted alphabetically for easier maintenance."
 	for _, path := range paths {

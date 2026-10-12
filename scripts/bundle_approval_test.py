@@ -49,7 +49,7 @@ class ApprovalTests(unittest.TestCase):
     vote['submitted_at']=timestamp
     with self.assertRaises(ValueError):gate.approved_pr(42,self.bundle,self.get)
  def test_wrong_bundle_rejects(self):
-  for bundle in ('node','node-current','bun','code-server','codex','agy','claude','arbitrary'):
+  for bundle in ('node','node-current','bun','code-server','codex','agy','claude','opentofu','arbitrary'):
    with self.subTest(bundle=bundle),self.assertRaises(ValueError):gate.approved_pr(42,bundle,self.get)
  def test_unreviewed_main_drift_rejects(self):
   self.data['/git/ref/heads/main']['object']['sha']=T
@@ -60,7 +60,7 @@ class ApprovalTests(unittest.TestCase):
 
 
  def test_agent_approval_scope_and_revocation(self):
-  for name in ('codex','agy','claude'):
+  for name in ('codex','agy','claude','opentofu'):
    with self.subTest(bundle=name):
     self.setUp()
     old=self.lock
@@ -171,7 +171,7 @@ class ApprovalTests(unittest.TestCase):
  def test_all_bundle_registry_and_callers(self):
   import os
   from unittest.mock import patch
-  for name in ('toolbox','code-server','node','node-current','bun','codex','agy','claude'):
+  for name in ('toolbox','code-server','node','node-current','bun','codex','agy','claude','opentofu'):
    with self.subTest(name=name):
     bundle=gate.config.select_bundle(name)
     workflow={'id':8,'path':'.github/workflows/'+bundle['workflow']}
