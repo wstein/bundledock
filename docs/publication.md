@@ -8,34 +8,71 @@ weight: 40
 
 [Back to BundleDock](../README.md)
 
-[The publication workflow](../.github/workflows/bundledock-toolbox.yml) runs only
-through a human user's Actions → **Publish toolbox** → **Run workflow** action.
-There is no publication schedule, push/merge trigger, or automatic updater
-handoff. Obtain the user's explicit approval for the build and publication at
-an exact source revision, select default branch `main`, and enter that full
-40-character commit in `approved_sha`. The input must equal the workflow run's
-`github.sha`; a moved branch requires fresh review and approval of its new SHA.
-The workflow rejects other branches, non-user senders, bot actors and bot reruns
-before compilation or resolution. Each job rechecks approval, including partial
-reruns. Every checkout uses that immutable run SHA.
+[The publication workflow](../.github/workflows/bundledock-toolbox.yml) supports
+manual publication and a human approval request after a merged toolbox upgrade.
+For manual publication, use Actions → **Publish toolbox** → **Run workflow**,
+select default branch `main`, and enter the explicitly approved full
+40-character commit in `approved_sha`. That input must equal the run's
+`github.sha`. Other branches, bots and bot reruns are rejected before compilation.
+Each build job rechecks this approval. Manual dispatch keeps its existing fresh
+upstream resolution and does not require the environment described below.
+
+After **CI** succeeds for a push to current `main`, read-only preflight accepts
+only a merged `github-actions[bot]` toolbox updater PR with an
+`automation/toolbox-upgrade-*` branch (including the previous
+`automation/tool-upgrade-*` prefix). Both the PR and actual merged commit must
+change only the toolbox lock and its optional generated `docs/tools.md`
+inventory, with different lock bytes from the merge's first parent. Failed CI,
+unmerged PRs, unrelated changes, missing provenance and stale main revisions
+are rejected. The request displays the exact SHA and links the merged PR.
+
+Before this path can run, an administrator must configure the existing GitHub
+**toolbox-publication** environment with exactly one required reviewer, the
+user **wstein**, **Prevent self-review** disabled, administrator bypass disabled,
+and exactly one custom deployment branch policy: branch **main**. Allowing
+self-review lets the maintainer approve an update they merged; approval is still
+an explicit human action. No workflow creates or configures this environment.
+Missing protection, additional reviewers or teams, unavailable API access, or
+broader branch policies stop the request before any artifact compilation.
+Environment support and read-only API visibility depend on the repository's
+GitHub plan and permissions; a denied query fails closed.
+
+In Actions, inspect **Approve toolbox <full SHA>**, follow its merged PR link,
+and explicitly approve the environment deployment to authorize the toolbox
+build and publication for that revision. The approval job rechecks provenance,
+current main, and environment protection. Every later compiler job rechecks
+them, and promotion checks again immediately before registry writes. If main
+moves while waiting or building, the old source cannot be promoted. The approved
+path copies the committed lock bytes without upstream discovery; all native
+jobs and promotion consume that one hashed artifact. A matching published tool
+baseline skips native builds and publication.
+
+These helper checks are provenance checks, not authorization on their own.
+The immutable reviewed workflow's dependency on GitHub's protected environment
+supplies approval; setting `PUBLICATION_SHA` or invoking a helper does not.
+Source fixtures verify rejection behavior and job dependency conditions. Live
+approval, native builds and publication remain unverified until a separately
+authorized configured run succeeds. Other bundle publishers remain manual-only.
 
 A manual dispatch expresses approval for both native image builds/smokes and
 publication, including the fresh upstream resolution within the reviewed tool
 ranges. It is not approval to activate a consumer image. Automation must never
-invoke this workflow, including with a human-owned token. GitHub event context
+invoke manual dispatch, including with a human-owned token. GitHub event context
 cannot distinguish a person's UI dispatch from automation using that person's
-credentials; the actor checks are not a protected-environment approval gate.
-No protected environment is configured or claimed by this repository. Restrict
-workflow dispatch credentials and repository writers separately. A future daily
-lock-only PR workflow must stop at source review and must not dispatch native
-builds on PR creation or merge.
+credentials. Restrict workflow dispatch credentials and repository writers
+separately. The daily lock-only PR workflow stops at source review; the separate
+protected-environment approval authorizes later toolbox native builds.
 
 Publication runs share one concurrency group; an active run is allowed to finish.
 Before promotion, a read-only GitHub API check rejects a run superseded by a newer
 eligible run, including one whose native build failed. A newer run with successful
 resolution and skipped native jobs is a proven no-op and does not supersede an
-older changed publication. Unknown or unfinished eligibility fails closed, with
-bounded queries for the exact run attempt. This prevents an old queued run or rerun
+older changed publication. Newer automatic CI handoffs supersede only after
+successful resolution reaches native work: queued, rejected or unapproved
+requests supply no build authority. Current-main revalidation separately prevents
+older automatic sources from promoting after main moves. Unknown manual-run
+eligibility and unavailable API queries fail closed, with bounded queries for
+the exact run attempt. This prevents an old queued run or rerun
 from rolling stable back. Obtain explicit user approval before a fresh manual run or rerun. When rerunning,
 choose **Re-run all jobs** so the resolver creates current-attempt artifacts;
 that approval applies to the same original run SHA.
@@ -97,7 +134,8 @@ Docker login and all registry writes occur only after each native smoke passes.
 Check [GitHub runner availability and plan limits](https://docs.github.com/en/actions/how-tos/write-workflows/choose-where-workflows-run/choose-the-runner-for-a-job)
 for `ubuntu-24.04` (AMD64) and `ubuntu-24.04-arm` (ARM64).
 
-One resolver runs `bundledock tools upgrade` for all tools, then uploads the exact
+For manual dispatch, one resolver runs `bundledock tools upgrade` for all tools;
+the merged-upgrade path freezes the committed lock. Both upload the exact
 lock bytes and shared source commit, UTC build time, lock SHA256, run tag and full
 GitHub run ID (`run_id`).
 The resolver uses official stable prebuilt releases; it does not rebuild tools
@@ -115,8 +153,9 @@ the full run ID to query GitHub; shortening the tag does not change that check.
 
 The adapter retains the published-tool baseline comparison and fails closed if
 the existing `stable` provenance cannot be validated. Approved manual runs
-publish even when tool pins are unchanged. The adapter's historical scheduled
-no-op logic is not an enabled workflow trigger and does not authorize automation.
+publish even when tool pins are unchanged. Merged toolbox updates compare against the published baseline and skip unchanged
+tool assets after approval. Historical scheduled no-op logic does not enable a
+schedule or authorize a build.
 New images carry `io.bundledock.tools.platforms-sha256`, a canonical digest of
 those pins, alongside the full-lock provenance hash. Both platform config labels
 must agree, and downloaded immutable manifests/configs must match their digests.

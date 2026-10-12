@@ -46,7 +46,7 @@ allowed. All artifact, image, CLI release, and documentation builds require
 explicit user approval before execution, including every build-oriented target
 in the table and `make docs-test`/`make release-test`. Report checks deferred for
 approval accurately. Push, merge, schedule, and bot activity supply no build or
-release approval. A future lock-only updater must not dispatch native builds.
+release approval. A merged toolbox updater may request protected-environment approval; it must not start artifact compilation or native builds before that human approval.
 
 `make docs-test` explicitly opts into host Hugo integration checks; generic Go tests skip them. The docs
 wrapper uses a verified official prebuilt Hugo and needs network access for an
