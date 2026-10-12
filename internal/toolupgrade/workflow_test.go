@@ -1,6 +1,7 @@
 package toolupgrade
 
 import (
+	"encoding/json"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -12,8 +13,19 @@ func run(t *testing.T, dir string, env []string, name string, args ...string) (s
 	t.Helper()
 	c := exec.Command(name, args...)
 	c.Dir = dir
-	c.Env = append(os.Environ(), "HOME="+t.TempDir(), "XDG_CONFIG_HOME="+t.TempDir(), "GIT_CONFIG_NOSYSTEM=1", "GIT_CONFIG_GLOBAL=/dev/null")
+	config := filepath.Join(t.TempDir(), "gitconfig")
+	if err := os.WriteFile(config, []byte("[maintenance]\n\tauto = false\n[gc]\n\tauto = 0\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	c.Env = append(os.Environ(), "HOME="+t.TempDir(), "XDG_CONFIG_HOME="+t.TempDir(), "GIT_CONFIG_NOSYSTEM=1", "GIT_CONFIG_GLOBAL="+config)
 	c.Env = append(c.Env, env...)
+	// Git may detach maintenance after commits and receives, outliving the
+	// command and racing TempDir cleanup. Apply this to descendant Git commands
+	// too. The private global file also covers receive-pack, which clears
+	// command-scope configuration inherited from push. Host config is untouched.
+	c.Env = append(c.Env, "GIT_CONFIG_COUNT=2",
+		"GIT_CONFIG_KEY_0=maintenance.auto", "GIT_CONFIG_VALUE_0=false",
+		"GIT_CONFIG_KEY_1=gc.auto", "GIT_CONFIG_VALUE_1=0")
 	b, err := c.CombinedOutput()
 	return string(b), err
 }
@@ -117,6 +129,52 @@ func TestFixtureIgnoresParentBundle(t *testing.T) {
 				t.Fatalf("toolbox fixture inherited parent BUNDLE=%s: %v\n%s", bundle, err, out)
 			}
 		})
+	}
+}
+
+func TestFixtureDisablesAutomaticGitMaintenance(t *testing.T) {
+	trace := filepath.Join(t.TempDir(), "git-trace.json")
+	t.Setenv("GIT_TRACE2_EVENT", trace)
+	// Parent settings must not enable background work in disposable repositories.
+	t.Setenv("GIT_CONFIG_COUNT", "2")
+	t.Setenv("GIT_CONFIG_KEY_0", "maintenance.auto")
+	t.Setenv("GIT_CONFIG_VALUE_0", "true")
+	t.Setenv("GIT_CONFIG_KEY_1", "gc.auto")
+	t.Setenv("GIT_CONFIG_VALUE_1", "1")
+	dir, env := fixture(t)
+	if out, err := adapter(t, dir, env, "resolve"); err != nil {
+		t.Fatalf("resolve: %v\n%s", err, out)
+	}
+	must(t, dir, nil, "git", "restore", "bundles/toolbox/packages.lock.json", "docs/toolbox.md")
+	remote := filepath.Join(t.TempDir(), "remote.git")
+	must(t, dir, nil, "git", "init", "--bare", remote)
+	must(t, dir, nil, "git", "remote", "add", "origin", remote)
+	if out, err := adapter(t, dir, env, "publish"); err != nil {
+		t.Fatalf("publish: %v\n%s", err, out)
+	}
+	data, err := os.ReadFile(trace)
+	if err != nil {
+		t.Fatal(err)
+	}
+	children := 0
+	for _, line := range strings.Split(strings.TrimSpace(string(data)), "\n") {
+		var event struct {
+			Event string   `json:"event"`
+			Argv  []string `json:"argv"`
+		}
+		if err := json.Unmarshal([]byte(line), &event); err != nil {
+			t.Fatal(err)
+		}
+		if event.Event != "child_start" {
+			continue
+		}
+		children++
+		if strings.Contains(strings.Join(event.Argv, " "), "maintenance run") || strings.Contains(strings.Join(event.Argv, " "), "gc --auto") {
+			t.Errorf("disposable fixture launched automatic Git maintenance: %v", event.Argv)
+		}
+	}
+	if children == 0 {
+		t.Fatal("Git trace did not capture child processes")
 	}
 }
 

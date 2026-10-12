@@ -6,17 +6,24 @@ continues to supply Node.js 24 LTS with its existing catalog, lock, image,
 volume and consumer configuration.
 
 <!-- BEGIN PUBLISHED BUNDLE -->
+<!-- publication-record: {"attempt":"1","bundle":"node-current","commit":"27e5abc2f4649aec8abc75ac68c647319dc0f931","created":"2026-10-12T19:03:26Z","digest":"sha256:3231e7f0ab7d9c3b9debcd52d4b53935b094d775b1f5ad3c25f415fec246a1f7","image":"quay.io/bundledock/node","lock_sha256":"6fd1b9be4ee66931f794c8c3bb69f5d9f72a53d52dba6769a64addb31b6d45df","reference":"quay.io/bundledock/node@sha256:3231e7f0ab7d9c3b9debcd52d4b53935b094d775b1f5ad3c25f415fec246a1f7","run_attempt":"1","run_id":"38294995668","source":"https://github.com/wstein/bundledock","tag":"26.11.1-b1"} -->
 ## Published bundle
 
-**Planned, unpublished:** no Node Current image or publication receipt has
-been verified. First publication requires separate explicit approval of the
-exact full source revision and intended build/publication operation. No Quay
-repository setup, image build, workflow dispatch, source tag or consumer
-activation is part of this source change.
+Version: `26.11.1-b1`
 
-The shared [Node repository](https://quay.io/repository/bundledock/node?tab=tags)
-will expose `:current` only after a separately approved publication. Its LTS
-aliases do not establish a Current publication.
+Index digest: `sha256:3231e7f0ab7d9c3b9debcd52d4b53935b094d775b1f5ad3c25f415fec246a1f7`
+
+Source: [`27e5abc2f4649aec8abc75ac68c647319dc0f931`](https://github.com/wstein/bundledock/commit/27e5abc2f4649aec8abc75ac68c647319dc0f931)
+
+Publication: [run 38294995668, attempt 1](https://github.com/wstein/bundledock/actions/runs/38294995668/attempts/1)
+
+Pull this published carrier by its immutable index digest:
+
+```sh
+docker pull quay.io/bundledock/node@sha256:3231e7f0ab7d9c3b9debcd52d4b53935b094d775b1f5ad3c25f415fec246a1f7
+```
+
+The source inventory below describes the current lock; this publication retains its exact source revision.
 <!-- END PUBLISHED BUNDLE -->
 
 <!-- BEGIN GENERATED TOOL INVENTORY -->
