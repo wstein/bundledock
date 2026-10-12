@@ -28,7 +28,6 @@
         ]
       },
       "notices": [
-        "licenses/opentofu/LICENSE",
         "licenses/opentofu/SOURCE"
       ]
     }

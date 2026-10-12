@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "desired_digest": "1e04aedc820bb3be1a9d4c0033ed34e43fc3ffc0966815cdfce10a63d83ebb88",
-  "catalog_digest": "01e251c9a32c194fd56540735f269164f69dd78e386f02b2243b4c97b065a3de",
+  "catalog_digest": "4d46674476c3c588a6bf8205d0b4238eade41ac8a66b5281785373490e60fcb7",
   "platforms": {
     "amd64": {
       "opentofu": {
