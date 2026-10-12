@@ -19,7 +19,7 @@ func fixture(t *testing.T) (string, string) {
 		t.Fatal(err)
 	}
 	root := t.TempDir()
-	for _, name := range []string{"bundles/toolbox/tools.lock.json", "bundles/toolbox/tools.packages.json", "docs/tools.md"} {
+	for _, name := range []string{"bundles/toolbox/tools.lock.json", "bundles/toolbox/tools.packages.json", "docs/toolbox.md"} {
 		data, err := os.ReadFile(filepath.Join(repo, name))
 		if err != nil {
 			t.Fatal(err)
@@ -70,7 +70,7 @@ func changeVersion(t *testing.T, root, arch, version string) {
 }
 func TestVersionChangeRequiresInventoryUpdate(t *testing.T) {
 	root, script := fixture(t)
-	name := filepath.Join(root, "docs/tools.md")
+	name := filepath.Join(root, "docs/toolbox.md")
 	before := read(t, name)
 	changeVersion(t, root, "amd64", "v2.103.0")
 	changeVersion(t, root, "arm64", "v2.103.0")
@@ -118,7 +118,7 @@ func TestRefuseArchitectureMismatchAndMissingMarkers(t *testing.T) {
 	})
 	t.Run("missing marker", func(t *testing.T) {
 		root, script := fixture(t)
-		name := filepath.Join(root, "docs/tools.md")
+		name := filepath.Join(root, "docs/toolbox.md")
 		save(t, name, strings.Replace(read(t, name), "<!-- BEGIN GENERATED TOOL INVENTORY -->", "", 1))
 		out, err := invoke(t, root, script)
 		if err == nil || !strings.Contains(out, "inventory markers") {

@@ -67,7 +67,7 @@ def generated(root, bundle_name="toolbox"):
         if not re.fullmatch(r"[0-9]+\.[0-9]+(?:\.[0-9]+|[a-z])?", version):
             raise ValueError(f"{tool}: unsafe inventory version")
         rows.append(f"| {label} | {version}{DISPLAY_SUFFIX.get(tool, '')} |")
-    document = root / "docs" / ("tools.md" if bundle_name == "toolbox" else bundle_name+".md")
+    document = root / "docs" / ("toolbox.md" if bundle_name == "toolbox" else bundle_name+".md")
     # read_bytes/decode preserves all prose and line endings outside the region.
     source = document.read_bytes().decode("utf-8")
     if source.count(BEGIN) != 1 or source.count(END) != 1:

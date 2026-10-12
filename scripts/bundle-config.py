@@ -2,7 +2,7 @@
 BUNDLES = {
     name: {'name': name, 'directory': 'bundles/' + name,
            'lock': 'bundles/' + name + '/tools.lock.json',
-           'inventory': 'docs/tools.md' if name == 'toolbox' else 'docs/' + name + '.md',
+           'inventory': 'docs/toolbox.md' if name == 'toolbox' else 'docs/' + name + '.md',
            'workflow': 'bundledock-' + name + '.yml',
            'artifact': 'resolved-tools' if name == 'toolbox' else 'resolved-' + name,
            'proposal_lock': 'tools.lock.json' if name == 'toolbox' else name + '.lock.json'}

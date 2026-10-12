@@ -59,7 +59,7 @@ unavailable checks. Historical native smoke results do not verify a new lock.
 
 Third-party tools must use official stable prebuilt releases. Do not build them
 from source or patch their binaries or embedded dependencies. Follow the
-[tool upgrade guide](docs/tools.md#upgrade-the-lock), retain upstream notices,
+[tool upgrade guide](docs/toolbox.md#upgrade-the-lock), retain upstream notices,
 and verify archives on both supported architectures. When no patched stable
 prebuilt is available, record the remaining findings in existing documentation;
 see [embedded dependency findings](docs/development.md#embedded-dependency-findings).
