@@ -45,7 +45,7 @@ type Adapter struct {
 	TagAbsent    func(image, tag string) error
 }
 
-var imagePattern = regexp.MustCompile(`^quay\.io/[a-z0-9]+(?:[._-][a-z0-9]+)*/(toolbox|code-server|node|bun|codex|agy|claude)$`)
+var imagePattern = regexp.MustCompile(`^quay\.io/[a-z0-9]+(?:[._-][a-z0-9]+)*/(toolbox|code-server|node|node-current|bun|codex|agy|claude)$`)
 var tagPattern = regexp.MustCompile(`^(?:\d{4}\.\d{2}\.\d{2}-b[1-9]\d*\.[1-9]\d*|(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)-b[1-9]\d*)$`)
 var runIDPattern = regexp.MustCompile(`^[1-9]\d*$`)
 var commitPattern = regexp.MustCompile(`^[a-f0-9]{40}$`)

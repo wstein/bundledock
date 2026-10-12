@@ -6,11 +6,11 @@ BUNDLES = {
            'workflow': 'bundledock-' + name + '.yml',
            'artifact': 'resolved-tools' if name == 'toolbox' else 'resolved-' + name,
            'proposal_lock': 'tools.lock.json' if name == 'toolbox' else name + '.lock.json'}
-    for name in ('toolbox', 'code-server', 'node', 'bun', 'codex', 'agy', 'claude')
+    for name in ('toolbox', 'code-server', 'node', 'node-current', 'bun', 'codex', 'agy', 'claude')
 }
 
 
 def select_bundle(name):
     if name not in BUNDLES:
-        raise ValueError('Bundle must be toolbox, code-server, node, bun, codex, agy or claude')
+        raise ValueError('Bundle must be toolbox, code-server, node, node-current, bun, codex, agy or claude')
     return dict(BUNDLES[name])

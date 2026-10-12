@@ -237,7 +237,7 @@ func execute(args []string) error {
 		return fmt.Errorf("expected resolve, plan, build, push, newest or promote")
 	}
 	flags := flag.NewFlagSet("tools-publish "+args[0], flag.ContinueOnError)
-	bundleName := flags.String("bundle", "toolbox", "publication bundle (toolbox, code-server, node, bun, codex, agy or claude)")
+	bundleName := flags.String("bundle", "toolbox", "publication bundle (toolbox, code-server, node, node-current, bun, codex, agy or claude)")
 	directory := flags.String("directory", "resolved", "resolved artifact directory")
 	frozen := flags.Bool("frozen-lock", false, "use the exact committed toolbox lock without upstream resolution")
 	arch := flags.String("architecture", "", "native target architecture")

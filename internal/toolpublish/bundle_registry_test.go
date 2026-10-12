@@ -19,7 +19,7 @@ func TestPrecompilerRegistryMatchesNativeSelection(t *testing.T) {
 	if err = json.Unmarshal(output, &registry); err != nil {
 		t.Fatal(err)
 	}
-	if len(registry) != 7 {
+	if len(registry) != 8 {
 		t.Fatal("unexpected bundle choices")
 	}
 	for name, settings := range registry {
