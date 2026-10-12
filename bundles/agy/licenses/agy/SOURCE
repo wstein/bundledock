@@ -1,0 +1,17 @@
+Official stable Antigravity CLI 1.3.3, checked 2026-10-12.
+https://github.com/google-antigravity/antigravity-cli
+https://antigravity-cli-auto-updater-974169037036.us-central1.run.app/manifests/linux_amd64.json
+https://antigravity-cli-auto-updater-974169037036.us-central1.run.app/manifests/linux_arm64.json
+https://raw.githubusercontent.com/google-antigravity/antigravity-cli/main/README.md
+https://antigravity.google/terms
+https://policies.google.com/privacy
+
+Both official updater manifests match the URLs and publisher SHA512 values
+copied unchanged from the existing toolbox lock. Both downloaded archives
+were SHA512-verified and inspected without extraction or execution. Each
+contains exactly one regular executable named antigravity, with no links,
+license files or other payload members. That complete executable, including
+any embedded notices, is retained unchanged as bin/agy. The official repository
+README links the terms and privacy policy above. No standalone license file
+was present in the inspected repository root or archives.
+BundleDock does not rebuild or patch Antigravity CLI.

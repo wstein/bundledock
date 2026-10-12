@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "packages": {
+    "agy": {
+      "provider": "antigravity",
+      "repository": "google-antigravity/antigravity-cli",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "amd64",
+        "arm64": "arm64"
+      },
+      "asset": "agy_cli_linux_{arch}.tar.gz",
+      "allowed_hosts": [
+        "github.com",
+        "storage.googleapis.com",
+        "antigravity-cli-auto-updater-974169037036.us-central1.run.app"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "tar.gz",
+        "members": {
+          "antigravity": "bin/agy"
+        }
+      },
+      "metadata_url": "https://antigravity-cli-auto-updater-974169037036.us-central1.run.app",
+      "notices": [
+        "licenses/agy/SOURCE"
+      ]
+    }
+  }
+}

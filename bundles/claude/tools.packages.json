@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "packages": {
+    "claude": {
+      "provider": "claude",
+      "repository": "anthropics/claude-code",
+      "tag_prefix": "v",
+      "base_url": "https://downloads.claude.ai/claude-code-releases",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "linux-x64",
+        "arm64": "linux-arm64"
+      },
+      "asset": "claude",
+      "allowed_hosts": [
+        "downloads.claude.ai"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "raw",
+        "members": {
+          "claude": "bin/claude"
+        }
+      },
+      "notices": [
+        "licenses/claude/LICENSE.md",
+        "licenses/claude/SOURCE"
+      ]
+    }
+  }
+}
