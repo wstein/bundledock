@@ -6,10 +6,18 @@ VERSION ?= dev
 RELEASE_DIR ?= dist/cli
 export GO VERSION RELEASE_DIR
 
-TOOLS_IMAGE ?= bundledock-toolbox:poc
-TOOLS_CONSUMER ?= mcr.microsoft.com/devcontainers/go:2-1.27-trixie
+BUNDLE ?= toolbox
+ifneq ($(words $(BUNDLE)),1)
+$(error BUNDLE must be toolbox, code-server, node or bun)
+endif
+ifneq ($(filter toolbox code-server node bun,$(BUNDLE)),$(BUNDLE))
+$(error BUNDLE must be toolbox, code-server, node or bun)
+endif
+IMAGE ?= bundledock-$(BUNDLE):poc
+CONSUMER ?= mcr.microsoft.com/devcontainers/go:2-1.27-trixie
+export IMAGE CONSUMER
 
-.PHONY: release release-test help build run test vet fmt check clean tools-build tools-volume tools-smoke tools-test docs docs-serve docs-test
+.PHONY: release release-test help build run test vet fmt check clean bundle-build bundle-volume bundle-smoke bundle-test docs docs-serve docs-test
 
 help:
 	@printf '%s\n' \
@@ -25,22 +33,23 @@ help:
 	  'make docs-serve        Preview documentation at http://localhost:1313/' \
 	  'make docs-test         Check rendered documentation, links, and assets' \
 	  'make clean             Remove the built binary'
-	@printf '%s\n' 'make tools-build       Build the local OCI tool bundle'
-	@printf '%s\n' 'make tools-volume      Initialize a versioned tool volume' \
-	  'make tools-smoke       Test shared read-only tool execution' \
-	  'make tools-test        Test native package extraction'
+	@printf '%s\n' 'make bundle-build      Build the selected OCI bundle (BUNDLE=toolbox by default)'
+	@printf '%s\n' 'make bundle-volume     Initialize the selected bundle volume' \
+	  'make bundle-smoke      Verify selected bundle in a read-only consumer' \
+	  'make bundle-test       Run focused source tests (no OCI build)' \
+	  'BUNDLE=toolbox|code-server|node|bun; override IMAGE and CONSUMER as needed'
 
-tools-build:
-	docker build -f bundles/toolbox/Dockerfile -t $(TOOLS_IMAGE) .
+bundle-build:
+	docker build -f bundles/$(BUNDLE)/Dockerfile -t "$$IMAGE" .
 
-tools-test:
+bundle-test:
 	$(GO) test ./cmd/bundledock ./internal/toolmanager ./internal/toolconfig ./internal/toolbundle ./internal/toolvolume ./internal/dockercli
 
-tools-volume:
-	sh bundles/toolbox/volume.sh "$(TOOLS_IMAGE)"
+bundle-volume:
+	sh scripts/bundle-volume.sh "$$IMAGE" "$(BUNDLE)"
 
-tools-smoke:
-	sh bundles/toolbox/smoke.sh "$(TOOLS_IMAGE)" "$(TOOLS_CONSUMER)"
+bundle-smoke:
+	sh bundles/$(BUNDLE)/smoke.sh "$$IMAGE" "$$CONSUMER"
 
 build:
 	$(GO) build -o $(BINARY) ./cmd/bundledock
