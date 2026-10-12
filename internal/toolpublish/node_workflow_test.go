@@ -65,7 +65,7 @@ esac
 		if err := os.WriteFile(filepath.Join(dir, "docker"), []byte(strings.ReplaceAll(docker, "/opt/bundledock/node,", "/opt/bundledock/"+bundle+",")), 0700); err != nil {
 			t.Fatal(err)
 		}
-		cmd := exec.Command("sh", "../../bundles/"+bundle+"/smoke.sh", "carrier:fixture", "consumer:fixture")
+		cmd := exec.Command("sh", "../../bundles/"+bundle+"/scripts/smoke.sh", "carrier:fixture", "consumer:fixture")
 		cmd.Env = append(os.Environ(), "PATH="+dir+":"+os.Getenv("PATH"), "SMOKE_CALLS="+log)
 		if b, err := cmd.CombinedOutput(); err != nil {
 			t.Fatalf("smoke adapter: %v %s", err, b)
@@ -78,7 +78,7 @@ esac
 		if strings.Count(s, "dst=/bundle,volume-nocopy sha256:fixture") != 2 || strings.Count(s, "consumer:fixture /node-smoke.sh") != 2 || !strings.Contains(s, "volume rm fixture-volume") {
 			t.Fatal("missing initialization/concurrent consumers/cleanup: " + s)
 		}
-		source, err := os.ReadFile("../../bundles/" + bundle + "/consumer-smoke.sh")
+		source, err := os.ReadFile("../../bundles/" + bundle + "/scripts/consumer-smoke.sh")
 		if err != nil {
 			t.Fatal(err)
 		}

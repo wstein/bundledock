@@ -12,7 +12,7 @@ func TestCISmokeBuildsLockedImageOnce(t *testing.T) {
 	for _, failure := range []string{"", "build", "pull", "smoke"} {
 		t.Run(failure, func(t *testing.T) {
 			dir := t.TempDir()
-			source, err := os.ReadFile("../../bundles/toolbox/ci-smoke.sh")
+			source, err := os.ReadFile("../../bundles/toolbox/scripts/ci-smoke.sh")
 			if err != nil {
 				t.Fatal(err)
 			}

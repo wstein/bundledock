@@ -31,7 +31,7 @@ class BundleMakeTests(unittest.TestCase):
                     ['BUNDLE='+bundle,'IMAGE=example/image:fixture','CONSUMER=example/consumer:fixture'])
                 self.assertEqual([Path(call[0]).name for call in calls],['docker','sh','sh','go'])
                 self.assertEqual(calls[0][1:],['build','-f','bundles/'+bundle+'/Dockerfile','-t','example/image:fixture','.'])
-                self.assertEqual(calls[1][1:],['bundles/'+bundle+'/smoke.sh','example/image:fixture','example/consumer:fixture'])
+                self.assertEqual(calls[1][1:],['bundles/'+bundle+'/scripts/smoke.sh','example/image:fixture','example/consumer:fixture'])
                 self.assertEqual(calls[2][1:],['scripts/bundle-volume.sh','example/image:fixture',bundle])
                 self.assertEqual(calls[3][1], 'test')
                 self.assertIn('./internal/toolvolume',calls[3])

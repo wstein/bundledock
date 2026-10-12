@@ -21,7 +21,7 @@ there. Make inherits `GOFLAGS`; OCI build commands pass `-trimpath` explicitly.
 The local output image is `bundledock-toolbox`, its installed prefix is
 `/opt/bundledock/toolbox`, and new volumes default to `bundledock-toolbox-<digest>`.
 Existing volumes remain reusable with their original images: pass the existing
-name as the second argument to `sh bundles/toolbox/volume.sh <image> <volume-name>`.
+name as the second argument to `sh bundles/toolbox/scripts/volume.sh <image> <volume-name>`.
 This selects the existing data without copying or renaming the volume. Anchorage
 selects its pinned legacy volume explicitly. Writable credentials, configuration,
 caches, and environments belong outside the bundle.

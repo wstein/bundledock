@@ -67,7 +67,7 @@ func TestHugoOfficialArchives(t *testing.T) {
 			}
 			t.Log(strings.TrimSpace(string(data)))
 			home := t.TempDir()
-			smoke := exec.Command("sh", "../../bundles/toolbox/hugo-smoke.sh", binary)
+			smoke := exec.Command("sh", "../../bundles/toolbox/scripts/hugo-smoke.sh", binary)
 			smoke.Env = append(os.Environ(), "HOME="+home)
 			if data, err := smoke.CombinedOutput(); err != nil {
 				t.Fatalf("offline minimal docs build: %v: %s", err, data)

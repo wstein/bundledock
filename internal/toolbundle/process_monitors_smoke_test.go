@@ -14,7 +14,7 @@ func TestProcessMonitorsOfflineSmoke(t *testing.T) {
 	if toolPath == "" {
 		t.Skip("real process monitor binaries not supplied")
 	}
-	script, err := filepath.Abs("../../bundles/toolbox/process-monitors-smoke.sh")
+	script, err := filepath.Abs("../../bundles/toolbox/scripts/process-monitors-smoke.sh")
 	if err != nil {
 		t.Fatal(err)
 	}

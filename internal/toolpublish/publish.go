@@ -218,7 +218,7 @@ func (a Adapter) inspectLocal(m Metadata, lock, arch, ref string) (string, error
 // Smoke pulls the consumer before smoke.sh disables networking; the tool image
 // argument is an immutable local config ID, never a mutable build tag.
 func (a Adapter) Smoke(id, consumer string) error {
-	return a.smokeBundle(id, consumer, "bundles/toolbox/smoke.sh")
+	return a.smokeBundle(id, consumer, "bundles/toolbox/scripts/smoke.sh")
 }
 func (a Adapter) smokeBundle(id, consumer, script string) error {
 	if _, err := a.Run("docker", "pull", consumer); err != nil {
@@ -256,7 +256,7 @@ func (a Adapter) Build(m Metadata, lock, arch, consumer string) (Receipt, error)
 	if err != nil {
 		return r, err
 	}
-	if err = a.smokeBundle(id, consumer, bundle.Directory+"/smoke.sh"); err != nil {
+	if err = a.smokeBundle(id, consumer, bundle.Directory+"/scripts/smoke.sh"); err != nil {
 		return r, err
 	}
 	return Receipt{Metadata: m, Architecture: arch, ImageID: id, Smoked: true}, nil
