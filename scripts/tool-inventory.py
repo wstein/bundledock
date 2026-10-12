@@ -78,7 +78,7 @@ def generated(root, bundle_name="toolbox"):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=Path("."))
-    parser.add_argument("--bundle", choices=("toolbox", "code-server", "node"), default="toolbox")
+    parser.add_argument("--bundle", choices=("toolbox", "code-server", "node", "bun"), default="toolbox")
     parser.add_argument("--check", action="store_true", help="fail on drift without writing")
     args = parser.parse_args()
     try:

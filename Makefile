@@ -61,6 +61,7 @@ check:
 	python3 scripts/tool-inventory.py --check
 	python3 scripts/tool-inventory.py --bundle code-server --check
 	python3 scripts/tool-inventory.py --bundle node --check
+	python3 scripts/tool-inventory.py --bundle bun --check
 	@test -z "$$($(GOFMT) -l cmd internal)" || { echo 'Go source needs formatting; run make fmt'; exit 1; }
 	$(MAKE) test vet
 

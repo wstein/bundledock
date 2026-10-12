@@ -1,0 +1,97 @@
+# Optional Bun bundle
+
+`bundles/bun` supplies official stable prebuilt Bun for Linux AMD64 and ARM64,
+with its own catalog, lock, image, volume and `/opt/bundledock/bun` mount.
+
+<!-- BEGIN GENERATED TOOL INVENTORY -->
+| Tool | Pinned version |
+| --- | --- |
+| bun | 1.4.3 |
+<!-- END GENERATED TOOL INVENTORY -->
+
+The [official release](https://github.com/oven-sh/bun/releases/tag/bun-v1.4.3),
+checked October 12, 2026, is Bun 1.4.3 (October 10). AMD64 uses
+`bun-linux-x64-baseline.zip`, avoiding the optimized build's AVX2 requirement;
+ARM64 uses `bun-linux-aarch64.zip`. Both downloads were privately verified
+against the publisher's [SHASUMS256.txt](https://github.com/oven-sh/bun/releases/download/bun-v1.4.3/SHASUMS256.txt)
+and GitHub asset digests, then inspected without extraction or execution.
+Each ZIP contains its platform root directory and one executable, `bun`.
+The reviewed range stays below 2.0.0. Prereleases, canaries, source builds and
+optimized x64 assets are not selected. A missing architecture or published
+checksum fails validation before a new lock is accepted.
+
+Every regular archive resource is preserved under `payload`; the root must
+match the pin's exact official platform asset. Archive symlinks, special
+files, traversal, duplicate paths, collisions with generated files and
+non-executable Bun binaries are rejected. Download and expanded-size bounds
+limit resource use. Upstream binaries are unchanged. The ZIPs contain no
+license files; `licenses/bun/LICENSE.md` retains the full official source
+notice for Bun, JavaScriptCore/WebKit, linked libraries and polyfills, with
+upstream source and relinking references. `SOURCE` records provenance.
+The binary's embedded notices remain intact. This records upstream evidence
+and does not claim a licensing or security audit.
+
+## Manual consumer use
+
+Build, native execution, publication and consumer activation each require
+explicit approval for the intended operation and source revision. After an
+approved image build:
+
+```sh
+bundledock tools volume --image bundledock-bun:poc --bundle bun
+```
+
+Mount the printed `bundledock-bun-<full image ID>` volume read-only at
+`/opt/bundledock/bun`, and add `/opt/bundledock/bun/bin` to PATH. Use a stock
+glibc language consumer image, such as the existing Debian Trixie Go image.
+The scratch carrier initializes volumes; it is not a consumer runtime.
+The `bun` and `bunx` shell launchers forward every argument and the environment
+unchanged. `payload/bunx -> bun` is the single generated relative link, preserving
+[Bun's native basename dispatch](https://github.com/oven-sh/bun/blob/bun-v1.4.3/src/runtime/cli/mod.rs).
+Only this exact link to a direct executable regular file is permitted by the
+Bun profile. The initializer requires explicit `bun-runtime` opt-in and matching
+official manifest provenance, and checks link text, hashes, modes and exact
+tree membership on first and repeated initialization.
+
+Keep HOME, project files, package caches and global installations outside the
+immutable bundle. Bun normally uses `$HOME/.bun` for writable installation
+state. To choose other writable locations explicitly in your consumer:
+
+```sh
+export BUN_INSTALL="$HOME/.bun"
+export BUN_INSTALL_CACHE_DIR="$HOME/.cache/bun/install"
+export BUN_INSTALL_GLOBAL_DIR="$HOME/.local/share/bun/install/global"
+export BUN_INSTALL_BIN="$HOME/.local/bin"
+export PATH="/opt/bundledock/bun/bin:$BUN_INSTALL_BIN:$PATH"
+```
+
+Existing Bun environment and `bunfig.toml` settings pass through; no user
+configuration is written or silently overridden. Select writable paths that
+agree with your existing settings. Native addons may need system libraries
+or a compiler in the consumer. Compatibility beyond the selected glibc
+consumer remains unverified.
+
+## Updates, publication and evidence
+
+`bundledock tools upgrade --directory bundles/bun` updates Bun alone. The
+separate upgrade workflow runs daily at 08:00 UTC, staggered after the other
+bundle proposals, and offers manual dry runs by default. It updates only the
+Bun lock and generated source inventory. The transfer validates base SHA,
+artifact membership and pins before creating a topic. It never builds an
+image or dispatches publication.
+
+`bundledock-bun.yml` requires human manual dispatch on default `main`, with
+the full explicitly approved source SHA matching the run. It uses the existing
+Quay namespace's separate `bun` repository, artifacts and workflow identity.
+Only an authenticated exact HTTP 404 for this repository's stable manifest
+permits the initial absent baseline. Native AMD64 and ARM64 builds each require
+read-only consumer smoke before staging; promotion waits for the whole matrix
+and rejects newer eligible runs.
+
+Source fixtures cover both platform roots, hostile ZIP graphs, arguments and
+environment forwarding via shell stand-ins, profile/provenance opt-in,
+repeated initialization and tampering, registry/workflow identity, and fake
+upgrade/CI adapters. Source checks do not verify native execution. OCI builds,
+Bun/bunx execution, native consumer smoke and vulnerability scans remain
+pending explicit approval. Existing bundle defaults are unchanged; Ruby is
+outside this change.
