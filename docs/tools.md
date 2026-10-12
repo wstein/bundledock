@@ -83,7 +83,7 @@ For manual runs, set `dry_run=false` when you want a reviewable lock and
 inventory PR; scheduled runs already propose actual changes. A separate job
 requests `contents: write` and `pull-requests: write`, transfers only the
 resolved lock and generated inventory from that same run attempt, and creates its own
-`automation/tool-upgrade-<run-id>-<attempt>` branch. It never force-pushes,
+`automation/toolbox-upgrade-<run-id>-<attempt>` branch. It never force-pushes,
 reuses another branch, merges a PR, publishes tools, or activates a consumer
 image. Rerunning a changed attempt creates a separate topic; review
 existing topics before rerunning. An unsuccessful PR creation may leave its
