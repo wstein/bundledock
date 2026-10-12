@@ -4,6 +4,7 @@ set -eu
 root=/opt/bundledock/codex
 export PATH="$root/bin:$PATH"
 export CODEX_HOME="$HOME/.codex"
+mkdir -p "$CODEX_HOME"
 test -f "$root/.ready"
 test -f "$root/codex-package.json"
 test ! -e "$root/codex-resources/voice"
