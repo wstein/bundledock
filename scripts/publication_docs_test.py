@@ -53,6 +53,45 @@ class PublicationDocsTest(unittest.TestCase):
             older=dict(record,tag='2026.10.10-b4.1')
             with self.assertRaises(ValueError): self.module.update(root,'toolbox',older)
 
+    def test_canonical_guides_accept_publication_without_changing_inventory_or_prose(self):
+        repository = Path(__file__).resolve().parents[1]
+        for bundle, relative in self.module.BUNDLES.items():
+            with self.subTest(bundle=bundle), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                path = root / relative
+                path.parent.mkdir(parents=True)
+                source = (repository / relative).read_bytes()
+                path.write_bytes(source)
+                receipt = json.loads(json.dumps(self.receipt))
+                receipt.update(image='quay.io/bundledock/' + bundle,
+                               tag='2099.01.01-b1.1' if bundle == 'toolbox' else '999.0.0-b1',
+                               run_attempt='1')
+                receipt['reference'] = receipt['image'] + '@' + receipt['digest']
+                for platform in receipt['platforms']:
+                    platform.update({key: receipt[key] for key in self.module.FIELDS})
+                    platform['run_attempt'] = '1'
+                record = self.module.validate(receipt, bundle, receipt['image'], 'a'*40, '123', '1')
+                self.assertTrue(self.module.update(root, bundle, record))
+                prefix, managed = source.decode().split(self.module.BEGIN)
+                _, suffix = managed.split(self.module.END)
+                expected = prefix + self.module.BEGIN + self.module.render(record) + self.module.END + suffix
+                self.assertEqual(path.read_bytes(), expected.encode())
+                self.assertIn('<!-- BEGIN GENERATED TOOL INVENTORY -->', suffix)
+                self.assertFalse(self.module.update(root, bundle, record))
+
+    def test_missing_duplicate_and_reversed_publication_markers_fail_without_write(self):
+        begin, end = self.module.BEGIN, self.module.END
+        for source in ['prose only', begin, end, begin + end + begin,
+                       begin + end + end, end + begin]:
+            with self.subTest(source=source), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                path = root / self.module.BUNDLES['toolbox']
+                path.parent.mkdir(parents=True)
+                path.write_text(source)
+                with self.assertRaises(ValueError):
+                    self.module.update(root, 'toolbox', self.validate())
+                self.assertEqual(path.read_text(), source)
+
     def test_atomic_proposal_races_idempotency_and_prose(self):
         record=self.validate()
         for mode in ['new','moved','identical','conflict','wrong-pr','topic-moved','current']:

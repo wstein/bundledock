@@ -5,6 +5,11 @@ prebuilt with its own catalog, lock, carrier image, volume and
 `/opt/bundledock/agy` root. This preparation copies the existing toolbox's
 1.3.3 pins exactly. Toolbox inputs and consumer configuration are unchanged.
 
+<!-- BEGIN PUBLISHED BUNDLE -->
+No verified publication receipt is recorded here yet. Initial publication requires
+explicit approval of the exact full source revision and intended operation.
+<!-- END PUBLISHED BUNDLE -->
+
 <!-- BEGIN GENERATED TOOL INVENTORY -->
 | Tool | Pinned version |
 | --- | --- |
