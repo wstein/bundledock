@@ -44,6 +44,7 @@ func (v Version) Compare(other Version) int {
 func (v Version) String() string { return fmt.Sprintf("%d.%d.%d", v[0], v[1], v[2]) }
 
 type Constraint struct {
+	// A zero Upper leaves a minimum constraint unbounded.
 	Lower, Upper Version
 	Exact        bool
 }
@@ -51,6 +52,9 @@ type Constraint struct {
 func (c Constraint) String() string {
 	if c.Exact {
 		return "==" + c.Lower.String()
+	}
+	if c.Upper == (Version{}) {
+		return ">=" + c.Lower.String()
 	}
 	return ">=" + c.Lower.String() + ",<" + c.Upper.String()
 }
@@ -62,7 +66,7 @@ func (c Constraint) Contains(s string) bool {
 	if c.Exact {
 		return v == c.Lower
 	}
-	return v.Compare(c.Lower) >= 0 && v.Compare(c.Upper) < 0
+	return v.Compare(c.Lower) >= 0 && (c.Upper == (Version{}) || v.Compare(c.Upper) < 0)
 }
 
 type Desired map[string]Constraint
@@ -81,22 +85,22 @@ func ParseDesired(r io.Reader) (Desired, error) {
 		s = strings.ReplaceAll(s, "\t", "")
 		m := requirement.FindStringSubmatch(s)
 		if m == nil {
-			return nil, fmt.Errorf("tools.txt line %d: expected name==x.y.z or name>=x.y.z,<x.y.z", line)
+			return nil, fmt.Errorf("tools.txt line %d: expected name==x.y.z, name>=x.y.z or name>=x.y.z,<x.y.z", line)
 		}
 		if _, ok := desired[m[1]]; ok {
 			return nil, fmt.Errorf("duplicate tool %s", m[1])
 		}
 		c := Constraint{Exact: m[2] == "=="}
 		parts := strings.Split(m[3], ",<")
-		if c.Exact && len(parts) != 1 || !c.Exact && len(parts) != 2 {
-			return nil, fmt.Errorf("tool %s requires an exact pin or bounded range", m[1])
+		if c.Exact && len(parts) != 1 || !c.Exact && len(parts) != 1 && len(parts) != 2 {
+			return nil, fmt.Errorf("tool %s requires an exact pin, minimum or bounded range", m[1])
 		}
 		var err error
 		c.Lower, err = ParseVersion(parts[0])
 		if err != nil {
 			return nil, err
 		}
-		if !c.Exact {
+		if !c.Exact && len(parts) == 2 {
 			c.Upper, err = ParseVersion(parts[1])
 			if err != nil {
 				return nil, err
