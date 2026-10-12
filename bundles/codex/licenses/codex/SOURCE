@@ -1,0 +1,6 @@
+Official stable prebuilt release: https://github.com/openai/codex/releases/tag/rust-v0.162.1
+License and NOTICE: https://github.com/openai/codex/tree/rust-v0.162.1
+Linux AMD64 and ARM64 use the official musl package, unchanged except the existing voice-directory omission.
+Both checksum-verified archives contain 54 regular/directory members, with no symlinks.
+Retained helpers: code-mode host, ripgrep, bubblewrap and Zsh. The release package contains no separate notices for these helpers outside the omitted voice directory; upstream binary attribution remains embedded and intact.
+Source inspection is not a licensing or security audit.

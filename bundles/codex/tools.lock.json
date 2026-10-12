@@ -1,0 +1,23 @@
+{
+  "schema": 2,
+  "desired_digest": "08b1c3d4bac1a8276814b4f0eac0d8980264e552b68d724b8e346e23f3f0076b",
+  "catalog_digest": "ff6ebe34ad19093af959808f935cd47f4bb7288f60024c91e3c4130e57cfcd23",
+  "platforms": {
+    "amd64": {
+      "codex": {
+        "version": "rust-v0.162.1",
+        "url": "https://github.com/openai/codex/releases/download/rust-v0.162.1/codex-package-x86_64-unknown-linux-musl.tar.gz",
+        "sha256": "a676f5722aae0d86cbe3764332f08eab1fdd89dc0a300b3ad4ffbf48611fa3e3",
+        "verification": "publisher-sha256"
+      }
+    },
+    "arm64": {
+      "codex": {
+        "version": "rust-v0.162.1",
+        "url": "https://github.com/openai/codex/releases/download/rust-v0.162.1/codex-package-aarch64-unknown-linux-musl.tar.gz",
+        "sha256": "53a9ce0b94beb27a63fdeb2f7704d95199e17b3898aa33b60461a1a93ac0d88b",
+        "verification": "publisher-sha256"
+      }
+    }
+  }
+}
