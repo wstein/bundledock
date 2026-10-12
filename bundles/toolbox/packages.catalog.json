@@ -21,7 +21,11 @@
           "gh": "bin/gh"
         }
       },
-      "sidecar": "gh_{version}_checksums.txt"
+      "sidecar": "gh_{version}_checksums.txt",
+      "notices": [
+        "licenses/gh/LICENSE",
+        "licenses/gh/SOURCE"
+      ]
     },
     "jq": {
       "provider": "github",
