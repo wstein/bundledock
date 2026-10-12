@@ -14,13 +14,15 @@ for bundle in "${bundles[@]}"; do
   locks+=("bundles/$bundle/tools.lock.json")
   if [[ $bundle == toolbox ]]; then
     inventories+=(docs/tools.md)
-    artifacts+=(tools.lock.json tools.md)
+    artifacts+=(toolbox.lock.json toolbox.md)
   else
     inventories+=("docs/$bundle.md")
     artifacts+=("$bundle.lock.json" "$bundle.md")
   fi
 done
 paths=("${locks[@]}" "${inventories[@]}")
+proposal_name=tool
+if [[ ${bundles[0]} == toolbox ]]; then proposal_name=toolbox; fi
 
 require_clean() {
   if [[ -n $(git status --porcelain --untracked-files=all) ]]; then
@@ -88,7 +90,7 @@ case "${1:-}" in
     git diff -- "${paths[@]}" > "$UPGRADE_RESULT/lock.diff"
     if git diff --quiet -- "${paths[@]}"; then
       echo 'changed=false' >> "$GITHUB_OUTPUT"
-      echo 'No tool lock or inventory changes; no branch or pull request will be created.' >> "$GITHUB_STEP_SUMMARY"
+      echo "No $proposal_name lock or inventory changes; no branch or pull request will be created." >> "$GITHUB_STEP_SUMMARY"
     else
       for i in "${!bundles[@]}"; do
         cp "${locks[i]}" "$UPGRADE_RESULT/${artifacts[2*i]}"
@@ -97,7 +99,7 @@ case "${1:-}" in
       if [[ ${bundles[0]} != toolbox ]]; then git rev-parse HEAD > "$UPGRADE_RESULT/base.sha"; fi
       echo 'changed=true' >> "$GITHUB_OUTPUT"
       {
-        echo '## Proposed tool lock and inventory changes'
+        echo "## Proposed $proposal_name lock and inventory changes"
         echo
         echo 'Resolution verified official upstream archives for both supported architectures. Review the lock diff before merging. No image, CLI release, documentation build or activation was run.'
         echo
@@ -133,15 +135,15 @@ case "${1:-}" in
     done
     require_changes_only "${paths[@]}"
     if git diff --quiet -- "${paths[@]}"; then
-      echo 'No tool lock or inventory changes; no branch or pull request will be created.' >> "$GITHUB_STEP_SUMMARY"; exit 0
+      echo "No $proposal_name lock or inventory changes; no branch or pull request will be created." >> "$GITHUB_STEP_SUMMARY"; exit 0
     fi
-    branch="automation/tool-upgrade-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+    branch="automation/toolbox-upgrade-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
     if [[ ${bundles[0]} != toolbox ]]; then branch="automation/${bundles[0]}-upgrade-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"; fi
     git switch -c "$branch"
     git config user.name 'github-actions[bot]'
     git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
     git add -- "${paths[@]}"
-    title='chore(tools): upgrade stable tool lock'
+    title='chore(toolbox): upgrade stable toolbox lock'
     if [[ ${bundles[0]} != toolbox ]]; then title="chore(${bundles[0]}): upgrade stable runtime lock"; fi
     git commit -m "$title"
     if ! git push origin "HEAD:refs/heads/$branch"; then

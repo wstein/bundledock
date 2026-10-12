@@ -121,7 +121,7 @@ func TestResolveAndPublish(t *testing.T) {
 	if !strings.Contains(string(b), "changed=true") {
 		t.Fatalf("outputs: %s", b)
 	}
-	result, err := os.ReadFile(filepath.Join(value(env, "UPGRADE_RESULT"), "tools.lock.json"))
+	result, err := os.ReadFile(filepath.Join(value(env, "UPGRADE_RESULT"), "toolbox.lock.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -144,14 +144,17 @@ func TestResolveAndPublish(t *testing.T) {
 	if !strings.Contains(inventory, "| GitHub CLI | 2.103.0 |") {
 		t.Fatal("PR inventory missing updated version")
 	}
-	if branch := must(t, dir, nil, "git", "branch", "--show-current"); branch != "automation/tool-upgrade-123-1\n" {
+	if branch := must(t, dir, nil, "git", "branch", "--show-current"); branch != "automation/toolbox-upgrade-123-1\n" {
 		t.Fatal(branch)
+	}
+	if title := must(t, dir, nil, "git", "log", "-1", "--format=%s"); title != "chore(toolbox): upgrade stable toolbox lock\n" {
+		t.Fatal(title)
 	}
 	calls, err := os.ReadFile(value(env, "CALLS"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(calls), "pr create --repo example/repo --base main --head automation/tool-upgrade-123-1") {
+	if !strings.Contains(string(calls), "pr create --repo example/repo --base main --head automation/toolbox-upgrade-123-1 --title chore(toolbox): upgrade stable toolbox lock") {
 		t.Fatalf("calls %s", calls)
 	}
 }
@@ -267,7 +270,7 @@ func TestPublisherRejectsUnrelatedDocumentation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("resolve: %v %s", err, out)
 	}
-	artifact := filepath.Join(value(env, "UPGRADE_RESULT"), "tools.md")
+	artifact := filepath.Join(value(env, "UPGRADE_RESULT"), "toolbox.md")
 	b, err := os.ReadFile(artifact)
 	if err != nil {
 		t.Fatal(err)
@@ -307,7 +310,7 @@ func TestWorkflowDailyAndManualWriteGates(t *testing.T) {
 }
 func TestPublisherNoChangeCreatesNothing(t *testing.T) {
 	dir, env := fixture(t)
-	for _, pair := range [][2]string{{"bundles/toolbox/tools.lock.json", "tools.lock.json"}, {"docs/tools.md", "tools.md"}} {
+	for _, pair := range [][2]string{{"bundles/toolbox/tools.lock.json", "toolbox.lock.json"}, {"docs/tools.md", "toolbox.md"}} {
 		data, err := os.ReadFile(filepath.Join(dir, pair[0]))
 		if err != nil {
 			t.Fatal(err)
