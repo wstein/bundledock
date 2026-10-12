@@ -190,7 +190,7 @@ until a separately approved build, publication and activation.
 Helix uses calendar release tags such as `25.07.1`. Its official-repository-only
 `helix-calendar` normalization compares this as `25.7.1`; a two-part release
 such as `25.07` compares as `25.7.0`. Desired requirements use canonical numeric
-versions (`helix==25.7.1`); the lock and download asset retain the original tag
+versions (`helix>=25.7.1`); the lock and download asset retain the original tag
 spelling. Generic SemVer parsing remains strict and prereleases are excluded.
 The `helix-runtime` extraction recipe accepts only a single stable Helix Linux
 release root, regular files and directories. Production extraction binds that
@@ -207,17 +207,18 @@ make run ARGS="tools upgrade --directory bundles/toolbox" # explicit bundle dire
 ```
 
 `packages.txt` contains one desired requirement per line: `gh>=2.102.0`
-for a minimum, `node>=24.0.0,<25.0.0` for a bounded range, or
-`helix==25.7.1` for an exact pin. Commas mean AND; lower bounds are inclusive
+or `helix>=25.7.1` for a minimum, `node>=24.0.0,<25.0.0` for a bounded range, or
+`gh==2.102.0` for an exact pin. Commas mean AND; lower bounds are inclusive
 and upper bounds are exclusive. Versions must be complete stable
 `major.minor.patch` values; prereleases and build metadata are excluded.
-Comments start with `#`. Generic CLI requirements use minimum bounds so future
-stable releases remain eligible. The minimum records the existing accepted
-baseline; it does not upgrade an installed tool. Node retains its selected LTS
+Comments start with `#`. Generic CLI requirements, including Helix, use minimum
+bounds so future stable releases remain eligible. The minimum records the
+existing accepted baseline; it does not upgrade an installed tool. Node retains its selected LTS
 major, Bun its runtime major, and code-server its standalone carrier major.
-Helix retains its explicit calendar-version/runtime pin. These exceptions need
-separate compatibility review before changing their bounds. Provider tag
-normalization, archive recipes and both-architecture checks still apply to every
+These major bounds need separate compatibility review before changing. Helix
+retains its original calendar tag spelling in the lock and requires a matching
+complete runtime and compiled grammars from the same official stable archive.
+Provider tag normalization, archive recipes and both-architecture checks still apply to every
 candidate; a minimum does not permit unsupported release formats.
 Editing this file changes the desired range, not the installed tools.
 
