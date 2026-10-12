@@ -178,6 +178,14 @@ class AliasTests(unittest.TestCase):
             self.assertEqual(opener.return_value.open.call_args.args, (target,))
             self.assertEqual(opener.return_value.open.call_args.kwargs, {'timeout': 45})
 
+    def test_workflow_is_manual_and_has_no_build_or_other_writes(self):
+        workflow = (ROOT / '.github/workflows/node-lts-alias.yml').read_text()
+        self.assertIn('workflow_dispatch:', workflow)
+        self.assertIn('group: bundledock-node-publish', workflow)
+        self.assertIn('inputs.approved_sha == github.sha', workflow)
+        for forbidden in ('workflow_run:', 'schedule:', 'contents: write', 'docker ', 'go build', 'make ', '--write'):
+            self.assertNotIn(forbidden, workflow)
+
     def test_guard_rejects_stale_main_and_nonmanual_context(self):
         env = dict(GITHUB_EVENT_NAME='workflow_dispatch', DEFAULT_BRANCH='main',
                    GITHUB_REF='refs/heads/main', SENDER_TYPE='User', GITHUB_ACTOR='wstein',
