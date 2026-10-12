@@ -1,1 +1,2 @@
+# package list should be sorted alphabetically for easier maintenance.
 codex>=0.162.1
