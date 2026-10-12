@@ -110,13 +110,17 @@ func TestHelixRejectsForeignAndLinkedMembers(t *testing.T) {
 }
 
 func TestHelixRootMatchesVerifiedPin(t *testing.T) {
-	r, err := os.OpenRoot(t.TempDir())
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer r.Close()
-	err = extract(r, "helix", helixPackage(), bytes.NewReader(helixArchive(t, "helix-25.07.1-aarch64-linux", "", 0)), "helix-25.07.1-x86_64-linux")
-	if err == nil {
-		t.Fatal("accepted wrong release architecture root")
+	for _, archiveRoot := range []string{"helix-25.07.1-aarch64-linux", "helix-26.01.1-x86_64-linux"} {
+		t.Run(archiveRoot, func(t *testing.T) {
+			r, err := os.OpenRoot(t.TempDir())
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer r.Close()
+			err = extract(r, "helix", helixPackage(), bytes.NewReader(helixArchive(t, archiveRoot, "", 0)), "helix-25.07.1-x86_64-linux")
+			if err == nil {
+				t.Fatal("accepted archive root differing from verified release pin")
+			}
+		})
 	}
 }
