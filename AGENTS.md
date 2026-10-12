@@ -13,18 +13,21 @@ checks and platform coverage accurately; a passing source check is not image or
 release readiness.
 
 Builds and releases require explicit user approval of the intended operation
-and source revision. Pushes, merges, schedules, bot updates, and lock-only PRs
-supply no build approval. Toolbox publication may prepare a read-only request
-after successful source CI for an exact merged bot updater PR on current `main`.
-The protected `toolbox-publication` environment must require explicit approval
-by `wstein` before any artifact compiler or native work, with admin bypass
-disabled and a main-only branch restriction. That path publishes the exact
-merged lock without fresh upstream resolution and revalidates source and
-protection after approval and before promotion. Manual toolbox publication
-retains the user's full approved SHA matching the run revision. Other bundles
-remain manual-only. Do not tag, publish, activate an image, or push
-Git changes without explicit authorization. A local commit or merge supplies
-none of those approvals.
+and source revision. The approved automation exception covers toolbox,
+code-server, Node and Bun updater PRs authored by `github-actions[bot]`, changing
+only their own lock and generated inventory. A latest non-dismissed `wstein`
+APPROVED review of the exact updater head authorizes source CI, a protected
+SHA-guarded rebase merge, and publication of that exact frozen lock. Source CI
+must succeed on the approved head and GitHub's required `check` protection must
+be satisfied. Changed heads, a main advance, unrelated files, stale approvals,
+and an approved tree differing from the merged tree stop automation; do not
+rewrite the updater head or bypass protection. There is no later environment
+approval. Existing environment settings remain untouched. Manual publication
+retains exact full-SHA human dispatch. Source PRs, documentation PRs, schedules,
+bot activity and local commits alone supply no artifact build approval.
+Tagging and publication must follow the explicitly authorized workflow scope;
+consumer activation remains a separate explicit authorization. Do not perform
+live merges, workflow runs, builds or settings changes while authoring source.
 
 Third-party tools must use official stable prebuilt releases. Never build them
 from source or silently patch their binaries or embedded dependencies. If a
