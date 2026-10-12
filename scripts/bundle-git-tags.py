@@ -143,7 +143,9 @@ def verify_run(r, backfill):
     if os.environ.get('GITHUB_TOKEN'):
         headers['Authorization'] = 'Bearer '+os.environ['GITHUB_TOKEN']
     run = json.loads(request(f"https://api.github.com/repos/wstein/bundledock/actions/runs/{r['run_id']}/attempts/{r['attempt']}", headers))
-    if (run.get('head_sha') != r['commit'] or run.get('head_branch') != 'main'
+    automatic = not backfill and run.get('event') == 'workflow_run'
+    controller_sha = os.environ.get('GITHUB_SHA') if automatic else r['commit']
+    if (run.get('head_sha') != controller_sha or run.get('head_branch') != 'main'
             or run.get('repository', {}).get('html_url') != SOURCE
             or run.get('path') != f".github/workflows/bundledock-{r['bundle']}.yml"
             or run.get('run_attempt') != r['attempt']
@@ -153,10 +155,25 @@ def verify_run(r, backfill):
     if backfill:
         if run.get('status') != 'completed' or run.get('conclusion') != 'success':
             raise ValueError('backfill requires a successful completed publication')
-    elif (os.environ.get('GITHUB_SHA') != r['commit'] or os.environ.get('GITHUB_RUN_ID') != r['run_id']
-          or os.environ.get('GITHUB_RUN_ATTEMPT') != str(r['attempt'])
-          or run.get('event') != 'workflow_dispatch'):
-        raise ValueError('future tagging requires the approved current workflow context')
+    else:
+        if (os.environ.get('GITHUB_SHA') != controller_sha or os.environ.get('GITHUB_RUN_ID') != r['run_id']
+                or os.environ.get('GITHUB_RUN_ATTEMPT') != str(r['attempt'])):
+            raise ValueError('future tagging requires the approved current workflow context')
+        if run.get('event') == 'workflow_run':
+            if (os.environ.get('GITHUB_EVENT_NAME') != 'workflow_run'
+                    or os.environ.get('PUBLICATION_SHA') != r['commit']):
+                raise ValueError('workflow_run requires the approved bundle source')
+            # Reuse the owning source approval gate rather than inventing a
+            # second approval mechanism. It is read-only and fails closed.
+            environment = dict(os.environ)
+            environment.pop('GITHUB_OUTPUT', None)
+            environment.pop('GITHUB_STEP_SUMMARY', None)
+            gate = subprocess.run(['python3', 'scripts/bundle-publication.py', '--bundle', r['bundle']],
+                                  env=environment, capture_output=True, text=True)
+            if gate.returncode:
+                raise ValueError('approved bundle source revalidation failed')
+        elif run.get('event') != 'workflow_dispatch':
+            raise ValueError('future tagging requires an approved publication event')
 
 
 def git(*args, input=None, check=True):

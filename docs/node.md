@@ -88,3 +88,8 @@ both native layouts, hostile graphs, explicit profile and repeated initializer
 verification, launchers and fake CI adapters. This is source/structure evidence
 only. OCI builds, Node/npm/npx execution, consumer smoke and vulnerability
 scans on both native platforms remain deferred pending explicit approval.
+
+Successful approved publication also creates an annotated `node/<immutable-version>`
+Git tag at the verified image source commit. Its annotation binds the immutable
+image digest and workflow attempt; see [source tags](publication.md#source-tags-for-published-bundles)
+for verification, conflicts and separately authorized backfills.

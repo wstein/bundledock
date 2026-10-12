@@ -121,3 +121,8 @@ source and structural evidence only. OCI builds, code-server execution,
 read-only consumer/browser smoke tests, vulnerability scans and native runtime
 coverage on both architectures remain pending explicit build/runtime approval.
 Go 1.25 is the minimum source toolchain; it was not separately tested here.
+
+Successful approved publication also creates an annotated `code-server/<immutable-version>`
+Git tag at the verified image source commit. Its annotation binds the immutable
+image digest and workflow attempt; see [source tags](publication.md#source-tags-for-published-bundles)
+for verification, conflicts and separately authorized backfills.

@@ -95,3 +95,8 @@ upgrade/CI adapters. Source checks do not verify native execution. OCI builds,
 Bun/bunx execution, native consumer smoke and vulnerability scans remain
 pending explicit approval. Existing bundle defaults are unchanged; Ruby is
 outside this change.
+
+Successful approved publication also creates an annotated `bun/<immutable-version>`
+Git tag at the verified image source commit. Its annotation binds the immutable
+image digest and workflow attempt; see [source tags](publication.md#source-tags-for-published-bundles)
+for verification, conflicts and separately authorized backfills.

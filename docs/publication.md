@@ -117,8 +117,11 @@ workflow does not read the old names. Keep an existing `REPOSITORY_TOKEN` secret
 in place when it already holds the robot token; no token needs to be copied into
 source or inspected.
 Use a dedicated [Quay robot account](https://docs.quay.io/glossary/robot-accounts.html).
-The workflow uses read-only contents permission and read-only Actions permission
-in resolution and promotion. It never runs for pull requests. The separate
+Preflight, resolution, native builds and promotion retain read-only contents
+permission. Only the separate post-promotion tag job requests contents write
+permission, with read-only Actions and pull-request access for provenance.
+Thin caller jobs allow that reusable-workflow permission ceiling; each actual
+non-tag job explicitly retains read-only contents permission. It never runs for pull requests. The separate
 baseline comparison step uses robot credentials only against `quay.io` to request
 a repository-scoped pull-only bearer token and read manifests/configs, including
 for private repositories. It never stores those credentials or logs in to Docker.
@@ -204,3 +207,48 @@ pin, initialize host volumes, or activate the new image.
 Quay publication requires the first successful configured publication run.
 See [development and verification](development.md#verification-evidence) for
 local checks and the scope of historical native CI results.
+
+## Source tags for published bundles
+
+After successful image promotion, each of the toolbox, code-server, node and bun
+workflows creates an annotated Git tag `<bundle>/<immutable-version>` at the
+image's exact source commit, for example `node/2026.10.12-b1.1`. Approval of that
+publication includes this source tag. All four bundles support the exact-head
+review and merged-updater approval path described above; the shared read-only
+source approval gate is revalidated before automatic tagging. The controller
+workflow SHA remains distinct from the approved image source SHA, and both must
+match their own independently verified provenance. The step follows verification of
+the final two-platform index and both `stable` and `latest` image aliases. It
+never creates moving `stable` or `latest` Git tags.
+
+The annotation records the fully qualified version image, immutable index digest,
+source commit and exact workflow run attempt. The helper independently hashes
+the index, both architecture manifests and their configs, checks matching OCI
+source/revision/version/run labels, and verifies that the source commit is
+reachable from official BundleDock `main`. Existing remote tags must be annotated
+and match both source and the complete annotation. A conflict stops the run;
+tags are never overwritten or force-pushed. Concurrent matching creation is
+verified by reading the remote tag back. A tagging failure leaves the promoted
+image in place and fails the tag job and workflow; inspect the existing image and
+tag before choosing a fresh approved operation.
+
+For separately authorized backfills, use the same helper with `--backfill` and
+explicit bundle, version, digest, source SHA and run ID. It requires a completed,
+successful publication run matching that provenance. The default is read-only;
+`--write` is required to create the remote Git tag. Historical toolbox versions
+such as `2026.10.10-38072919085-4` additionally require `--legacy-version` and
+retain their exact original version suffix. Inventory all registry tag pages,
+ignore staging and mutable aliases, deduplicate immutable versions, then review
+the complete proposed tag/image digest/source SHA/run table before writing.
+Uncertain provenance or an incomplete inventory blocks the affected backfill.
+No image pull, extraction, build, registry write or consumer activation is needed.
+
+```sh
+python3 -B scripts/bundle-git-tags.py --backfill --bundle node \
+  --tag 2026.10.12-b1.1 --digest sha256:<verified-index-digest> \
+  --commit <verified-full-source-sha> --run-id <verified-run-id>
+```
+
+Git tag writes are atomic individually. If a later backfill conflicts, previously
+verified tags remain; resolve the conflict before continuing. Registry writes
+and Git tag writes are separate systems and cannot be one atomic transaction.

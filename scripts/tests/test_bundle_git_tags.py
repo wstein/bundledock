@@ -230,6 +230,27 @@ class RunTests(ProvenanceTests):
         with patch.object(tags,'request',return_value=tags.json.dumps(run).encode()), patch.dict(tags.os.environ,env,clear=True), self.assertRaises(ValueError):
             tags.verify_run(r,False)
 
+    def test_approved_current_bundle_workflow_run_separates_controller_source(self):
+        from unittest.mock import patch
+        import subprocess
+        for bundle in tags.BUNDLES:
+            r = tags.validate_record(self.record(bundle=bundle,image='quay.io/bundledock/'+bundle))
+            run = self.run_data(r)
+            run.update(head_sha='a'*40,path='.github/workflows/bundledock-'+bundle+'.yml',
+                       event='workflow_run',status='in_progress',conclusion=None)
+            env = dict(GITHUB_SHA='a'*40,GITHUB_RUN_ID='123',GITHUB_RUN_ATTEMPT='1',
+                       GITHUB_EVENT_NAME='workflow_run',PUBLICATION_SHA=r['commit'])
+            with self.subTest(bundle=bundle), patch.object(tags,'request',return_value=tags.json.dumps(run).encode()), patch.dict(tags.os.environ,env,clear=True), patch.object(tags.subprocess,'run',return_value=subprocess.CompletedProcess([],0,'','')) as gate:
+                tags.verify_run(r,False)
+                self.assertEqual(gate.call_count,1)
+                self.assertEqual(gate.call_args.args[0],['python3','scripts/bundle-publication.py','--bundle',bundle])
+            with self.subTest(bundle=bundle,case='approval gate failure'), patch.object(tags,'request',return_value=tags.json.dumps(run).encode()), patch.dict(tags.os.environ,env,clear=True), patch.object(tags.subprocess,'run',return_value=subprocess.CompletedProcess([],1,'','')), self.assertRaises(ValueError):
+                tags.verify_run(r,False)
+            for key in ('PUBLICATION_SHA','GITHUB_SHA','GITHUB_EVENT_NAME'):
+                with self.subTest(bundle=bundle,key=key), patch.object(tags,'request',return_value=tags.json.dumps(run).encode()), patch.dict(tags.os.environ,dict(env,**{key:'wrong'}),clear=True), self.assertRaises(ValueError):
+                    tags.verify_run(r,False)
+
+
 class RedirectTests(unittest.TestCase):
     def redirect(self, target):
         return tags.urllib.error.HTTPError('https://quay.io/blob',302,'redirect',{'Location':target},None)
