@@ -8,7 +8,8 @@ export BUN_INSTALL_CACHE_DIR="$HOME/.cache/bun/install"
 export BUN_INSTALL_GLOBAL_DIR="$HOME/.local/share/bun/install/global"
 export BUN_INSTALL_BIN="$HOME/.local/bin"
 test -f "$root/.ready"
-test -f "$root/licenses/bun/LICENSE.md"
+test -f "$root/licenses.tar.gz"
+test -f "$root/licenses.index.json"
 test "$(readlink "$root/payload/bunx")" = bun
 bun --version
 bunx --version

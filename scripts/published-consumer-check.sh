@@ -33,7 +33,17 @@ test -f /opt/bundledock/codex/codex-package.json
 for helper in bin/codex-code-mode-host codex-path/rg codex-resources/bwrap codex-resources/zsh/bin/zsh; do
     test -x "/opt/bundledock/codex/$helper"
 done
-for name in agy claude; do test -f "/opt/bundledock/$name/licenses/$name/SOURCE"; done
+for name in agy claude; do
+    root=/opt/bundledock/$name
+    if test -e "$root/licenses.tar.gz" || test -e "$root/licenses.index.json"; then
+        # New carriers verify the complete SOURCE through their helper before this consumer.
+        test -f "$root/licenses.tar.gz"
+        test -f "$root/licenses.index.json"
+    else
+        # Fixed historical published carriers retain the original loose layout.
+        test -f "$root/licenses/$name/SOURCE"
+    fi
+done
 for name in node npm npx; do
     test "$(command -v "$name")" = "/opt/bundledock/node/bin/$name"
     "$name" --version

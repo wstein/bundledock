@@ -52,7 +52,7 @@ image) printf 'sha256:fixture\n' ;;
 volume) if [ "$2" = create ]; then printf 'fixture-volume\n'; fi ;;
 run)
 case "$*" in
-*sha256:fixture*) case "$*" in *'dst=/bundle,volume-nocopy sha256:fixture') ;; *) exit 31 ;; esac ;;
+*sha256:fixture*) case "$*" in *'dst=/bundle,volume-nocopy sha256:fixture'|*'sha256:fixture --license licenses/bun/LICENSE.md') ;; *) exit 31 ;; esac ;;
 *consumer:fixture*) case "$*" in *'dst=/opt/bundledock/bun,readonly,volume-nocopy'*'consumer:fixture /bun-smoke.sh') ;; *) exit 32 ;; esac ;;
 *) exit 33 ;;
 esac ;;
@@ -74,6 +74,11 @@ esac
 	s := string(b)
 	if strings.Count(s, "dst=/bundle,volume-nocopy sha256:fixture") != 2 || strings.Count(s, "consumer:fixture /bun-smoke.sh") != 2 || !strings.Contains(s, "volume rm fixture-volume") {
 		t.Fatal("missing initialization/concurrent consumers/cleanup: " + s)
+	}
+	for _, notice := range []string{"LICENSE.md"} {
+		if !strings.Contains(s, "--license licenses/bun/"+notice) {
+			t.Fatal("missing verified notice read: " + notice)
+		}
 	}
 	source, err := os.ReadFile("../../bundles/bun/scripts/consumer-smoke.sh")
 	if err != nil {

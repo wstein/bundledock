@@ -5,7 +5,8 @@ root=/opt/bundledock/claude
 export PATH="$root/bin:$PATH"
 export DISABLE_UPDATES=1 DISABLE_AUTOUPDATER=1
 test -f "$root/.ready"
-test -f "$root/licenses/claude/SOURCE"
+test -f "$root/licenses.tar.gz"
+test -f "$root/licenses.index.json"
 test -x "$root/bin/claude"
 test -w "$HOME"
 claude --version
