@@ -144,3 +144,29 @@ func TestRefuseArchitectureMismatchAndMissingMarkers(t *testing.T) {
 		}
 	})
 }
+
+func TestInventoryUsesDisplayedLabelAlphabeticalOrder(t *testing.T) {
+	root, script := fixture(t)
+	if out, err := invoke(t, root, script); err != nil {
+		t.Fatalf("generate: %v %s", err, out)
+	}
+	source := read(t, filepath.Join(root, "docs/toolbox.md"))
+	region := strings.Split(strings.Split(source, "<!-- BEGIN GENERATED TOOL INVENTORY -->")[1], "<!-- END GENERATED TOOL INVENTORY -->")[0]
+	var labels []string
+	for _, line := range strings.Split(region, "\n") {
+		if strings.HasPrefix(line, "| ") && !strings.HasPrefix(line, "| Tool |") && !strings.HasPrefix(line, "| ---") {
+			labels = append(labels, strings.TrimSpace(strings.Split(line, "|")[1]))
+		}
+	}
+	if len(labels) != 27 {
+		t.Fatalf("expected full real catalog, got %d rows", len(labels))
+	}
+	for i := 1; i < len(labels); i++ {
+		if strings.ToLower(labels[i-1]) > strings.ToLower(labels[i]) {
+			t.Fatalf("display labels not alphabetical: %q before %q", labels[i-1], labels[i])
+		}
+	}
+	if !strings.Contains(region, "| Mike Farah yq (`yq`) |") || !strings.Contains(region, "| tmux (`tmux`) | 3.7c (official static builds) |") {
+		t.Fatal("display labels or versions changed")
+	}
+}
