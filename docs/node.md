@@ -6,6 +6,27 @@ volume and `/opt/bundledock/node` root. The toolbox and code-server defaults,
 pins and consumer configuration are unchanged. No Ruby or generic language
 bundle mechanism is included.
 
+<!-- BEGIN PUBLISHED BUNDLE -->
+<!-- publication-record: {"attempt":"1","commit":"9f25e0065885dce912658986bf26c178dddbaf36","digest":"sha256:295cce35e9f580db41dfdc97bd30243d9f0cf388556a8a8d87a6c59ee51e6a8c","image":"quay.io/bundledock/node","reference":"quay.io/bundledock/node@sha256:295cce35e9f580db41dfdc97bd30243d9f0cf388556a8a8d87a6c59ee51e6a8c","run_id":"38192775173","source":"https://github.com/wstein/bundledock","tag":"2026.10.12-b1.1"} -->
+## Published bundle
+
+Version: `2026.10.12-b1.1`
+
+Index digest: `sha256:295cce35e9f580db41dfdc97bd30243d9f0cf388556a8a8d87a6c59ee51e6a8c`
+
+Source: [`9f25e0065885dce912658986bf26c178dddbaf36`](https://github.com/wstein/bundledock/commit/9f25e0065885dce912658986bf26c178dddbaf36)
+
+Publication: [run 38192775173, attempt 1](https://github.com/wstein/bundledock/actions/runs/38192775173/attempts/1)
+
+Pull this published carrier by its immutable index digest:
+
+```sh
+docker pull quay.io/bundledock/node@sha256:295cce35e9f580db41dfdc97bd30243d9f0cf388556a8a8d87a6c59ee51e6a8c
+```
+
+The source inventory below describes the current lock; this publication retains its exact source revision.
+<!-- END PUBLISHED BUNDLE -->
+
 <!-- BEGIN GENERATED TOOL INVENTORY -->
 | Tool | Pinned version |
 | --- | --- |
