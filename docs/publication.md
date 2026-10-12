@@ -15,13 +15,15 @@ fallback remain. The nine **Propose … upgrades** entrypoints call one shared
 source-only updater, retaining the daily 06:50 UTC schedule and manual dry-run
 default.
 
-The new agent carriers have no verified publication receipts yet. Their first
-publication requires separate explicit approval for the exact full source SHA
-and build/publication operation, plus verified repository visibility and robot
-access. An updater cannot bootstrap an absent baseline; only approved manual
-dispatch can do so. Native runtime coverage remains unverified until that run.
-Toolbox keeps all three agents until Anchorage consumers are prepared and a
-separate approved change removes them.
+The [Codex](codex.md), [Antigravity](agy.md) and [Claude Code](claude.md)
+guides record their verified initial publications and native AMD64/ARM64 smoke
+coverage. The current source toolbox excludes all three agents; the
+[published toolbox](toolbox.md#published-bundle) still contains them until a
+separately approved reduced-toolbox publication. Each receipt applies only to
+its recorded source revision and image digest. An updater cannot bootstrap an
+absent baseline; first publication of a new bundle requires explicitly approved
+manual dispatch for the exact source SHA and build/publication operation, plus
+verified repository visibility and robot access.
 
 For a later automatic upgrade, review the lock and generated inventory in the
 `github-actions[bot]` updater PR and approve its exact head as **wstein**. That
