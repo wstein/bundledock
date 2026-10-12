@@ -160,7 +160,7 @@ func TestAllProvidersPaginationRangesAndVerification(t *testing.T) {
 			v := fixtureReleaseVersion(p, versions[n])
 			if r.URL.Query().Get("page") == "1" {
 				w.Header().Set("Link", `<https://api.github.com`+r.URL.Path+`?per_page=20&page=2>; rel="next"`)
-				json.NewEncoder(w).Encode([]any{map[string]any{"tag_name": p.TagPrefix + "999.0.0"}, map[string]any{"tag_name": p.TagPrefix + v + "-rc.1"}, map[string]any{"tag_name": p.TagPrefix + v, "draft": true}})
+				json.NewEncoder(w).Encode([]any{map[string]any{"tag_name": p.TagPrefix + "0.0.0"}, map[string]any{"tag_name": p.TagPrefix + v + "-rc.1"}, map[string]any{"tag_name": p.TagPrefix + v, "draft": true}})
 				return
 			}
 			assets := []asset{}
@@ -283,7 +283,7 @@ func TestChangedDesiredAndBootstrap(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				data = bytes.ReplaceAll(data, []byte("gh>=2.102.0,<3.0.0"), []byte("gh==3.0.0"))
+				data = bytes.ReplaceAll(data, []byte("gh>=2.102.0"), []byte("gh==3.0.0"))
 				if err := os.WriteFile(filepath.Join(dir, "tools.txt"), data, 0644); err != nil {
 					t.Fatal(err)
 				}
