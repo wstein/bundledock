@@ -12,7 +12,7 @@ import (
 
 func main() {
 	arch := flag.String("arch", "", "target architecture (amd64 or arm64)")
-	directory := flag.String("directory", "/build", "directory containing tools.txt, tools.packages.json and tools.lock.json")
+	directory := flag.String("directory", "/build", "directory containing packages.txt, packages.catalog.json and packages.lock.json")
 	destination := flag.String("destination", "/opt/bundledock/toolbox", "bundle directory")
 	flag.Parse()
 	if err := run(*arch, *directory, *destination); err != nil {

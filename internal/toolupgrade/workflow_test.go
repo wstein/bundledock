@@ -50,7 +50,7 @@ func fixture(t *testing.T) (string, []string) {
 	if err := os.MkdirAll(filepath.Join(dir, "bundles/toolbox"), 0755); err != nil {
 		t.Fatal(err)
 	}
-	for _, name := range []string{"bundles/toolbox/tools.lock.json", "bundles/toolbox/tools.packages.json", "docs/toolbox.md", "scripts/tool-inventory.py", "bundles/code-server/tools.txt", "bundles/code-server/tools.lock.json", "bundles/code-server/tools.packages.json", "docs/code-server.md", "bundles/node/tools.txt", "bundles/node/tools.lock.json", "bundles/node/tools.packages.json", "docs/node.md", "bundles/node-current/tools.txt", "bundles/node-current/tools.lock.json", "bundles/node-current/tools.packages.json", "docs/node-current.md", "bundles/bun/tools.txt", "bundles/bun/tools.lock.json", "bundles/bun/tools.packages.json", "docs/bun.md", "bundles/codex/tools.txt", "bundles/codex/tools.packages.json", "bundles/codex/tools.lock.json", "docs/codex.md", "bundles/agy/tools.txt", "bundles/agy/tools.packages.json", "bundles/agy/tools.lock.json", "docs/agy.md", "bundles/claude/tools.txt", "bundles/claude/tools.packages.json", "bundles/claude/tools.lock.json", "docs/claude.md"} {
+	for _, name := range []string{"bundles/toolbox/packages.lock.json", "bundles/toolbox/packages.catalog.json", "docs/toolbox.md", "scripts/tool-inventory.py", "bundles/code-server/packages.txt", "bundles/code-server/packages.lock.json", "bundles/code-server/packages.catalog.json", "docs/code-server.md", "bundles/node/packages.txt", "bundles/node/packages.lock.json", "bundles/node/packages.catalog.json", "docs/node.md", "bundles/node-current/packages.txt", "bundles/node-current/packages.lock.json", "bundles/node-current/packages.catalog.json", "docs/node-current.md", "bundles/bun/packages.txt", "bundles/bun/packages.lock.json", "bundles/bun/packages.catalog.json", "docs/bun.md", "bundles/codex/packages.txt", "bundles/codex/packages.catalog.json", "bundles/codex/packages.lock.json", "docs/codex.md", "bundles/agy/packages.txt", "bundles/agy/packages.catalog.json", "bundles/agy/packages.lock.json", "docs/agy.md", "bundles/claude/packages.txt", "bundles/claude/packages.catalog.json", "bundles/claude/packages.lock.json", "docs/claude.md"} {
 		data, err := os.ReadFile(filepath.Join(root, name))
 		if err != nil {
 			t.Fatal(err)
@@ -61,7 +61,7 @@ func fixture(t *testing.T) (string, []string) {
 		}
 		write(t, destination, string(data))
 	}
-	write(t, filepath.Join(dir, "bundles/toolbox/tools.txt"), "gh>=2.0.0,<3.0.0\n")
+	write(t, filepath.Join(dir, "bundles/toolbox/packages.txt"), "gh>=2.0.0,<3.0.0\n")
 	must(t, dir, nil, "git", "add", ".")
 	must(t, dir, nil, "git", "commit", "-m", "fixture")
 	fake := t.TempDir()
@@ -77,7 +77,7 @@ python3 - <<'PYTHON'
 import json,os
 from pathlib import Path
 bundle=os.environ['RESOLVED_BUNDLE']
-p=Path('bundles')/bundle/'tools.lock.json'
+p=Path('bundles')/bundle/'packages.lock.json'
 lock=json.loads(p.read_text())
 if os.environ.get('NO_CHANGE_'+bundle.upper().replace('-','_'))!='true':
  for arch in ('amd64','arm64'): lock['platforms'][arch]['gh' if bundle=='toolbox' else 'node' if bundle=='node-current' else bundle]['version']={'node-current':'v26.12.0','code-server':'v4.142.0','node':'v24.22.0','toolbox':'v2.103.0','bun':'bun-v1.4.4','codex':'rust-v0.162.2','agy':'1.3.4','claude':'2.1.297'}[bundle]
@@ -140,7 +140,7 @@ func TestResolveAndPublish(t *testing.T) {
 	if !strings.Contains(string(result), `"version": "v2.103.0"`) {
 		t.Fatalf("result %s", result)
 	}
-	must(t, dir, nil, "git", "restore", "bundles/toolbox/tools.lock.json", "docs/toolbox.md")
+	must(t, dir, nil, "git", "restore", "bundles/toolbox/packages.lock.json", "docs/toolbox.md")
 	remote := filepath.Join(t.TempDir(), "remote.git")
 	must(t, dir, nil, "git", "init", "--bare", remote)
 	must(t, dir, nil, "git", "remote", "add", "origin", remote)
@@ -148,7 +148,7 @@ func TestResolveAndPublish(t *testing.T) {
 	if err != nil {
 		t.Fatalf("publish: %v\n%s", err, out)
 	}
-	got := must(t, dir, nil, "git", "show", "HEAD:bundles/toolbox/tools.lock.json")
+	got := must(t, dir, nil, "git", "show", "HEAD:bundles/toolbox/packages.lock.json")
 	if !strings.Contains(got, `"version": "v2.103.0"`) {
 		t.Fatal(got)
 	}
@@ -217,7 +217,7 @@ func TestDeniedPRExplainsPrerequisite(t *testing.T) {
 	if err != nil {
 		t.Fatalf("%v %s", err, out)
 	}
-	must(t, dir, nil, "git", "restore", "bundles/toolbox/tools.lock.json", "docs/toolbox.md")
+	must(t, dir, nil, "git", "restore", "bundles/toolbox/packages.lock.json", "docs/toolbox.md")
 	remote := filepath.Join(t.TempDir(), "remote.git")
 	must(t, dir, nil, "git", "init", "--bare", remote)
 	must(t, dir, nil, "git", "remote", "add", "origin", remote)
@@ -306,7 +306,7 @@ func TestPublisherRejectsUnrelatedDocumentation(t *testing.T) {
 		t.Fatal(err)
 	}
 	write(t, artifact, string(b)+"\nUnexpected unrelated prose edit.\n")
-	must(t, dir, nil, "git", "restore", "bundles/toolbox/tools.lock.json", "docs/toolbox.md")
+	must(t, dir, nil, "git", "restore", "bundles/toolbox/packages.lock.json", "docs/toolbox.md")
 	out, err = adapter(t, dir, env, "publish")
 	if err == nil || !strings.Contains(out, "generated inventory") {
 		t.Fatalf("unrelated documentation accepted: %v %s", err, out)
@@ -340,7 +340,7 @@ func TestWorkflowDailyAndManualWriteGates(t *testing.T) {
 }
 func TestPublisherNoChangeCreatesNothing(t *testing.T) {
 	dir, env := fixture(t)
-	for _, pair := range [][2]string{{"bundles/toolbox/tools.lock.json", "toolbox.lock.json"}, {"docs/toolbox.md", "toolbox.md"}} {
+	for _, pair := range [][2]string{{"bundles/toolbox/packages.lock.json", "toolbox.lock.json"}, {"docs/toolbox.md", "toolbox.md"}} {
 		data, err := os.ReadFile(filepath.Join(dir, pair[0]))
 		if err != nil {
 			t.Fatal(err)
@@ -362,15 +362,15 @@ func TestPublisherNoChangeCreatesNothing(t *testing.T) {
 func TestCodeServerResolveUsesIndependentInputsAndInventory(t *testing.T) {
 	dir, env := fixture(t)
 	env = append(env, "BUNDLE=code-server", "TOOL=code-server")
-	before := must(t, dir, nil, "git", "show", "HEAD:bundles/toolbox/tools.lock.json")
+	before := must(t, dir, nil, "git", "show", "HEAD:bundles/toolbox/packages.lock.json")
 	out, err := adapter(t, dir, env, "resolve")
 	if err != nil {
 		t.Fatalf("code-server resolve: %v %s", err, out)
 	}
-	if got := must(t, dir, nil, "git", "diff", "--", "bundles/toolbox/tools.lock.json", "docs/toolbox.md"); got != "" {
+	if got := must(t, dir, nil, "git", "diff", "--", "bundles/toolbox/packages.lock.json", "docs/toolbox.md"); got != "" {
 		t.Fatal("code-server changed toolbox: " + got)
 	}
-	if got := must(t, dir, nil, "git", "show", "HEAD:bundles/toolbox/tools.lock.json"); got != before {
+	if got := must(t, dir, nil, "git", "show", "HEAD:bundles/toolbox/packages.lock.json"); got != before {
 		t.Fatal("changed baseline")
 	}
 	for name, want := range map[string]string{"code-server.lock.json": "v4.142.0", "code-server.md": "| code-server | 4.142.0 |"} {
@@ -418,7 +418,7 @@ func TestCodeServerArtifactFailuresStopBeforeTopicCreation(t *testing.T) {
 				}
 				write(t, p, strings.Replace(string(b), "v4.142.0", "v4.143.0", 1))
 			}
-			must(t, dir, nil, "git", "restore", "bundles/code-server/tools.lock.json", "docs/code-server.md")
+			must(t, dir, nil, "git", "restore", "bundles/code-server/packages.lock.json", "docs/code-server.md")
 			if out, err := adapter(t, dir, env, "publish"); err == nil {
 				t.Fatalf("accepted %s: %s", kind, out)
 			}
@@ -446,15 +446,15 @@ func TestCodeServerNoChangeCreatesNoProposal(t *testing.T) {
 func TestNodeResolveUsesIndependentInputsAndInventory(t *testing.T) {
 	dir, env := fixture(t)
 	env = append(env, "BUNDLE=node", "TOOL=node")
-	before := must(t, dir, nil, "git", "show", "HEAD:bundles/toolbox/tools.lock.json")
+	before := must(t, dir, nil, "git", "show", "HEAD:bundles/toolbox/packages.lock.json")
 	out, err := adapter(t, dir, env, "resolve")
 	if err != nil {
 		t.Fatalf("node resolve: %v %s", err, out)
 	}
-	if got := must(t, dir, nil, "git", "diff", "--", "bundles/toolbox/tools.lock.json", "docs/toolbox.md"); got != "" {
+	if got := must(t, dir, nil, "git", "diff", "--", "bundles/toolbox/packages.lock.json", "docs/toolbox.md"); got != "" {
 		t.Fatal("node changed toolbox: " + got)
 	}
-	if got := must(t, dir, nil, "git", "show", "HEAD:bundles/toolbox/tools.lock.json"); got != before {
+	if got := must(t, dir, nil, "git", "show", "HEAD:bundles/toolbox/packages.lock.json"); got != before {
 		t.Fatal("changed baseline")
 	}
 	for name, want := range map[string]string{"node.lock.json": "v24.22.0", "node.md": "| node | 24.22.0 |"} {
@@ -468,15 +468,15 @@ func TestNodeResolveUsesIndependentInputsAndInventory(t *testing.T) {
 func TestNodeCurrentResolveUsesIndependentInputsAndInventory(t *testing.T) {
 	dir, env := fixture(t)
 	env = append(env, "BUNDLE=node-current", "TOOL=node")
-	before := must(t, dir, nil, "git", "show", "HEAD:bundles/toolbox/tools.lock.json")
+	before := must(t, dir, nil, "git", "show", "HEAD:bundles/toolbox/packages.lock.json")
 	out, err := adapter(t, dir, env, "resolve")
 	if err != nil {
 		t.Fatalf("node resolve: %v %s", err, out)
 	}
-	if got := must(t, dir, nil, "git", "diff", "--", "bundles/toolbox/tools.lock.json", "docs/toolbox.md"); got != "" {
+	if got := must(t, dir, nil, "git", "diff", "--", "bundles/toolbox/packages.lock.json", "docs/toolbox.md"); got != "" {
 		t.Fatal("node changed toolbox: " + got)
 	}
-	if got := must(t, dir, nil, "git", "show", "HEAD:bundles/toolbox/tools.lock.json"); got != before {
+	if got := must(t, dir, nil, "git", "show", "HEAD:bundles/toolbox/packages.lock.json"); got != before {
 		t.Fatal("changed baseline")
 	}
 	for name, want := range map[string]string{"node-current.lock.json": "v26.12.0", "node-current.md": "| node | 26.12.0 |"} {
@@ -524,7 +524,7 @@ func TestNodeArtifactFailuresStopBeforeTopicCreation(t *testing.T) {
 				}
 				write(t, p, strings.Replace(string(b), "v24.22.0", "v24.23.0", 1))
 			}
-			must(t, dir, nil, "git", "restore", "bundles/node/tools.lock.json", "docs/node.md")
+			must(t, dir, nil, "git", "restore", "bundles/node/packages.lock.json", "docs/node.md")
 			if out, err := adapter(t, dir, env, "publish"); err == nil {
 				t.Fatalf("accepted %s: %s", kind, out)
 			}
@@ -552,15 +552,15 @@ func TestNodeNoChangeCreatesNoProposal(t *testing.T) {
 func TestBunResolveUsesIndependentInputsAndInventory(t *testing.T) {
 	dir, env := fixture(t)
 	env = append(env, "BUNDLE=bun", "TOOL=bun")
-	before := must(t, dir, nil, "git", "show", "HEAD:bundles/toolbox/tools.lock.json")
+	before := must(t, dir, nil, "git", "show", "HEAD:bundles/toolbox/packages.lock.json")
 	out, err := adapter(t, dir, env, "resolve")
 	if err != nil {
 		t.Fatalf("bun resolve: %v %s", err, out)
 	}
-	if got := must(t, dir, nil, "git", "diff", "--", "bundles/toolbox/tools.lock.json", "docs/toolbox.md"); got != "" {
+	if got := must(t, dir, nil, "git", "diff", "--", "bundles/toolbox/packages.lock.json", "docs/toolbox.md"); got != "" {
 		t.Fatal("bun changed toolbox: " + got)
 	}
-	if got := must(t, dir, nil, "git", "show", "HEAD:bundles/toolbox/tools.lock.json"); got != before {
+	if got := must(t, dir, nil, "git", "show", "HEAD:bundles/toolbox/packages.lock.json"); got != before {
 		t.Fatal("changed baseline")
 	}
 	for name, want := range map[string]string{"bun.lock.json": "bun-v1.4.4", "bun.md": "| bun | 1.4.4 |"} {
@@ -608,7 +608,7 @@ func TestBunArtifactFailuresStopBeforeTopicCreation(t *testing.T) {
 				}
 				write(t, p, strings.Replace(string(b), "bun-v1.4.4", "bun-v1.4.5", 1))
 			}
-			must(t, dir, nil, "git", "restore", "bundles/bun/tools.lock.json", "docs/bun.md")
+			must(t, dir, nil, "git", "restore", "bundles/bun/packages.lock.json", "docs/bun.md")
 			if out, err := adapter(t, dir, env, "publish"); err == nil {
 				t.Fatalf("accepted %s: %s", kind, out)
 			}
@@ -664,7 +664,7 @@ func TestAgentUpdatersScopeAndRejectCrossBundleArtifacts(t *testing.T) {
 			}
 			// A different carrier's transferred lock must stop before any branch or PR.
 			write(t, filepath.Join(result, "node.lock.json"), "unrelated")
-			must(t, dir, nil, "git", "restore", "bundles/"+name+"/tools.lock.json", "docs/"+name+".md")
+			must(t, dir, nil, "git", "restore", "bundles/"+name+"/packages.lock.json", "docs/"+name+".md")
 			if out, err := adapter(t, dir, env, "publish"); err == nil {
 				t.Fatal("accepted cross-bundle proposal", out)
 			}

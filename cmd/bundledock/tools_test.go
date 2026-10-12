@@ -64,7 +64,7 @@ func testToolsUpgradeCommandHTTP(t *testing.T, override bool) {
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		t.Fatal(err)
 	}
-	for _, n := range []string{"tools.txt", "tools.packages.json", "tools.lock.json"} {
+	for _, n := range []string{"packages.txt", "packages.catalog.json", "packages.lock.json"} {
 		b, err := os.ReadFile(filepath.Join("../../bundles/toolbox", n))
 		if err != nil {
 			t.Fatal(err)

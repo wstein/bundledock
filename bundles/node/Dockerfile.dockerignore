@@ -15,8 +15,8 @@
 !internal/toolvolume/**
 !bundles
 !bundles/node
-!bundles/node/tools.txt
-!bundles/node/tools.packages.json
-!bundles/node/tools.lock.json
+!bundles/node/packages.txt
+!bundles/node/packages.catalog.json
+!bundles/node/packages.lock.json
 !bundles/node/licenses
 !bundles/node/licenses/**

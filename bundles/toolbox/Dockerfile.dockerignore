@@ -15,8 +15,8 @@
 !internal/toolvolume/**
 !bundles
 !bundles/toolbox
-!bundles/toolbox/tools.txt
-!bundles/toolbox/tools.packages.json
-!bundles/toolbox/tools.lock.json
+!bundles/toolbox/packages.txt
+!bundles/toolbox/packages.catalog.json
+!bundles/toolbox/packages.lock.json
 !bundles/toolbox/licenses
 !bundles/toolbox/licenses/**

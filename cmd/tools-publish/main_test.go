@@ -42,7 +42,7 @@ func TestResolveOnceAndKeepExactArtifactBytes(t *testing.T) {
 	if calls != 1 {
 		t.Fatalf("resolved %d times", calls)
 	}
-	artifact, err := os.ReadFile(filepath.Join("resolved", "tools.lock.json"))
+	artifact, err := os.ReadFile(filepath.Join("resolved", "packages.lock.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -53,7 +53,7 @@ func TestResolveOnceAndKeepExactArtifactBytes(t *testing.T) {
 	if err = readJSON("resolved/provenance.json", &provenance); err != nil {
 		t.Fatal(err)
 	}
-	sum, err := toolpublish.HashFile("resolved/tools.lock.json")
+	sum, err := toolpublish.HashFile("resolved/packages.lock.json")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -64,12 +64,12 @@ func TestResolveOnceAndKeepExactArtifactBytes(t *testing.T) {
 }
 
 func TestPublicationDecisionAgainstPublishedTools(t *testing.T) {
-	lock, err := os.ReadFile("../../bundles/toolbox/tools.lock.json")
+	lock, err := os.ReadFile("../../bundles/toolbox/packages.lock.json")
 	if err != nil {
 		t.Fatal(err)
 	}
 	dir := t.TempDir()
-	path := filepath.Join(dir, "tools.lock.json")
+	path := filepath.Join(dir, "packages.lock.json")
 	if err = os.WriteFile(path, lock, 0600); err != nil {
 		t.Fatal(err)
 	}
@@ -230,7 +230,7 @@ func TestValidateCodeServerLockWithoutPublicationEnvironment(t *testing.T) {
 }
 
 func TestCodeServerBootstrapOnlyOnAuthenticatedMissingStable(t *testing.T) {
-	lock := "../../bundles/code-server/tools.lock.json"
+	lock := "../../bundles/code-server/packages.lock.json"
 	for _, tc := range []struct {
 		name, bundle, event string
 		baselineErr         error
@@ -266,7 +266,7 @@ func TestValidateNodeLockWithoutPublicationEnvironment(t *testing.T) {
 }
 
 func TestNodeBootstrapOnlyOnAuthenticatedMissingStable(t *testing.T) {
-	lock := "../../bundles/node/tools.lock.json"
+	lock := "../../bundles/node/packages.lock.json"
 	for _, tc := range []struct {
 		name, bundle, event string
 		baselineErr         error
@@ -302,7 +302,7 @@ func TestValidateBunLockWithoutPublicationEnvironment(t *testing.T) {
 }
 
 func TestBunBootstrapOnlyOnAuthenticatedMissingStable(t *testing.T) {
-	lock := "../../bundles/bun/tools.lock.json"
+	lock := "../../bundles/bun/packages.lock.json"
 	for _, tc := range []struct {
 		name, bundle, event string
 		baselineErr         error
@@ -339,7 +339,7 @@ func TestFrozenToolboxLockNeverResolves(t *testing.T) {
 	if err = resolveFrozen("resolved", meta); err != nil {
 		t.Fatal(err)
 	}
-	got, err := os.ReadFile("resolved/tools.lock.json")
+	got, err := os.ReadFile("resolved/packages.lock.json")
 	if err != nil || string(got) != string(lock) {
 		t.Fatalf("frozen lock altered: %q %v", got, err)
 	}
@@ -380,7 +380,7 @@ func TestAutomaticPublicationSourceIsExplicitForAllBundles(t *testing.T) {
 }
 
 func TestMergedBundlePlanUsesBaseline(t *testing.T) {
-	lock, err := os.ReadFile("../../bundles/toolbox/tools.lock.json")
+	lock, err := os.ReadFile("../../bundles/toolbox/packages.lock.json")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -414,7 +414,7 @@ func TestFrozenPublicationUsesExactLockForEveryBundle(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			original, err := os.ReadFile("../../" + bundle.Directory + "/tools.lock.json")
+			original, err := os.ReadFile("../../" + bundle.Directory + "/packages.lock.json")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -422,17 +422,17 @@ func TestFrozenPublicationUsesExactLockForEveryBundle(t *testing.T) {
 			if err = os.MkdirAll(bundle.Directory, 0700); err != nil {
 				t.Fatal(err)
 			}
-			if err = os.WriteFile(bundle.Directory+"/tools.lock.json", original, 0600); err != nil {
+			if err = os.WriteFile(bundle.Directory+"/packages.lock.json", original, 0600); err != nil {
 				t.Fatal(err)
 			}
-			meta, err := toolpublish.NewMetadataForBundle(name, bundle.Directory+"/tools.lock.json", "quay.io/example/"+bundle.Repository, "2026.10.10-b12.1", strings.Repeat("a", 40), "https://github.com/example/repo", "2026-10-10T03:17:00Z", "123")
+			meta, err := toolpublish.NewMetadataForBundle(name, bundle.Directory+"/packages.lock.json", "quay.io/example/"+bundle.Repository, "2026.10.10-b12.1", strings.Repeat("a", 40), "https://github.com/example/repo", "2026-10-10T03:17:00Z", "123")
 			if err != nil {
 				t.Fatal(err)
 			}
 			if err = resolveFrozen("resolved", meta); err != nil {
 				t.Fatal(err)
 			}
-			got, err := os.ReadFile("resolved/tools.lock.json")
+			got, err := os.ReadFile("resolved/packages.lock.json")
 			if err != nil || string(got) != string(original) {
 				t.Fatal("frozen bytes changed", err)
 			}
@@ -443,7 +443,7 @@ func TestFrozenPublicationUsesExactLockForEveryBundle(t *testing.T) {
 func TestAgentInitialPublicationRequiresManualDispatch(t *testing.T) {
 	for _, bundle := range []string{"codex", "agy", "claude"} {
 		for _, event := range []string{"workflow_dispatch", "workflow_run", "schedule"} {
-			publish, err := publicationDecisionForBundle("../../bundles/toolbox/tools.lock.json", event, bundle, func() (string, error) { return "", toolpublish.ErrBaselineAbsent })
+			publish, err := publicationDecisionForBundle("../../bundles/toolbox/packages.lock.json", event, bundle, func() (string, error) { return "", toolpublish.ErrBaselineAbsent })
 			manual := event == "workflow_dispatch"
 			if publish != manual || (err == nil) != manual {
 				t.Fatalf("%s %s absent baseline: publish=%v err=%v", bundle, event, publish, err)
@@ -453,7 +453,7 @@ func TestAgentInitialPublicationRequiresManualDispatch(t *testing.T) {
 }
 
 func TestResolveSingletonNamesTheResolvedLockOnce(t *testing.T) {
-	original, err := os.ReadFile("../../bundles/codex/tools.lock.json")
+	original, err := os.ReadFile("../../bundles/codex/packages.lock.json")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -461,10 +461,10 @@ func TestResolveSingletonNamesTheResolvedLockOnce(t *testing.T) {
 	if err := os.MkdirAll("bundles/codex", 0700); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile("bundles/codex/tools.lock.json", original, 0600); err != nil {
+	if err := os.WriteFile("bundles/codex/packages.lock.json", original, 0600); err != nil {
 		t.Fatal(err)
 	}
-	meta, err := toolpublish.NewMetadata("bundles/codex/tools.lock.json", "quay.io/example/codex", "2026.10.12-b999.7", strings.Repeat("a", 40), "https://github.com/example/repo", "2026-10-12T00:00:00Z", "123")
+	meta, err := toolpublish.NewMetadata("bundles/codex/packages.lock.json", "quay.io/example/codex", "2026.10.12-b999.7", strings.Repeat("a", 40), "https://github.com/example/repo", "2026-10-12T00:00:00Z", "123")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -472,7 +472,7 @@ func TestResolveSingletonNamesTheResolvedLockOnce(t *testing.T) {
 	calls := 0
 	runner := func(args ...string) ([]byte, error) {
 		calls++
-		return nil, os.WriteFile("bundles/codex/tools.lock.json", changed, 0600)
+		return nil, os.WriteFile("bundles/codex/packages.lock.json", changed, 0600)
 	}
 	allocate := func(image string, data []byte) (string, error) {
 		if string(data) != string(changed) {
@@ -499,7 +499,7 @@ func TestResolveSingletonNamesTheResolvedLockOnce(t *testing.T) {
 	if err := artifactIdentity(got, "123", "2345", "8", meta.Commit); err == nil {
 		t.Fatal("accepted another attempt")
 	}
-	data, err := os.ReadFile("resolved/tools.lock.json")
+	data, err := os.ReadFile("resolved/packages.lock.json")
 	if err != nil || string(data) != string(changed) {
 		t.Fatal("artifact lock changed")
 	}

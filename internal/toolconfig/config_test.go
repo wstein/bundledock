@@ -178,12 +178,12 @@ func TestLoadInputsAllowsNarrowTmuxRanges(t *testing.T) {
 	for _, requirement := range []string{"tmux==3.7.3", "tmux>=3.7.3,<3.8.0"} {
 		t.Run(requirement, func(t *testing.T) {
 			dir := t.TempDir()
-			for _, name := range []string{"tools.txt", "tools.packages.json"} {
+			for _, name := range []string{"packages.txt", "packages.catalog.json"} {
 				b, err := os.ReadFile(filepath.Join("../../bundles/toolbox", name))
 				if err != nil {
 					t.Fatal(err)
 				}
-				if name == "tools.txt" {
+				if name == "packages.txt" {
 					b = []byte(strings.Replace(string(b), "tmux>=3.7.3", requirement, 1))
 				}
 				if err := os.WriteFile(filepath.Join(dir, name), b, 0644); err != nil {
@@ -253,14 +253,47 @@ func TestPreservedArchiveDirectoryExclusions(t *testing.T) {
 }
 
 func TestRepositoryToolboxLayout(t *testing.T) {
-	for _, name := range []string{"tools.txt", "tools.packages.json", "tools.lock.json", "Dockerfile", "Dockerfile.dockerignore", "smoke.sh", "volume.sh"} {
+	for _, name := range []string{"packages.txt", "packages.catalog.json", "packages.lock.json", "Dockerfile", "Dockerfile.dockerignore", "smoke.sh", "volume.sh"} {
 		if _, err := os.Stat(filepath.Join("../../bundles/toolbox", name)); err != nil {
 			t.Fatal(err)
 		}
 	}
-	for _, old := range []string{"../../tools.txt", "../../tools.packages.json", "../../tools.lock.json", "../../oci"} {
+	for _, old := range []string{"../../packages.txt", "../../packages.catalog.json", "../../packages.lock.json", "../../oci"} {
 		if _, err := os.Stat(old); !os.IsNotExist(err) {
 			t.Fatalf("obsolete duplicate bundle path %s", old)
 		}
+	}
+}
+
+// Package input filenames are shared by strict loading, upgrades and image builders.
+func TestPackageFilenamesLoadAllBundleInputs(t *testing.T) {
+	for _, bundle := range []string{"toolbox", "code-server", "node", "node-current", "bun", "codex", "agy", "claude"} {
+		t.Run(bundle, func(t *testing.T) {
+			dir := t.TempDir()
+			for _, name := range []string{"packages.txt", "packages.catalog.json", "packages.lock.json"} {
+				data, err := os.ReadFile(filepath.Join("../../bundles", bundle, name))
+				if err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(dir, name), data, 0600); err != nil {
+					t.Fatal(err)
+				}
+			}
+			strict, err := Load(dir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			upgrade, err := LoadForUpgrade(dir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			inputs, err := LoadInputs(dir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if strict.DesiredDigest() != upgrade.DesiredDigest() || strict.DesiredDigest() != inputs.DesiredDigest() || strict.CatalogDigest() != inputs.CatalogDigest() {
+				t.Fatal("package input identity differs across loaders")
+			}
+		})
 	}
 }

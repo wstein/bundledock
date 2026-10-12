@@ -12,7 +12,7 @@ REPO = {'full_name':'wstein/bundledock','default_branch':'main'}
 
 class ApprovalTests(unittest.TestCase):
  def setUp(self):
-  self.bundle='toolbox'; self.lock='bundles/toolbox/tools.lock.json'; self.inventory='docs/toolbox.md'
+  self.bundle='toolbox'; self.lock='bundles/toolbox/packages.lock.json'; self.inventory='docs/toolbox.md'
   self.pr={'number':42,'node_id':'PR42','state':'open','merged':False,'commits':1,'changed_files':2,'head':{'sha':A,'ref':'automation/toolbox-upgrade-123-1','repo':REPO},'base':{'ref':'main','sha':B,'repo':REPO},'user':{'login':'github-actions[bot]','type':'Bot'},'html_url':'https://github.com/wstein/bundledock/pull/42'}
   self.files=[{'filename':self.lock,'status':'modified','changes':2},{'filename':self.inventory,'status':'modified','changes':2}]
   self.data={'':REPO,'/git/ref/heads/main':{'object':{'sha':B}},'/pulls/42':self.pr,'/pulls/42/files?per_page=100&page=1':self.files,'/pulls/42/reviews?per_page=100&page=1':[{'id':1,'submitted_at':'2026-10-12T10:00:00Z','state':'APPROVED','commit_id':A,'user':{'login':'wstein','type':'User'}}],'/compare/'+B+'...'+A:{'merge_base_commit':{'sha':B},'files':self.files},'/git/commits/'+A:{'tree':{'sha':T}},'/contents/'+self.lock+'?ref='+A:{'encoding':'base64','content':'bmV3'},'/contents/'+self.lock+'?ref='+B:{'encoding':'base64','content':'b2xk'}}
@@ -64,7 +64,7 @@ class ApprovalTests(unittest.TestCase):
    with self.subTest(bundle=name):
     self.setUp()
     old=self.lock
-    self.bundle=name; self.lock='bundles/'+name+'/tools.lock.json'; self.inventory='docs/'+name+'.md'
+    self.bundle=name; self.lock='bundles/'+name+'/packages.lock.json'; self.inventory='docs/'+name+'.md'
     self.pr['head']['ref']='automation/'+name+'-upgrade-123-1'
     self.files[0]['filename']=self.lock; self.files[1]['filename']=self.inventory
     self.data={key.replace(old,self.lock):value for key,value in self.data.items()}

@@ -19,7 +19,7 @@ func fixture(t *testing.T) (string, string) {
 		t.Fatal(err)
 	}
 	root := t.TempDir()
-	for _, name := range []string{"bundles/toolbox/tools.lock.json", "bundles/toolbox/tools.packages.json", "docs/toolbox.md"} {
+	for _, name := range []string{"bundles/toolbox/packages.lock.json", "bundles/toolbox/packages.catalog.json", "docs/toolbox.md"} {
 		data, err := os.ReadFile(filepath.Join(repo, name))
 		if err != nil {
 			t.Fatal(err)
@@ -56,7 +56,7 @@ func save(t *testing.T, name, data string) {
 }
 func changeVersion(t *testing.T, root, arch, version string) {
 	t.Helper()
-	name := filepath.Join(root, "bundles/toolbox/tools.lock.json")
+	name := filepath.Join(root, "bundles/toolbox/packages.lock.json")
 	var lock map[string]any
 	if err := json.Unmarshal([]byte(read(t, name)), &lock); err != nil {
 		t.Fatal(err)
@@ -127,7 +127,7 @@ func TestRefuseArchitectureMismatchAndMissingMarkers(t *testing.T) {
 	})
 	t.Run("catalog coverage", func(t *testing.T) {
 		root, script := fixture(t)
-		name := filepath.Join(root, "bundles/toolbox/tools.packages.json")
+		name := filepath.Join(root, "bundles/toolbox/packages.catalog.json")
 		var catalog map[string]any
 		if err := json.Unmarshal([]byte(read(t, name)), &catalog); err != nil {
 			t.Fatal(err)

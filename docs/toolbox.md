@@ -31,11 +31,11 @@ The source inventory below describes the current lock; this publication retains 
 
 ## Source inventory
 
-The default bundle lives in `bundles/toolbox/`: `tools.txt`,
-`tools.packages.json`, `tools.lock.json`, its Dockerfile, smoke scripts and licenses.
+The default bundle lives in `bundles/toolbox/`: `packages.txt`,
+`packages.catalog.json`, `packages.lock.json`, its Dockerfile, smoke scripts and licenses.
 Shared Go code remains at the repository root.
 
-`tools.lock.json` pins vendor artifact URLs and checksums for Linux `amd64`
+`packages.lock.json` pins vendor artifact URLs and checksums for Linux `amd64`
 and `arm64`; builds verify every download.
 
 <!-- BEGIN GENERATED TOOL INVENTORY -->
@@ -81,7 +81,7 @@ No plugins or user configuration are installed for either alternative.
 
 The **Propose toolbox upgrades** workflow (`.github/workflows/toolbox-upgrade.yml`)
 runs daily at **06:50 UTC** from the repository default branch. Scheduled runs
-resolve all desired stable tools within `tools.txt` constraints and open a
+resolve all desired stable tools within `packages.txt` constraints and open a
 reviewable PR only when the lock or its generated inventory changes. GitHub
 may delay scheduled runs; the cron time is not a delivery guarantee. The
 schedule starts after a human merges this workflow onto the default branch.
@@ -133,7 +133,7 @@ image.
 
 The pinned-version table above is managed between the
 `BEGIN GENERATED TOOL INVENTORY` and `END GENERATED TOOL INVENTORY` comments.
-Its versions come from `tools.lock.json` for both supported architectures;
+Its versions come from `packages.lock.json` for both supported architectures;
 existing catalog tag prefixes determine the display version, and existing
 labels remain presentation metadata. Rows sort alphabetically by the displayed
 label, ignoring case. Missing catalog IDs or
@@ -197,7 +197,7 @@ make run ARGS="tools upgrade gh"    # resolve only GitHub CLI
 make run ARGS="tools upgrade --directory bundles/toolbox" # explicit bundle directory
 ```
 
-`tools.txt` contains one desired requirement per line: `gh>=2.102.0`
+`packages.txt` contains one desired requirement per line: `gh>=2.102.0`
 for a minimum, `node>=24.0.0,<25.0.0` for a bounded range, or
 `helix==25.7.1` for an exact pin. Commas mean AND; lower bounds are inclusive
 and upper bounds are exclusive. Versions must be complete stable
@@ -212,7 +212,7 @@ normalization, archive recipes and both-architecture checks still apply to every
 candidate; a minimum does not permit unsupported release formats.
 Editing this file changes the desired range, not the installed tools.
 
-`tools.packages.json` is the trusted declarative package catalog. It names upstream
+`packages.catalog.json` is the trusted declarative package catalog. It names upstream
 providers, repositories, tag prefixes, platform aliases, asset templates, supported
 raw/tar/ZIP extraction, executable members, regular-file aliases, notices, and the
 extraction recipes. Preserved tar recipes can omit exact relative directories
@@ -250,10 +250,10 @@ pin, not an independent publisher authenticity proof. A present invalid publishe
 checksum always fails. Redirects require HTTPS and an official host; GitHub's release
 asset CDN is allowed. The migrated existing hashes and artifact URLs remain pinned.
 Canonical SHA256 digests bind the lock to desired requirements and catalog content;
-formatting and comments in `tools.txt` do not change its identity. Builds reject stale
+formatting and comments in `packages.txt` do not change its identity. Builds reject stale
 identity, incomplete platforms, unsupported recipes, and unsafe archive members.
 
-`tools upgrade` writes only `tools.lock.json`. Review and commit the diff, then run
+`tools upgrade` writes only `packages.lock.json`. Review and commit the diff, then run
 `make bundle-build bundle-smoke bundle-volume` to build and initialize the new bundle.
 Existing images, volumes, running containers, and desired ranges are unaffected by
 resolution. `tools volume` remains the existing initialization command; no update

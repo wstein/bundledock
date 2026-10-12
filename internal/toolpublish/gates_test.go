@@ -111,7 +111,7 @@ func (f *fakeDocker) run(args ...string) ([]byte, error) {
 
 func fixture(t *testing.T) (Metadata, string) {
 	t.Helper()
-	lock := filepath.Join(t.TempDir(), "tools.lock.json")
+	lock := filepath.Join(t.TempDir(), "packages.lock.json")
 	if err := os.WriteFile(lock, []byte(`{"schema":2,"platforms":{"amd64":{"gh":{"version":"v1.2.3","url":"https://github.com/example/amd64","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","verification":"tls-download-sha256"}},"arm64":{"gh":{"version":"v1.2.3","url":"https://github.com/example/arm64","sha256":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","verification":"tls-download-sha256"}}}}`), 0600); err != nil {
 		t.Fatal(err)
 	}
@@ -493,7 +493,7 @@ func TestAliasFailureDoesNotReportSuccessfulPublication(t *testing.T) {
 }
 
 func TestCodeServerBuildUsesDedicatedCarrierAndSmoke(t *testing.T) {
-	lock := "../../bundles/code-server/tools.lock.json"
+	lock := "../../bundles/code-server/packages.lock.json"
 	m, err := NewMetadata(lock, "quay.io/example/code-server", "2026.10.10-b12.1", strings.Repeat("a", 40), "https://github.com/example/repo", "2026-10-10T03:17:00Z", "123")
 	if err != nil {
 		t.Fatal(err)

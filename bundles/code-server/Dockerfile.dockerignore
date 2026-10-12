@@ -15,8 +15,8 @@
 !internal/toolvolume/**
 !bundles
 !bundles/code-server
-!bundles/code-server/tools.txt
-!bundles/code-server/tools.packages.json
-!bundles/code-server/tools.lock.json
+!bundles/code-server/packages.txt
+!bundles/code-server/packages.catalog.json
+!bundles/code-server/packages.lock.json
 !bundles/code-server/licenses
 !bundles/code-server/licenses/**

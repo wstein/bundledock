@@ -11,7 +11,7 @@ case "${BUNDLE:-toolbox}" in
 esac
 locks=() inventories=() artifacts=()
 for bundle in "${bundles[@]}"; do
-  locks+=("bundles/$bundle/tools.lock.json")
+  locks+=("bundles/$bundle/packages.lock.json")
   if [[ $bundle == toolbox ]]; then
     inventories+=(docs/toolbox.md)
     artifacts+=(toolbox.lock.json toolbox.md)
@@ -73,8 +73,8 @@ case "${1:-}" in
     for bundle in "${bundles[@]}"; do
       if [[ -n $tool ]]; then
         if [[ ! $tool =~ ^[a-z0-9][a-z0-9-]*$ ]] ||
-           ! awk -F '[<>=!~[:space:]]' -v tool="$tool" '$1 == tool { found=1 } END { exit !found }' "bundles/$bundle/tools.txt"; then
-          echo "TOOL must be empty or a tool name from bundles/$bundle/tools.txt." >&2; exit 1
+           ! awk -F '[<>=!~[:space:]]' -v tool="$tool" '$1 == tool { found=1 } END { exit !found }' "bundles/$bundle/packages.txt"; then
+          echo "TOOL must be empty or a tool name from bundles/$bundle/packages.txt." >&2; exit 1
         fi
       fi
       args=(); [[ -z $tool ]] || args+=("$tool")
@@ -151,7 +151,7 @@ case "${1:-}" in
     fi
     body="$UPGRADE_RESULT/pr-body.md"
     cat > "$body" <<BODY
-Resolve official stable releases within the selected bundles' existing tools.txt constraints and update only their locks and generated source version inventories. Selected bundles: ${bundles[*]}. Both supported architectures were resolved and verified by the existing BundleDock manager, and transferred locks were revalidated before this proposal.
+Resolve official stable releases within the selected bundles' existing packages.txt constraints and update only their locks and generated source version inventories. Selected bundles: ${bundles[*]}. Both supported architectures were resolved and verified by the existing BundleDock manager, and transferred locks were revalidated before this proposal.
 
 Review the lock diff. After an established published baseline, an APPROVED review by wstein covering this exact PR head authorizes guarded source CI, protected merge, and frozen-lock publication without further intervention. Approval applies only to this reviewed lock and source inventory. Initial publication of Node Current, Codex, Antigravity and Claude carriers requires separate explicit approval of the exact full source revision and intended build/publication operation; this updater cannot bootstrap an absent baseline. This proposal performs no artifact build; CLI releases, documentation builds, and consumer activation require separate explicit authorization.
 

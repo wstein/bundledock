@@ -45,8 +45,8 @@ DISPLAY_SUFFIX = {"tmux": " (official static builds)"}
 def generated(root, bundle_name="toolbox"):
     bundle = root / "bundles" / bundle_name
     labels = LABELS if bundle_name == "toolbox" else (("node", "node"),) if bundle_name == "node-current" else ((bundle_name, bundle_name),)
-    lock = json.loads((bundle / "tools.lock.json").read_text())
-    catalog = json.loads((bundle / "tools.packages.json").read_text())
+    lock = json.loads((bundle / "packages.lock.json").read_text())
+    catalog = json.loads((bundle / "packages.catalog.json").read_text())
     ids = {tool for tool, _ in labels}
     if set(catalog["packages"]) != ids:
         raise ValueError("inventory labels must cover the exact catalog IDs")

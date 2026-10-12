@@ -17,7 +17,7 @@ FROM --platform=$BUILDPLATFORM alpine:3.23@sha256:85fe1e81d6758c208f3e1eed4338a1
 ARG TARGETARCH
 RUN apk add --no-cache ca-certificates
 COPY --from=compiler /out/tools-bundle /usr/local/bin/tools-bundle
-COPY bundles/code-server/tools.txt bundles/code-server/tools.packages.json bundles/code-server/tools.lock.json /build/
+COPY bundles/code-server/packages.txt bundles/code-server/packages.catalog.json bundles/code-server/packages.lock.json /build/
 COPY bundles/code-server/licenses /build/licenses
 FROM downloads AS builder
 ARG TARGETARCH

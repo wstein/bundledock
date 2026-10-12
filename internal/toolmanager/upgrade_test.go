@@ -41,7 +41,7 @@ func fixtureClient(t *testing.T, h http.HandlerFunc) *http.Client {
 func checkout(t *testing.T) string {
 	t.Helper()
 	dir := t.TempDir()
-	for _, n := range []string{"tools.txt", "tools.packages.json", "tools.lock.json"} {
+	for _, n := range []string{"packages.txt", "packages.catalog.json", "packages.lock.json"} {
 		b, err := os.ReadFile(filepath.Join("../../bundles/toolbox", n))
 		if err != nil {
 			t.Fatal(err)
@@ -54,7 +54,7 @@ func checkout(t *testing.T) string {
 }
 func readLock(t *testing.T, dir string) []byte {
 	t.Helper()
-	b, err := os.ReadFile(filepath.Join(dir, "tools.lock.json"))
+	b, err := os.ReadFile(filepath.Join(dir, "packages.lock.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -275,16 +275,16 @@ func TestChangedDesiredAndBootstrap(t *testing.T) {
 			dir := checkout(t)
 			c, _ := toolconfig.Load(dir)
 			if bootstrap {
-				if err := os.Remove(filepath.Join(dir, "tools.lock.json")); err != nil {
+				if err := os.Remove(filepath.Join(dir, "packages.lock.json")); err != nil {
 					t.Fatal(err)
 				}
 			} else {
-				data, err := os.ReadFile(filepath.Join(dir, "tools.txt"))
+				data, err := os.ReadFile(filepath.Join(dir, "packages.txt"))
 				if err != nil {
 					t.Fatal(err)
 				}
 				data = bytes.ReplaceAll(data, []byte("gh>=2.102.0"), []byte("gh==3.0.0"))
-				if err := os.WriteFile(filepath.Join(dir, "tools.txt"), data, 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(dir, "packages.txt"), data, 0644); err != nil {
 					t.Fatal(err)
 				}
 				if _, err := toolconfig.Load(dir); err == nil {
@@ -450,14 +450,14 @@ func TestUpgradeAllRepairsChangedCatalogInventory(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(dir, "tools.packages.json"), catalog, 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "packages.catalog.json"), catalog, 0644); err != nil {
 		t.Fatal(err)
 	}
 	var desired strings.Builder
 	for n, v := range c.Desired {
 		fmt.Fprintln(&desired, n+v.String())
 	}
-	if err := os.WriteFile(filepath.Join(dir, "tools.txt"), []byte(desired.String()), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "packages.txt"), []byte(desired.String()), 0644); err != nil {
 		t.Fatal(err)
 	}
 	client := fixtureClient(t, func(w http.ResponseWriter, r *http.Request) {
@@ -519,7 +519,7 @@ func TestTargetedUpgradeRequiresUnchangedCatalog(t *testing.T) {
 	p.Sidecar = "changed-checksums.txt"
 	c.Catalog.Packages["gh"] = p
 	data, _ := json.Marshal(c.Catalog)
-	if err := os.WriteFile(filepath.Join(dir, "tools.packages.json"), data, 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "packages.catalog.json"), data, 0644); err != nil {
 		t.Fatal(err)
 	}
 	client := fixtureClient(t, func(w http.ResponseWriter, r *http.Request) {

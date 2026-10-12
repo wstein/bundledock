@@ -15,8 +15,8 @@
 !internal/toolvolume/**
 !bundles
 !bundles/bun
-!bundles/bun/tools.txt
-!bundles/bun/tools.packages.json
-!bundles/bun/tools.lock.json
+!bundles/bun/packages.txt
+!bundles/bun/packages.catalog.json
+!bundles/bun/packages.lock.json
 !bundles/bun/licenses
 !bundles/bun/licenses/**

@@ -11,7 +11,7 @@ on:
         default: true
         required: true
       tool:
-        description: Optional tool name from tools.txt; leave empty to resolve all tools
+        description: Optional tool name from packages.txt; leave empty to resolve all tools
         type: string
         default: ''
         required: false

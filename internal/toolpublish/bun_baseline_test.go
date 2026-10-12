@@ -80,7 +80,7 @@ func TestBunPublicationSelectsOwnSources(t *testing.T) {
 	if b.Directory != "bundles/bun" || b.Workflow != "bundledock-bun.yml" || b.Artifact != "resolved-bun" {
 		t.Fatal(b)
 	}
-	m, err := NewMetadata("../../bundles/bun/tools.lock.json", "quay.io/example/bun", "2026.10.12-b1.1", strings.Repeat("a", 40), "https://github.com/example/repo", "2026-10-12T03:17:00Z", "123")
+	m, err := NewMetadata("../../bundles/bun/packages.lock.json", "quay.io/example/bun", "2026.10.12-b1.1", strings.Repeat("a", 40), "https://github.com/example/repo", "2026-10-12T03:17:00Z", "123")
 	if err != nil {
 		t.Fatal(err)
 	}

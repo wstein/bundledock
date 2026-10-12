@@ -15,10 +15,10 @@ import (
 	"time"
 )
 
-// Upgrade only writes tools.lock.json after every selected tool has resolved and
+// Upgrade only writes packages.lock.json after every selected tool has resolved and
 // verified both architectures. It never builds or activates an OCI tool volume.
 func Upgrade(ctx context.Context, client *http.Client, directory, tool string, output io.Writer) error {
-	lockPath := filepath.Join(directory, "tools.lock.json")
+	lockPath := filepath.Join(directory, "packages.lock.json")
 	c, err := toolconfig.LoadInputs(directory)
 	if err != nil {
 		return err
@@ -32,12 +32,12 @@ func Upgrade(ctx context.Context, client *http.Client, directory, tool string, o
 	}
 	if !exists {
 		if tool != "" {
-			return fmt.Errorf("tools.lock.json is missing; run bundledock tools upgrade without a tool")
+			return fmt.Errorf("packages.lock.json is missing; run bundledock tools upgrade without a tool")
 		}
 		c.Lock = toolconfig.Lock{Platforms: map[string]map[string]toolconfig.Spec{"amd64": {}, "arm64": {}}}
 	} else {
 		if !info.Mode().IsRegular() {
-			return fmt.Errorf("tools.lock.json must be a regular file")
+			return fmt.Errorf("packages.lock.json must be a regular file")
 		}
 		mode = info.Mode().Perm()
 		before, err = os.ReadFile(lockPath)
@@ -106,10 +106,10 @@ func Upgrade(ctx context.Context, client *http.Client, directory, tool string, o
 			return readErr
 		}
 		if !bytes.Equal(current, before) {
-			return fmt.Errorf("tools.lock.json changed during upgrade")
+			return fmt.Errorf("packages.lock.json changed during upgrade")
 		}
 	} else if !os.IsNotExist(readErr) {
-		return fmt.Errorf("tools.lock.json appeared during upgrade")
+		return fmt.Errorf("packages.lock.json appeared during upgrade")
 	}
 	if !bytes.Equal(data, before) {
 		temporary, err := os.CreateTemp(directory, ".tools.lock-*")
