@@ -1,7 +1,7 @@
 {
   "schema": 2,
-  "desired_digest": "f2d0e366b4e3ea44ceacbda8ac739245a7ef3cac44bca05ef2dab609bea00c37",
-  "catalog_digest": "3c06f68e1c9abe8bd1865f8172bac2aad63c9da41e70103e212cc166fac966f7",
+  "desired_digest": "4d09bad88c115e006148e897e633554e13f118b91b4c7c7e66fff8900793fdd3",
+  "catalog_digest": "4ed5fbd984503539a7bdddad67876ec9ead5eae39ab499975bb050fa2b72e442",
   "platforms": {
     "amd64": {
       "ast-grep": {
@@ -146,6 +146,54 @@
         "version": "v4.54.1",
         "url": "https://github.com/mikefarah/yq/releases/download/v4.54.1/yq_linux_amd64",
         "sha256": "8e34fc298390875de416e6a4afcb8cabeceb25d9aa8506c1a2f9353cf702ea5f",
+        "verification": "publisher-sha256"
+      },
+      "age": {
+        "version": "v1.3.2",
+        "url": "https://github.com/FiloSottile/age/releases/download/v1.3.2/age-v1.3.2-linux-amd64.tar.gz",
+        "sha256": "cbe24006683f8eb669266162894b9a522a1af52f2665fbc63a4bb032ed26ac10",
+        "verification": "publisher-sha256"
+      },
+      "delta": {
+        "version": "0.20.1",
+        "url": "https://github.com/dandavison/delta/releases/download/0.20.1/delta-0.20.1-x86_64-unknown-linux-musl.tar.gz",
+        "sha256": "69dcb4043f55c29118f408c6efd30115e0a4e0a6709253343b8c8fa814ab4a31",
+        "verification": "publisher-sha256"
+      },
+      "hyperfine": {
+        "version": "v2.0.0",
+        "url": "https://github.com/sharkdp/hyperfine/releases/download/v2.0.0/hyperfine-v2.0.0-x86_64-unknown-linux-musl.tar.gz",
+        "sha256": "38e59087bd65520930a13cf513d8a493b7043741e8ad62349a8a9929eb61bc5c",
+        "verification": "publisher-sha256"
+      },
+      "just": {
+        "version": "1.58.0",
+        "url": "https://github.com/casey/just/releases/download/1.58.0/just-1.58.0-x86_64-unknown-linux-musl.tar.gz",
+        "sha256": "4a5cc2f53e6f0f8c59092a6cc38291eb729d46a7dd95d3ae582008881b84931d",
+        "verification": "publisher-sha256"
+      },
+      "ruff": {
+        "version": "0.17.0",
+        "url": "https://github.com/astral-sh/ruff/releases/download/0.17.0/ruff-x86_64-unknown-linux-musl.tar.gz",
+        "sha256": "0df9421fd0df9aa7a62dab4d1086e085b7c7888b6343fc5a9c5f630771d61aae",
+        "verification": "publisher-sha256"
+      },
+      "shellcheck": {
+        "version": "v0.11.0",
+        "url": "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.x86_64.tar.xz",
+        "sha256": "8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198",
+        "verification": "publisher-sha256"
+      },
+      "shfmt": {
+        "version": "v3.14.1",
+        "url": "https://github.com/mvdan/sh/releases/download/v3.14.1/shfmt_v3.14.1_linux_amd64",
+        "sha256": "76e77641faa025814b77f153b29796b8e6fa2fca03e0c76a691608b86c7ea7bf",
+        "verification": "publisher-sha256"
+      },
+      "watchexec": {
+        "version": "v2.8.0",
+        "url": "https://github.com/watchexec/watchexec/releases/download/v2.8.0/watchexec-2.8.0-x86_64-unknown-linux-musl.tar.xz",
+        "sha256": "35ea667cbe4bc96c23ba2a1f46c94c46bc385b67165e3bf621c0e7e4959aa99b",
         "verification": "publisher-sha256"
       }
     },
@@ -292,6 +340,54 @@
         "version": "v4.54.1",
         "url": "https://github.com/mikefarah/yq/releases/download/v4.54.1/yq_linux_arm64",
         "sha256": "189088da0c6429ec5178dfaab1a114805f6cab0b61b165ab236efedf1d57a71b",
+        "verification": "publisher-sha256"
+      },
+      "age": {
+        "version": "v1.3.2",
+        "url": "https://github.com/FiloSottile/age/releases/download/v1.3.2/age-v1.3.2-linux-arm64.tar.gz",
+        "sha256": "6b8dc4333c53a5a57c9e5834e3a48f92605d7154014cd07269ff3327db5d37f4",
+        "verification": "publisher-sha256"
+      },
+      "delta": {
+        "version": "0.20.1",
+        "url": "https://github.com/dandavison/delta/releases/download/0.20.1/delta-0.20.1-aarch64-unknown-linux-gnu.tar.gz",
+        "sha256": "da7f4338f593572ff426ae153e0870e2fdc72729416eff551b40cdeb67940db8",
+        "verification": "publisher-sha256"
+      },
+      "hyperfine": {
+        "version": "v2.0.0",
+        "url": "https://github.com/sharkdp/hyperfine/releases/download/v2.0.0/hyperfine-v2.0.0-aarch64-unknown-linux-musl.tar.gz",
+        "sha256": "f0591c2cb8f66f2d2624d23979cf96dc99a67cb935f9925c82b9a4e3ffe5b2e1",
+        "verification": "publisher-sha256"
+      },
+      "just": {
+        "version": "1.58.0",
+        "url": "https://github.com/casey/just/releases/download/1.58.0/just-1.58.0-aarch64-unknown-linux-musl.tar.gz",
+        "sha256": "748237128c4c40cbdabc65e841d05ceba13cc23a91eaba395495894c1d9764df",
+        "verification": "publisher-sha256"
+      },
+      "ruff": {
+        "version": "0.17.0",
+        "url": "https://github.com/astral-sh/ruff/releases/download/0.17.0/ruff-aarch64-unknown-linux-musl.tar.gz",
+        "sha256": "cac779097e34bf1ca40175b4bacf8fca7a92fce5030bfc3edf1fd357428a33b0",
+        "verification": "publisher-sha256"
+      },
+      "shellcheck": {
+        "version": "v0.11.0",
+        "url": "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.aarch64.tar.xz",
+        "sha256": "12b331c1d2db6b9eb13cfca64306b1b157a86eb69db83023e261eaa7e7c14588",
+        "verification": "publisher-sha256"
+      },
+      "shfmt": {
+        "version": "v3.14.1",
+        "url": "https://github.com/mvdan/sh/releases/download/v3.14.1/shfmt_v3.14.1_linux_arm64",
+        "sha256": "5f2db09dae91fca848f7adbdd014632e921a383863a2ad7e0450ad3aba0c6489",
+        "verification": "publisher-sha256"
+      },
+      "watchexec": {
+        "version": "v2.8.0",
+        "url": "https://github.com/watchexec/watchexec/releases/download/v2.8.0/watchexec-2.8.0-aarch64-unknown-linux-musl.tar.xz",
+        "sha256": "3961878b21e3c1729279322f4007dd5bbf0032110fbcb5e7b983946a9ceb3bf6",
         "verification": "publisher-sha256"
       }
     }

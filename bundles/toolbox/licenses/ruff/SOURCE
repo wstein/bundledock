@@ -1,0 +1,5 @@
+Upstream: https://github.com/astral-sh/ruff
+Pinned release: 0.17.0
+Source archive: https://api.github.com/repos/astral-sh/ruff/tarball/0.17.0
+Source SHA256: ca0b4781f4e0d6c26d71a79d4147ab160e2177132bcdd3c5fadb26e8a586c72f
+Official AMD64/ARM64 release API SHA256 digests verified by read-only archive inspection on 2026-10-12. No upstream binaries were executed or modified.

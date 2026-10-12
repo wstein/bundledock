@@ -103,6 +103,24 @@ func fixture(t *testing.T) (map[string][]byte, map[string]Spec, *httptest.Server
 		"agy":      archive(t, member{"bundle/antigravity", "antigravity cli", 0755, 0}),
 		"codex":    archive(t, member{"bin/codex", "codex cli", 0755, 0}, member{"codex-package.json", `{"entrypoint":"bin/codex"}`, 0644, 0}, member{"bin/codex-code-mode-host", "host", 0755, 0}, member{"codex-path/rg", "rg", 0755, 0}, member{"codex-resources/bwrap", "bwrap", 0755, 0}, member{"codex-resources/zsh/bin/zsh", "zsh", 0755, 0}, member{"codex-resources/voice/", "", 0755, tar.TypeDir}, member{"./codex-resources/voice/lib/example.so", "shared library", 0644, 0}, member{"codex-resources/voice-other/keep", "other resource", 0644, 0}, member{"empty/", "", 0755, tar.TypeDir}),
 	}
+	for _, name := range []string{"shellcheck", "shfmt", "just", "ruff", "delta", "watchexec", "hyperfine", "age"} {
+		p := testPackages(t)[name]
+		var files []member
+		for executable := range p.Install.Members {
+			files = append(files, member{"upstream/" + executable, executable + " executable", 0755, 0})
+		}
+		for _, notice := range p.Install.ArchiveNotices {
+			files = append(files, member{"upstream/" + notice, name + " license", 0644, 0})
+		}
+		switch p.Install.Kind {
+		case "raw":
+			payloads[name] = []byte(name + " executable")
+		case "tar.xz":
+			payloads[name] = xzArchive(t, files...)
+		default:
+			payloads[name] = archive(t, files...)
+		}
+	}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		key := strings.TrimPrefix(r.URL.Path, "/")
 		if strings.HasPrefix(key, "helix-25.07.1-") {

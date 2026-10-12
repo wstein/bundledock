@@ -20,6 +20,7 @@ check() {
         --tmpfs /home/bundledock:exec,uid=1000,gid=1000,mode=0700 \
         --mount "type=volume,src=$volume,dst=/opt/bundledock/toolbox,readonly,volume-nocopy" \
         --mount "type=bind,src=$script_dir/quality-security-smoke.sh,dst=/quality-security-smoke.sh,readonly" \
+        --mount "type=bind,src=$script_dir/quality-utilities-smoke.sh,dst=/quality-utilities-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/utilities-smoke.sh,dst=/utilities-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/helix-smoke.sh,dst=/helix-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/hugo-smoke.sh,dst=/hugo-smoke.sh,readonly" \
@@ -100,6 +101,8 @@ check() {
             test "$(uv --offline cache dir)" = "$UV_CACHE_DIR"
             stage "fzf bat and registry utilities"
             sh /utilities-smoke.sh
+            stage "shell formatting recipes Python diffs watching benchmarks and encryption"
+            sh /quality-utilities-smoke.sh
             stage "Helix editor"
             sh /helix-smoke.sh
             stage "Hugo"

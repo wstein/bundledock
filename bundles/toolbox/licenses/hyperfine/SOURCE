@@ -1,0 +1,5 @@
+Upstream: https://github.com/sharkdp/hyperfine
+Pinned release: v2.0.0
+Source archive: https://api.github.com/repos/sharkdp/hyperfine/tarball/v2.0.0
+Source SHA256: d2bda6a94faec91e754032994e0e6cf6f2bb571ba56dd35913b5c86591e8cd2e
+Official AMD64/ARM64 release API SHA256 digests verified by read-only archive inspection on 2026-10-12. No upstream binaries were executed or modified.

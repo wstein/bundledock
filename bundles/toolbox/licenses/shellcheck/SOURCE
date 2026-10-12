@@ -1,0 +1,5 @@
+Upstream: https://github.com/koalaman/shellcheck
+Pinned release: v0.11.0
+Source archive: https://api.github.com/repos/koalaman/shellcheck/tarball/v0.11.0
+Source SHA256: 2f77a26bd98d7c00280833ee7eb47df22b06c526b49dc7c6a16c65637dd7914b
+Official AMD64/ARM64 release API SHA256 digests verified by read-only archive inspection on 2026-10-12. No upstream binaries were executed or modified.

@@ -1,0 +1,5 @@
+Upstream: https://github.com/casey/just
+Pinned release: 1.58.0
+Source archive: https://api.github.com/repos/casey/just/tarball/1.58.0
+Source SHA256: 074cdd2f89e184f9a30924c5df4b90e2825b63a159646df067c9152b9cec0190
+Official AMD64/ARM64 release API SHA256 digests verified by read-only archive inspection on 2026-10-12. No upstream binaries were executed or modified.

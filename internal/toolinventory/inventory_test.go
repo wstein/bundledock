@@ -158,7 +158,7 @@ func TestInventoryUsesDisplayedLabelAlphabeticalOrder(t *testing.T) {
 			labels = append(labels, strings.TrimSpace(strings.Split(line, "|")[1]))
 		}
 	}
-	if len(labels) != 24 {
+	if len(labels) != 32 {
 		t.Fatalf("expected full real catalog, got %d rows", len(labels))
 	}
 	for i := 1; i < len(labels); i++ {
