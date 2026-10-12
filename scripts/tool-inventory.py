@@ -13,6 +13,7 @@ END = "<!-- END GENERATED TOOL INVENTORY -->"
 LABELS = (
     ("git-lfs", "Git LFS (`git-lfs`)"),
     ("lazygit", "lazygit (`lazygit`)"),
+    ("leaf", "Leaf (`leaf`)"),
     ("jj", "Jujutsu (`jj`)"),
     ("shellcheck", "ShellCheck (`shellcheck`)"),
     ("shfmt", "shfmt (`shfmt`)"),

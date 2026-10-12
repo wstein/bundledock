@@ -1,7 +1,7 @@
 {
   "schema": 2,
-  "desired_digest": "0304174c091acdb8c5a342ebb2dc8f7c594e9eb131274f3a4ac2f5a1c195cfce",
-  "catalog_digest": "f89f1c4f86826a7fafaef264a16501ac3ac924b4945c3fac319e5d1cf4ce5b3e",
+  "desired_digest": "da2a7a574221174dfdea5ed42bbabf18b787b4f85ab84436261f3549e3ae4665",
+  "catalog_digest": "20fb46479abf3b9d82b850584cdd9b9b02ed4b7e2f94ca2db10b25a21be738bc",
   "platforms": {
     "amd64": {
       "ast-grep": {
@@ -86,6 +86,12 @@
         "version": "jq-1.8.2",
         "url": "https://github.com/jqlang/jq/releases/download/jq-1.8.2/jq-linux-amd64",
         "sha256": "b1c22172dd303f3be49e935aa56aa48a8b7a46e0bc838b4997d3bb451495870f",
+        "verification": "publisher-sha256"
+      },
+      "leaf": {
+        "version": "1.29.0",
+        "url": "https://github.com/RivoLink/leaf/releases/download/1.29.0/leaf-linux-x86_64",
+        "sha256": "5a68ffc77c8d604cfe854cd685e36ee98e47f0a507234011cdc0619f9aabb40c",
         "verification": "publisher-sha256"
       },
       "lychee": {
@@ -311,6 +317,12 @@
         "version": "jq-1.8.2",
         "url": "https://github.com/jqlang/jq/releases/download/jq-1.8.2/jq-linux-arm64",
         "sha256": "8b85c817833814ddca00a144c33705546355afccf0cf39b188f3cdb48b852309",
+        "verification": "publisher-sha256"
+      },
+      "leaf": {
+        "version": "1.29.0",
+        "url": "https://github.com/RivoLink/leaf/releases/download/1.29.0/leaf-linux-arm64",
+        "sha256": "b3c383620f1cff8a64ff041f389bea4ff2385b69810c1f44d4ea90054a561c6f",
         "verification": "publisher-sha256"
       },
       "lychee": {

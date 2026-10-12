@@ -66,6 +66,7 @@ and `arm64`; builds verify every download.
 | Jujutsu (`jj`) | 0.46.0 |
 | just (`just`) | 1.58.0 |
 | lazygit (`lazygit`) | 0.66.1 |
+| Leaf (`leaf`) | 1.29.0 |
 | lychee (`lychee`) | 0.24.2 |
 | Mike Farah yq (`yq`) | 4.54.1 |
 | Nushell (`nu`) | 0.116.1 |
@@ -443,3 +444,23 @@ glibc consumer; native Linux AMD64 and ARM64 builds, linkage inspection, the
 read-only consumer smoke and repeated-build comparisons remain deferred until
 explicit approval of the exact source revision and intended operation. Source
 checks alone establish neither runtime compatibility nor bit-for-bit reproducibility.
+
+## Leaf Markdown preview
+
+The source toolbox includes [Leaf 1.29.0](https://github.com/RivoLink/leaf/releases/tag/1.29.0)
+from the official Linux AMD64 and ARM64 raw binaries, installed as `bin/leaf`
+with the full MIT license from the same upstream tag. Run `leaf README.md` for
+an interactive terminal preview or `leaf --inline plain README.md` for plain
+rendered output. Keep HOME and XDG configuration/cache directories writable
+outside the read-only toolbox mount. Upgrade through BundleDock's lock;
+`leaf --update` writes its executable and is unsuitable for the mounted toolbox.
+
+Both downloaded binary hashes matched the official release API and
+`checksums.txt` on 2026-10-12. Read-only ELF inspection confirmed x86-64 and
+AArch64; both binaries require glibc, libgcc_s and libm with their native loaders.
+No upstream binary was executed. Source fixtures cover resolution and raw
+installation on both architectures and the isolated noninteractive smoke's
+`--version` and `--inline plain` rendering. Native runtime compatibility and
+image smoke on both architectures remain unverified until an explicitly
+approved build and smoke run. The smoke clears caller configuration overrides
+and confines Leaf's HOME, XDG paths and Markdown fixture to a temporary directory.
