@@ -1,0 +1,5 @@
+Upstream: https://github.com/cli/cli
+Pinned release: v2.102.0
+Source archive: https://api.github.com/repos/cli/cli/tarball/v2.102.0
+Source SHA256: 38f988355fc4bb786bdd02b9ad033b492886efa419417476fd1af52edefadfa8
+LICENSE copied unchanged from the exact pinned official source archive. This records direct upstream licensing, not a complete inventory of transitive binary dependencies.
