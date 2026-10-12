@@ -350,3 +350,52 @@ in the recorded LTS index. Reapplying that exact historical publication preserve
 its verified value; a different historical identity falls back to `unknown`.
 Unpublished channels have no published metadata and an unavailable badge rather
 than a version copied from their source inventory.
+
+## Reconcile an existing publication
+
+A green workflow badge alone does not establish publication. An automatic
+`workflow_run` completion can succeed while every artifact job is skipped.
+Reconcile the exact bundle, full image source SHA, run ID and attempt using the
+read-only helper (Python standard library and an already configured `gh`):
+
+```sh
+python3 -B scripts/publication-reconcile.py --bundle opentofu \
+  --sha 84216f3a45e35ba741cc8245f96803b5b9a2a31f \
+  --run-id 38314225387 --attempt 1
+```
+
+This existing manual run verifies `opentofu/1.13.1-b1` and index digest
+`sha256:67bd27de607af0d950789a3a0308262141860a331bae31b3f2a9d170c0cb3414`.
+The existing automatic run `38314751960`, attempt `1`, at controller SHA
+`bde9e76f14665716c2d7d387b1cdfd807dd26101` instead reports `not-published`.
+These are historical evidence, not authorization for a new operation.
+
+The helper reads the exact workflow attempt and its jobs, checks that both
+native build-and-smoke steps actually executed successfully, and checks promotion,
+tagging and documentation proposal steps. It downloads only the uniquely named
+`<bundle>-publication-<attempt>` artifact from that run and validates its canonical
+`publication.json` with the existing receipt validator. The receipt must bind
+the requested source, run and attempt, both smoked platforms and immutable index.
+The helper independently hashes the live version index, architecture manifests
+and configs, compares them to the smoked receipt, verifies OCI source/run/lock
+labels, checks that source is on official `main`, and reads the annotated source
+tag and complete annotation from GitHub. Automatic controller SHA and image
+source SHA remain separate; only a verified receipt establishes `source_sha`.
+
+| State | Meaning |
+| --- | --- |
+| `published` | Image, source tag and documentation PR step verified; this does not claim the PR was merged or the site rendered. |
+| `not-published` | Successful automatic run skipped all native/promotion/tag/documentation work and has no canonical receipt for this attempt. |
+| `published-image-and-tag` | Image and tag verified, but documentation step did not succeed. |
+| `published-image` | Image verified, but source tag job did not succeed; inspect the tag outcome separately. |
+| `pending` | Required evidence is missing, expired, unknown, inaccessible or still running. |
+| `incomplete` | Completed native or promotion jobs did not all succeed; publication has not been proved. Registry writes may still have occurred. |
+| `rejected` | Evidence contradicts the requested publication identity; resolve the inconsistency before making any claim. |
+
+Exit status is `0` for `published` or `not-published`, `2` for pending or incomplete
+work (including a verified image with unfinished tag/docs work), and `1` for
+contradictory evidence. API outages and expired receipts remain pending, even if
+a badge is green. No state proves consumer activation. Immutable version evidence
+is checked rather than current moving aliases, which may already identify a
+later publication. The helper never dispatches workflows, builds artifacts,
+writes registry data, creates tags, opens PRs, merges, or changes settings.
