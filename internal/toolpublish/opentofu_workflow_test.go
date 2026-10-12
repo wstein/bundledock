@@ -79,7 +79,7 @@ esac
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"tofu version", "tofu init -backend=false", "tofu validate", "tofu plan", "tofu apply", "TF_PLUGIN_CACHE_DIR", "TF_DATA_DIR", "terraform.tfstate", "Unexpected write", "config-before"} {
+	for _, want := range []string{"tofu version", "tofu init -backend=false", "tofu validate", "tofu plan", "tofu apply", "TF_PLUGIN_CACHE_DIR", "TF_DATA_DIR", "terraform.tfstate", "unexpected write", "config-before"} {
 		if !strings.Contains(string(source), want) {
 			t.Error("consumer smoke missing " + want)
 		}
