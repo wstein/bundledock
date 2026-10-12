@@ -1,0 +1,2 @@
+# package list should be sorted alphabetically for easier maintenance.
+opentofu>=1.13.1,<2.0.0
