@@ -1,0 +1,5 @@
+Upstream: https://github.com/FiloSottile/age
+Pinned release: v1.3.2
+Source archive: https://api.github.com/repos/FiloSottile/age/tarball/v1.3.2
+Source SHA256: 413d6841e156bb1fd9757453637873d70f856a77419b638d6c158983f8591c5a
+Official AMD64/ARM64 release API SHA256 digests verified by read-only archive inspection on 2026-10-12. No upstream binaries were executed or modified.

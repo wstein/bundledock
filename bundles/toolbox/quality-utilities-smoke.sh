@@ -1,0 +1,31 @@
+#!/bin/sh
+set -eu
+# Offline, noninteractive checks use only a private temporary workspace.
+work=$(mktemp -d)
+trap 'rm -rf "$work"' EXIT HUP INT TERM
+shellcheck --version
+shfmt --version
+just --version
+ruff --version
+delta --version
+watchexec --version
+hyperfine --version
+age --version
+age-keygen --version
+test "$(printf '%s\n' '#!/bin/sh' 'echo smoke' | shellcheck --norc -s sh -)" = ''
+test "$(printf '%s\n' 'echo  smoke' | shfmt -ln posix)" = 'echo smoke'
+printf '%s\n' 'smoke:' '    @echo recipe-smoke' > "$work/justfile"
+test "$(just --no-dotenv --justfile "$work/justfile" --working-directory "$work" --quiet smoke)" = recipe-smoke
+test "$(printf '%s\n' 'x=1' | ruff format --isolated --no-cache --stdin-filename smoke.py -)" = 'x = 1'
+printf '%s\n' '--- a/smoke' '+++ b/smoke' '@@ -1 +1 @@' '-before-smoke' '+after-smoke' | delta --no-gitconfig --paging=never > "$work/diff"
+grep -q after-smoke "$work/diff"
+test "$(watchexec --once --shell=none --workdir "$work" -- echo watch-smoke)" = watch-smoke
+hyperfine --warmup 0 --runs 1 --export-json "$work/benchmark.json" true
+grep -q '"times"' "$work/benchmark.json"
+age-keygen -o "$work/key.txt"
+recipient=$(age-keygen -y "$work/key.txt")
+case "$recipient" in age1*) ;; *) exit 1;; esac
+printf '%s\n' encryption-smoke > "$work/plain"
+age -r "$recipient" -o "$work/encrypted" "$work/plain"
+age -d -i "$work/key.txt" -o "$work/decrypted" "$work/encrypted"
+cmp "$work/plain" "$work/decrypted"

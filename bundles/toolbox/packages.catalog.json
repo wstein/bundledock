@@ -651,6 +651,238 @@
         "licenses/regctl/SOURCE",
         "licenses/regctl/LICENSE"
       ]
+    },
+    "shellcheck": {
+      "provider": "github",
+      "repository": "koalaman/shellcheck",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "x86_64",
+        "arm64": "aarch64"
+      },
+      "asset": "shellcheck-v{version}.linux.{arch}.tar.xz",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "tar.xz",
+        "members": {
+          "shellcheck": "bin/shellcheck"
+        },
+        "archive_notices": [
+          "LICENSE.txt",
+          "README.txt"
+        ]
+      },
+      "tag_prefix": "v",
+      "notices": [
+        "licenses/shellcheck/LICENSE",
+        "licenses/shellcheck/SOURCE"
+      ]
+    },
+    "shfmt": {
+      "provider": "github",
+      "repository": "mvdan/sh",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "amd64",
+        "arm64": "arm64"
+      },
+      "asset": "shfmt_v{version}_linux_{arch}",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "raw",
+        "members": {
+          "shfmt": "bin/shfmt"
+        }
+      },
+      "tag_prefix": "v",
+      "notices": [
+        "licenses/shfmt/LICENSE",
+        "licenses/shfmt/SOURCE"
+      ]
+    },
+    "just": {
+      "provider": "github",
+      "repository": "casey/just",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "x86_64",
+        "arm64": "aarch64"
+      },
+      "asset": "just-{version}-{arch}-unknown-linux-musl.tar.gz",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "tar.gz",
+        "members": {
+          "just": "bin/just"
+        },
+        "archive_notices": [
+          "LICENSE"
+        ]
+      },
+      "notices": [
+        "licenses/just/SOURCE"
+      ]
+    },
+    "ruff": {
+      "provider": "github",
+      "repository": "astral-sh/ruff",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "x86_64",
+        "arm64": "aarch64"
+      },
+      "asset": "ruff-{arch}-unknown-linux-musl.tar.gz",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "tar.gz",
+        "members": {
+          "ruff": "bin/ruff"
+        }
+      },
+      "notices": [
+        "licenses/ruff/LICENSE",
+        "licenses/ruff/SOURCE",
+        "licenses/ruff/crates--ruff_annotate_snippets--LICENSE-APACHE",
+        "licenses/ruff/crates--ruff_annotate_snippets--LICENSE-MIT",
+        "licenses/ruff/crates--ruff_unicode_names2--LICENSE-APACHE",
+        "licenses/ruff/crates--ruff_unicode_names2--LICENSE-MIT",
+        "licenses/ruff/crates--ruff_unicode_names2--data--LICENSE-UNICODE",
+        "licenses/ruff/crates--ruff_unicode_names2_generator--LICENSE-APACHE",
+        "licenses/ruff/crates--ruff_unicode_names2_generator--LICENSE-MIT",
+        "licenses/ruff/crates--ty_vendored--vendor--typeshed--LICENSE"
+      ]
+    },
+    "delta": {
+      "provider": "github",
+      "repository": "dandavison/delta",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "x86_64-unknown-linux-musl",
+        "arm64": "aarch64-unknown-linux-gnu"
+      },
+      "asset": "delta-{version}-{arch}.tar.gz",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "tar.gz",
+        "members": {
+          "delta": "bin/delta"
+        },
+        "archive_notices": [
+          "LICENSE"
+        ]
+      },
+      "notices": [
+        "licenses/delta/SOURCE",
+        "licenses/delta/bat-LICENSE-APACHE",
+        "licenses/delta/bat-LICENSE-MIT",
+        "licenses/delta/bat-NOTICE",
+        "licenses/delta/bat-SYNTAX-THEME-INVENTORY",
+        "licenses/delta/bat-SYNTAX-THEME-NOTICES",
+        "licenses/delta/src--utils--bat--LICENSE"
+      ]
+    },
+    "watchexec": {
+      "provider": "github",
+      "repository": "watchexec/watchexec",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "x86_64",
+        "arm64": "aarch64"
+      },
+      "asset": "watchexec-{version}-{arch}-unknown-linux-musl.tar.xz",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "tar.xz",
+        "members": {
+          "watchexec": "bin/watchexec"
+        },
+        "archive_notices": [
+          "LICENSE"
+        ]
+      },
+      "tag_prefix": "v",
+      "notices": [
+        "licenses/watchexec/SOURCE"
+      ]
+    },
+    "hyperfine": {
+      "provider": "github",
+      "repository": "sharkdp/hyperfine",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "x86_64",
+        "arm64": "aarch64"
+      },
+      "asset": "hyperfine-v{version}-{arch}-unknown-linux-musl.tar.gz",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "tar.gz",
+        "members": {
+          "hyperfine": "bin/hyperfine"
+        },
+        "archive_notices": [
+          "LICENSE-MIT",
+          "LICENSE-APACHE"
+        ]
+      },
+      "tag_prefix": "v",
+      "notices": [
+        "licenses/hyperfine/SOURCE"
+      ]
+    },
+    "age": {
+      "provider": "github",
+      "repository": "FiloSottile/age",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "amd64",
+        "arm64": "arm64"
+      },
+      "asset": "age-v{version}-linux-{arch}.tar.gz",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "tar.gz",
+        "members": {
+          "age": "bin/age",
+          "age-keygen": "bin/age-keygen",
+          "age-inspect": "bin/age-inspect",
+          "age-plugin-tag": "bin/age-plugin-tag",
+          "age-plugin-batchpass": "bin/age-plugin-batchpass",
+          "age-plugin-pq": "bin/age-plugin-pq",
+          "age-plugin-tagpq": "bin/age-plugin-tagpq"
+        },
+        "archive_notices": [
+          "LICENSE"
+        ]
+      },
+      "tag_prefix": "v",
+      "notices": [
+        "licenses/age/SOURCE"
+      ]
     }
   }
 }

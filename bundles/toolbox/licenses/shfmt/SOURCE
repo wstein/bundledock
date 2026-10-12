@@ -1,0 +1,5 @@
+Upstream: https://github.com/mvdan/sh
+Pinned release: v3.14.1
+Source archive: https://api.github.com/repos/mvdan/sh/tarball/v3.14.1
+Source SHA256: 56c8a7362b6176fbc7b2ec84c9fcd411b279f14720a3e915c09dd2704f7c0824
+Official AMD64/ARM64 release API SHA256 digests verified by read-only archive inspection on 2026-10-12. No upstream binaries were executed or modified.

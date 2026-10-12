@@ -11,6 +11,14 @@ END = "<!-- END GENERATED TOOL INVENTORY -->"
 # Existing display labels only. Versions come exclusively from the
 # lock; exact catalog coverage prevents a new tool from being silently omitted.
 LABELS = (
+    ("shellcheck", "ShellCheck (`shellcheck`)"),
+    ("shfmt", "shfmt (`shfmt`)"),
+    ("just", "just (`just`)"),
+    ("ruff", "Ruff (`ruff`)"),
+    ("delta", "delta (`delta`)"),
+    ("watchexec", "watchexec (`watchexec`)"),
+    ("hyperfine", "hyperfine (`hyperfine`)"),
+    ("age", "age (`age`, `age-keygen`, `age-inspect`, plugins)"),
     ("gh", "GitHub CLI"),
     ("jq", "jq"),
     ("rg", "ripgrep (`rg`)"),

@@ -1,0 +1,6 @@
+Upstream: https://github.com/dandavison/delta
+Pinned release: 0.20.1
+Source archive: https://api.github.com/repos/dandavison/delta/tarball/0.20.1
+Source SHA256: d36627d2d033f1cf309e644c318ab34012e53a0bc6b61b4b1ca5edcfe5862782
+Official AMD64/ARM64 release API SHA256 digests verified by read-only archive inspection on 2026-10-12. No upstream binaries were executed or modified.
+Cargo.lock pins bat 0.26.1; its complete decoded syntax/theme notices and licenses are retained here from the existing verified bat 0.26.1 inventory. ARM64 uses the official GNU libc asset; AMD64 uses musl.

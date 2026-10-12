@@ -33,7 +33,7 @@ The source inventory below describes the current lock; this publication retains 
 
 The default bundle lives in `bundles/toolbox/`: `packages.txt`,
 `packages.catalog.json`, `packages.lock.json`, its Dockerfile, smoke scripts and licenses.
-Shared Go code remains at the repository root. The source toolbox contains 24
+Shared Go code remains at the repository root. The source toolbox contains 32
 common tools. Codex, Antigravity and Claude are supplied by their separate
 [Codex](codex.md), [Antigravity](agy.md) and [Claude Code](claude.md) bundles.
 The published toolbox recorded above still includes those agents; this source
@@ -45,10 +45,12 @@ and `arm64`; builds verify every download.
 <!-- BEGIN GENERATED TOOL INVENTORY -->
 | Tool | Pinned version |
 | --- | --- |
+| age (`age`, `age-keygen`, `age-inspect`, plugins) | 1.3.2 |
 | ast-grep (`ast-grep`) | 0.45.3 |
 | bat (`bat`) | 0.26.1 |
 | bottom (`btm`) | 0.14.9 |
 | btop (`btop`) | 1.4.7 |
+| delta (`delta`) | 0.20.1 |
 | fd (`fd`, `fdfind`) | 10.5.0 |
 | Fish (`fish`) | 4.9.3 |
 | fzf (`fzf`) | 0.74.5 |
@@ -57,18 +59,24 @@ and `arm64`; builds verify every download.
 | Helix (`hx`) | 25.07.1 |
 | Herdr (`herdr`) | 0.9.3 |
 | Hugo (`hugo`, standard) | 0.167.0 |
+| hyperfine (`hyperfine`) | 2.0.0 |
 | jq | 1.8.2 |
+| just (`just`) | 1.58.0 |
 | lychee (`lychee`) | 0.24.2 |
 | Mike Farah yq (`yq`) | 4.54.1 |
 | Nushell (`nu`) | 0.116.1 |
 | regctl (`regctl`) | 0.11.6 |
 | ripgrep (`rg`) | 15.2.0 |
+| Ruff (`ruff`) | 0.17.0 |
+| ShellCheck (`shellcheck`) | 0.11.0 |
+| shfmt (`shfmt`) | 3.14.1 |
 | Starship (`starship`) | 1.26.0 |
 | Syft (`syft`) | 1.54.1 |
 | tmux (`tmux`) | 3.7c (official static builds) |
 | Trivy (`trivy`) | 0.75.0 |
 | typos (`typos`) | 1.51.1 |
 | uv (`uv`, `uvx`) | 0.13.0 |
+| watchexec (`watchexec`) | 2.8.0 |
 <!-- END GENERATED TOOL INVENTORY -->
 
 Nushell and tmux are opt-in commands. tmux pins the published stable
