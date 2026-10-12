@@ -364,8 +364,10 @@ go test ./internal/toolbundle -run 'TestQualitySecurity' -count=1
 ### Embedded dependency findings
 
 Third-party tools use official stable prebuilt releases under the
-[repository policy](../AGENTS.md). Wait for a patched stable upstream release;
-do not rebuild the tools from source or patch their binaries or dependencies.
+[repository policy](../AGENTS.md), with the single reviewed
+[git-trim v0.4.3 exception](toolbox.md#git-trim-source-exception). Wait for a patched
+stable upstream release for other tools; do not rebuild them from source or patch
+any tool binary or dependency.
 
 The 2026-10-10 inspection of Go build information in both official AMD64 and
 ARM64 archives confirmed the following dependencies in the locked releases:
