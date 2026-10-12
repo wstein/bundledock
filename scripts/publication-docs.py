@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Propose managed publication Markdown from a verified promotion receipt; never build docs."""
+"""Propose managed publication Markdown and metadata from a verified receipt; never build docs."""
 import argparse
 import importlib.util
 from datetime import datetime
@@ -104,17 +104,41 @@ def replacement(source, record):
     return prefix + BEGIN + render(record) + END + suffix
 
 
+def metadata_path(bundle):
+    return 'docs/' + bundle + '-published.json' if bundle in ('node', 'node-current') else None
+
+
+def metadata(bundle, record, previous='{}'):
+    # Historical date tags do not encode an upstream version. Preserve an
+    # independently verified value only for the exact same published identity.
+    upstream = record['tag'].split('-b')[0] if _TAGS.SINGLETON.fullmatch(record['tag']) else 'unknown'
+    old = json.loads(previous)
+    if upstream == 'unknown' and isinstance(old, dict) and all(old.get(key) == record[key] for key in ('tag', 'digest', 'commit', 'image')):
+        candidate = old.get('upstream_version', '')
+        if isinstance(candidate, str) and re.fullmatch(r'\d+\.\d+\.\d+', candidate):
+            upstream = candidate
+    result = {key: record[key] for key in ('tag', 'digest', 'commit', 'image', 'run_id')}
+    result.update(bundle=bundle, upstream_version=upstream)
+    return json.dumps(result, sort_keys=True, indent=2) + '\n'
+
+
 def update(root, bundle, record):
     root = root.resolve(strict=True)
-    path = root / BUNDLES[bundle]
-    require(not path.is_symlink() and not path.parent.is_symlink(), 'Linked documentation path forbidden')
-    require(path.resolve(strict=True).is_relative_to(root), 'Documentation path escapes repository')
-    source = path.read_bytes().decode('utf-8')
-    result = replacement(source, record)
-    if result == source:
-        return False
-    path.write_bytes(result.encode('utf-8'))
-    return True
+    paths = [BUNDLES[bundle]]
+    if metadata_path(bundle):
+        paths.append(metadata_path(bundle))
+    changes = []
+    for relative in paths:
+        path = root / relative
+        require(not path.is_symlink() and not path.parent.is_symlink(), 'Linked documentation path forbidden')
+        require(path.resolve().is_relative_to(root), 'Documentation path escapes repository')
+        source = path.read_bytes().decode('utf-8') if path.exists() else '{}'
+        result = replacement(source, record) if relative == BUNDLES[bundle] else metadata(bundle, record, source)
+        if result != source:
+            changes.append((path, result))
+    for path, result in changes:
+        path.write_bytes(result.encode('utf-8'))
+    return bool(changes)
 
 
 def command(*args):
@@ -146,12 +170,20 @@ def propose(root, bundle, record):
     path = BUNDLES[bundle]
     source = source_at(base, path)
     desired = replacement(source, record)
-    if desired == source:
+    changes = []
+    if desired != source:
+        changes.append({'path': path, 'mode': '100644', 'type': 'blob', 'content': desired})
+    badge_path = metadata_path(bundle)
+    if badge_path:
+        old_metadata = source_at(base, badge_path)
+        desired_metadata = metadata(bundle, record, old_metadata)
+        if desired_metadata != old_metadata:
+            changes.append({'path': badge_path, 'mode': '100644', 'type': 'blob', 'content': desired_metadata})
+    if not changes:
         return 'Publication source already current'
     tree = api('git/commits/' + base)['tree']['sha']
     require(re.fullmatch(SHA, tree), 'Invalid base tree')
-    tree = api('git/trees', {'base_tree': tree, 'tree': [
-        {'path': path, 'mode': '100644', 'type': 'blob', 'content': desired}]})['sha']
+    tree = api('git/trees', {'base_tree': tree, 'tree': changes})['sha']
     require(re.fullmatch(SHA, tree), 'Invalid new tree')
     head = api('git/commits', {'message': 'docs(' + bundle + '): record publication ' + record['tag'] + '\n\nKeep consumer guidance tied to the verified published index and exact source revision.',
                              'tree': tree, 'parents': [base]})['sha']
@@ -181,7 +213,7 @@ def propose(root, bundle, record):
     else:
         result = command('gh', 'pr', 'create', '--repo', REPOSITORY, '--base', 'main', '--head', branch,
             '--title', 'docs(' + bundle + '): record publication ' + record['tag'], '--body',
-            'Record the verified published version, index digest, exact source and workflow run in the managed bundle guide. This changes Markdown source only; no documentation build or consumer activation is performed.')
+            'Record the verified published version, index digest, exact source and workflow run in the managed bundle guide. This changes Markdown and publication metadata source only; no documentation build or consumer activation is performed.')
     require(api('git/ref/heads/' + branch)['object']['sha'] == head, 'Topic moved before source CI')
     command('gh', 'workflow', 'run', 'ci.yml', '--repo', REPOSITORY, '--ref', branch,
             '-f', 'expected_head_sha=' + head)

@@ -1,0 +1,9 @@
+{
+  "bundle": "node-current",
+  "commit": "27e5abc2f4649aec8abc75ac68c647319dc0f931",
+  "digest": "sha256:3231e7f0ab7d9c3b9debcd52d4b53935b094d775b1f5ad3c25f415fec246a1f7",
+  "image": "quay.io/bundledock/node",
+  "run_id": "38294995668",
+  "tag": "26.11.1-b1",
+  "upstream_version": "26.11.1"
+}
