@@ -1,4 +1,11 @@
+---
+title: Node.js LTS bundle
+description: Use the independent Node.js LTS carrier with npm/npx and a writable consumer workspace.
+---
+
 # Optional Node.js bundle
+
+[All bundles](bundles.md)
 
 `bundles/node` supplies the official stable Node.js LTS prebuilt Linux AMD64
 and ARM64 runtime and its bundled npm/npx. It has its own catalog, lock, image,

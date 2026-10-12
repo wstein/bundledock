@@ -1,4 +1,11 @@
+---
+title: code-server bundle
+description: Use the standalone browser editor with consumer-owned configuration and service startup.
+---
+
 # Optional code-server bundle
+
+[All bundles](bundles.md)
 
 The separate `bundles/code-server` carrier supplies the official stable
 code-server standalone distribution for Linux AMD64 and ARM64. It is optional:

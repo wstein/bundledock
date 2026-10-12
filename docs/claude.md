@@ -1,4 +1,11 @@
+---
+title: Claude Code bundle
+description: Use the official Claude CLI with its independent inventory and publication receipt.
+---
+
 # Optional Claude Code bundle
+
+[All bundles](bundles.md)
 
 `bundles/claude` supplies the official stable Linux AMD64 and ARM64 Claude Code
 prebuilt with its own catalog, lock, carrier image, volume and
