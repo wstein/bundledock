@@ -1,0 +1,23 @@
+{
+  "schema": 2,
+  "desired_digest": "6853c953e7142fcd6f0c2fb7283b26cc16bd784b20db62ef271be50bd806fa0d",
+  "catalog_digest": "02d515e52a9279f24a76eb1c30257cbbe510a3705a6473674b256ceaf2efa17b",
+  "platforms": {
+    "amd64": {
+      "claude": {
+        "version": "2.1.296",
+        "url": "https://downloads.claude.ai/claude-code-releases/2.1.296/linux-x64/claude",
+        "sha256": "24972e3bc859fab2b46ed4c1e51f7d6130f06d3bd550811a114640de3370d0de",
+        "verification": "publisher-sha256"
+      }
+    },
+    "arm64": {
+      "claude": {
+        "version": "2.1.296",
+        "url": "https://downloads.claude.ai/claude-code-releases/2.1.296/linux-arm64/claude",
+        "sha256": "f1f6e96e0d8342b9dbf41d7e88255397a6a52ce3d8736ad6a4c6b59c9b62fefa",
+        "verification": "publisher-sha256"
+      }
+    }
+  }
+}

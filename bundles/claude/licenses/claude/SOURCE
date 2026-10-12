@@ -1,0 +1,12 @@
+Official stable Claude Code 2.1.296, checked 2026-10-12.
+https://github.com/anthropics/claude-code/releases/tag/v2.1.296
+https://downloads.claude.ai/claude-code-releases/2.1.296/manifest.json
+https://raw.githubusercontent.com/anthropics/claude-code/v2.1.296/LICENSE.md
+https://www.anthropic.com/legal/commercial-terms
+
+The official manifest identifies one raw claude executable for each of
+linux-x64 and linux-arm64. Its publisher SHA256 values match the existing
+toolbox lock, copied unchanged into this standalone lock. The adjacent
+LICENSE.md is the unmodified upstream notice at the pinned source tag.
+The raw executable, including any embedded notices, is retained unchanged.
+BundleDock does not rebuild or patch Claude Code.
