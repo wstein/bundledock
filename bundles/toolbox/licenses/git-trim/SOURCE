@@ -1,0 +1,10 @@
+git-trim v0.4.3 — user-authorized source-build exception
+Upstream: https://github.com/foriequal0/git-trim
+Commit: 65288617a637029573a5c3517abcb95b050ea02b
+Source: https://codeload.github.com/foriequal0/git-trim/tar.gz/65288617a637029573a5c3517abcb95b050ea02b
+Source SHA256: dffccf97f3801976a647f5d03629d49f17d3b930b322ee1056239084093b4e53
+Cargo.lock SHA256: 86abff4cefcfcfa8c55b163c900030f820f036d2ad092f51a765e81c2ddb25f3
+Builder: rust:1.75.0-bookworm@sha256:87f3b2f93b82995443a1a558c234212dafe79cfdc3af956539610560369ddcd0
+Recipe: git-trim-v0.4.3-rust1.75-bookworm-v1
+MIT copyright: SeongChan Lee (2020)
+Dependency and bundled native-library notices are collected from the verified vendored source during an explicitly approved build.

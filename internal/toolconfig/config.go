@@ -22,11 +22,12 @@ const ToolboxDirectory = "bundles/toolbox"
 const ToolboxLock = ToolboxDirectory + "/packages.lock.json"
 
 type Spec struct {
-	Version      string `json:"version"`
-	URL          string `json:"url"`
-	SHA256       string `json:"sha256,omitempty"`
-	SHA512       string `json:"sha512,omitempty"`
-	Verification string `json:"verification,omitempty"`
+	Version      string         `json:"version"`
+	URL          string         `json:"url"`
+	SHA256       string         `json:"sha256,omitempty"`
+	SHA512       string         `json:"sha512,omitempty"`
+	Verification string         `json:"verification,omitempty"`
+	Source       *GitTrimSource `json:"source,omitempty"`
 }
 type Lock struct {
 	Schema        int                        `json:"schema"`
@@ -155,6 +156,9 @@ func LoadInputs(directory string) (*Config, error) {
 			probeVersion = "v3.8"
 		}
 		s := Spec{Version: probeVersion, URL: "https://" + host + "/", SHA256: strings.Repeat("0", 64), Verification: "tls-download-sha256"}
+		if p.Install.Profile == GitTrimProfile {
+			s = GitTrimSpec()
+		}
 		for _, a := range []string{"amd64", "arm64"} {
 			probe.Lock.Platforms[a][n] = s
 		}
@@ -205,6 +209,9 @@ func ValidateURL(raw string, hosts []string) error {
 	return fmt.Errorf("URL host is not allowed: %s", u.Host)
 }
 func ValidateSpec(s Spec) error {
+	if s.Source != nil {
+		return ValidateGitTrimSpec(s)
+	}
 	if s.Version == "" {
 		return fmt.Errorf("missing version")
 	}
@@ -269,6 +276,11 @@ func (c Config) validate(strict bool) error {
 		return fmt.Errorf("desired tools, catalog and both lock architectures must agree")
 	}
 	for name, p := range c.Catalog.Packages {
+		if p.Install.Profile == GitTrimProfile {
+			if err := ValidateGitTrimPackage(name, p); err != nil {
+				return err
+			}
+		}
 		constraint, ok := c.Desired[name]
 		if !ok {
 			return fmt.Errorf("catalog tool %s is absent from packages.txt", name)
@@ -347,7 +359,7 @@ func (c Config) validate(strict bool) error {
 		if p.Install.Profile == "node-runtime" && (name != "node" || len(c.Catalog.Packages) != 1 || p.Provider != "node" || p.Install.Kind != "tar.gz" || !p.Install.Preserve || len(p.Install.Members) != 1 || p.Install.Members["bin/node"] != "payload/bin/node" || len(p.Install.Aliases) != 0 || len(p.Install.ExcludeDirectories) != 0) {
 			return fmt.Errorf("invalid Node runtime recipe")
 		}
-		if p.Install.Profile != "" && p.Install.Profile != "helix-runtime" && p.Install.Profile != "node-runtime" && p.Install.Profile != "bun-runtime" && (p.Install.Profile != "code-server-standalone" || len(c.Catalog.Packages) != 1 || name != "code-server" || p.Provider != "github" || p.Repository != "coder/code-server" || p.Install.Kind != "tar.gz" || !p.Install.Preserve || len(p.Install.Members) != 1 || p.Install.Members["bin/code-server"] != "payload/bin/code-server" || len(p.Install.Aliases) != 0 || len(p.Install.ExcludeDirectories) != 0) {
+		if p.Install.Profile != "" && p.Install.Profile != GitTrimProfile && p.Install.Profile != "helix-runtime" && p.Install.Profile != "node-runtime" && p.Install.Profile != "bun-runtime" && (p.Install.Profile != "code-server-standalone" || len(c.Catalog.Packages) != 1 || name != "code-server" || p.Provider != "github" || p.Repository != "coder/code-server" || p.Install.Kind != "tar.gz" || !p.Install.Preserve || len(p.Install.Members) != 1 || p.Install.Members["bin/code-server"] != "payload/bin/code-server" || len(p.Install.Aliases) != 0 || len(p.Install.ExcludeDirectories) != 0) {
 			return fmt.Errorf("invalid standalone profile for %s", name)
 		}
 		if len(p.Install.Members) == 0 {
@@ -402,6 +414,9 @@ func (c Config) validate(strict bool) error {
 			s, ok := tools[name]
 			if !ok {
 				return fmt.Errorf("missing %s/%s", arch, name)
+			}
+			if (s.Source != nil) != (p.Install.Profile == GitTrimProfile) {
+				return fmt.Errorf("source pin/profile mismatch for %s", name)
 			}
 			if err := ValidateSpec(s); err != nil {
 				return fmt.Errorf("%s/%s: %w", arch, name, err)
