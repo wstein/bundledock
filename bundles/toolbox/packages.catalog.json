@@ -27,6 +27,33 @@
         "licenses/gh/SOURCE"
       ]
     },
+    "jj": {
+      "provider": "github",
+      "repository": "jj-vcs/jj",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "x86_64",
+        "arm64": "aarch64"
+      },
+      "asset": "jj-v{version}-{arch}-unknown-linux-musl.tar.gz",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "tar.gz",
+        "members": {
+          "jj": "bin/jj"
+        },
+        "archive_notices": [
+          "LICENSE"
+        ]
+      },
+      "notices": [
+        "licenses/jj/SOURCE"
+      ],
+      "tag_prefix": "v"
+    },
     "jq": {
       "provider": "github",
       "repository": "jqlang/jq",

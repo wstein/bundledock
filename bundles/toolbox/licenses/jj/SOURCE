@@ -1,0 +1,6 @@
+Upstream: https://github.com/jj-vcs/jj
+License: Apache-2.0
+Pinned release: v0.46.0
+Release: https://github.com/jj-vcs/jj/releases/tag/v0.46.0
+Full LICENSE retained from each official release archive.
+Official AMD64/ARM64 musl release API SHA256 digests verified against downloaded archives by read-only inspection on 2026-10-12. No upstream binaries were executed or modified.
