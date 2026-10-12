@@ -24,6 +24,9 @@ func nodeLinkTarget(root *os.Root, name, target string) error {
 	return f.Close()
 }
 func profileLinkTarget(root *os.Root, profile, name, target string) error {
+	if profile == BunProfile {
+		return bunLinkTarget(root, name, target)
+	}
 	if profile == NodeProfile {
 		return nodeLinkTarget(root, name, target)
 	}

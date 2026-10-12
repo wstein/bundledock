@@ -92,6 +92,9 @@ func Build(ctx context.Context, client *http.Client, tools map[string]Spec, pack
 	if len(packages) == 1 && packages["node"].Install.Profile == NodeProfile {
 		return writePayloadManifest(root, arch, tools, NodeProfile)
 	}
+	if len(packages) == 1 && packages["bun"].Install.Profile == BunProfile {
+		return WriteBunManifest(root, arch, tools)
+	}
 	return WriteManifest(root, arch, tools)
 }
 func install(ctx context.Context, client *http.Client, root *os.Root, name string, p toolconfig.Package, spec Spec) error {
@@ -118,7 +121,7 @@ func install(ctx context.Context, client *http.Client, root *os.Root, name strin
 		return fmt.Errorf("download HTTP %s", response.Status)
 	}
 	var download io.Reader = response.Body
-	if p.Install.Kind == "tar.xz" {
+	if p.Install.Kind == "tar.xz" || p.Install.Profile == BunProfile {
 		download = io.LimitReader(download, 64<<20+1)
 	}
 	copied, copyErr := io.Copy(io.MultiWriter(payload, h), download)
@@ -126,8 +129,8 @@ func install(ctx context.Context, client *http.Client, root *os.Root, name strin
 	if copyErr != nil {
 		return copyErr
 	}
-	if p.Install.Kind == "tar.xz" && copied > 64<<20 {
-		return fmt.Errorf("XZ download too large")
+	if (p.Install.Kind == "tar.xz" || p.Install.Profile == BunProfile) && copied > 64<<20 {
+		return fmt.Errorf("bounded archive download too large")
 	}
 	if closeErr != nil {
 		return closeErr
@@ -143,6 +146,16 @@ func install(ctx context.Context, client *http.Client, root *os.Root, name strin
 		info, err := payload.Stat()
 		if err != nil {
 			return err
+		}
+		if p.Install.Profile == BunProfile {
+			arch := "amd64"
+			if strings.HasSuffix(spec.URL, "-aarch64.zip") {
+				arch = "arm64"
+			}
+			if err := ValidateBunSpec(spec, arch); err != nil {
+				return err
+			}
+			return extractBunZIP(root, payload, info.Size(), strings.TrimSuffix(path.Base(spec.URL), ".zip"))
 		}
 		selected := map[string]zipTarget{}
 		for member, target := range p.Install.Members {

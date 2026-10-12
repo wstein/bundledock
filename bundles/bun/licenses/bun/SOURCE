@@ -1,0 +1,11 @@
+Official stable Bun bun-v1.4.3, checked 2026-10-12.
+https://github.com/oven-sh/bun/releases/tag/bun-v1.4.3
+https://github.com/oven-sh/bun/releases/download/bun-v1.4.3/SHASUMS256.txt
+https://raw.githubusercontent.com/oven-sh/bun/bun-v1.4.3/LICENSE.md
+
+Both official ZIP SHA256 values agree with publisher SHASUMS256.txt and
+GitHub release asset digests. ZIPs contain only bun under the platform root;
+no license file is shipped. LICENSE.md is the unmodified official source
+notice, including JavaScriptCore/WebKit LGPL and linked library/polyfill
+licensing and source/relink references. The executable retains all embedded
+notices unchanged. BundleDock never rebuilds or patches Bun.

@@ -20,6 +20,9 @@ var standaloneRoot = regexp.MustCompile(`^code-server-[0-9]+\.[0-9]+\.[0-9]+-lin
 // LinkTarget validates a canonical relative link to a direct regular payload file.
 // It never follows a symbolic link, including in the target's parent components.
 func LinkTarget(root *os.Root, name, target string) error {
+	if name == "payload/bunx" {
+		return bunLinkTarget(root, name, target)
+	}
 	if strings.HasPrefix(name, "payload/bin/") {
 		return nodeLinkTarget(root, name, target)
 	}
@@ -235,12 +238,16 @@ func BundleLinks(root *os.Root, profile string) (map[string]string, error) {
 		}
 		return nil, nil
 	}
-	if (profile != StandaloneProfile && profile != NodeProfile) || m.Profile != profile || m.Schema != 1 || len(m.Tools) != 1 {
+	if (profile != StandaloneProfile && profile != NodeProfile && profile != BunProfile) || m.Profile != profile || m.Schema != 1 || len(m.Tools) != 1 {
 		return nil, fmt.Errorf("invalid standalone manifest profile")
 	}
 	arch := strings.TrimPrefix(m.Platform, "linux/")
 	tool := "code-server"
 	validate := ValidateStandaloneSpec
+	if profile == BunProfile {
+		tool = "bun"
+		validate = ValidateBunSpec
+	}
 	if profile == NodeProfile {
 		tool = "node"
 		validate = ValidateNodeSpec
@@ -251,6 +258,9 @@ func BundleLinks(root *os.Root, profile string) (map[string]string, error) {
 	}
 	if profile == NodeProfile && (len(m.Links) != 2 || m.Platform != "linux/"+arch) {
 		return nil, fmt.Errorf("Node requires two links")
+	}
+	if profile == BunProfile && (len(m.Links) != 1 || m.Links["payload/bunx"] != "bun" || m.Platform != "linux/"+arch) {
+		return nil, fmt.Errorf("Bun requires its exact bunx link")
 	}
 	for name, target := range m.Links {
 		if err := profileLinkTarget(root, profile, name, target); err != nil {
@@ -290,6 +300,10 @@ func writePayloadManifest(root *os.Root, arch string, tools map[string]Spec, pro
 	}
 	tool := "code-server"
 	validate := ValidateStandaloneSpec
+	if profile == BunProfile {
+		tool = "bun"
+		validate = ValidateBunSpec
+	}
 	if profile == NodeProfile {
 		tool = "node"
 		validate = ValidateNodeSpec
@@ -322,6 +336,9 @@ func writePayloadManifest(root *os.Root, arch string, tools map[string]Spec, pro
 	}
 	if profile == NodeProfile && len(links) != 2 {
 		return fmt.Errorf("Node requires npm and npx links")
+	}
+	if profile == BunProfile && (len(links) != 1 || links["payload/bunx"] != "bun") {
+		return fmt.Errorf("Bun requires its exact bunx link")
 	}
 	return writeManifest(root, arch, tools, profile, links)
 }
