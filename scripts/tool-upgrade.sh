@@ -6,8 +6,8 @@ set -euo pipefail
 : "${GITHUB_STEP_SUMMARY:?set GITHUB_STEP_SUMMARY}"
 case "${BUNDLE:-toolbox}" in
   toolbox) bundles=(toolbox) ;;
-  code-server|node) bundles=("$BUNDLE") ;;
-  *) echo 'BUNDLE must be toolbox, code-server or node.' >&2; exit 1 ;;
+  code-server|node|bun) bundles=("$BUNDLE") ;;
+  *) echo 'BUNDLE must be toolbox, code-server, node or bun.' >&2; exit 1 ;;
 esac
 locks=() inventories=() artifacts=()
 for bundle in "${bundles[@]}"; do
@@ -54,7 +54,7 @@ if sys.argv[2]=='resolve':
     if root.exists() and any(root.iterdir()): raise SystemExit('Artifact directory must be empty')
 else:
     expected=set(sys.argv[3:])
-    if "code-server.lock.json" in expected or "node.lock.json" in expected: expected.add("base.sha")
+    if "code-server.lock.json" in expected or "node.lock.json" in expected or "bun.lock.json" in expected: expected.add("base.sha")
     if not root.is_dir(): raise SystemExit('Missing artifact directory')
     actual={p.name for p in root.iterdir()}
     if not expected<=actual or actual-expected-{'lock.diff'}: raise SystemExit('Unexpected or missing artifact files')

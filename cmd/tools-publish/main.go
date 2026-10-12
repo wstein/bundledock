@@ -100,7 +100,7 @@ func publicationDecision(lock, event string, baseline func() (string, error)) (b
 
 func publicationDecisionForBundle(lock, event, bundle string, baseline func() (string, error)) (bool, error) {
 	publish, err := publicationDecision(lock, event, baseline)
-	if (bundle == "code-server" || bundle == "node") && event == "workflow_dispatch" && errors.Is(err, toolpublish.ErrBaselineAbsent) {
+	if (bundle == "code-server" || bundle == "node" || bundle == "bun") && event == "workflow_dispatch" && errors.Is(err, toolpublish.ErrBaselineAbsent) {
 		return true, nil
 	}
 	return publish, err
@@ -111,7 +111,7 @@ func execute(args []string) error {
 		return fmt.Errorf("expected resolve, plan, build, push, newest or promote")
 	}
 	flags := flag.NewFlagSet("tools-publish "+args[0], flag.ContinueOnError)
-	bundleName := flags.String("bundle", "toolbox", "publication bundle (toolbox, code-server or node)")
+	bundleName := flags.String("bundle", "toolbox", "publication bundle (toolbox, code-server, node or bun)")
 	directory := flags.String("directory", "resolved", "resolved artifact directory")
 	arch := flags.String("architecture", "", "native target architecture")
 	consumer := flags.String("consumer", "mcr.microsoft.com/devcontainers/go:2-1.27-trixie", "consumer baseline")
