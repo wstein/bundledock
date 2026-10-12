@@ -85,6 +85,19 @@ func signedDownload(ctx context.Context, client *http.Client, location string) (
 // baseline. Legacy publications require their exact, hash-bound Actions lock.
 // Missing stable or missing/expired artifacts are errors, never a bootstrap.
 func PublishedToolDigest(ctx context.Context, client *http.Client, image, username, password string, legacy func(Metadata) ([]byte, error)) (string, error) {
+	return PublishedToolDigestForBundle(ctx, client, bundleForImage(image).Name, image, username, password, legacy)
+}
+
+func PublishedToolDigestForBundle(ctx context.Context, client *http.Client, name, image, username, password string, legacy func(Metadata) ([]byte, error)) (string, error) {
+	bundle, err := SelectBundle(name)
+	if err != nil {
+		return "", err
+	}
+	if err = validateBundleImage(bundle, image); err != nil {
+		return "", err
+	}
+	alias := bundle.BaselineAlias()
+
 	registry, err := newQuayReader(ctx, client, image, username, password)
 	if err != nil {
 		return "", err
@@ -101,7 +114,7 @@ func PublishedToolDigest(ctx context.Context, client *http.Client, image, userna
 		} else if response.StatusCode == http.StatusOK {
 			b, err = readBounded(response.Body)
 		} else {
-			if kind == "manifests" && ref == "stable" && response.StatusCode == http.StatusNotFound {
+			if kind == "manifests" && ref == alias && response.StatusCode == http.StatusNotFound {
 				return nil, ErrBaselineAbsent
 			}
 			return nil, fmt.Errorf("published baseline %s returned HTTP %d", kind, response.StatusCode)
@@ -109,12 +122,12 @@ func PublishedToolDigest(ctx context.Context, client *http.Client, image, userna
 		if err != nil {
 			return nil, err
 		}
-		if ref != "stable" && fmt.Sprintf("sha256:%x", sha256.Sum256(b)) != ref {
+		if ref != alias && fmt.Sprintf("sha256:%x", sha256.Sum256(b)) != ref {
 			return nil, fmt.Errorf("published baseline content digest mismatch")
 		}
 		return b, nil
 	}
-	b, err := get("manifests", "stable")
+	b, err := get("manifests", alias)
 	if err != nil {
 		return "", err
 	}
@@ -165,7 +178,13 @@ func PublishedToolDigest(ctx context.Context, client *http.Client, image, userna
 			return "", fmt.Errorf("published config platform mismatch")
 		}
 		l := config.Config.Labels
-		m := Metadata{Image: image, RunID: l["io.bundledock.github.run-id"], RunAttempt: l["io.bundledock.github.run-attempt"], Tag: l["org.opencontainers.image.version"], Commit: l["org.opencontainers.image.revision"], Source: l["org.opencontainers.image.source"], Created: l["org.opencontainers.image.created"], LockSHA256: l["io.bundledock.tools.lock-sha256"]}
+		m := Metadata{Bundle: l["io.bundledock.bundle"], Image: image, RunID: l["io.bundledock.github.run-id"], RunAttempt: l["io.bundledock.github.run-attempt"], Tag: l["org.opencontainers.image.version"], Commit: l["org.opencontainers.image.revision"], Source: l["org.opencontainers.image.source"], Created: l["org.opencontainers.image.created"], LockSHA256: l["io.bundledock.tools.lock-sha256"]}
+		if m.Bundle == "" && (bundle.Name == "node-current" || (bundle.Repository == "node" && singletonTagPattern.MatchString(m.Tag))) {
+			return "", fmt.Errorf("Node channel baseline source identity missing")
+		}
+		if BundleForMetadata(m).Name != bundle.Name {
+			return "", fmt.Errorf("published baseline belongs to another source bundle")
+		}
 		old := legacyTagPattern.FindStringSubmatch(m.Tag)
 		if m.RunID == "" && old != nil {
 			m.RunID = old[1]

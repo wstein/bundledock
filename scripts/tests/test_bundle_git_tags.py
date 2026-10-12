@@ -70,7 +70,7 @@ class RegistryTests(ProvenanceTests):
             manifest = add({'config':{'digest':config}}, 'manifests')
             manifests.append({'platform':{'os':'linux','architecture':arch}, 'digest':manifest})
         record['digest'] = add({'manifests':manifests}, 'manifests')
-        for alias in (record['tag'],'stable','latest'):
+        for alias in (record['tag'],*tags._CONFIG.select_bundle(record['bundle'])['aliases'].split()):
             documents[('manifests',alias)] = documents[('manifests',record['digest'])]
         class Registry:
             def get(self, kind, ref):
@@ -255,7 +255,7 @@ class RunTests(ProvenanceTests):
         from unittest.mock import patch
         import subprocess
         for bundle in tags.BUNDLES:
-            r = tags.validate_record(self.record(bundle=bundle,image='quay.io/bundledock/'+bundle))
+            r = tags.validate_record(self.record(bundle=bundle,image='quay.io/bundledock/'+tags._CONFIG.select_bundle(bundle)['repository']))
             run = self.run_data(r)
             run.update(head_sha='a'*40,path='.github/workflows/bundledock-'+bundle+'.yml',
                        event='workflow_run',status='in_progress',conclusion=None)
@@ -323,7 +323,7 @@ class SemanticVersionTests(ProvenanceTests):
     def test_semantic_labels_bind_attempt(self):
         r = tags.validate_record(self.record(tag='24.21.0-b2',run_attempt='7'))
         labels = {'org.opencontainers.image.'+key:r[field] for key,field in [('source','source'),('revision','commit'),('version','tag')]}
-        labels.update({'io.bundledock.github.run-id':'123','io.bundledock.github.run-attempt':'7'})
+        labels.update({'io.bundledock.bundle':'node','io.bundledock.github.run-id':'123','io.bundledock.github.run-attempt':'7'})
         tags.verify_labels(r,labels)
         labels['io.bundledock.github.run-attempt']='8'
         with self.assertRaises(ValueError): tags.verify_labels(r,labels)
