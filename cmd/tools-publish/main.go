@@ -133,6 +133,12 @@ func resolve(directory string, meta toolpublish.Metadata, runner func(...string)
 	if _, err := runner(args...); err != nil {
 		return err
 	}
+	return resolveFrozen(directory, meta)
+}
+
+// resolveFrozen copies the reviewed lock without upstream discovery or commands.
+func resolveFrozen(directory string, meta toolpublish.Metadata) error {
+	bundle := toolpublish.BundleForMetadata(meta)
 	var err error
 	meta.LockSHA256, err = toolpublish.HashFile(bundle.Directory + "/tools.lock.json")
 	if err != nil {
@@ -147,6 +153,17 @@ func resolve(directory string, meta toolpublish.Metadata, runner func(...string)
 	return writeJSON(filepath.Join(directory, "provenance.json"), meta)
 }
 
+func publicationCommit(bundle string) (string, error) {
+	if os.Getenv("GITHUB_EVENT_NAME") != "workflow_run" {
+		return os.Getenv("GITHUB_SHA"), nil
+	}
+	sha := os.Getenv("PUBLICATION_SHA")
+	if bundle != "toolbox" || len(sha) != 40 || strings.Trim(sha, "0123456789abcdef") != "" {
+		return "", fmt.Errorf("automatic publication requires an explicit approved toolbox SHA")
+	}
+	return sha, nil
+}
+
 func artifactIdentity(meta toolpublish.Metadata, id, number, attempt, commit string) error {
 	if id == "" || number == "" || attempt == "" || meta.RunID != id || !strings.HasSuffix(meta.Tag, "-b"+number+"."+attempt) || meta.Commit != commit {
 		return fmt.Errorf("artifact belongs to another run, attempt or revision; re-run all jobs")
@@ -155,7 +172,7 @@ func artifactIdentity(meta toolpublish.Metadata, id, number, attempt, commit str
 }
 
 func publicationDecision(lock, event string, baseline func() (string, error)) (bool, error) {
-	if event != "schedule" && event != "workflow_dispatch" {
+	if event != "schedule" && event != "workflow_dispatch" && event != "workflow_run" {
 		return false, fmt.Errorf("publication requires schedule or workflow_dispatch")
 	}
 	b, err := os.ReadFile(lock)
@@ -174,6 +191,9 @@ func publicationDecision(lock, event string, baseline func() (string, error)) (b
 }
 
 func publicationDecisionForBundle(lock, event, bundle string, baseline func() (string, error)) (bool, error) {
+	if event == "workflow_run" && bundle != "toolbox" {
+		return false, fmt.Errorf("automatic publication is toolbox-only")
+	}
 	publish, err := publicationDecision(lock, event, baseline)
 	if (bundle == "code-server" || bundle == "node" || bundle == "bun") && event == "workflow_dispatch" && errors.Is(err, toolpublish.ErrBaselineAbsent) {
 		return true, nil
@@ -188,6 +208,7 @@ func execute(args []string) error {
 	flags := flag.NewFlagSet("tools-publish "+args[0], flag.ContinueOnError)
 	bundleName := flags.String("bundle", "toolbox", "publication bundle (toolbox, code-server, node or bun)")
 	directory := flags.String("directory", "resolved", "resolved artifact directory")
+	frozen := flags.Bool("frozen-lock", false, "use the exact committed toolbox lock without upstream resolution")
 	arch := flags.String("architecture", "", "native target architecture")
 	consumer := flags.String("consumer", "mcr.microsoft.com/devcontainers/go:2-1.27-trixie", "consumer baseline")
 	receipts := flags.String("receipts", "receipts", "published receipt artifact directory")
@@ -207,16 +228,29 @@ func execute(args []string) error {
 	}
 	lock := filepath.Join(*directory, "tools.lock.json")
 	provenance := filepath.Join(*directory, "provenance.json")
+	commit, err := publicationCommit(bundle.Name)
+	if err != nil {
+		return err
+	}
+	if *frozen && (args[0] != "resolve" || bundle.Name != "toolbox" || os.Getenv("GITHUB_EVENT_NAME") != "workflow_run") {
+		return fmt.Errorf("frozen lock is only supported for merged toolbox publication")
+	}
 	if args[0] == "resolve" {
+		if os.Getenv("GITHUB_EVENT_NAME") == "workflow_run" && !*frozen {
+			return fmt.Errorf("merged toolbox publication must use the frozen lock")
+		}
 		image, err := toolpublish.RepositoryImageForBundle(os.Getenv("REPOSITORY_URL"), bundle.Name)
 		if err != nil {
 			return err
 		}
 		now := time.Now().UTC()
 		tag := now.Format("2006.01.02") + "-b" + os.Getenv("GITHUB_RUN_NUMBER") + "." + os.Getenv("GITHUB_RUN_ATTEMPT")
-		meta, err := toolpublish.NewMetadata(bundle.Directory+"/tools.lock.json", image, tag, os.Getenv("GITHUB_SHA"), os.Getenv("GITHUB_SERVER_URL")+"/"+os.Getenv("GITHUB_REPOSITORY"), now.Format("2006-01-02T15:04:05Z"), os.Getenv("GITHUB_RUN_ID"))
+		meta, err := toolpublish.NewMetadata(bundle.Directory+"/tools.lock.json", image, tag, commit, os.Getenv("GITHUB_SERVER_URL")+"/"+os.Getenv("GITHUB_REPOSITORY"), now.Format("2006-01-02T15:04:05Z"), os.Getenv("GITHUB_RUN_ID"))
 		if err != nil {
 			return err
+		}
+		if *frozen {
+			return resolveFrozen(*directory, meta)
 		}
 		return resolve(*directory, meta, run)
 	}
@@ -224,7 +258,7 @@ func execute(args []string) error {
 	if err := readJSON(provenance, &meta); err != nil {
 		return err
 	}
-	if err := artifactIdentity(meta, os.Getenv("GITHUB_RUN_ID"), os.Getenv("GITHUB_RUN_NUMBER"), os.Getenv("GITHUB_RUN_ATTEMPT"), os.Getenv("GITHUB_SHA")); err != nil {
+	if err := artifactIdentity(meta, os.Getenv("GITHUB_RUN_ID"), os.Getenv("GITHUB_RUN_NUMBER"), os.Getenv("GITHUB_RUN_ATTEMPT"), commit); err != nil {
 		return err
 	}
 	if !strings.HasSuffix(meta.Image, "/"+bundle.Name) {
@@ -274,7 +308,7 @@ func execute(args []string) error {
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 		defer cancel()
-		return toolpublish.CheckNewestForWorkflow(ctx, nil, os.Getenv("GITHUB_REPOSITORY"), os.Getenv("DEFAULT_BRANCH"), id, attempt, meta.Commit, os.Getenv("GITHUB_TOKEN"), bundle.Workflow)
+		return toolpublish.CheckNewestForWorkflow(ctx, nil, os.Getenv("GITHUB_REPOSITORY"), os.Getenv("DEFAULT_BRANCH"), id, attempt, os.Getenv("GITHUB_SHA"), os.Getenv("GITHUB_TOKEN"), bundle.Workflow)
 	case "build":
 		if err := copyFile(lock, bundle.Directory+"/tools.lock.json"); err != nil {
 			return err
