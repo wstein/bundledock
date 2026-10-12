@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 bundle=${2:-toolbox}
-case "$bundle" in toolbox|code-server|node|bun|codex|agy|claude) ;; *) echo 'Invalid bundle name' >&2; exit 1 ;; esac
+case "$bundle" in toolbox|code-server|node|node-current|bun|codex|agy|claude) ;; *) echo 'Invalid bundle name' >&2; exit 1 ;; esac
 image=${1:-bundledock-$bundle:poc}
 # Resolve the mutable tag once; both the volume and initializer use this ID.
 id=$(docker image inspect --format '{{.Id}}' -- "$image")

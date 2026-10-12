@@ -43,8 +43,8 @@ class PublicationDocsTest(unittest.TestCase):
             self.assertFalse(self.module.update(root,'toolbox',record))
             path.unlink(); path.symlink_to(root/'elsewhere')
             with self.assertRaises(ValueError): self.module.update(root,'toolbox',record)
-    def test_all_seven_mappings_and_newer_guard(self):
-        self.assertEqual(set(self.module.BUNDLES), {'toolbox','code-server','node','bun','codex','agy','claude'})
+    def test_all_eight_mappings_and_newer_guard(self):
+        self.assertEqual(set(self.module.BUNDLES), {'toolbox','code-server','node','node-current','bun','codex','agy','claude'})
         record=self.validate()
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory); (root/'docs').mkdir()

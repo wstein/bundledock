@@ -36,7 +36,11 @@ func SingletonVersion(data []byte, bundle string) (string, error) {
 		if len(tools) != 1 {
 			return "", fmt.Errorf("one tool per native platform required")
 		}
-		pin, ok := tools[b.Name]
+		tool := b.Name
+		if tool == "node-current" {
+			tool = "node"
+		}
+		pin, ok := tools[tool]
 		if !ok {
 			return "", fmt.Errorf("singleton tool identity mismatch")
 		}

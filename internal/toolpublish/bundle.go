@@ -16,12 +16,14 @@ func SelectBundle(name string) (Bundle, error) {
 		return Bundle{name, "bundles/" + name, "bundledock-" + name + ".yml", "resolved-" + name}, nil
 	case "bun":
 		return Bundle{"bun", "bundles/bun", "bundledock-bun.yml", "resolved-bun"}, nil
+	case "node-current":
+		return Bundle{"node-current", "bundles/node-current", "bundledock-node-current.yml", "resolved-node-current"}, nil
 	case "node":
 		return Bundle{"node", "bundles/node", "bundledock-node.yml", "resolved-node"}, nil
 	case "code-server":
 		return Bundle{"code-server", "bundles/code-server", "bundledock-code-server.yml", "resolved-code-server"}, nil
 	default:
-		return Bundle{}, fmt.Errorf("bundle must be toolbox, code-server, node, bun, codex, agy or claude")
+		return Bundle{}, fmt.Errorf("bundle must be toolbox, code-server, node, node-current, bun, codex, agy or claude")
 	}
 }
 func RepositoryImageForBundle(prefix, name string) (string, error) {
