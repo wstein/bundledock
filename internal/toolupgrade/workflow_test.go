@@ -50,7 +50,7 @@ func fixture(t *testing.T) (string, []string) {
 	if err := os.MkdirAll(filepath.Join(dir, "bundles/toolbox"), 0755); err != nil {
 		t.Fatal(err)
 	}
-	for _, name := range []string{"bundles/toolbox/tools.lock.json", "bundles/toolbox/tools.packages.json", "docs/toolbox.md", "scripts/tool-inventory.py", "bundles/code-server/tools.txt", "bundles/code-server/tools.lock.json", "bundles/code-server/tools.packages.json", "docs/code-server.md", "bundles/node/tools.txt", "bundles/node/tools.lock.json", "bundles/node/tools.packages.json", "docs/node.md", "bundles/bun/tools.txt", "bundles/bun/tools.lock.json", "bundles/bun/tools.packages.json", "docs/bun.md", "bundles/codex/tools.txt", "bundles/codex/tools.packages.json", "bundles/codex/tools.lock.json", "docs/codex.md", "bundles/agy/tools.txt", "bundles/agy/tools.packages.json", "bundles/agy/tools.lock.json", "docs/agy.md", "bundles/claude/tools.txt", "bundles/claude/tools.packages.json", "bundles/claude/tools.lock.json", "docs/claude.md"} {
+	for _, name := range []string{"bundles/toolbox/tools.lock.json", "bundles/toolbox/tools.packages.json", "docs/toolbox.md", "scripts/tool-inventory.py", "scripts/upgrade-publication.py", "scripts/bundle-git-tags.py", "scripts/bundle-config.py", "bundles/code-server/tools.txt", "bundles/code-server/tools.lock.json", "bundles/code-server/tools.packages.json", "docs/code-server.md", "bundles/node/tools.txt", "bundles/node/tools.lock.json", "bundles/node/tools.packages.json", "docs/node.md", "bundles/bun/tools.txt", "bundles/bun/tools.lock.json", "bundles/bun/tools.packages.json", "docs/bun.md", "bundles/codex/tools.txt", "bundles/codex/tools.packages.json", "bundles/codex/tools.lock.json", "docs/codex.md", "bundles/agy/tools.txt", "bundles/agy/tools.packages.json", "bundles/agy/tools.lock.json", "docs/agy.md", "bundles/claude/tools.txt", "bundles/claude/tools.packages.json", "bundles/claude/tools.lock.json", "docs/claude.md"} {
 		data, err := os.ReadFile(filepath.Join(root, name))
 		if err != nil {
 			t.Fatal(err)
@@ -92,7 +92,7 @@ printf '%s\n' "$*" >> "$CALLS"
 if [ "${DENY_PR:-false}" = true ]; then echo 'GitHub Actions is not permitted to create pull requests' >&2; exit 1; fi
 printf 'https://github.com/example/repo/pull/1\n'
 `)
-	env := []string{"PATH=" + fake + ":" + os.Getenv("PATH"), "CALLS=" + filepath.Join(t.TempDir(), "calls"), "BUNDLE=toolbox", "TOOL=gh", "UPGRADE_RESULT=" + t.TempDir(), "GITHUB_OUTPUT=" + filepath.Join(t.TempDir(), "outputs"), "GITHUB_STEP_SUMMARY=" + filepath.Join(t.TempDir(), "summary"), "UPGRADE_SCRIPT=" + filepath.Join(root, "scripts/tool-upgrade.sh"), "GITHUB_REPOSITORY=example/repo", "GITHUB_RUN_ID=123", "GITHUB_RUN_ATTEMPT=1", "DEFAULT_BRANCH=main"}
+	env := []string{"PATH=" + fake + ":" + os.Getenv("PATH"), "CALLS=" + filepath.Join(t.TempDir(), "calls"), "BUNDLE=toolbox", "TOOL=gh", "UPGRADE_RESULT=" + t.TempDir(), "GITHUB_OUTPUT=" + filepath.Join(t.TempDir(), "outputs"), "GITHUB_STEP_SUMMARY=" + filepath.Join(t.TempDir(), "summary"), "UPGRADE_SCRIPT=" + filepath.Join(root, "scripts/tool-upgrade.sh"), "REPOSITORY_URL=", "GITHUB_REPOSITORY=example/repo", "GITHUB_RUN_ID=123", "GITHUB_RUN_ATTEMPT=1", "DEFAULT_BRANCH=main"}
 	return dir, env
 }
 func value(env []string, key string) string {

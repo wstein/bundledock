@@ -91,6 +91,7 @@ case "${1:-}" in
     if git diff --quiet -- "${paths[@]}"; then
       echo 'changed=false' >> "$GITHUB_OUTPUT"
       echo "No $proposal_name lock or inventory changes; no branch or pull request will be created." >> "$GITHUB_STEP_SUMMARY"
+      BUNDLE="${bundles[0]}" python3 -B scripts/upgrade-publication.py >> "$GITHUB_STEP_SUMMARY"
     else
       for i in "${!bundles[@]}"; do
         cp "${locks[i]}" "$UPGRADE_RESULT/${artifacts[2*i]}"

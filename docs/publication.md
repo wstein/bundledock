@@ -15,6 +15,17 @@ fallback remain. The seven **Propose … upgrades** entrypoints call one shared
 source-only updater, retaining the daily 06:50 UTC schedule and manual dry-run
 default.
 
+When resolution leaves the lock and inventory unchanged, the updater creates no
+branch or pull request and reads public Quay metadata for the configured bundle.
+A complete empty tag listing reports **Bundle unpublished—initial publication
+required**, links that bundle's manual publisher, and gives the checked-out full
+source SHA for `approved_sha`. Obtain explicit approval of that revision and the
+build/publication operation before dispatching. A published baseline requires a
+verified immutable version with both Linux platform images and matching source
+labels. Incomplete, inaccessible, malformed or staging-only registry evidence
+reports **publication status unknown**; it never authorizes an initial
+publication. This check uses no robot credentials and starts no build or dispatch.
+
 The new agent carriers have no verified publication receipts yet. Their first
 publication requires separate explicit approval for the exact full source SHA
 and build/publication operation, plus verified repository visibility and robot

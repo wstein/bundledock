@@ -44,6 +44,7 @@ jobs:
         env:
           BUNDLE: ${{ inputs.bundle }}
           TOOL: ${{ inputs.tool }}
+          REPOSITORY_URL: ${{ vars.REPOSITORY_URL }}
           # The manager sends this read-only token only to api.github.com.
           GITHUB_TOKEN: ${{ github.token }}
           UPGRADE_RESULT: ${{ runner.temp }}/bundle-upgrade
