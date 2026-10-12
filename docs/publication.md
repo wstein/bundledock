@@ -192,8 +192,10 @@ configuration, and unrelated registry writers must be controlled separately.
 The lock hash is provenance, not a build identifier: base layers or Debian
 packages can change for the same lock.
 
-Download `resolved-tools-<attempt>`, `published-amd64-<attempt>`,
-`published-arm64-<attempt>` and `publication-<attempt>` artifacts from the run (retained for 90 days). The run summary and `publication.json`
+Download `resolved-tools-<attempt>` for toolbox or `resolved-<bundle>-<attempt>`
+for the other bundles, plus `<bundle>-published-amd64-<attempt>`,
+`<bundle>-published-arm64-<attempt>` and `<bundle>-publication-<attempt>`
+artifacts from the run (retained for 90 days). The run summary and `publication.json`
 report the remote multi-platform registry digest, which differs from a local Docker
 image ID. Use the reported `quay.io/<namespace>/toolbox@sha256:...` reference
 for explicit deployment or rollback. Publication does not change the devcontainer

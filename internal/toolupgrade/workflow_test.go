@@ -150,6 +150,18 @@ func TestResolveAndPublish(t *testing.T) {
 	if title := must(t, dir, nil, "git", "log", "-1", "--format=%s"); title != "chore(toolbox): upgrade stable toolbox lock\n" {
 		t.Fatal(title)
 	}
+	body, err := os.ReadFile(filepath.Join(value(env, "UPGRADE_RESULT"), "pr-body.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, text := range []string{"wstein", "exact PR head", "source CI", "protected merge", "frozen-lock publication", "without further intervention"} {
+		if !strings.Contains(string(body), text) {
+			t.Fatalf("approval body missing %q: %s", text, body)
+		}
+	}
+	if strings.Contains(string(body), "Run CI manually") || strings.Contains(string(body), "Those operations need separate explicit approval") {
+		t.Fatalf("approval body contradicts single approval: %s", body)
+	}
 	calls, err := os.ReadFile(value(env, "CALLS"))
 	if err != nil {
 		t.Fatal(err)
