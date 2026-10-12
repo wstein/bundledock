@@ -110,7 +110,10 @@ embeds `share`, so no external runtime data directory is required. External manu
 pages and local HTML documentation from a full Fish installation are omitted. ast-grep uses
 the compatible Debian consumer libraries. `fd` and `fdfind` are identical regular
 files so the volume needs no symlinks. ast-grep's `sg` alias is excluded to preserve
-consumer commands. Upstream notices are included under `/opt/bundledock/toolbox/licenses`.
+consumer commands. Upstream notices retain their `licenses/<package>/...` member paths inside
+`/opt/bundledock/toolbox/licenses.tar.gz`, with a plain `licenses.index.json`
+for discovery and an [offline carrier reader](toolbox.md#retained-notices).
+Previously published images retain their original loose notice layout.
 uv packages no Python runtime or Python packages; keep its cache, environments,
 and any intentionally installed runtimes outside the shared tool volume.
 `bundles/toolbox/scripts/volume.sh` remains a small Docker-only host adapter so the devcontainer can
