@@ -65,9 +65,12 @@ these official packages contain only regular files and directories.
 
 The native smoke source initializes twice, checks the retained helper graph,
 starts/queries/stops the app-server daemon and runs two concurrent nonroot
-consumers against a read-only mount. It has not been run for this carrier.
-Source checks establish configuration and shared adapter behavior; image
-builds, downloaded-binary execution and native smoke remain deferred.
+consumers against a read-only mount. For the published `0.162.1-b1` carrier,
+[run 38288791159, attempt 1](https://github.com/wstein/bundledock/actions/runs/38288791159/attempts/1)
+completed the native image build and smoke checks on both AMD64 and ARM64
+from source `cfdc89d576b8c8534e932d4601dbd973cc6cde4d`.
+This runtime evidence applies to that published revision; future revisions
+require their own approved native build and smoke checks.
 
 ## Updates and publication
 
