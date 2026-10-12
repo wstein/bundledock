@@ -102,7 +102,9 @@ def approval_run(event, get):
     require(run['status'] == 'completed' and run['conclusion'] == 'success', 'Source checks must succeed')
     require(len(run['pull_requests']) == 1, 'Exactly one source PR required')
     number = run['pull_requests'][0]['number']
-    name = bundle_for_pr(number, get)
+    name = bundle_for_pr(number, get, allow_ineligible=True)
+    if name is None:
+        return None
     pr = approved_pr(number, name, get)
     head = pr['head']['sha']
     require(run['pull_requests'][0]['head']['sha'] == head, 'Source run tested an older PR head')
@@ -126,6 +128,8 @@ def source_run(event, get):
     associated = get('/commits/' + sha(run['head_sha']) + '/pulls?per_page=100&page=1')
     require(isinstance(associated, list) and len(associated) < 100, 'Ambiguous source PRs')
     candidates = [get('/pulls/' + str(item['number'])) for item in associated]
+    if not any(bundle_for_pr(pr['number'], get, allow_ineligible=True) for pr in candidates):
+        return None
     candidates = [pr for pr in candidates if pr['state'] == 'open' and pr['head']['sha'] == run['head_sha'] and pr['head']['ref'] == run['head_branch']]
     require(len(candidates) == 1, 'Exactly one exact-head open source PR required')
     name = bundle_for_pr(candidates[0]['number'], get)
@@ -152,21 +156,23 @@ def validate_caller(get, bundle):
     require(run['repository']['full_name'] == run['head_repository']['full_name'] == REPOSITORY, 'Wrong publisher repository')
 
 
-def bundle_for_pr(number, get):
+def bundle_for_pr(number, get, allow_ineligible=False):
     branch = get('/pulls/' + str(number))['head']['ref']
     for name in config.BUNDLES:
         prefix = '(?:toolbox|tool)' if name == 'toolbox' else re.escape(name)
         if re.fullmatch('automation/' + prefix + r'-upgrade-[1-9][0-9]*-[1-9][0-9]*', branch):
             return name
+    require(not re.match(r'automation/(?:toolbox|tool|code-server|node|bun)-upgrade', branch), 'Malformed bundle updater branch')
+    if allow_ineligible:
+        return None
     raise ValueError('Not a bundle updater PR')
 
 
-def validate(event, get, name='toolbox'):
+def validate(event, get, name='toolbox', allow_ineligible=False):
     config.select_bundle(name)
     require(event['repository']['full_name'] == REPOSITORY, 'Wrong event repository')
     source = event['workflow_run']
     revision = sha(source['head_sha'])
-    require(get('/git/ref/heads/main')['object']['sha'] == revision, 'Source is no longer current main')
     workflow = get('/actions/workflows/ci.yml')
     require(isinstance(source['id'], int) and source['id'] > 0 and isinstance(source['run_attempt'], int) and source['run_attempt'] > 0, 'Complete CI identity required')
     run = get('/actions/runs/' + str(source['id']) + '/attempts/' + str(source['run_attempt']))
@@ -177,14 +183,27 @@ def validate(event, get, name='toolbox'):
     associated = get('/commits/' + revision + '/pulls?per_page=100&page=1')
     require(isinstance(associated, list) and len(associated) < 100, 'Ambiguous associated PRs')
     candidates = [get('/pulls/' + str(item['number'])) for item in associated]
+    claimed = [pr for pr in candidates if bundle_for_pr(pr['number'], get, allow_ineligible=True) is not None]
+    require(all(pr.get('merged') is True and pr.get('merge_commit_sha') == revision for pr in claimed), 'Claimed updater does not match merged source')
     candidates = [pr for pr in candidates if pr.get('merged') is True and pr.get('merge_commit_sha') == revision]
-    require(len(candidates) == 1, 'Exactly one merged updater PR required')
-    pr = approved_pr(candidates[0]['number'], name, get, merged=True)
+    require(len(candidates) <= 1, 'Ambiguous merged PRs')
+    actual = bundle_for_pr(candidates[0]['number'], get, allow_ineligible=True) if candidates else None
+    if actual is None:
+        require(allow_ineligible, 'Exactly one merged updater PR required')
+        return None
+    require(get('/git/ref/heads/main')['object']['sha'] == revision, 'Source is no longer current main')
+    pr = approved_pr(candidates[0]['number'], actual, get, merged=True)
+    if actual != name:
+        require(allow_ineligible, 'Merged updater belongs to another bundle')
+        return None
     return revision, pr['html_url']
 
 
 def dispatch_source(event, request):
-    name, pr = approval_run(event, request)
+    candidate = approval_run(event, request)
+    if candidate is None:
+        return {'eligible':'false'}
+    name, pr = candidate
     # Fresh validation immediately before dispatch prevents head/base movement
     # between provenance reads and write preparation.
     pr = approved_pr(pr['number'], name, request)
@@ -193,7 +212,10 @@ def dispatch_source(event, request):
 
 
 def merge_approved(event, request):
-    name, pr = source_run(event, request)
+    candidate = source_run(event, request)
+    if candidate is None:
+        return {'eligible':'false'}
+    name, pr = candidate
     tested_head = pr['head']['sha']
     pr = approved_pr(pr['number'], name, request)
     require(pr['head']['sha'] == tested_head, 'Head changed after source CI validation')
@@ -229,7 +251,7 @@ class GitHub:
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--bundle', default='toolbox')
-    parser.add_argument('--mode', choices=('publication','review','dispatch-source','merge','config'), default='publication')
+    parser.add_argument('--mode', choices=('publication','preflight','review','dispatch-source','merge','config'), default='publication')
     args = parser.parse_args()
     require(os.environ.get('GITHUB_REPOSITORY') == REPOSITORY, 'Wrong runtime repository')
     event = json.loads(Path(os.environ['GITHUB_EVENT_PATH']).read_text())
@@ -240,20 +262,27 @@ def main():
     elif args.mode == 'review':
         require(os.environ['GITHUB_EVENT_NAME'] == 'pull_request_review' and event['review']['user']['login'] == 'wstein' and event['review']['state'] == 'approved', 'Only explicit wstein approval may request source checks')
         number = event['pull_request']['number']
-        name = bundle_for_pr(number, api.request)
-        pr = approved_pr(number, name, api.request)
-        require(event['review']['commit_id'] == pr['head']['sha'], 'Review event covers old head')
-        output = {'bundle':name,'head':pr['head']['sha']}
+        name = bundle_for_pr(number, api.request, allow_ineligible=True)
+        if name is None:
+            output = {'eligible':'false'}
+        else:
+            pr = approved_pr(number, name, api.request)
+            require(event['review']['commit_id'] == pr['head']['sha'], 'Review event covers old head')
+            output = {'bundle':name,'head':pr['head']['sha']}
     elif args.mode in ('dispatch-source','merge'):
         require(os.environ['GITHUB_EVENT_NAME'] == 'workflow_run', 'Trusted completion required')
         output = dispatch_source(event, api.request) if args.mode == 'dispatch-source' else merge_approved(event, api.request)
     else:
         require(os.environ['GITHUB_EVENT_NAME'] == 'workflow_run', 'Only CI completion is automatic publication authority')
         validate_caller(api.request, config.select_bundle(args.bundle))
-        revision, url = validate(event, api.request, args.bundle)
-        require(not os.environ.get('PUBLICATION_SHA') or os.environ['PUBLICATION_SHA'] == revision, 'Approved source changed')
-        require(subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip() == revision, 'Checkout differs from approved source')
-        output = dict(config.select_bundle(args.bundle), sha=revision, pr_url=url)
+        candidate = validate(event, api.request, args.bundle, allow_ineligible=args.mode == 'preflight')
+        if candidate is None:
+            output = {'eligible':'false'}
+        else:
+            revision, url = candidate
+            require(not os.environ.get('PUBLICATION_SHA') or os.environ['PUBLICATION_SHA'] == revision, 'Approved source changed')
+            require(subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip() == revision, 'Checkout differs from approved source')
+            output = dict(config.select_bundle(args.bundle), sha=revision, pr_url=url, eligible='true')
     if os.environ.get('GITHUB_OUTPUT'):
         with open(os.environ['GITHUB_OUTPUT'],'a') as destination:
             for key, value in output.items():

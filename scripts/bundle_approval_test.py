@@ -94,6 +94,58 @@ class ApprovalTests(unittest.TestCase):
   self.assertEqual(gate.validate(self.event,self.get), (A,self.pr['html_url']))
   self.data['/commits/'+A]['commit']['tree']['sha']=B
   with self.assertRaises(ValueError):gate.validate(self.event,self.get)
+ def merged_fixture(self):
+  self.source_fixture()
+  self.data['/git/ref/heads/main']['object']['sha']=A
+  self.data['/actions/runs/123/attempts/2']['head_branch']='main'
+  self.pr.update(merged=True,state='closed',merge_commit_sha=A)
+  self.data['/commits/'+A]={'commit':{'tree':{'sha':T}},'parents':[{'sha':B}],'files':self.files}
+ def test_ordinary_main_ci_is_ineligible_for_all_bundles(self):
+  self.merged_fixture()
+  self.pr['head']['ref']='ci/shared-source-change'
+  self.pr['user']={'login':'wstein','type':'User'}
+  for name in gate.config.BUNDLES:
+   with self.subTest(bundle=name):
+    self.assertIsNone(gate.validate(self.event,self.get,name,allow_ineligible=True))
+    with self.assertRaises(ValueError):gate.validate(self.event,self.get,name)
+ def test_unassociated_main_ci_is_ineligible(self):
+  self.merged_fixture()
+  self.data['/commits/'+A+'/pulls?per_page=100&page=1']=[]
+  self.assertIsNone(gate.validate(self.event,self.get,allow_ineligible=True))
+ def test_other_bundle_requires_valid_updater_before_skip(self):
+  self.merged_fixture()
+  for name in ('node','bun','code-server'):
+   with self.subTest(bundle=name):
+    self.assertIsNone(gate.validate(self.event,self.get,name,allow_ineligible=True))
+  self.data['/pulls/42/reviews?per_page=100&page=1'][0]['state']='DISMISSED'
+  for name in gate.config.BUNDLES:
+   with self.subTest(bundle=name),self.assertRaises(ValueError):
+    gate.validate(self.event,self.get,name,allow_ineligible=True)
+ def test_claimed_updater_merge_mismatch_rejects(self):
+  for change in ({'merged':False},{'merge_commit_sha':B}):
+   with self.subTest(change=change):
+    self.setUp();self.merged_fixture();self.pr.update(change)
+    with self.assertRaises(ValueError):gate.validate(self.event,self.get,allow_ineligible=True)
+ def test_api_ambiguity_is_not_ineligibility(self):
+  self.merged_fixture()
+  self.data['/commits/'+A+'/pulls?per_page=100&page=1']=[{'number':42}]*100
+  with self.assertRaises(ValueError):gate.validate(self.event,self.get,allow_ineligible=True)
+ def test_malformed_claim_is_not_benign(self):
+  self.merged_fixture()
+  self.pr['head']['ref']='automation/toolbox-upgrade-tampered'
+  with self.assertRaises(ValueError):gate.validate(self.event,self.get,allow_ineligible=True)
+ def test_controller_ordinary_ci_and_review_have_no_writes(self):
+  self.source_fixture()
+  self.pr['head']['ref']='ci/shared-source-change'
+  self.data['/actions/runs/123/attempts/2']['head_branch']=self.pr['head']['ref']
+  writes=[]
+  def request(path,method='GET',payload=None):
+   if method!='GET':writes.append((path,method));raise AssertionError('unexpected write')
+   return self.get(path)
+  self.assertEqual(gate.merge_approved(self.event,request),{'eligible':'false'})
+  self.source_fixture('bundle-review-source.yml','pull_request_review')
+  self.assertEqual(gate.dispatch_source(self.event,request),{'eligible':'false'})
+  self.assertEqual(writes,[])
  def test_required_check_head_must_match(self):
   self.source_fixture()
   self.data['/actions/runs/123/attempts/2/jobs?per_page=100&page=1']['jobs'][0]['head_sha']=B
@@ -157,10 +209,15 @@ class WorkflowResultTests(unittest.TestCase):
    for event in ('workflow_run','workflow_dispatch','push','unknown'):
     for result in ('success','failure','cancelled','skipped'):
      github=NS(event_name=event,event=NS(repository=NS(default_branch='main'),sender=NS(type='User')),ref='refs/heads/main',sha=A)
-     needs=NS(preflight=NS(result=result),resolve=NS(result='success',outputs=NS(publish='true')),native=NS(result='success'))
+     needs=NS(preflight=NS(result=result,outputs=NS(eligible='true')),resolve=NS(result='success',outputs=NS(publish='true')),native=NS(result='success'))
      inputs=NS(approved_sha=A)
      actual=eval(expression,{'__builtins__':{}},{'github':github,'needs':needs,'inputs':inputs})
      self.assertEqual(actual,result=='success' and event in ('workflow_run','workflow_dispatch'))
+   github.event_name='workflow_run';needs.preflight.result='success'
+   for eligibility in ('false','',None):
+    needs.preflight.outputs.eligible=eligibility
+    self.assertFalse(eval(expression,{'__builtins__':{}},{'github':github,'needs':needs,'inputs':inputs}))
+   needs.preflight.outputs.eligible='true'
    github.event_name='workflow_dispatch';needs.preflight.result='success';inputs.approved_sha=B
    self.assertFalse(eval(expression,{'__builtins__':{}},{'github':github,'needs':needs,'inputs':inputs}))
 
