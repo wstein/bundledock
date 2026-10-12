@@ -5,7 +5,8 @@ root=/opt/bundledock/agy
 export PATH="$root/bin:$PATH"
 export DISABLE_UPDATES=1 DISABLE_AUTOUPDATER=1
 test -f "$root/.ready"
-test -f "$root/licenses/agy/SOURCE"
+test -f "$root/licenses.tar.gz"
+test -f "$root/licenses.index.json"
 test -x "$root/bin/agy"
 test -w "$HOME"
 agy --version

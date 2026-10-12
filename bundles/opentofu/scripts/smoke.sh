@@ -10,6 +10,10 @@ trap 'docker volume rm "$volume" >/dev/null' EXIT
 # Initialize the regular-file CLI bundle twice.
 docker run --rm --network none --mount "type=volume,src=$volume,dst=/bundle,volume-nocopy" "$image"
 docker run --rm --network none --mount "type=volume,src=$volume,dst=/bundle,volume-nocopy" "$image"
+# The existing carrier helper verifies full original notices without consumer gzip/tar.
+for notice in LICENSE README.md CHANGELOG.md SOURCE; do
+    docker run --rm --network none "$image" --license "licenses/opentofu/$notice" >/dev/null
+done
 check() {
     docker run --rm --network none --user 1000:1000 \
       --tmpfs /home/bundledock:exec,uid=1000,gid=1000,mode=0700 \

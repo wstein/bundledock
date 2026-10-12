@@ -8,9 +8,8 @@ fail() {
 }
 export PATH="$root/bin:$PATH"
 test -f "$root/.ready"
-test -f "$root/licenses/opentofu/LICENSE"
-test -f "$root/licenses/opentofu/README.md"
-test -f "$root/licenses/opentofu/CHANGELOG.md"
+test -f "$root/licenses.tar.gz"
+test -f "$root/licenses.index.json"
 tofu version
 # Consumer-owned configuration, data, plugin cache and local state stay writable.
 mkdir -p "$HOME/project" "$HOME/.cache/opentofu/plugins"

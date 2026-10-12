@@ -36,6 +36,16 @@ for pin in $pins; do
     volume=$(docker volume create)
     volumes="$volumes $volume"
     sh "$script_dir/bundle-volume.sh" "quay.io/bundledock/$name@sha256:${pin#*:}" "$name" "$volume"
+    case "$name" in
+        agy|claude)
+            # Historical carrier helpers lack the archive flags. New helpers must
+            # verify SOURCE; any verification failure stops instead of falling back.
+            license_help=$(docker run --rm --network none "quay.io/bundledock/$name@sha256:${pin#*:}" --help 2>&1)
+            case "$license_help" in
+                *-list-licenses*) docker run --rm --network none "quay.io/bundledock/$name@sha256:${pin#*:}" --license "licenses/$name/SOURCE" >/dev/null ;;
+            esac
+            ;;
+    esac
     set -- "$@" --mount "type=volume,src=$volume,dst=/opt/bundledock/$name,readonly,volume-nocopy"
 done
 home_volume=$(docker volume create)

@@ -19,8 +19,7 @@ class OpenTofuSmokeTests(unittest.TestCase):
             home = directory / 'writable home'
             home.mkdir()
             payload = directory / 'readonly payload'
-            for name in ('.ready', 'licenses/opentofu/LICENSE',
-                         'licenses/opentofu/README.md', 'licenses/opentofu/CHANGELOG.md'):
+            for name in ('.ready', 'licenses.tar.gz', 'licenses.index.json'):
                 target = payload / name
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_text('fixture')
@@ -64,7 +63,7 @@ if args[0]=='output': print('wrong' if os.environ['FAILURE']=='output' else 'bun
             env = dict(os.environ, HOME=str(home), PATH=str(tools)+':'+os.environ['PATH'],
                        CALLS=str(calls), FAILURE=failure)
             result = subprocess.run(['sh', *(['-x'] if trace else []), str(script)], env=env, capture_output=True, text=True)
-            return result, [json.loads(line) for line in calls.read_text().splitlines()]
+            return result, [json.loads(line) for line in calls.read_text().splitlines()] if calls.exists() else []
 
     def test_builtin_only_init_does_not_need_to_materialize_data_directory(self):
         result, calls = self.invoke(trace=True)
@@ -72,6 +71,26 @@ if args[0]=='output': print('wrong' if os.environ['FAILURE']=='output' else 'bun
         self.assertIn(['init', '-backend=false', '-input=false'], calls)
         self.assertIn(['apply', '-input=false', 'fixture.plan'], calls)
         self.assertIn(['output', '-raw', 'fixture'], calls)
+
+    def test_carrier_verifies_notices_before_readonly_consumers(self):
+        with tempfile.TemporaryDirectory() as directory:
+            directory = Path(directory)
+            calls = directory / 'docker-calls'
+            adapter = directory / 'docker'
+            adapter.write_text("#!/usr/bin/env python3\nimport json,os,sys\nargs=sys.argv[1:]\nwith open(os.environ['CALLS'],'a') as stream: stream.write(json.dumps(args)+'\\n')\nif args[:2]==['image','inspect']: print('sha256:fixture')\nif args[:2]==['volume','create']: print('fixture-volume')\nif '--license' in args and os.environ.get('FAIL_NOTICE'): sys.exit(1)\n")
+            adapter.chmod(0o755)
+            env = dict(os.environ, PATH=str(directory)+':'+os.environ['PATH'], CALLS=str(calls))
+            script = ROOT / 'bundles/opentofu/scripts/smoke.sh'
+            result = subprocess.run(['sh', str(script), 'local:fixture'], env=env, capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            commands = [json.loads(line) for line in calls.read_text().splitlines()]
+            members = [args[args.index('--license')+1] for args in commands if '--license' in args]
+            self.assertEqual(members, ['licenses/opentofu/'+name for name in ('LICENSE', 'README.md', 'CHANGELOG.md', 'SOURCE')])
+            self.assertTrue(all('--network' in args and args[args.index('--network')+1]=='none'
+                                for args in commands if '--license' in args))
+            env['FAIL_NOTICE'] = '1'
+            result = subprocess.run(['sh', str(script), 'local:fixture'], env=env, capture_output=True, text=True)
+            self.assertNotEqual(result.returncode, 0)
 
     def test_post_apply_assertions_fail_with_bounded_stage_diagnostics(self):
         for failure, diagnostic in [('probe','data directory writability'), ('output','fixture output'), ('state','local state'),

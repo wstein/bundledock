@@ -10,6 +10,8 @@ trap 'docker volume rm "$volume" >/dev/null' EXIT
 # The carrier entrypoint supplies the standalone source with the generic profile.
 docker run --rm --network none --mount "type=volume,src=$volume,dst=/bundle,volume-nocopy" "$image"
 docker run --rm --network none --mount "type=volume,src=$volume,dst=/bundle,volume-nocopy" "$image"
+# Read the exact original notice through the existing offline carrier helper.
+docker run --rm --network none "$image" --license "licenses/claude/SOURCE" >/dev/null
 check() {
     docker run --rm --network none --user 1000:1000 \
       --tmpfs /home/bundledock:exec,uid=1000,gid=1000,mode=0700 \

@@ -27,10 +27,13 @@ if sys.argv[1:3]==['volume','create']:print('fixture-volume')
                 subprocess.run(['sh', str(ROOT/'bundles'/name/'scripts'/'smoke.sh')], cwd=directory, env=env, check=True)
                 calls = [json.loads(line) for line in log.read_text().splitlines()]
                 runs = [call for call in calls if call[0] == 'run']
-                self.assertEqual(len(runs), 4)
+                self.assertEqual(len(runs), 5)
                 for call in runs:
                     self.assertIn('none', call)
-                initializers = [call for call in runs if '--user' not in call]
+                readers = [call for call in runs if '--license' in call]
+                self.assertEqual(len(readers), 1)
+                self.assertEqual(readers[0][-2:], ['--license', 'licenses/'+name+'/SOURCE'])
+                initializers = [call for call in runs if '--user' not in call and '--license' not in call]
                 self.assertEqual(len(initializers), 2)
                 for call in initializers:
                     self.assertIn('type=volume,src=fixture-volume,dst=/bundle,volume-nocopy', call)

@@ -52,7 +52,7 @@ image) printf 'sha256:fixture\n' ;;
 volume) if [ "$2" = create ]; then printf 'fixture-volume\n'; fi ;;
 run)
 case "$*" in
-*sha256:fixture*) case "$*" in *'dst=/bundle,volume-nocopy sha256:fixture') ;; *) exit 31 ;; esac ;;
+*sha256:fixture*) case "$*" in *'dst=/bundle,volume-nocopy sha256:fixture'|*'sha256:fixture --license licenses/opentofu/LICENSE'|*'sha256:fixture --license licenses/opentofu/README.md'|*'sha256:fixture --license licenses/opentofu/CHANGELOG.md'|*'sha256:fixture --license licenses/opentofu/SOURCE') ;; *) exit 31 ;; esac ;;
 *consumer:fixture*) case "$*" in *'dst=/opt/bundledock/opentofu,readonly,volume-nocopy'*'consumer:fixture /opentofu-smoke.sh') ;; *) exit 32 ;; esac ;;
 *) exit 33 ;;
 esac ;;
@@ -74,6 +74,11 @@ esac
 	s := string(b)
 	if strings.Count(s, "dst=/bundle,volume-nocopy sha256:fixture") != 2 || strings.Count(s, "consumer:fixture /opentofu-smoke.sh") != 2 || !strings.Contains(s, "volume rm fixture-volume") {
 		t.Fatal("missing initialization/concurrent consumers/cleanup: " + s)
+	}
+	for _, notice := range []string{"LICENSE", "README.md", "CHANGELOG.md", "SOURCE"} {
+		if !strings.Contains(s, "--license licenses/opentofu/"+notice) {
+			t.Fatal("missing verified notice read: " + notice)
+		}
 	}
 	source, err := os.ReadFile("../../bundles/opentofu/scripts/consumer-smoke.sh")
 	if err != nil {
