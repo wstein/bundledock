@@ -11,7 +11,7 @@ import (
 func TestBunWorkflowSourcesSeparateApprovalAndArtifacts(t *testing.T) {
 	for name, required := range map[string][]string{
 		"bundledock-bun.yml": {"name: Publish bun", "workflow_dispatch:", "inputs.approved_sha == github.sha", "scripts/approve-publication.sh", "--bundle bun", "resolved-bun-${{ github.run_attempt }}", "bun-published-${{ matrix.architecture }}-${{ github.run_attempt }}", "ubuntu-24.04-arm"},
-		"bun-upgrade.yml":    {"name: Propose bun upgrades", "- cron: '0 8 * * *'", "default: true", "BUNDLE: bun", "bun-upgrade-${{ github.run_attempt }}", "bun.lock.json", "bun.md", "base.sha"},
+		"bun-upgrade.yml":    {"name: Propose bun upgrades", "- cron: '50 6 * * *'", "default: true", "BUNDLE: bun", "bun-upgrade-${{ github.run_attempt }}", "bun.lock.json", "bun.md", "base.sha"},
 	} {
 		b, err := os.ReadFile("../../.github/workflows/" + name)
 		if err != nil {
