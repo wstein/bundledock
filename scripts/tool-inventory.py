@@ -8,7 +8,7 @@ import sys
 
 BEGIN = "<!-- BEGIN GENERATED TOOL INVENTORY -->"
 END = "<!-- END GENERATED TOOL INVENTORY -->"
-# Presentation order and existing labels only. Versions come exclusively from the
+# Existing display labels only. Versions come exclusively from the
 # lock; exact catalog coverage prevents a new tool from being silently omitted.
 LABELS = (
     ("codex", "Codex"),
@@ -57,7 +57,7 @@ def generated(root, bundle_name="toolbox"):
         if set(platforms[architecture]) != ids:
             raise ValueError("inventory lock must cover the exact catalog IDs")
     rows = ["| Tool | Pinned version |", "| --- | --- |"]
-    for tool, label in labels:
+    for tool, label in sorted(labels, key=lambda item: item[1].casefold()):
         version = platforms["amd64"][tool]["version"]
         if version != platforms["arm64"][tool]["version"]:
             raise ValueError(f"{tool}: architecture versions differ")

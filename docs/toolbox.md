@@ -20,33 +20,33 @@ and `arm64`; builds verify every download.
 <!-- BEGIN GENERATED TOOL INVENTORY -->
 | Tool | Pinned version |
 | --- | --- |
-| Codex | 0.162.1 |
-| Claude Code | 2.1.296 |
 | Antigravity | 1.3.3 |
-| GitHub CLI | 2.102.0 |
-| jq | 1.8.2 |
-| ripgrep (`rg`) | 15.2.0 |
-| fzf (`fzf`) | 0.74.5 |
-| bat (`bat`) | 0.26.1 |
-| regctl (`regctl`) | 0.11.6 |
-| fd (`fd`, `fdfind`) | 10.5.0 |
 | ast-grep (`ast-grep`) | 0.45.3 |
-| Mike Farah yq (`yq`) | 4.54.1 |
-| uv (`uv`, `uvx`) | 0.13.0 |
-| Herdr (`herdr`) | 0.9.3 |
-| Fish (`fish`) | 4.9.3 |
-| Starship (`starship`) | 1.26.0 |
-| Nushell (`nu`) | 0.116.1 |
-| tmux (`tmux`) | 3.7c (official static builds) |
-| typos (`typos`) | 1.51.1 |
-| lychee (`lychee`) | 0.24.2 |
-| Gitleaks (`gitleaks`) | 8.30.1 |
-| Trivy (`trivy`) | 0.75.0 |
-| Syft (`syft`) | 1.54.1 |
+| bat (`bat`) | 0.26.1 |
 | bottom (`btm`) | 0.14.9 |
 | btop (`btop`) | 1.4.7 |
+| Claude Code | 2.1.296 |
+| Codex | 0.162.1 |
+| fd (`fd`, `fdfind`) | 10.5.0 |
+| Fish (`fish`) | 4.9.3 |
+| fzf (`fzf`) | 0.74.5 |
+| GitHub CLI | 2.102.0 |
+| Gitleaks (`gitleaks`) | 8.30.1 |
 | Helix (`hx`) | 25.07.1 |
+| Herdr (`herdr`) | 0.9.3 |
 | Hugo (`hugo`, standard) | 0.167.0 |
+| jq | 1.8.2 |
+| lychee (`lychee`) | 0.24.2 |
+| Mike Farah yq (`yq`) | 4.54.1 |
+| Nushell (`nu`) | 0.116.1 |
+| regctl (`regctl`) | 0.11.6 |
+| ripgrep (`rg`) | 15.2.0 |
+| Starship (`starship`) | 1.26.0 |
+| Syft (`syft`) | 1.54.1 |
+| tmux (`tmux`) | 3.7c (official static builds) |
+| Trivy (`trivy`) | 0.75.0 |
+| typos (`typos`) | 1.51.1 |
+| uv (`uv`, `uvx`) | 0.13.0 |
 <!-- END GENERATED TOOL INVENTORY -->
 
 Nushell and tmux are opt-in commands. tmux pins the published stable
