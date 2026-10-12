@@ -89,6 +89,9 @@ func Build(ctx context.Context, client *http.Client, tools map[string]Spec, pack
 	if len(packages) == 1 && packages["code-server"].Install.Profile == StandaloneProfile {
 		return WriteStandaloneManifest(root, arch, tools)
 	}
+	if len(packages) == 1 && packages["node"].Install.Profile == NodeProfile {
+		return writePayloadManifest(root, arch, tools, NodeProfile)
+	}
 	return WriteManifest(root, arch, tools)
 }
 func install(ctx context.Context, client *http.Client, root *os.Root, name string, p toolconfig.Package, spec Spec) error {
@@ -161,6 +164,16 @@ func install(ctx context.Context, client *http.Client, root *os.Root, name strin
 		}
 		return copyAliases(root, p.Install.Aliases)
 	case "tar.gz", "tar.xz":
+		if p.Install.Profile == NodeProfile {
+			arch := "amd64"
+			if strings.HasSuffix(spec.URL, "-arm64.tar.gz") {
+				arch = "arm64"
+			}
+			if err := ValidateNodeSpec(spec, arch); err != nil {
+				return err
+			}
+			return extractPayload(root, payload, strings.TrimSuffix(path.Base(spec.URL), ".tar.gz"), NodeProfile)
+		}
 		if p.Install.Profile == StandaloneProfile {
 			arch := "amd64"
 			if strings.HasSuffix(spec.URL, "-arm64.tar.gz") {
@@ -192,6 +205,9 @@ func Extract(root *os.Root, tool string, p toolconfig.Package, source io.Reader)
 	return extract(root, tool, p, source, "")
 }
 func extract(root *os.Root, tool string, p toolconfig.Package, source io.Reader, expectedHelixRoot string) error {
+	if p.Install.Profile == NodeProfile {
+		return extractPayload(root, source, "", NodeProfile)
+	}
 	if p.Install.Profile == StandaloneProfile {
 		return extractStandalone(root, source, "")
 	}
