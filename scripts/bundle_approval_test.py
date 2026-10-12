@@ -49,7 +49,7 @@ class ApprovalTests(unittest.TestCase):
     vote['submitted_at']=timestamp
     with self.assertRaises(ValueError):gate.approved_pr(42,self.bundle,self.get)
  def test_wrong_bundle_rejects(self):
-  for bundle in ('node','bun','code-server','arbitrary'):
+  for bundle in ('node','bun','code-server','codex','agy','claude','arbitrary'):
    with self.subTest(bundle=bundle),self.assertRaises(ValueError):gate.approved_pr(42,bundle,self.get)
  def test_unreviewed_main_drift_rejects(self):
   self.data['/git/ref/heads/main']['object']['sha']=T
@@ -58,6 +58,24 @@ class ApprovalTests(unittest.TestCase):
   self.files[1]['filename']='.github/workflows/ci.yml'
   with self.assertRaises(ValueError):gate.approved_pr(42,self.bundle,self.get)
 
+
+ def test_agent_approval_scope_and_revocation(self):
+  for name in ('codex','agy','claude'):
+   with self.subTest(bundle=name):
+    self.setUp()
+    old=self.lock
+    self.bundle=name; self.lock='bundles/'+name+'/tools.lock.json'; self.inventory='docs/'+name+'.md'
+    self.pr['head']['ref']='automation/'+name+'-upgrade-123-1'
+    self.files[0]['filename']=self.lock; self.files[1]['filename']=self.inventory
+    self.data={key.replace(old,self.lock):value for key,value in self.data.items()}
+    self.assertEqual(gate.approved_pr(42,name,self.get)['head']['sha'],A)
+    self.files[1]['filename']='docs/node.md'
+    with self.assertRaises(ValueError):gate.approved_pr(42,name,self.get)
+    self.files[1]['filename']=self.inventory
+    self.data['/pulls/42/reviews?per_page=100&page=1'][0]['commit_id']=B
+    with self.assertRaises(ValueError):gate.approved_pr(42,name,self.get)
+    self.data['/pulls/42/reviews?per_page=100&page=1'][0].update(commit_id=A,state='DISMISSED')
+    with self.assertRaises(ValueError):gate.approved_pr(42,name,self.get)
 
  def source_fixture(self, workflow='ci.yml', event='workflow_dispatch'):
   self.event={'repository':REPO,'workflow_run':{'id':123,'run_attempt':2,'head_sha':A}}
@@ -153,7 +171,7 @@ class ApprovalTests(unittest.TestCase):
  def test_all_bundle_registry_and_callers(self):
   import os
   from unittest.mock import patch
-  for name in ('toolbox','code-server','node','bun'):
+  for name in ('toolbox','code-server','node','bun','codex','agy','claude'):
    with self.subTest(name=name):
     bundle=gate.config.select_bundle(name)
     workflow={'id':8,'path':'.github/workflows/'+bundle['workflow']}

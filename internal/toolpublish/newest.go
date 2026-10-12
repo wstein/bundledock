@@ -33,7 +33,7 @@ func CheckNewest(ctx context.Context, client *http.Client, repository, branch st
 
 // CheckNewestForWorkflow also binds the run to its selected publication workflow.
 func CheckNewestForWorkflow(ctx context.Context, client *http.Client, repository, branch string, id, attempt int64, commit, token, workflow string) error {
-	if workflow != "bundledock-toolbox.yml" && workflow != "bundledock-code-server.yml" && workflow != "bundledock-node.yml" && workflow != "bundledock-bun.yml" {
+	if workflow != "bundledock-toolbox.yml" && workflow != "bundledock-code-server.yml" && workflow != "bundledock-node.yml" && workflow != "bundledock-bun.yml" && workflow != "bundledock-codex.yml" && workflow != "bundledock-agy.yml" && workflow != "bundledock-claude.yml" {
 		return fmt.Errorf("invalid publication workflow")
 	}
 	return checkNewest(ctx, client, repository, branch, id, attempt, commit, token, workflow)

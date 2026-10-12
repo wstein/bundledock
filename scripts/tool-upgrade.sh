@@ -6,8 +6,8 @@ set -euo pipefail
 : "${GITHUB_STEP_SUMMARY:?set GITHUB_STEP_SUMMARY}"
 case "${BUNDLE:-toolbox}" in
   toolbox) bundles=(toolbox) ;;
-  code-server|node|bun) bundles=("$BUNDLE") ;;
-  *) echo 'BUNDLE must be toolbox, code-server, node or bun.' >&2; exit 1 ;;
+  code-server|node|bun|codex|agy|claude) bundles=("$BUNDLE") ;;
+  *) echo 'BUNDLE must be toolbox, code-server, node, bun, codex, agy or claude.' >&2; exit 1 ;;
 esac
 locks=() inventories=() artifacts=()
 for bundle in "${bundles[@]}"; do
@@ -56,7 +56,7 @@ if sys.argv[2]=='resolve':
     if root.exists() and any(root.iterdir()): raise SystemExit('Artifact directory must be empty')
 else:
     expected=set(sys.argv[3:])
-    if "code-server.lock.json" in expected or "node.lock.json" in expected or "bun.lock.json" in expected: expected.add("base.sha")
+    if any(name.endswith(".lock.json") and name != "toolbox.lock.json" for name in expected): expected.add("base.sha")
     if not root.is_dir(): raise SystemExit('Missing artifact directory')
     actual={p.name for p in root.iterdir()}
     if not expected<=actual or actual-expected-{'lock.diff'}: raise SystemExit('Unexpected or missing artifact files')
@@ -153,7 +153,7 @@ case "${1:-}" in
     cat > "$body" <<BODY
 Resolve official stable releases within the selected bundles' existing tools.txt constraints and update only their locks and generated source version inventories. Selected bundles: ${bundles[*]}. Both supported architectures were resolved and verified by the existing BundleDock manager, and transferred locks were revalidated before this proposal.
 
-Review the lock diff. An APPROVED review by wstein covering this exact PR head authorizes guarded source CI, protected merge, and frozen-lock publication without further intervention. Approval applies only to this reviewed lock and source inventory. This proposal performs no artifact build; CLI releases, documentation builds, and consumer activation require separate explicit authorization.
+Review the lock diff. After an established published baseline, an APPROVED review by wstein covering this exact PR head authorizes guarded source CI, protected merge, and frozen-lock publication without further intervention. Approval applies only to this reviewed lock and source inventory. Initial publication of Codex, Antigravity and Claude carriers requires separate explicit approval of the exact full source revision and intended build/publication operation; this updater cannot bootstrap an absent baseline. This proposal performs no artifact build; CLI releases, documentation builds, and consumer activation require separate explicit authorization.
 
 Run: https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID (attempt $GITHUB_RUN_ATTEMPT).
 

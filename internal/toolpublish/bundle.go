@@ -12,6 +12,8 @@ func SelectBundle(name string) (Bundle, error) {
 	switch name {
 	case "", "toolbox":
 		return Bundle{"toolbox", "bundles/toolbox", "bundledock-toolbox.yml", "resolved-tools"}, nil
+	case "codex", "agy", "claude":
+		return Bundle{name, "bundles/" + name, "bundledock-" + name + ".yml", "resolved-" + name}, nil
 	case "bun":
 		return Bundle{"bun", "bundles/bun", "bundledock-bun.yml", "resolved-bun"}, nil
 	case "node":
@@ -19,7 +21,7 @@ func SelectBundle(name string) (Bundle, error) {
 	case "code-server":
 		return Bundle{"code-server", "bundles/code-server", "bundledock-code-server.yml", "resolved-code-server"}, nil
 	default:
-		return Bundle{}, fmt.Errorf("bundle must be toolbox, code-server, node or bun")
+		return Bundle{}, fmt.Errorf("bundle must be toolbox, code-server, node, bun, codex, agy or claude")
 	}
 }
 func RepositoryImageForBundle(prefix, name string) (string, error) {
@@ -34,16 +36,7 @@ func RepositoryImageForBundle(prefix, name string) (string, error) {
 	return image, nil
 }
 func bundleForImage(image string) Bundle {
-	name := "toolbox"
-	if strings.HasSuffix(image, "/node") {
-		name = "node"
-	}
-	if strings.HasSuffix(image, "/code-server") {
-		name = "code-server"
-	}
-	if strings.HasSuffix(image, "/bun") {
-		name = "bun"
-	}
+	name := image[strings.LastIndex(image, "/")+1:]
 	b, _ := SelectBundle(name)
 	return b
 }

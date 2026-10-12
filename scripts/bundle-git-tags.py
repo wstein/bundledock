@@ -16,7 +16,7 @@ import urllib.request
 import uuid
 
 SOURCE = 'https://github.com/wstein/bundledock'
-BUNDLES = ('toolbox', 'code-server', 'node', 'bun')
+BUNDLES = ('toolbox', 'code-server', 'node', 'bun', 'codex', 'agy', 'claude')
 DIGEST = re.compile(r'sha256:[0-9a-f]{64}\Z')
 VERSION = re.compile(r'(\d{4}\.\d{2}\.\d{2})-b([1-9]\d*)\.([1-9]\d*)\Z')
 LEGACY = re.compile(r'(\d{4}\.\d{2}\.\d{2})-([1-9]\d*)-([1-9]\d*)\Z')
