@@ -11,7 +11,7 @@ import (
 func TestCodeServerWorkflowSourcesSeparateApprovalAndArtifacts(t *testing.T) {
 	for name, required := range map[string][]string{
 		"bundledock-code-server.yml": {"name: Publish code-server", "workflow_dispatch:", "inputs.approved_sha == github.sha", "scripts/approve-publication.sh", "--bundle code-server", "resolved-code-server-${{ github.run_attempt }}", "code-server-published-${{ matrix.architecture }}-${{ github.run_attempt }}", "ubuntu-24.04-arm"},
-		"code-server-upgrade.yml":    {"name: Propose code-server upgrades", "- cron: '0 6 * * *'", "default: true", "BUNDLE: code-server", "code-server-upgrade-${{ github.run_attempt }}", "code-server.lock.json", "code-server.md", "base.sha"},
+		"code-server-upgrade.yml":    {"name: Propose code-server upgrades", "- cron: '50 6 * * *'", "default: true", "BUNDLE: code-server", "code-server-upgrade-${{ github.run_attempt }}", "code-server.lock.json", "code-server.md", "base.sha"},
 	} {
 		b, err := os.ReadFile("../../.github/workflows/" + name)
 		if err != nil {

@@ -11,7 +11,7 @@ import (
 func TestNodeWorkflowSourcesSeparateApprovalAndArtifacts(t *testing.T) {
 	for name, required := range map[string][]string{
 		"bundledock-node.yml": {"name: Publish node", "workflow_dispatch:", "inputs.approved_sha == github.sha", "scripts/approve-publication.sh", "--bundle node", "resolved-node-${{ github.run_attempt }}", "node-published-${{ matrix.architecture }}-${{ github.run_attempt }}", "ubuntu-24.04-arm"},
-		"node-upgrade.yml":    {"name: Propose node upgrades", "- cron: '0 7 * * *'", "default: true", "BUNDLE: node", "node-upgrade-${{ github.run_attempt }}", "node.lock.json", "node.md", "base.sha"},
+		"node-upgrade.yml":    {"name: Propose node upgrades", "- cron: '50 6 * * *'", "default: true", "BUNDLE: node", "node-upgrade-${{ github.run_attempt }}", "node.lock.json", "node.md", "base.sha"},
 	} {
 		b, err := os.ReadFile("../../.github/workflows/" + name)
 		if err != nil {

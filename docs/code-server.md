@@ -91,7 +91,7 @@ Resolve only this bundle's inputs with:
 bundledock tools upgrade --directory bundles/code-server
 ```
 
-The separate code-server upgrade workflow runs daily at 06:00 UTC and offers
+The separate code-server upgrade workflow runs daily at 06:50 UTC and offers
 manual dry runs by default. It proposes only this lock and its generated source
 inventory. The existing toolbox upgrade workflow stays separate. Neither
 upgrade workflow builds or publishes images. Future stable archives must pass

@@ -2,7 +2,7 @@ name: Propose node upgrades
 
 on:
   schedule:
-    - cron: '0 7 * * *'
+    - cron: '50 6 * * *'
   workflow_dispatch:
     inputs:
       dry_run:

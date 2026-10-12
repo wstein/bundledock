@@ -289,8 +289,8 @@ func TestWorkflowDailyAndManualWriteGates(t *testing.T) {
 		t.Fatal(err)
 	}
 	s := string(b)
-	if strings.Count(s, "- cron: '0 6 * * *'") != 1 {
-		t.Fatal("expected exactly one daily 06:00 UTC schedule")
+	if strings.Count(s, "- cron: '50 6 * * *'") != 1 {
+		t.Fatal("expected exactly one daily 06:50 UTC schedule")
 	}
 	for _, changed := range []string{"steps.resolve.outputs.changed", "needs.resolve.outputs.changed"} {
 		gate := "if: ${{ " + changed + " == 'true' && (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && !inputs.dry_run)) }}"
