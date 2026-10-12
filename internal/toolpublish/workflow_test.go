@@ -92,7 +92,7 @@ func TestPublicationKeepsNativeAndPromotionGates(t *testing.T) {
 		}
 		// A job-level condition excludes native runners, builds, logins, pushes
 		// and promotion together when the resolver does not approve publication.
-		if !strings.Contains(job, "if: needs.resolve.outputs.publish == 'true'") {
+		if !strings.Contains(job, "needs.resolve.outputs.publish == 'true'") {
 			t.Fatalf("%s does not skip all work on no-op", name)
 		}
 	}
@@ -152,7 +152,7 @@ func TestPublicationRequiresManualApprovedRevision(t *testing.T) {
 		t.Fatal("missing workflow event contract")
 	}
 	triggers := w[start:end]
-	for _, forbidden := range []string{"schedule:", "push:", "pull_request:", "workflow_run:", "repository_dispatch:", "workflow_call:"} {
+	for _, forbidden := range []string{"schedule:", "push:", "pull_request:", "repository_dispatch:", "workflow_call:"} {
 		if strings.Contains(triggers, forbidden) {
 			t.Errorf("publication must require user dispatch: %s", forbidden)
 		}

@@ -322,3 +322,86 @@ func TestBunBootstrapOnlyOnAuthenticatedMissingStable(t *testing.T) {
 		})
 	}
 }
+
+func TestFrozenToolboxLockNeverResolves(t *testing.T) {
+	t.Chdir(t.TempDir())
+	if err := os.MkdirAll(toolconfig.ToolboxDirectory, 0700); err != nil {
+		t.Fatal(err)
+	}
+	lock := []byte("committed merged lock\n")
+	if err := os.WriteFile(toolconfig.ToolboxLock, lock, 0600); err != nil {
+		t.Fatal(err)
+	}
+	meta, err := toolpublish.NewMetadata(toolconfig.ToolboxLock, "quay.io/example/toolbox", "2026.10.10-b12.1", strings.Repeat("a", 40), "https://github.com/example/repo", "2026-10-10T03:17:00Z", "123")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = resolveFrozen("resolved", meta); err != nil {
+		t.Fatal(err)
+	}
+	got, err := os.ReadFile("resolved/tools.lock.json")
+	if err != nil || string(got) != string(lock) {
+		t.Fatalf("frozen lock altered: %q %v", got, err)
+	}
+	var provenance toolpublish.Metadata
+	if err = readJSON("resolved/provenance.json", &provenance); err != nil {
+		t.Fatal(err)
+	}
+	if provenance.Commit != meta.Commit || provenance.LockSHA256 != meta.LockSHA256 {
+		t.Fatal("frozen provenance changed")
+	}
+}
+
+func TestAutomaticPublicationSourceIsExplicitAndToolboxOnly(t *testing.T) {
+	t.Setenv("GITHUB_EVENT_NAME", "workflow_run")
+	t.Setenv("GITHUB_SHA", strings.Repeat("b", 40))
+	t.Setenv("PUBLICATION_SHA", strings.Repeat("a", 40))
+	got, err := publicationCommit("toolbox")
+	if err != nil || got != strings.Repeat("a", 40) {
+		t.Fatalf("source=%s error=%v", got, err)
+	}
+	if _, err = publicationCommit("node"); err == nil {
+		t.Fatal("automatic node publication allowed")
+	}
+	t.Setenv("PUBLICATION_SHA", "")
+	if _, err = publicationCommit("toolbox"); err == nil {
+		t.Fatal("implicit run SHA used as automatic source")
+	}
+	t.Setenv("GITHUB_EVENT_NAME", "workflow_dispatch")
+	got, err = publicationCommit("toolbox")
+	if err != nil || got != strings.Repeat("b", 40) {
+		t.Fatal("manual source semantics changed")
+	}
+}
+
+func TestMergedToolboxPlanUsesBaselineAndOtherBundlesReject(t *testing.T) {
+	lock, err := os.ReadFile("../../bundles/toolbox/tools.lock.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(t.TempDir(), "lock.json")
+	if err = os.WriteFile(path, lock, 0600); err != nil {
+		t.Fatal(err)
+	}
+	digest, err := toolpublish.ToolDigest(lock)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, bundle := range []string{"toolbox", "node", "bun", "code-server"} {
+		publish, err := publicationDecisionForBundle(path, "workflow_run", bundle, func() (string, error) { return digest, nil })
+		if bundle == "toolbox" {
+			if err != nil || publish {
+				t.Fatalf("unchanged merged lock publication=%v error=%v", publish, err)
+			}
+		} else if err == nil {
+			t.Fatal("automatic publication accepted", bundle)
+		}
+	}
+	publish, err := publicationDecisionForBundle(path, "workflow_run", "toolbox", func() (string, error) { return "changed", nil })
+	if err != nil || !publish {
+		t.Fatalf("changed merged lock publication=%v error=%v", publish, err)
+	}
+	if _, err = publicationDecisionForBundle(path, "workflow_run", "toolbox", func() (string, error) { return "", fmt.Errorf("unavailable") }); err == nil {
+		t.Fatal("missing baseline accepted")
+	}
+}
