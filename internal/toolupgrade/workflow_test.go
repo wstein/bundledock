@@ -92,7 +92,7 @@ printf '%s\n' "$*" >> "$CALLS"
 if [ "${DENY_PR:-false}" = true ]; then echo 'GitHub Actions is not permitted to create pull requests' >&2; exit 1; fi
 printf 'https://github.com/example/repo/pull/1\n'
 `)
-	env := []string{"PATH=" + fake + ":" + os.Getenv("PATH"), "CALLS=" + filepath.Join(t.TempDir(), "calls"), "TOOL=gh", "UPGRADE_RESULT=" + t.TempDir(), "GITHUB_OUTPUT=" + filepath.Join(t.TempDir(), "outputs"), "GITHUB_STEP_SUMMARY=" + filepath.Join(t.TempDir(), "summary"), "UPGRADE_SCRIPT=" + filepath.Join(root, "scripts/tool-upgrade.sh"), "GITHUB_REPOSITORY=example/repo", "GITHUB_RUN_ID=123", "GITHUB_RUN_ATTEMPT=1", "DEFAULT_BRANCH=main"}
+	env := []string{"PATH=" + fake + ":" + os.Getenv("PATH"), "CALLS=" + filepath.Join(t.TempDir(), "calls"), "BUNDLE=toolbox", "TOOL=gh", "UPGRADE_RESULT=" + t.TempDir(), "GITHUB_OUTPUT=" + filepath.Join(t.TempDir(), "outputs"), "GITHUB_STEP_SUMMARY=" + filepath.Join(t.TempDir(), "summary"), "UPGRADE_SCRIPT=" + filepath.Join(root, "scripts/tool-upgrade.sh"), "GITHUB_REPOSITORY=example/repo", "GITHUB_RUN_ID=123", "GITHUB_RUN_ATTEMPT=1", "DEFAULT_BRANCH=main"}
 	return dir, env
 }
 func value(env []string, key string) string {
@@ -106,6 +106,18 @@ func value(env []string, key string) string {
 func adapter(t *testing.T, dir string, env []string, phase string) (string, error) {
 	t.Helper()
 	return run(t, dir, env, "bash", value(env, "UPGRADE_SCRIPT"), phase)
+}
+
+func TestFixtureIgnoresParentBundle(t *testing.T) {
+	for _, bundle := range []string{"codex", "agy", "claude"} {
+		t.Run(bundle, func(t *testing.T) {
+			t.Setenv("BUNDLE", bundle)
+			dir, env := fixture(t)
+			if out, err := adapter(t, dir, env, "resolve"); err != nil {
+				t.Fatalf("toolbox fixture inherited parent BUNDLE=%s: %v\n%s", bundle, err, out)
+			}
+		})
+	}
 }
 
 func TestResolveAndPublish(t *testing.T) {
