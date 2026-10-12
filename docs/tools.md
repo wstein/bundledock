@@ -58,7 +58,7 @@ No plugins or user configuration are installed for either alternative.
 
 ## Propose upgrades with GitHub Actions
 
-The **Propose tool upgrades** workflow (`.github/workflows/tool-upgrade.yml`)
+The **Propose tool upgrades** workflow (`.github/workflows/toolbox-upgrade.yml`)
 runs daily at **06:00 UTC** from the repository default branch. Scheduled runs
 resolve all desired stable tools within `tools.txt` constraints and open a
 reviewable PR only when the lock or its generated inventory changes. GitHub

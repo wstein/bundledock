@@ -197,7 +197,7 @@ func TestDeniedPRExplainsPrerequisite(t *testing.T) {
 	}
 }
 func TestWorkflowManualLeastPrivilege(t *testing.T) {
-	b, err := os.ReadFile("../../.github/workflows/tool-upgrade.yml")
+	b, err := os.ReadFile("../../.github/workflows/toolbox-upgrade.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -284,7 +284,7 @@ func TestPublisherRejectsUnrelatedDocumentation(t *testing.T) {
 }
 
 func TestWorkflowDailyAndManualWriteGates(t *testing.T) {
-	b, err := os.ReadFile("../../.github/workflows/tool-upgrade.yml")
+	b, err := os.ReadFile("../../.github/workflows/toolbox-upgrade.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
