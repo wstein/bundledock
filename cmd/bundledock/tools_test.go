@@ -23,7 +23,7 @@ func TestToolsVolumeCommand(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
-	for _, bundle := range []string{"toolbox", "code-server"} {
+	for _, bundle := range []string{"toolbox", "code-server", "node"} {
 		var output bytes.Buffer
 		cmd := newRootCommand()
 		cmd.SetOut(&output)
