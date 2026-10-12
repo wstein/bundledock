@@ -20,6 +20,12 @@ var standaloneRoot = regexp.MustCompile(`^code-server-[0-9]+\.[0-9]+\.[0-9]+-lin
 // LinkTarget validates a canonical relative link to a direct regular payload file.
 // It never follows a symbolic link, including in the target's parent components.
 func LinkTarget(root *os.Root, name, target string) error {
+	if strings.HasPrefix(name, "payload/bin/") {
+		return nodeLinkTarget(root, name, target)
+	}
+	return standaloneLinkTarget(root, name, target)
+}
+func standaloneLinkTarget(root *os.Root, name, target string) error {
 	if err := ValidPath(name); err != nil {
 		return err
 	}
@@ -77,6 +83,9 @@ func OpenContent(root *os.Root, name string, links map[string]string) (io.ReadCl
 }
 
 func extractStandalone(root *os.Root, source io.Reader, expectedRoot string) error {
+	return extractPayload(root, source, expectedRoot, StandaloneProfile)
+}
+func extractPayload(root *os.Root, source io.Reader, expectedRoot, profile string) error {
 	gz, err := gzip.NewReader(source)
 	if err != nil {
 		return err
@@ -100,7 +109,11 @@ func extractStandalone(root *os.Root, source io.Reader, expectedRoot string) err
 		}
 		clean := path.Clean(h.Name)
 		parts := strings.SplitN(clean, "/", 2)
-		if !standaloneRoot.MatchString(parts[0]) || prefix != "" && prefix != parts[0] || expectedRoot != "" && parts[0] != expectedRoot {
+		validRoot := standaloneRoot.MatchString(parts[0])
+		if profile == NodeProfile {
+			validRoot = nodeRoot.MatchString(parts[0])
+		}
+		if !validRoot || prefix != "" && prefix != parts[0] || expectedRoot != "" && parts[0] != expectedRoot {
 			return fmt.Errorf("invalid standalone archive root %q", h.Name)
 		}
 		prefix = parts[0]
@@ -112,6 +125,16 @@ func extractStandalone(root *os.Root, source io.Reader, expectedRoot string) err
 			return fmt.Errorf("duplicate or oversized standalone member %q", name)
 		}
 		seen[name] = true
+		if profile == NodeProfile && (name == "payload/bin/corepack" || name == "payload/lib/node_modules/corepack" || strings.HasPrefix(name, "payload/lib/node_modules/corepack/")) {
+			if name == "payload/bin/corepack" {
+				if h.Typeflag != tar.TypeSymlink || h.Linkname != "../lib/node_modules/corepack/dist/corepack.js" {
+					return fmt.Errorf("invalid omitted corepack link")
+				}
+			} else if h.Typeflag != tar.TypeDir && h.Typeflag != tar.TypeReg && h.Typeflag != tar.TypeRegA {
+				return fmt.Errorf("unsupported omitted corepack member")
+			}
+			continue
+		}
 		switch h.Typeflag {
 		case tar.TypeDir:
 			if err := mkdir(root, name); err != nil {
@@ -143,7 +166,7 @@ func extractStandalone(root *os.Root, source io.Reader, expectedRoot string) err
 				return fmt.Errorf("archive writes through link %q", name)
 			}
 		}
-		if err := LinkTarget(root, name, target); err != nil {
+		if err := profileLinkTarget(root, profile, name, target); err != nil {
 			return err
 		}
 		if err := CheckPath(root, name); err != nil {
@@ -153,7 +176,14 @@ func extractStandalone(root *os.Root, source io.Reader, expectedRoot string) err
 			return fmt.Errorf("link collision %q", name)
 		}
 	}
-	for _, name := range []string{"payload/bin/code-server", "payload/lib/node"} {
+	executables := []string{"payload/bin/code-server", "payload/lib/node"}
+	if profile == NodeProfile {
+		executables = []string{"payload/bin/node", "payload/lib/node_modules/npm/bin/npm-cli.js", "payload/lib/node_modules/npm/bin/npx-cli.js"}
+		if len(links) != 2 {
+			return fmt.Errorf("Node requires npm and npx links")
+		}
+	}
+	for _, name := range executables {
 		f, err := OpenFile(root, name)
 		if err != nil {
 			return err
@@ -174,6 +204,9 @@ func extractStandalone(root *os.Root, source io.Reader, expectedRoot string) err
 		if err := root.Symlink(target, name); err != nil {
 			return err
 		}
+	}
+	if profile == NodeProfile {
+		return writeNodeLaunchers(root)
 	}
 	return WriteFile(root, "bin/code-server", strings.NewReader("#!/bin/sh\nset -eu\nexec \"${0%/*}/../payload/bin/code-server\" \"$@\"\n"), 0755)
 }
@@ -202,15 +235,27 @@ func BundleLinks(root *os.Root, profile string) (map[string]string, error) {
 		}
 		return nil, nil
 	}
-	if profile != StandaloneProfile || m.Profile != profile || m.Schema != 1 || len(m.Tools) != 1 {
+	if (profile != StandaloneProfile && profile != NodeProfile) || m.Profile != profile || m.Schema != 1 || len(m.Tools) != 1 {
 		return nil, fmt.Errorf("invalid standalone manifest profile")
 	}
 	arch := strings.TrimPrefix(m.Platform, "linux/")
-	s, ok := m.Tools["code-server"]
-	if !ok || arch != "amd64" && arch != "arm64" || ValidateStandaloneSpec(s, arch) != nil {
+	tool := "code-server"
+	validate := ValidateStandaloneSpec
+	if profile == NodeProfile {
+		tool = "node"
+		validate = ValidateNodeSpec
+	}
+	s, ok := m.Tools[tool]
+	if !ok || arch != "amd64" && arch != "arm64" || validate(s, arch) != nil {
 		return nil, fmt.Errorf("invalid standalone provenance")
 	}
+	if profile == NodeProfile && (len(m.Links) != 2 || m.Platform != "linux/"+arch) {
+		return nil, fmt.Errorf("Node requires two links")
+	}
 	for name, target := range m.Links {
+		if err := profileLinkTarget(root, profile, name, target); err != nil {
+			return nil, err
+		}
 		if err := CheckLink(root, name, target); err != nil {
 			return nil, err
 		}
@@ -237,10 +282,19 @@ func ValidateStandaloneSpec(s Spec, arch string) error {
 }
 
 func WriteStandaloneManifest(root *os.Root, arch string, tools map[string]Spec) error {
+	return writePayloadManifest(root, arch, tools, StandaloneProfile)
+}
+func writePayloadManifest(root *os.Root, arch string, tools map[string]Spec, profile string) error {
 	if len(tools) != 1 {
 		return fmt.Errorf("standalone manifest requires code-server only")
 	}
-	if err := ValidateStandaloneSpec(tools["code-server"], arch); err != nil {
+	tool := "code-server"
+	validate := ValidateStandaloneSpec
+	if profile == NodeProfile {
+		tool = "node"
+		validate = ValidateNodeSpec
+	}
+	if err := validate(tools[tool], arch); err != nil {
 		return err
 	}
 	links := map[string]string{}
@@ -253,6 +307,9 @@ func WriteStandaloneManifest(root *os.Root, arch string, tools map[string]Spec) 
 			if err != nil {
 				return err
 			}
+			if err := profileLinkTarget(root, profile, name, target); err != nil {
+				return err
+			}
 			if err := CheckLink(root, name, target); err != nil {
 				return err
 			}
@@ -263,5 +320,8 @@ func WriteStandaloneManifest(root *os.Root, arch string, tools map[string]Spec) 
 	if err != nil {
 		return err
 	}
-	return writeManifest(root, arch, tools, StandaloneProfile, links)
+	if profile == NodeProfile && len(links) != 2 {
+		return fmt.Errorf("Node requires npm and npx links")
+	}
+	return writeManifest(root, arch, tools, profile, links)
 }
