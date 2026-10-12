@@ -50,6 +50,7 @@ and `arm64`; builds verify every download.
 | bat (`bat`) | 0.26.1 |
 | bottom (`btm`) | 0.14.9 |
 | btop (`btop`) | 1.4.7 |
+| deadbranch (`deadbranch`) | 0.4.0 |
 | delta (`delta`) | 0.20.1 |
 | fd (`fd`, `fdfind`) | 10.5.0 |
 | Fish (`fish`) | 4.9.3 |
@@ -329,6 +330,23 @@ recipe, isolated Ruff formatting, a fixed diff, one watchexec command, a hyperfi
 JSON export and age encryption/decryption with a temporary key. Native AMD64 and
 ARM64 execution, OCI builds/smoke and vulnerability scans remain unverified and
 require separately approved builds before release or consumer activation.
+
+## Stale Git branches
+
+`deadbranch list --local --days 30` inspects stale local branches. Deletion is
+an explicit user operation; BundleDock installs no cleanup jobs or shell hooks.
+Upstream configuration and deletion backups use writable `~/.deadbranch/`,
+outside the read-only toolbox. Git must be supplied by the consumer.
+
+The official stable v0.4.0 AMD64 musl and ARM64 GNU archives were downloaded,
+SHA256 checked against their release API digests, and inspected without running
+upstream binaries on 2026-10-12. Their full MIT license, README and manual are
+retained. ARM64 requires compatible GNU libc and runtime libraries; Alpine/musl
+ARM64 support is unverified. Recheck upstream assets before broadening support.
+Source tests use synthetic archives and fake executables; smoke lists branches
+in a disposable Git repository and verifies that refs stay unchanged. Native
+AMD64/ARM64 execution, OCI builds/smoke and vulnerability scans remain
+unverified pending separately approved checks before release or activation.
 
 ## Optional browser editor
 
