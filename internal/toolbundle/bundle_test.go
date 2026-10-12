@@ -444,6 +444,16 @@ func testPackages(t *testing.T) map[string]toolconfig.Package {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// Generic extraction fixtures retain every provider, independent of toolbox membership.
+	for _, name := range []string{"codex", "agy", "claude"} {
+		standalone, err := toolconfig.Load("../../bundles/" + name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		p := standalone.Catalog.Packages[name]
+		p.Notices = nil // Dedicated carrier tests verify their own source notices.
+		c.Catalog.Packages[name] = p
+	}
 	return c.Catalog.Packages
 }
 

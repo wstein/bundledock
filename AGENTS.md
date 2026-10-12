@@ -68,7 +68,7 @@ still pins an older image, so do not assume these commands exist in a running se
 | Query code structure | `ast-grep`; use the full binary name, never `sg`. |
 | Process structured data | `jq` for JSON; `yq` for YAML. |
 | Manage Python environments and run Python tools | `uv` and `uvx`. |
-| Agent and GitHub workflows | `codex`, `claude`, `agy`, and `gh`. |
+| GitHub workflows | `gh`. |
 | Manage terminal workspaces and agent sessions | `herdr`. |
 | Use the preferred interactive shell | `fish`. |
 | Use an alternative structured shell | `nu` (Nushell). |
