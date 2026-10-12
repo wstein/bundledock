@@ -134,7 +134,7 @@ func TestAutomaticCIOnlyChecksSource(t *testing.T) {
 	if !strings.Contains(w, "run: make check") {
 		t.Fatal("automatic CI must retain source checks")
 	}
-	for _, forbidden := range []string{"make build", "ci-smoke.sh", "docker ", "tools-build", "make release", "make docs", "  native:"} {
+	for _, forbidden := range []string{"make build", "ci-smoke.sh", "docker ", "bundle-build", "make release", "make docs", "  native:"} {
 		if strings.Contains(w, forbidden) {
 			t.Errorf("automatic CI must not build artifacts: %s", forbidden)
 		}
