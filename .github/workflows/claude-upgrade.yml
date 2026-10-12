@@ -1,0 +1,29 @@
+name: Propose claude upgrades
+
+on:
+  schedule:
+    - cron: '50 6 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Resolve and show the lock diff without creating a branch or pull request
+        type: boolean
+        default: true
+        required: true
+      tool:
+        description: Optional tool name from tools.txt; leave empty to resolve all tools
+        type: string
+        default: ''
+        required: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  proposal:
+    uses: ./.github/workflows/bundle-upgrade.yml
+    with:
+      bundle: claude
+      dry_run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || false }}
+      tool: ${{ github.event_name == 'workflow_dispatch' && inputs.tool || '' }}
