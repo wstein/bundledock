@@ -198,6 +198,16 @@ class ApprovalTests(unittest.TestCase):
 
 
 class WorkflowResultTests(unittest.TestCase):
+ def test_controller_ignores_ordinary_ci_events(self):
+  import re
+  from types import SimpleNamespace as NS
+  workflow=(Path(__file__).parents[1]/'.github/workflows/bundle-approved-merge.yml').read_text()
+  body=workflow.split('\n  merge:\n',1)[1]
+  expression=re.search(r'^    if: (.*)$',body,re.M).group(1).replace('&&',' and ')
+  for event in ('push','pull_request','workflow_dispatch'):
+   for branch in ('main','ci/source-change','automation/toolbox-upgrade-123-1'):
+    github=NS(event=NS(workflow_run=NS(name='CI',conclusion='success',head_branch=branch,event=event)))
+    self.assertEqual(eval(expression,{'__builtins__':{}},{'github':github}),event=='workflow_dispatch' and branch!='main')
  def test_shared_job_conditions_fail_closed(self):
   import re
   from types import SimpleNamespace as NS
