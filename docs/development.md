@@ -129,7 +129,9 @@ The toolbox installs the official stable **standard** Hugo 0.167.0 prebuilt
 release for Linux AMD64 and ARM64. Extended Hugo and source compilation are
 excluded. The lock records publisher SHA256 checksums; extraction retains the
 upstream Apache-2.0 `LICENSE` and release/checksum provenance under
-`licenses/hugo`. The other 22 tool pins are unchanged.
+`licenses/hugo`. At the [Hugo addition revision](https://github.com/wstein/bundledock/commit/c1054282c8a514eb4bc0ca2c6569cd84f0926ae6),
+the other 22 tool pins were unchanged. This historical inventory differs from
+the [current source catalog](toolbox.md#source-inventory).
 
 Measured official archive and installed executable sizes:
 
@@ -183,7 +185,7 @@ local verification artifacts, not a clean release candidate.
 
 Builds use the selected `GO` executable, `CGO_ENABLED=0`, `-trimpath`,
 `GOAMD64=v1`, and `GOARM64=v8.0`, and clear `GOFLAGS` for consistent flags.
-Use the pinned compiler in `.go-version`; the Go module's minimum remains 1.24.
+Use the pinned compiler in `.go-version`; the Go module's minimum is 1.25.
 `make release-test` also requires explicit user approval: it builds both architectures twice, verifies checksums, the
 bundled license and build settings, compares repeated outputs, checks the native Linux version when
 supported, and tests rejection of existing destinations and invalid versions.
@@ -265,8 +267,14 @@ The checks execute versions, validate Codex helper resources and Node's actual
 executable path, and run local npm/npx commands offline without packing an
 artifact. Cleanup removes only volumes allocated by this verifier. Source-only
 fake-Docker tests cover orchestration and failure paths; they do not establish
-native runtime compatibility. Record both native job results before treating
-this as runtime evidence.
+native runtime compatibility.
+
+[Run 38294738647, attempt 1](https://github.com/wstein/bundledock/actions/runs/38294738647/attempts/1)
+passed both native jobs on Linux AMD64 and ARM64 on 2026-10-12 from source
+`27e5abc2f4649aec8abc75ac68c647319dc0f931`. This verifies the five recorded
+image pins together against the pinned stock Go consumer. It does not verify
+a reduced toolbox image, future locks, authenticated agent workflows or model
+requests, and does not change consumer activation.
 
 ## Verification evidence
 
@@ -381,8 +389,17 @@ binaries.
 
 ## Smoke coverage
 
-The smoke test executes all twenty-two tools and the `fdfind` and `uvx` companions
-as a non-root user in two concurrent containers with networking disabled. It checks
+[Run 38069722044](https://github.com/wstein/bundledock/actions/runs/38069722044)
+verified the then-current twenty-two tools and the `fdfind` and `uvx` companions
+on native AMD64 and ARM64 at `6d20c7b2a7b976e5940622cd53b14ca90ee4eb31`,
+as a non-root user in two concurrent containers with networking disabled.
+That inventory included all three agents. The later [published toolbox receipt](toolbox.md#published-bundle)
+records a different source revision, which added Hugo and still includes the
+agents; it predates fzf, bat and regctl. The [current source catalog](toolbox.md#source-inventory)
+excludes the agents and has its own smoke checks. Historical results do not
+verify a new source inventory or an unpublished reduced toolbox.
+
+The source smoke checks cover
 JSON and YAML processing, text search, file discovery, and Go syntax
 search. The quality and security fixtures verify a typo correction, a local HTML anchor,
 a redacted synthetic secret, embedded Dockerfile configuration findings, and a
@@ -399,8 +416,9 @@ consumer home state. uv uses a writable cache under each consumer's home; manage
 are disabled, and its cache command runs offline. The standalone Codex smoke
 starts and stops its local daemon to verify the retained native package is usable.
 The toolbox smoke now rejects agent executables and Codex resources. It checks repeat initialization,
-read-only mounts, and rejection of changed, incomplete, or locked volumes. This verifies executable
-startup, not authentication, model requests, or agent sandbox behavior. Herdr
+read-only mounts, and rejection of changed, incomplete, or locked volumes.
+Successful native execution verifies executable startup; authentication, model
+requests and agent sandbox behavior require separate runtime checks. Herdr
 only runs `--version`; its interactive UI, server, and agent integration need
 separate runtime testing.
 

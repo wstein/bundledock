@@ -4,6 +4,11 @@
 
 [![CLI CI](https://github.com/wstein/bundledock/actions/workflows/ci.yml/badge.svg)](https://github.com/wstein/bundledock/actions/workflows/ci.yml)
 [![Go 1.25 or newer](https://img.shields.io/badge/Go-1.25%2B-00ADD8?logo=go&logoColor=white)](go.mod)
+[![Documentation deployment](https://github.com/wstein/bundledock/actions/workflows/pages.yml/badge.svg?branch=main)](https://github.com/wstein/bundledock/actions/workflows/pages.yml)
+[![License: EUPL 1.2](https://img.shields.io/badge/license-EUPL--1.2-blue)](LICENSE)
+[![Supported platforms: Linux AMD64 and ARM64](https://img.shields.io/badge/platforms-Linux%20AMD64%20%7C%20ARM64-blue)](docs/architecture.md#consumer-compatibility-and-build-layout)
+[![Container: ready](https://img.shields.io/badge/container-ready-5eead4)](https://quay.io/organization/bundledock)
+
 BundleDock packages official stable prebuilt tools and runtimes as OCI volume
 carriers for shared, read-only use in Linux development containers. Each bundle
 has its own catalog, lock, image and volume. Stock language images supply the
@@ -47,14 +52,15 @@ update; packaging revisions remain in the bundle guides.
 
 | Bundle | Purpose and guide | Published version | Publication workflow |
 | --- | --- | --- | --- |
-| Antigravity | [Official Antigravity CLI — planned, no verified publication](docs/agy.md) | [![Registry agy version (publication pending)](https://img.shields.io/badge/dynamic/regex?url=https%3A%2F%2Fquay.io%2Fapi%2Fv1%2Frepository%2Fbundledock%2Fagy%2Ftag%2F%3FonlyActiveTags%3Dtrue%26limit%3D100%26page%3D1&search=%22name%22%5Cs%2A%3A%5Cs%2A%22%28%5Cd%2B%5C.%5Cd%2B%5C.%5Cd%2B-b%5Cd%2B%7C%5Cd%7B4%7D%5C.%5Cd%7B2%7D%5C.%5Cd%7B2%7D-%28%3F%3Ab%5Cd%2B%5C.%5Cd%2B%7C%5Cd%2B-%5Cd%2B%29%29%22&replace=%241&label=version&color=5eead4&labelColor=0b2545)](https://quay.io/repository/bundledock/agy?tab=tags) | [![Publish agy](https://github.com/wstein/bundledock/actions/workflows/bundledock-agy.yml/badge.svg?branch=main)](https://github.com/wstein/bundledock/actions/workflows/bundledock-agy.yml) |
-| Claude Code | [Official Claude CLI — planned, no verified publication](docs/claude.md) | [![Registry claude version (publication pending)](https://img.shields.io/badge/dynamic/regex?url=https%3A%2F%2Fquay.io%2Fapi%2Fv1%2Frepository%2Fbundledock%2Fclaude%2Ftag%2F%3FonlyActiveTags%3Dtrue%26limit%3D100%26page%3D1&search=%22name%22%5Cs%2A%3A%5Cs%2A%22%28%5Cd%2B%5C.%5Cd%2B%5C.%5Cd%2B-b%5Cd%2B%7C%5Cd%7B4%7D%5C.%5Cd%7B2%7D%5C.%5Cd%7B2%7D-%28%3F%3Ab%5Cd%2B%5C.%5Cd%2B%7C%5Cd%2B-%5Cd%2B%29%29%22&replace=%241&label=version&color=5eead4&labelColor=0b2545)](https://quay.io/repository/bundledock/claude?tab=tags) | [![Publish claude](https://github.com/wstein/bundledock/actions/workflows/bundledock-claude.yml/badge.svg?branch=main)](https://github.com/wstein/bundledock/actions/workflows/bundledock-claude.yml) |
-| Codex | [Official Codex package — planned, no verified publication](docs/codex.md) | [![Registry codex version (publication pending)](https://img.shields.io/badge/dynamic/regex?url=https%3A%2F%2Fquay.io%2Fapi%2Fv1%2Frepository%2Fbundledock%2Fcodex%2Ftag%2F%3FonlyActiveTags%3Dtrue%26limit%3D100%26page%3D1&search=%22name%22%5Cs%2A%3A%5Cs%2A%22%28%5Cd%2B%5C.%5Cd%2B%5C.%5Cd%2B-b%5Cd%2B%7C%5Cd%7B4%7D%5C.%5Cd%7B2%7D%5C.%5Cd%7B2%7D-%28%3F%3Ab%5Cd%2B%5C.%5Cd%2B%7C%5Cd%2B-%5Cd%2B%29%29%22&replace=%241&label=version&color=5eead4&labelColor=0b2545)](https://quay.io/repository/bundledock/codex?tab=tags) | [![Publish codex](https://github.com/wstein/bundledock/actions/workflows/bundledock-codex.yml/badge.svg?branch=main)](https://github.com/wstein/bundledock/actions/workflows/bundledock-codex.yml) |
+| Antigravity | [Official Antigravity CLI](docs/agy.md) | [![Published agy version](https://img.shields.io/badge/dynamic/regex?url=https%3A%2F%2Fquay.io%2Fapi%2Fv1%2Frepository%2Fbundledock%2Fagy%2Ftag%2F%3FonlyActiveTags%3Dtrue%26limit%3D100%26page%3D1&search=%22name%22%5Cs%2A%3A%5Cs%2A%22%28%5Cd%2B%5C.%5Cd%2B%5C.%5Cd%2B-b%5Cd%2B%7C%5Cd%7B4%7D%5C.%5Cd%7B2%7D%5C.%5Cd%7B2%7D-%28%3F%3Ab%5Cd%2B%5C.%5Cd%2B%7C%5Cd%2B-%5Cd%2B%29%29%22&replace=%241&label=version&color=5eead4&labelColor=0b2545)](https://quay.io/repository/bundledock/agy?tab=tags) | [![Publish agy](https://github.com/wstein/bundledock/actions/workflows/bundledock-agy.yml/badge.svg?branch=main)](https://github.com/wstein/bundledock/actions/workflows/bundledock-agy.yml) |
+| Claude Code | [Official Claude CLI](docs/claude.md) | [![Published claude version](https://img.shields.io/badge/dynamic/regex?url=https%3A%2F%2Fquay.io%2Fapi%2Fv1%2Frepository%2Fbundledock%2Fclaude%2Ftag%2F%3FonlyActiveTags%3Dtrue%26limit%3D100%26page%3D1&search=%22name%22%5Cs%2A%3A%5Cs%2A%22%28%5Cd%2B%5C.%5Cd%2B%5C.%5Cd%2B-b%5Cd%2B%7C%5Cd%7B4%7D%5C.%5Cd%7B2%7D%5C.%5Cd%7B2%7D-%28%3F%3Ab%5Cd%2B%5C.%5Cd%2B%7C%5Cd%2B-%5Cd%2B%29%29%22&replace=%241&label=version&color=5eead4&labelColor=0b2545)](https://quay.io/repository/bundledock/claude?tab=tags) | [![Publish claude](https://github.com/wstein/bundledock/actions/workflows/bundledock-claude.yml/badge.svg?branch=main)](https://github.com/wstein/bundledock/actions/workflows/bundledock-claude.yml) |
+| Codex | [Official Codex package](docs/codex.md) | [![Published codex version](https://img.shields.io/badge/dynamic/regex?url=https%3A%2F%2Fquay.io%2Fapi%2Fv1%2Frepository%2Fbundledock%2Fcodex%2Ftag%2F%3FonlyActiveTags%3Dtrue%26limit%3D100%26page%3D1&search=%22name%22%5Cs%2A%3A%5Cs%2A%22%28%5Cd%2B%5C.%5Cd%2B%5C.%5Cd%2B-b%5Cd%2B%7C%5Cd%7B4%7D%5C.%5Cd%7B2%7D%5C.%5Cd%7B2%7D-%28%3F%3Ab%5Cd%2B%5C.%5Cd%2B%7C%5Cd%2B-%5Cd%2B%29%29%22&replace=%241&label=version&color=5eead4&labelColor=0b2545)](https://quay.io/repository/bundledock/codex?tab=tags) | [![Publish codex](https://github.com/wstein/bundledock/actions/workflows/bundledock-codex.yml/badge.svg?branch=main)](https://github.com/wstein/bundledock/actions/workflows/bundledock-codex.yml) |
 
-The three agent carriers are prepared in source and have no verified publication
-receipts yet. Their registry badges may be unavailable until an explicitly
-approved first publication. Toolbox retains all three agents while Anchorage
-consumers are prepared; activation and later removal are separate changes.
+The three agent carriers have verified publication receipts in their guides.
+The current source toolbox excludes these agents; the published toolbox used
+below still contains them and predates the fzf, bat and regctl additions.
+A reduced toolbox image requires a separately approved publication. Consumer
+activation follows the consumer project’s instructions.
 
 **[Documentation](https://wstein.github.io/bundledock/)** — quick start and guides
 for using, maintaining, and publishing each bundle.
