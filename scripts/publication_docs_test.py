@@ -63,13 +63,14 @@ class PublicationDocsTest(unittest.TestCase):
                 source = (repository / relative).read_bytes()
                 path.write_bytes(source)
                 receipt = json.loads(json.dumps(self.receipt))
-                receipt.update(image='quay.io/bundledock/' + bundle,
+                receipt.update(bundle=bundle, image='quay.io/bundledock/' + self.module._CONFIG.select_bundle(bundle)['repository'],
                                tag='2099.01.01-b1.1' if bundle == 'toolbox' else '999.0.0-b1',
                                run_attempt='1')
                 receipt['reference'] = receipt['image'] + '@' + receipt['digest']
                 for platform in receipt['platforms']:
                     platform.update({key: receipt[key] for key in self.module.FIELDS})
                     platform['run_attempt'] = '1'
+                    platform['bundle'] = bundle
                 record = self.module.validate(receipt, bundle, receipt['image'], 'a'*40, '123', '1')
                 self.assertTrue(self.module.update(root, bundle, record))
                 prefix, managed = source.decode().split(self.module.BEGIN)
@@ -181,7 +182,7 @@ class PublicationDocsTest(unittest.TestCase):
 class SemanticPublicationDocsTest(PublicationDocsTest):
     def test_semantic_receipt_and_legacy_migration(self):
         for item in [self.receipt,*self.receipt['platforms']]:
-            item.update(image='quay.io/bundledock/node',tag='24.21.0-b1',run_attempt='3')
+            item.update(bundle='node',image='quay.io/bundledock/node',tag='24.21.0-b1',run_attempt='3')
         self.receipt['reference']='quay.io/bundledock/node@'+self.receipt['digest']
         record=self.module.validate(self.receipt,'node','quay.io/bundledock/node','a'*40,'123','3')
         old=dict(record,tag='2026.10.12-b1.1',attempt='1'); old.pop('run_attempt')
@@ -193,3 +194,32 @@ class SemanticPublicationDocsTest(PublicationDocsTest):
         self.module.replacement(updated,newer)
         self.receipt['platforms'][0]['run_attempt']='2'
         with self.assertRaises(ValueError): self.module.validate(self.receipt,'node','quay.io/bundledock/node','a'*40,'123','3')
+
+class CurrentPublicationDocsTest(PublicationDocsTest):
+    def test_shared_current_receipt_preserves_source_and_rejects_cross_channel(self):
+        for item in [self.receipt,*self.receipt['platforms']]:
+            item.update(bundle='node-current',image='quay.io/bundledock/node',tag='26.11.1-b1',run_attempt='1')
+        self.receipt['reference']='quay.io/bundledock/node@'+self.receipt['digest']
+        validate=lambda: self.module.validate(self.receipt,'node-current','quay.io/bundledock/node','a'*40,'123','1')
+        record=validate()
+        self.assertEqual(record['bundle'],'node-current')
+        self.assertIn('docker pull quay.io/bundledock/node@',self.module.render(record))
+        self.receipt['platforms'][1]['bundle']='node'
+        with self.assertRaises(ValueError): validate()
+        self.receipt['platforms'][1]['bundle']='node-current'
+        del self.receipt['bundle']
+        with self.assertRaises(ValueError): validate()
+
+    def test_semantic_lts_receipt_identity_required_but_historical_date_allowed(self):
+        for item in [self.receipt,*self.receipt['platforms']]:
+            item.update(image='quay.io/bundledock/node',tag='26.11.1-b1',run_attempt='1')
+        self.receipt['reference']='quay.io/bundledock/node@'+self.receipt['digest']
+        validate=lambda: self.module.validate(self.receipt,'node','quay.io/bundledock/node','a'*40,'123','1')
+        with self.assertRaises(ValueError): validate()
+        for item in [self.receipt,*self.receipt['platforms']]: item['bundle']='node'
+        validate()
+        del self.receipt['platforms'][1]['bundle']
+        with self.assertRaises(ValueError): validate()
+        for item in [self.receipt,*self.receipt['platforms']]:
+            item.pop('bundle',None);item['tag']='2026.10.12-b1.1'
+        validate()

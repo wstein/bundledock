@@ -7,6 +7,8 @@ this script never builds, publishes an image, moves aliases, or overwrites tags.
 import argparse
 import base64
 import hashlib
+import importlib.util
+from pathlib import Path
 import json
 import os
 import re
@@ -16,7 +18,10 @@ import urllib.request
 import uuid
 
 SOURCE = 'https://github.com/wstein/bundledock'
-BUNDLES = ('toolbox', 'code-server', 'node', 'node-current', 'bun', 'codex', 'agy', 'claude')
+_SPEC=importlib.util.spec_from_file_location('bundle_config',Path(__file__).with_name('bundle-config.py'))
+_CONFIG=importlib.util.module_from_spec(_SPEC)
+_SPEC.loader.exec_module(_CONFIG)
+BUNDLES=tuple(_CONFIG.BUNDLES)
 DIGEST = re.compile(r'sha256:[0-9a-f]{64}\Z')
 VERSION = re.compile(r'(\d{4}\.\d{2}\.\d{2})-b([1-9]\d*)\.([1-9]\d*)\Z')
 SINGLETON = re.compile(r'(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)-b[1-9]\d*\Z')
@@ -25,7 +30,7 @@ LEGACY = re.compile(r'(\d{4}\.\d{2}\.\d{2})-([1-9]\d*)-([1-9]\d*)\Z')
 
 def validate_record(record, legacy=False):
     r = dict(record)
-    if r.get('bundle') not in BUNDLES or r.get('image') != 'quay.io/bundledock/'+r['bundle']:
+    if r.get('bundle') not in BUNDLES or r.get('image') != 'quay.io/bundledock/'+_CONFIG.select_bundle(r['bundle'])['repository']:
         raise ValueError('unexpected official bundle repository')
     if r.get('source') != SOURCE or not re.fullmatch('[0-9a-f]{40}', r.get('commit', '')):
         raise ValueError('unexpected source repository or revision')
@@ -113,13 +118,16 @@ class Registry:
         self.token = json.loads(request(url, headers))['token']
 
     def get(self, kind, ref):
-        if kind not in ('manifests', 'blobs') or not (DIGEST.fullmatch(ref) or VERSION.fullmatch(ref) or SINGLETON.fullmatch(ref) or LEGACY.fullmatch(ref) or ref in ('stable', 'latest')):
+        if kind not in ('manifests', 'blobs') or not (DIGEST.fullmatch(ref) or VERSION.fullmatch(ref) or SINGLETON.fullmatch(ref) or LEGACY.fullmatch(ref) or ref in ('stable', 'latest', 'lts', 'current')):
             raise ValueError('invalid registry metadata request')
         headers = {'Authorization':'Bearer '+self.token, 'Accept':'application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.oci.image.manifest.v1+json, application/vnd.docker.distribution.manifest.v2+json'}
         return request(f'https://quay.io/v2/{self.path}/{kind}/{ref}', headers, signed_blob=kind=='blobs')
 
 
 def verify_labels(r, labels):
+    identity=labels.get('io.bundledock.bundle')
+    if (identity is not None and identity != r['bundle']) or (identity is None and (r['bundle']=='node-current' or (r['bundle']=='node' and SINGLETON.fullmatch(r['tag'])))):
+        raise ValueError('OCI source bundle mismatch')
     if SINGLETON.fullmatch(r['tag']) and labels.get('io.bundledock.github.run-attempt') != str(r['attempt']):
         raise ValueError('OCI workflow attempt mismatch')
     for key, field in [('source','source'), ('revision','commit'), ('version','tag')]:
@@ -149,7 +157,7 @@ def verify_registry(r, registry, aliases=False):
     if seen != {'amd64','arm64'}:
         raise ValueError('missing required architecture')
     if aliases:
-        for alias in ('stable','latest'):
+        for alias in _CONFIG.select_bundle(r['bundle'])['aliases'].split():
             decode_digest(registry.get('manifests', alias), r['digest'])
 
 
@@ -256,6 +264,20 @@ def create_tag(r):
     return 'created or concurrently verified'
 
 
+def bind_publication(record, bundle):
+    """Bind the source selector without inferring a shared Node semantic channel."""
+    if record.get('bundle', bundle) != bundle:
+        raise ValueError('publication receipt belongs to another source bundle')
+    required = bundle == 'node-current' or (bundle == 'node' and SINGLETON.fullmatch(record.get('tag', '')))
+    if required:
+        platforms = record.get('platforms')
+        if (record.get('bundle') != bundle or not isinstance(platforms, list) or len(platforms) != 2
+                or {p.get('architecture') for p in platforms if isinstance(p, dict)} != {'amd64', 'arm64'}
+                or any(p.get('bundle') != bundle for p in platforms)):
+            raise ValueError('Node semantic publication source identity missing or inconsistent')
+    return dict(record, bundle=bundle)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--publication', type=argparse.FileType('r'))
@@ -268,9 +290,9 @@ def main():
     args = parser.parse_args()
     if args.publication:
         record = json.load(args.publication)
-        record['bundle'] = args.bundle
+        record = bind_publication(record, args.bundle)
     else:
-        record = dict(bundle=args.bundle, image='quay.io/bundledock/'+args.bundle,
+        record = dict(bundle=args.bundle, image='quay.io/bundledock/'+_CONFIG.select_bundle(args.bundle)['repository'],
                       source=SOURCE, tag=args.tag, digest=args.digest, commit=args.commit, run_id=args.run_id, run_attempt=args.run_attempt)
     if args.legacy_version and not args.backfill:
         parser.error('--legacy-version is restricted to backfill')

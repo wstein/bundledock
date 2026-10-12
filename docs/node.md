@@ -119,3 +119,17 @@ Successful approved publication also creates an annotated `node/<immutable-versi
 Git tag at the verified image source commit. Its annotation binds the immutable
 image digest and workflow attempt; see [source tags](publication.md#source-tags-for-published-bundles)
 for verification, conflicts and separately authorized backfills.
+
+## Node channel aliases
+
+Both Node source bundles target `quay.io/bundledock/node`. An approved LTS
+publication updates `:lts`, `:latest` and backward compatible `:stable`; an
+approved Current publication updates only `:current`. Thus `node:latest` and
+an unqualified Node pull select LTS. Current remains [planned and unpublished](node-current.md).
+These source rules do not move any existing alias. The immutable published LTS
+reference above remains the verified consumer pin.
+
+Packaging revisions are reserved across all authenticated shared repository
+tags and both `node/*` and `node-current/*` source tags. A release later moving
+from Current to LTS receives a new unused `upstream-bN` tag. Source identities,
+recipes, locks, mount paths and volumes remain separate.

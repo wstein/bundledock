@@ -34,7 +34,7 @@ def require(condition, message):
 
 def validate(receipt, bundle, image, sha, run_id, attempt):
     require(bundle in BUNDLES, 'Unknown bundle')
-    require(re.fullmatch(r'quay\.io/[a-z0-9]+(?:[._-][a-z0-9]+)*/' + re.escape(bundle), image or ''), 'Invalid expected image')
+    require(re.fullmatch(r'quay\.io/[a-z0-9]+(?:[._-][a-z0-9]+)*/' + re.escape(_CONFIG.select_bundle(bundle)['repository']), image or ''), 'Invalid expected image')
     require(re.fullmatch(SHA, sha or '') and re.fullmatch(r'[1-9]\d*', run_id or '') and re.fullmatch(r'[1-9]\d*', attempt or ''), 'Invalid expected provenance')
     require(isinstance(receipt, dict), 'Receipt must be an object')
     require(receipt.get('image') == image and receipt.get('commit') == sha and receipt.get('source') == SOURCE and receipt.get('run_id') == run_id, 'Wrong publication provenance')
@@ -42,6 +42,8 @@ def validate(receipt, bundle, image, sha, run_id, attempt):
     require(isinstance(tag, str), 'Invalid publication version')
     version = _TAGS.validate_version(tag, run_id)
     semantic = _TAGS.SINGLETON.fullmatch(tag) is not None
+    required_identity = bundle == 'node-current' or (bundle == 'node' and semantic)
+    require(receipt.get('bundle', bundle) == bundle and (not required_identity or receipt.get('bundle') == bundle), 'Wrong source bundle identity')
     if semantic:
         require(bundle != 'toolbox' and receipt.get('run_attempt') == attempt, 'Wrong singleton publication attempt')
     else:
@@ -59,7 +61,7 @@ def validate(receipt, bundle, image, sha, run_id, attempt):
     platforms = receipt.get('platforms')
     require(isinstance(platforms, list) and len(platforms) == 2, 'Both platform receipts required')
     require({p.get('architecture') for p in platforms if isinstance(p, dict)} == {'amd64', 'arm64'}, 'Wrong platform set')
-    fields = FIELDS + (('run_attempt',) if semantic else ())
+    fields = FIELDS + (('run_attempt',) if semantic else ()) + (('bundle',) if 'bundle' in receipt else ())
     for platform in platforms:
         require(all(platform.get(key) == receipt[key] for key in fields), 'Platform provenance differs')
         require(platform.get('smoked') is True, 'Platform smoke missing')

@@ -425,7 +425,7 @@ func TestFrozenPublicationUsesExactLockForEveryBundle(t *testing.T) {
 			if err = os.WriteFile(bundle.Directory+"/tools.lock.json", original, 0600); err != nil {
 				t.Fatal(err)
 			}
-			meta, err := toolpublish.NewMetadata(bundle.Directory+"/tools.lock.json", "quay.io/example/"+name, "2026.10.10-b12.1", strings.Repeat("a", 40), "https://github.com/example/repo", "2026-10-10T03:17:00Z", "123")
+			meta, err := toolpublish.NewMetadataForBundle(name, bundle.Directory+"/tools.lock.json", "quay.io/example/"+bundle.Repository, "2026.10.10-b12.1", strings.Repeat("a", 40), "https://github.com/example/repo", "2026-10-10T03:17:00Z", "123")
 			if err != nil {
 				t.Fatal(err)
 			}

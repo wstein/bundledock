@@ -17,10 +17,10 @@ on:
 permissions:
   contents: read
 
-# A single publisher owns stable. Queue approved publications without
-# cancelling a native smoke test or allowing concurrent stable updates.
+# Serialize publishers sharing an output repository, including both Node channels.
+# Queue approved publications without cancelling native smoke tests.
 concurrency:
-  group: bundledock-${{ inputs.bundle }}-publish
+  group: bundledock-${{ (inputs.bundle == 'node' || inputs.bundle == 'node-current') && 'node' || inputs.bundle }}-publish
   cancel-in-progress: false
 
 jobs:
@@ -296,7 +296,7 @@ jobs:
           REPOSITORY_USERNAME: ${{ vars.REPOSITORY_USERNAME }}
           REPOSITORY_TOKEN: ${{ secrets.REPOSITORY_TOKEN }}
         run: printf '%s' "$REPOSITORY_TOKEN" | docker login quay.io --username "$REPOSITORY_USERNAME" --password-stdin
-      - name: Verify both platform manifests and promote version, stable and latest
+      - name: Verify both platform manifests and promote version and canonical channel aliases
         env:
           REPOSITORY_USERNAME: ${{ vars.REPOSITORY_USERNAME }}
           REPOSITORY_TOKEN: ${{ secrets.REPOSITORY_TOKEN }}
@@ -370,6 +370,6 @@ jobs:
         run: |
           python3 -B scripts/publication-docs.py \
             --receipt "$RUNNER_TEMP/publication-docs-receipt/publication.json" \
-            --bundle "$BUNDLE" --image "${REPOSITORY_URL%/}/$BUNDLE" \
+            --bundle "$BUNDLE" --image "${REPOSITORY_URL%/}/$(python3 -B scripts/bundle-config.py --repository "$BUNDLE")" \
             --sha "$PUBLICATION_SHA" --run-id "$GITHUB_RUN_ID" \
             --attempt "$GITHUB_RUN_ATTEMPT" --propose
