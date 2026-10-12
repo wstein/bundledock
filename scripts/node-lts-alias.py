@@ -90,7 +90,11 @@ def promote(registry, before_write=lambda: None):
     for descriptor in index['manifests']:
         manifest = tags.decode_digest(registry.get('manifests', descriptor['digest']), descriptor['digest'])
         config = tags.decode_digest(registry.get('blobs', manifest['config']['digest']), manifest['config']['digest'])
-        if config['config']['Labels'].get('io.bundledock.github.run-attempt') != '1':
+        # This fixed historical date publication predates the attempt label;
+        # its exact successful workflow attempt is verified separately.
+        labels = config['config']['Labels']
+        key = 'io.bundledock.github.run-attempt'
+        if key in labels and labels[key] != str(r['attempt']):
             raise ValueError('OCI workflow attempt mismatch')
     checkpoint('preserved-aliases-before')
     for ref in ('stable', 'latest'):

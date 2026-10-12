@@ -26,7 +26,7 @@ def digest(data):
 
 
 class FakeRegistry:
-    def __init__(self, architectures=('amd64', 'arm64'), labels=None, config_arch=None):
+    def __init__(self, architectures=('amd64', 'arm64'), labels=None, config_arch=None, include_attempt=True):
         self.data = {}
         self.writes = []
         descriptors = []
@@ -38,6 +38,10 @@ class FakeRegistry:
                 'io.bundledock.github.run-id': alias.RECORD['run_id'],
                 'io.bundledock.github.run-attempt': '1', **(labels or {}),
             }}})
+            if not include_attempt:
+                record = json.loads(config)
+                del record['config']['Labels']['io.bundledock.github.run-attempt']
+                config = encoded(record)
             self.data['blobs', digest(config)] = config
             manifest = encoded({'config': {'digest': digest(config)}})
             self.data['manifests', digest(manifest)] = manifest
@@ -84,6 +88,17 @@ class AliasTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     alias.promote(registry)
                 self.assertEqual(registry.writes, [])
+
+    def test_actual_historical_configs_without_attempt_label_copy(self):
+        registry = FakeRegistry(include_attempt=False)
+        with patch.dict(alias.RECORD, digest=registry.digest):
+            self.assertEqual(alias.promote(registry), 'copied')
+        self.assertEqual(registry.writes, [registry.index])
+        for value in (None, '', '2', 1):
+            registry = FakeRegistry(labels={'io.bundledock.github.run-attempt': value})
+            with patch.dict(alias.RECORD, digest=registry.digest), self.assertRaises(ValueError):
+                alias.promote(registry)
+            self.assertEqual(registry.writes, [])
 
     def test_diagnostics_report_stage_type_status_without_sensitive_details(self):
         error = urllib.error.HTTPError('https://secret:password@cdn01.quay.io/blob?signature=secret',
