@@ -4,36 +4,39 @@
 
 [![CLI CI](https://github.com/wstein/bundledock/actions/workflows/ci.yml/badge.svg)](https://github.com/wstein/bundledock/actions/workflows/ci.yml)
 [![Go 1.25 or newer](https://img.shields.io/badge/Go-1.25%2B-00ADD8?logo=go&logoColor=white)](go.mod)
-[![Published toolbox version](https://img.shields.io/badge/dynamic/regex?url=https%3A%2F%2Fquay.io%2Fapi%2Fv1%2Frepository%2Fbundledock%2Ftoolbox%2Ftag%2F%3FonlyActiveTags%3Dtrue%26limit%3D100%26page%3D1&search=%22name%22%5Cs%2A%3A%5Cs%2A%22%28%5Cd%7B4%7D%5C.%5Cd%7B2%7D%5C.%5Cd%7B2%7D-%28%3F%3Ab%5Cd%2B%5C.%5Cd%2B%7C%5Cd%2B-%5Cd%2B%29%29%22&replace=%241&label=Toolbox&color=5eead4&labelColor=0b2545)](https://quay.io/repository/bundledock/toolbox?tab=tags)
-[![Publish toolbox](https://github.com/wstein/bundledock/actions/workflows/bundledock-toolbox.yml/badge.svg?branch=main)](https://github.com/wstein/bundledock/actions/workflows/bundledock-toolbox.yml)
+BundleDock packages official stable prebuilt tools and runtimes as OCI volume
+carriers for shared, read-only use in Linux development containers. Each bundle
+has its own catalog, lock, image and volume. Stock language images supply the
+consumer environment; the toolbox supplies common utilities alongside them.
+The supported bundle platforms are Linux AMD64 and ARM64. See each guide for
+its consumer requirements and measured runtime coverage.
 
-BundleDock builds an OCI toolbox of pinned development CLIs and packaged
-runtime assets for shared, read-only use in Linux containers. The toolbox supplies
-common utilities alongside stock language images, such as Go or Rust images,
-which provide their own language toolchains.
-
-Build one toolbox, share it across your development containers, and keep tool
-versions consistent without adding common utilities to every language image.
-BundleDock is a proof of concept for Linux AMD64 and ARM64.
+| Bundle | Purpose and guide | Published version | Publication workflow |
+| --- | --- | --- | --- |
+| Toolbox | [Development CLIs and common utilities](docs/toolbox.md) | [![Published toolbox version](https://img.shields.io/badge/dynamic/regex?url=https%3A%2F%2Fquay.io%2Fapi%2Fv1%2Frepository%2Fbundledock%2Ftoolbox%2Ftag%2F%3FonlyActiveTags%3Dtrue%26limit%3D100%26page%3D1&search=%22name%22%5Cs%2A%3A%5Cs%2A%22%28%5Cd%7B4%7D%5C.%5Cd%7B2%7D%5C.%5Cd%7B2%7D-%28%3F%3Ab%5Cd%2B%5C.%5Cd%2B%7C%5Cd%2B-%5Cd%2B%29%29%22&replace=%241&label=version&color=5eead4&labelColor=0b2545)](https://quay.io/repository/bundledock/toolbox?tab=tags) | [![Publish toolbox](https://github.com/wstein/bundledock/actions/workflows/bundledock-toolbox.yml/badge.svg?branch=main)](https://github.com/wstein/bundledock/actions/workflows/bundledock-toolbox.yml) |
+| code-server | [Standalone browser editor](docs/code-server.md) | [![Published code-server version](https://img.shields.io/badge/dynamic/regex?url=https%3A%2F%2Fquay.io%2Fapi%2Fv1%2Frepository%2Fbundledock%2Fcode-server%2Ftag%2F%3FonlyActiveTags%3Dtrue%26limit%3D100%26page%3D1&search=%22name%22%5Cs%2A%3A%5Cs%2A%22%28%5Cd%7B4%7D%5C.%5Cd%7B2%7D%5C.%5Cd%7B2%7D-%28%3F%3Ab%5Cd%2B%5C.%5Cd%2B%7C%5Cd%2B-%5Cd%2B%29%29%22&replace=%241&label=version&color=5eead4&labelColor=0b2545)](https://quay.io/repository/bundledock/code-server?tab=tags) | [![Publish code-server](https://github.com/wstein/bundledock/actions/workflows/bundledock-code-server.yml/badge.svg?branch=main)](https://github.com/wstein/bundledock/actions/workflows/bundledock-code-server.yml) |
+| Node.js | [Node.js LTS with npm/npx](docs/node.md) | [![Published node version](https://img.shields.io/badge/dynamic/regex?url=https%3A%2F%2Fquay.io%2Fapi%2Fv1%2Frepository%2Fbundledock%2Fnode%2Ftag%2F%3FonlyActiveTags%3Dtrue%26limit%3D100%26page%3D1&search=%22name%22%5Cs%2A%3A%5Cs%2A%22%28%5Cd%7B4%7D%5C.%5Cd%7B2%7D%5C.%5Cd%7B2%7D-%28%3F%3Ab%5Cd%2B%5C.%5Cd%2B%7C%5Cd%2B-%5Cd%2B%29%29%22&replace=%241&label=version&color=5eead4&labelColor=0b2545)](https://quay.io/repository/bundledock/node?tab=tags) | [![Publish node](https://github.com/wstein/bundledock/actions/workflows/bundledock-node.yml/badge.svg?branch=main)](https://github.com/wstein/bundledock/actions/workflows/bundledock-node.yml) |
+| Bun | [Bun runtime and bunx](docs/bun.md) | [![Published bun version](https://img.shields.io/badge/dynamic/regex?url=https%3A%2F%2Fquay.io%2Fapi%2Fv1%2Frepository%2Fbundledock%2Fbun%2Ftag%2F%3FonlyActiveTags%3Dtrue%26limit%3D100%26page%3D1&search=%22name%22%5Cs%2A%3A%5Cs%2A%22%28%5Cd%7B4%7D%5C.%5Cd%7B2%7D%5C.%5Cd%7B2%7D-%28%3F%3Ab%5Cd%2B%5C.%5Cd%2B%7C%5Cd%2B-%5Cd%2B%29%29%22&replace=%241&label=version&color=5eead4&labelColor=0b2545)](https://quay.io/repository/bundledock/bun?tab=tags) | [![Publish bun](https://github.com/wstein/bundledock/actions/workflows/bundledock-bun.yml/badge.svg?branch=main)](https://github.com/wstein/bundledock/actions/workflows/bundledock-bun.yml) |
 
 **[Documentation](https://wstein.github.io/bundledock/)** — quick start and guides
-for using, maintaining, and publishing the toolbox.
+for using, maintaining, and publishing each bundle.
 
 ## Quick start
 
-You need Docker running and a local clone of this repository. Obtain the user's
-explicit approval for the build and smoke operation at the intended revision
-before running these commands from its root:
+You need Docker running and a local clone of this repository. Pull the published
+toolbox by its immutable multi-platform index digest, then initialize its volume:
 
 ```sh
-make tools-build
-make tools-smoke
-make tools-volume
+TOOLBOX_IMAGE=quay.io/bundledock/toolbox@sha256:40bae37ef7fd7b8e7131803850801ed41cfb23a6ef774bc2e40f95ee81e59a1c
+docker pull "$TOOLBOX_IMAGE"
+sh bundles/toolbox/volume.sh "$TOOLBOX_IMAGE"
 ```
 
-The build downloads the pinned tools and verifies their checksums. Smoke checks
-exercise them in a compatible consumer container. The last command prints an
-image-derived volume name; substitute it below:
+This example is toolbox version `2026.10.10-b4.1`, published from
+[`812e7caac782595b9302292603bbe49e890ca96e`](https://github.com/wstein/bundledock/commit/812e7caac782595b9302292603bbe49e890ca96e)
+in [publication run 38088214128, attempt 1](https://github.com/wstein/bundledock/actions/runs/38088214128/attempts/1).
+It predates the source catalog additions of fzf, bat and regctl. The initializer
+prints `Volume: bundledock-toolbox-<full image ID>`; use that volume name below:
 
 ```sh
 docker run --rm -it \
@@ -51,17 +54,20 @@ The OCI image is a volume carrier built from `scratch`. Run its tools in a
 compatible consumer, which supplies Git, certificates, terminfo, and system
 libraries. See [consumer requirements](docs/architecture.md#consumer-compatibility-and-build-layout)
 for runtime details. Anchorage owns the separate devcontainer integration and
-its image and volume pins. The current devcontainer pins an older image;
-rebuild the toolbox and initialize its new volume before adopting these tools.
+its [image and volume pins](https://github.com/wstein/Anchorage). Follow that
+consumer project’s instructions to adopt a published bundle.
 
-## Included tools
+## Toolbox source catalog
 
-The bundle pins 24 tools, with these companion commands:
+The current source catalog pins 27 tools, with these companion commands. This
+describes the desired source inventory; published images retain their own pins:
 
 | Use | Tools |
 | --- | --- |
 | Agents and GitHub | [Codex](https://github.com/openai/codex), [Claude Code](https://github.com/anthropics/claude-code), [Antigravity (`agy`)](https://github.com/google-antigravity/antigravity-cli), [GitHub CLI (`gh`)](https://github.com/cli/cli) |
 | Search and structured data | [ripgrep (`rg`)](https://github.com/BurntSushi/ripgrep), [fd (`fd`, `fdfind`)](https://github.com/sharkdp/fd), [ast-grep](https://github.com/ast-grep/ast-grep), [jq](https://github.com/jqlang/jq), [yq](https://github.com/mikefarah/yq) |
+| Interactive filtering and file viewing | [fzf](https://github.com/junegunn/fzf), [bat](https://github.com/sharkdp/bat) |
+| OCI registries | [regctl](https://github.com/regclient/regclient) |
 | Python environments | [uv and uvx](https://github.com/astral-sh/uv) |
 | Shells and terminal workspaces | [Herdr](https://github.com/herdrdev/herdr), [Fish](https://github.com/fish-shell/fish-shell), [Starship](https://github.com/starship/starship), [Nushell (`nu`)](https://github.com/nushell/nushell), [tmux](https://github.com/tmux/tmux-builds) |
 | Quality and security | [typos](https://github.com/crate-ci/typos), [lychee](https://github.com/lycheeverse/lychee), [Gitleaks](https://github.com/gitleaks/gitleaks), [Trivy](https://github.com/aquasecurity/trivy), [Syft](https://github.com/anchore/syft) |
@@ -82,19 +88,15 @@ Participation in the BundleDock community follows our [Code of Conduct](CODE_OF_
 Browse the [documentation site](https://wstein.github.io/bundledock/) or read the
 Markdown sources in this repository:
 
-- [CLI and quick start](https://wstein.github.io/bundledock/cli/) ([source](README.md)): build the toolbox and use its shared volume.
+- [CLI and quick start](https://wstein.github.io/bundledock/cli/) ([source](README.md)): pull the published toolbox and use its shared volume.
 - [Tool catalog and upgrades](https://wstein.github.io/bundledock/guides/toolbox/) ([source](docs/toolbox.md)): pinned versions and lock updates.
 - [Architecture](https://wstein.github.io/bundledock/guides/architecture/) ([source](docs/architecture.md)): shared volumes, rollback, and consumer requirements.
 - [Development and verification](https://wstein.github.io/bundledock/guides/development/) ([source](docs/development.md)): CLI commands, checks, and recorded coverage.
 - [Publication](https://wstein.github.io/bundledock/guides/publication/) ([source](docs/publication.md)): Quay setup and manual approval of an exact `main` SHA.
 
-The [CI workflow](.github/workflows/ci.yml) runs formatting, source tests and vet
-on pushes and pull requests. Artifact, image, release and documentation builds
-require explicit user approval. The manual publication workflow builds and smokes
-both native architectures only after approval of its exact default-`main` SHA.
-A push, merge, schedule or bot update never authorizes those builds. See the [verification record](docs/development.md#verification-evidence)
-for what has actually passed and the remaining limits. Quay publication and
-authenticated agent tasks require separate verification.
+The [CI workflow](.github/workflows/ci.yml) runs formatting, source tests and vet.
+Maintainers can find build approval, publication and verification details in the
+[publication guide](docs/publication.md) and [verification record](docs/development.md#verification-evidence).
 
 BundleDock is licensed under the [European Union Public Licence 1.2 (EUPL-1.2)](LICENSE).
 
@@ -102,6 +104,3 @@ Upstream tool notices are kept in [bundles/toolbox/licenses](bundles/toolbox/lic
 and asset provenance are documented in [brand/README.md](brand/README.md).
 BundleDock's [source and full-history provenance](docs/development.md#repository-history)
 are independent of image publication and consumer activation.
-
-An optional [code-server carrier](docs/code-server.md) supplies the complete
-official standalone browser editor in a separate read-only volume.
