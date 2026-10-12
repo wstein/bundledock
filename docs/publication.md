@@ -186,11 +186,30 @@ creates the two-platform manifest and verifies its platform digests before updat
 `docker pull quay.io/bundledock/toolbox` resolves to `:latest`. Explicit `:stable`
 and digest references remain available. Alias updates are sequential, so a later
 failure can leave an earlier tag updated. Success is reported only after both
-aliases have been verified against the version digest. The UTC version tag is
-`YYYY.MM.DD-b<github.run_number>.<github.run_attempt>`, for example
-`2026.10.10-b12.4`. The run number distinguishes normal runs and the attempt
+aliases have been verified against the version digest.
+
+Toolbox keeps its UTC version format
+`YYYY.MM.DD-b<github.run_number>.<github.run_attempt>`, such as
+`2026.10.10-b12.4`. Its run number distinguishes normal runs and its attempt
 counter distinguishes reruns. Missing, malformed or nonpositive counters are
 rejected before resolving tools.
+
+The six single-package bundles use `<upstream-version>-b<packaging-revision>`.
+The version comes from the resolved official lock and must match on AMD64 and
+ARM64. Official tag prefixes are removed: Codex `rust-v0.162.1` becomes
+`0.162.1-b1`, Bun `bun-v1.4.3` becomes `1.4.3-b1`, and Node `v24.21.0`
+becomes `24.21.0-b1`. Antigravity, Claude and code-server likewise start at
+`1.3.3-b1`, `2.1.296-b1` and `4.141.0-b1` for those upstream releases.
+These examples describe the naming policy and do not claim publication.
+
+A complete authenticated registry tag listing and existing source Git tags
+reserve packaging revisions. Repackaging the same upstream release uses the
+next revision (`-b2`, `-b3`, and so on); a new upstream version starts at `-b1`.
+The workflow run number never supplies this revision. The resolver freezes one
+version and lock for both native jobs. Run ID and attempt remain independent
+receipt fields and OCI labels, and source tagging verifies the exact workflow
+attempt. Existing date tags, source tags and digest references stay available;
+reading historical provenance does not rename or overwrite them.
 
 Workflow recreation can restart its run counter. Before each staging push and
 again before creating the final version index, an authenticated Quay manifest
@@ -220,7 +239,7 @@ local checks and the scope of historical native CI results.
 
 After successful image promotion, each of the toolbox, code-server, node, bun, codex, agy and claude
 workflows creates an annotated Git tag `<bundle>/<immutable-version>` at the
-image's exact source commit, for example `node/2026.10.12-b1.1`. Approval of that
+image's exact source commit, for example `node/24.21.0-b1`. Approval of that
 publication includes this source tag. All seven bundles support the exact-head
 review and merged-updater approval path described above; the shared read-only
 source approval gate is revalidated before automatic tagging. The controller
@@ -256,6 +275,9 @@ python3 -B scripts/bundle-git-tags.py --backfill --bundle node \
   --tag 2026.10.12-b1.1 --digest sha256:<verified-index-digest> \
   --commit <verified-full-source-sha> --run-id <verified-run-id>
 ```
+
+For a singleton upstream version, also supply `--run-attempt` with the
+independently verified workflow attempt; it cannot be inferred from `-bN`.
 
 Git tag writes are atomic individually. If a later backfill conflicts, previously
 verified tags remain; resolve the conflict before continuing. Registry writes
