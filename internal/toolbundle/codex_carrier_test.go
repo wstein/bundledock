@@ -50,7 +50,7 @@ func TestCodexStandaloneCarrierPreservesHelpers(t *testing.T) {
 					t.Fatal("voice not excluded")
 				}
 				for _, notice := range c.Catalog.Packages[name].Notices {
-					b, err := os.ReadFile(filepath.Join(source, "licenses", name, filepath.Base(notice)))
+					b, err := readInstalledFile(t, source, "licenses/"+name+"/"+filepath.Base(notice))
 					if err != nil {
 						t.Fatal(err)
 					}

@@ -77,6 +77,21 @@ func BuildWithGitTrimStage(ctx context.Context, client *http.Client, tools map[s
 		return err
 	}
 	defer root.Close()
+	directory, err := root.Open(".")
+	if err != nil {
+		return err
+	}
+	entries, readErr := directory.ReadDir(1)
+	closeErr := directory.Close()
+	if readErr != nil && readErr != io.EOF {
+		return readErr
+	}
+	if closeErr != nil {
+		return closeErr
+	}
+	if len(entries) != 0 {
+		return fmt.Errorf("bundle destination must be empty; preserve existing files and use a fresh directory")
+	}
 	names := make([]string, 0, len(packages))
 	for name := range packages {
 		names = append(names, name)
@@ -110,6 +125,9 @@ func BuildWithGitTrimStage(ctx context.Context, client *http.Client, tools map[s
 				return closeErr
 			}
 		}
+	}
+	if err := WriteLicenseArchive(root); err != nil {
+		return err
 	}
 	if len(packages) == 1 && packages["code-server"].Install.Profile == StandaloneProfile {
 		return WriteStandaloneManifest(root, arch, tools)

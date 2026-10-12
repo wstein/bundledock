@@ -95,7 +95,7 @@ func TestOpenTofuInstallRetainsArchiveAndSupplementalNotices(t *testing.T) {
 				t.Fatal(err)
 			}
 			for name, want := range map[string]string{"bin/tofu": "synthetic CLI", "licenses/opentofu/LICENSE": string(license), "licenses/opentofu/SOURCE": string(source), "licenses/opentofu/README.md": "official readme stand-in", "licenses/opentofu/CHANGELOG.md": "official changelog stand-in"} {
-				got, err := os.ReadFile(filepath.Join(dir, name))
+				got, err := readInstalledFile(t, dir, name)
 				if err != nil || string(got) != want {
 					t.Fatalf("retained %s differs: %v", name, err)
 				}

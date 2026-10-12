@@ -50,8 +50,8 @@ func TestQualitySecurityOfficialArchives(t *testing.T) {
 					t.Fatalf("%s executable: %v %v", name, info, err)
 				}
 				for _, notice := range packages[name].Install.ArchiveNotices {
-					info, err := os.Stat(filepath.Join(dst, "licenses", name, notice))
-					if err != nil || info.Size() == 0 {
+					data, err := readInstalledFile(t, dst, "licenses/"+name+"/"+notice)
+					if err != nil || len(data) == 0 {
 						t.Fatalf("%s notice: %v", name, err)
 					}
 				}
