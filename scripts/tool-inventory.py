@@ -11,9 +11,6 @@ END = "<!-- END GENERATED TOOL INVENTORY -->"
 # Existing display labels only. Versions come exclusively from the
 # lock; exact catalog coverage prevents a new tool from being silently omitted.
 LABELS = (
-    ("codex", "Codex"),
-    ("claude", "Claude Code"),
-    ("agy", "Antigravity"),
     ("gh", "GitHub CLI"),
     ("jq", "jq"),
     ("rg", "ripgrep (`rg`)"),
