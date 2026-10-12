@@ -1,4 +1,11 @@
+---
+title: Node.js Current bundle
+description: Use the independent Node.js Current carrier and distinguish its channel from LTS.
+---
+
 # Optional Node.js Current bundle
+
+[All bundles](bundles.md)
 
 `bundles/node-current` supplies official stable Node.js Current Linux AMD64
 and ARM64 prebuilts and their bundled npm/npx. The existing `node` bundle

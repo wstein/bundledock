@@ -1,4 +1,11 @@
+---
+title: Antigravity bundle
+description: Use the official Antigravity CLI with its independent inventory and publication receipt.
+---
+
 # Optional Antigravity CLI bundle
+
+[All bundles](bundles.md)
 
 `bundles/agy` supplies the official stable Linux AMD64 and ARM64 Antigravity CLI
 prebuilt with its own catalog, lock, carrier image, volume and

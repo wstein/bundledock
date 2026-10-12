@@ -1,4 +1,11 @@
+---
+title: OpenTofu bundle
+description: Inspect the prepared OpenTofu source carrier and its pending publication status.
+---
+
 # Optional OpenTofu bundle
+
+[All bundles](bundles.md)
 
 `bundles/opentofu` supplies the official stable prebuilt OpenTofu CLI (`tofu`)
 for Linux AMD64 and ARM64. It has a separate catalog, lock, image, volume and

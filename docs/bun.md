@@ -1,4 +1,11 @@
+---
+title: Bun bundle
+description: Use the official Bun runtime and bunx from a shared, read-only carrier.
+---
+
 # Optional Bun bundle
+
+[All bundles](bundles.md)
 
 `bundles/bun` supplies official stable prebuilt Bun for Linux AMD64 and ARM64,
 with its own catalog, lock, image, volume and `/opt/bundledock/bun` mount.

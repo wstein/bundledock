@@ -6,7 +6,7 @@ weight: 20
 
 # Toolbox bundle
 
-[Back to BundleDock](../README.md)
+[Back to BundleDock](../README.md) · [All bundles](bundles.md)
 
 <!-- BEGIN PUBLISHED BUNDLE -->
 <!-- publication-record: {"attempt":"1","commit":"812e7caac782595b9302292603bbe49e890ca96e","digest":"sha256:40bae37ef7fd7b8e7131803850801ed41cfb23a6ef774bc2e40f95ee81e59a1c","image":"quay.io/bundledock/toolbox","reference":"quay.io/bundledock/toolbox@sha256:40bae37ef7fd7b8e7131803850801ed41cfb23a6ef774bc2e40f95ee81e59a1c","run_id":"38088214128","source":"https://github.com/wstein/bundledock","tag":"2026.10.10-b4.1"} -->
