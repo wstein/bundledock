@@ -1,0 +1,43 @@
+name: Repair published Node LTS alias
+
+on:
+  workflow_dispatch:
+    inputs:
+      approved_sha:
+        description: Full main SHA explicitly approved for copying the existing Node index to lts only
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+# Same serialization as both Node channel publishers. No build or Git tag jobs.
+concurrency:
+  group: bundledock-node-publish
+  cancel-in-progress: false
+
+jobs:
+  alias:
+    if: >-
+      github.repository == 'wstein/bundledock' &&
+      github.event.repository.default_branch == 'main' &&
+      github.ref == 'refs/heads/main' && github.event.sender.type == 'User' &&
+      inputs.approved_sha == github.sha
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      - name: Verify published provenance and copy only the fixed lts alias
+        env:
+          APPROVED_SHA: ${{ inputs.approved_sha }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          SENDER_TYPE: ${{ github.event.sender.type }}
+          TRIGGERING_ACTOR: ${{ github.triggering_actor }}
+          GITHUB_TOKEN: ${{ github.token }}
+          REPOSITORY_USERNAME: ${{ vars.REPOSITORY_USERNAME }}
+          REPOSITORY_TOKEN: ${{ secrets.REPOSITORY_TOKEN }}
+        run: python3 -B scripts/node-lts-alias.py
