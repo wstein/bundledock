@@ -1,5 +1,6 @@
 """Offline tests: no registry writes or builds."""
 import hashlib
+import http.client
 import io
 import importlib.util
 import json
@@ -83,6 +84,32 @@ class AliasTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     alias.promote(registry)
                 self.assertEqual(registry.writes, [])
+
+    def test_diagnostics_report_stage_type_status_without_sensitive_details(self):
+        error = urllib.error.HTTPError('https://secret:password@cdn01.quay.io/blob?signature=secret',
+                                       403, 'Bearer secret', {}, io.BytesIO(b'secret'))
+        with patch.object(alias, 'guard', side_effect=error):
+            with self.assertRaises(SystemExit) as caught:
+                alias.run()
+        self.assertEqual(str(caught.exception),
+                         'Node LTS alias failed at approved-source: HTTPError HTTP 403; no automatic retry')
+        with patch.object(alias, 'guard'), patch.object(alias.tags, 'verify_run', side_effect=ValueError('secret response')):
+            with self.assertRaises(SystemExit) as caught:
+                alias.run()
+        self.assertEqual(str(caught.exception),
+                         'Node LTS alias failed at publication-run: ValueError; no automatic retry')
+
+    def test_transport_exceptions_are_sanitized_and_interrupts_preserved(self):
+        for error in (TimeoutError('secret signed URL'), http.client.InvalidURL('signature=secret'),
+                      http.client.IncompleteRead(b'secret response')):
+            with self.subTest(kind=type(error).__name__), patch.object(alias, 'guard', side_effect=error):
+                with self.assertRaises(SystemExit) as caught:
+                    alias.run()
+                self.assertEqual(str(caught.exception),
+                                 f'Node LTS alias failed at approved-source: {type(error).__name__}; no automatic retry')
+        with patch.object(alias, 'guard', side_effect=KeyboardInterrupt):
+            with self.assertRaises(KeyboardInterrupt):
+                alias.run()
 
     def test_both_platforms_and_provenance_required(self):
         cases = [dict(architectures=('amd64',)), dict(architectures=('amd64', 'amd64')),
