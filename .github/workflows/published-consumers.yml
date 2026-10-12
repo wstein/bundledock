@@ -1,0 +1,46 @@
+name: Verify published consumers
+
+on:
+  workflow_dispatch:
+    inputs:
+      approved_sha:
+        description: Full current main SHA explicitly approved for published-image verification
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      github.event.repository.default_branch == 'main' &&
+      github.ref == 'refs/heads/main' && github.event.sender.type == 'User' &&
+      inputs.approved_sha == github.sha
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.approved_sha }}
+      - name: Require approval of the exact current main revision
+        env:
+          APPROVED_SHA: ${{ inputs.approved_sha }}
+          TRIGGERING_ACTOR: ${{ github.triggering_actor }}
+        run: |
+          case "$APPROVED_SHA" in ''|*[!0-9a-f]*) exit 1 ;; esac
+          test "${#APPROVED_SHA}" -eq 40
+          test "$APPROVED_SHA" = "$GITHUB_SHA"
+          for actor in "$GITHUB_ACTOR" "$TRIGGERING_ACTOR"; do
+            case "$actor" in ''|*'[bot]'*|github-actions) exit 1 ;; esac
+          done
+          test "$(git rev-parse HEAD)" = "$APPROVED_SHA"
+          test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$APPROVED_SHA"
+      - name: Pull existing pins and verify all five read-only bundles together
+        run: sh scripts/published-consumers.sh

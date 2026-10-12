@@ -237,6 +237,37 @@ documentation and unrelated bot PRs do not authorize builds. Human-token
 automation cannot be identified from actor context alone; do not use it to
 impersonate manual dispatch.
 
+### Verify the existing five published consumers
+
+[Verify published consumers](../.github/workflows/published-consumers.yml) is a
+manual-only native Linux AMD64/ARM64 check. After source review and merge, a
+human dispatches it from current `main` with the explicitly approved full
+`approved_sha`. It rejects a stale main revision and bot actors. It only pulls
+existing immutable images; it does not compile, build, publish, tag, log in to
+agents, or change Anchorage's configuration.
+
+The fixed toolbox, Node LTS, Codex, Antigravity and Claude pins match Anchorage
+revision `86fb5f98ecbd14132be1f27c9b6ff4fb79f4a472`. The stock Go tag
+`mcr.microsoft.com/devcontainers/go:2-1.27-trixie` resolved on 2026-10-12 to OCI
+index `sha256:8f1c83128e4bce9d745b1dc0f28f8c027e303d3886e2434966ff135296c41770`.
+Registry manifest metadata identified Linux AMD64 manifest
+`sha256:8f6d52c21037d464b8e31077264e4acedeb14c9d1759d22af90e036b7352cd3e`
+and ARM64 manifest
+`sha256:c4cd108dd4fe90d6e5b3a940f0fa9ae66e747c193944d8ef4f240c208904f52e`.
+This verification pins that index without changing the consumer's tag.
+
+The verifier initializes disposable volumes through `scripts/bundle-volume.sh`
+after every pull succeeds. Both offline non-root consumer runs mount all five
+bundles read-only at their sibling `/opt/bundledock/<bundle>` paths. They share
+a disposable writable HOME, npm cache/prefix and retained config markers;
+agent commands must resolve from their own mounts ahead of Node and toolbox.
+The checks execute versions, validate Codex helper resources and Node's actual
+executable path, and run local npm/npx commands offline without packing an
+artifact. Cleanup removes only volumes allocated by this verifier. Source-only
+fake-Docker tests cover orchestration and failure paths; they do not establish
+native runtime compatibility. Record both native job results before treating
+this as runtime evidence.
+
 ## Verification evidence
 
 The badge in the README shows the live workflow status; evidence below names
