@@ -296,6 +296,39 @@ the existing extractor's rejection of archive links. Source tests use synthetic
 artifacts and smoke stubs. Native execution, OCI builds/smoke, vulnerability scans
 and consumer activation remain unverified pending separate approval.
 
+## Shell, recipe, Python and file utilities
+
+The source catalog also includes ShellCheck, shfmt, just, Ruff, delta,
+watchexec, hyperfine and age. ShellCheck checks shell scripts; shfmt formats
+shell source; just runs explicitly selected project recipes; Ruff lints and
+formats Python. Delta renders diffs, watchexec runs commands when files change,
+hyperfine benchmarks commands, and age encrypts files. Age includes the official
+`age-keygen`, `age-inspect` and bundled `age-plugin-*` companions. These additions
+are source pins and do not change the previously published toolbox receipt.
+
+No shell hooks, Git pager, project recipes, editor settings or user configuration
+are enabled automatically. Use delta with `--paging=never` for noninteractive
+output. Ruff caches, watchexec state, hyperfine exports and age keys belong in a
+writable project directory or HOME, outside the read-only toolbox. Never store
+private encryption keys in the bundle.
+
+All sixteen Linux AMD64/ARM64 assets were SHA256 checked against official stable
+release API digests and inspected without executing them on 2026-10-12. Shfmt
+uses raw executables; other additions use official tar archives. Delta uses a
+musl AMD64 asset and a GNU libc ARM64 asset because upstream supplies no ARM64
+musl archive. ARM64 consumers therefore require compatible GNU libc and its
+runtime libraries; Alpine/musl ARM64 support is not established. This limitation
+must be rechecked against upstream assets before changing the recipe or claiming
+broader consumer support. Full upstream license texts, Ruff's bundled notices,
+delta's bat 0.26.1 syntax/theme notices and age's distributed license are retained.
+
+Source tests exercise synthetic archives and reject incorrect smoke outputs.
+The offline smoke script checks shell formatting, an explicit temporary just
+recipe, isolated Ruff formatting, a fixed diff, one watchexec command, a hyperfine
+JSON export and age encryption/decryption with a temporary key. Native AMD64 and
+ARM64 execution, OCI builds/smoke and vulnerability scans remain unverified and
+require separately approved builds before release or consumer activation.
+
 ## Optional browser editor
 
 The [code-server bundle](code-server.md) provides a separate optional OCI

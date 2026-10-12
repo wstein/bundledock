@@ -78,6 +78,12 @@ still pins an older image, so do not assume these commands exist in a running se
 | Customize a shell prompt | `starship`. |
 | Edit text in the terminal | `hx` (Helix). |
 | Build static sites | `hugo` (standard). |
+| Check shell scripts | `shellcheck`, `shfmt`. |
+| Run project recipes | `just`. |
+| Lint and format Python | `ruff`. |
+| View diffs | `delta`. |
+| Watch files and benchmark commands | `watchexec`, `hyperfine`. |
+| Encrypt files | `age`, `age-keygen`, `age-inspect`. |
 | Check spelling | `typos`. |
 | Check links | `lychee`. |
 | Detect secrets | `gitleaks`. |
