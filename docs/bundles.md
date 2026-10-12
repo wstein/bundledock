@@ -26,7 +26,7 @@ consumer requirements and verification limits.
 
 | Bundle | Purpose and guide | Registry tags |
 | --- | --- | --- |
-| OpenTofu (`opentofu`) | [Infrastructure CLI (`tofu`)](opentofu.md); providers and project state stay with the consumer. Source prepared; publication pending. | [Planned OpenTofu repository](https://quay.io/repository/bundledock/opentofu?tab=tags) |
+| OpenTofu (`opentofu`) | [Infrastructure CLI (`tofu`)](opentofu.md); providers and project state stay with the consumer. | [OpenTofu tags](https://quay.io/repository/bundledock/opentofu?tab=tags) |
 | Toolbox (`toolbox`) | [Common development utilities](toolbox.md), including search, shells, GitHub/registry tools and source checks. | [Toolbox tags](https://quay.io/repository/bundledock/toolbox?tab=tags) |
 
 ## Runtimes
@@ -70,8 +70,9 @@ an image; no overview table duplicates the managed package versions or digests.
 
 The current toolbox source adds utilities and removes agents relative to its
 recorded published image. Those source changes have not been published in that
-image. OpenTofu has no verified successful publication receipt, image digest or
-source tag; its source inventory alone does not establish a usable carrier.
+image. See each guide's published bundle section, including the
+[OpenTofu receipt](opentofu.md#published-bundle), for the exact published source
+and immutable image reference.
 
 Quay tag listings show published registry state. Moving aliases such as `stable`,
 `latest`, `lts` and `current` can change; use an immutable index digest for a
