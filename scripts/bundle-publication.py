@@ -2,6 +2,7 @@
 """Exact human PR approval and source provenance. No variable is approval proof."""
 import argparse
 import base64
+import datetime
 import importlib.util
 import json
 import os
@@ -58,7 +59,15 @@ def approved_pr(number, name, get, merged=False):
     require(isinstance(reviews, list) and len(reviews) < 100, 'Ambiguous review pagination')
     votes = [review for review in reviews if review['user']['login'] == 'wstein' and review['user']['type'] == 'User' and review['state'] in ('APPROVED', 'CHANGES_REQUESTED', 'DISMISSED')]
     require(bool(votes), 'Explicit wstein approval required')
-    latest = max(votes, key=lambda review: review['id'])
+    def submitted_at(review):
+        timestamp = review.get('submitted_at')
+        require(isinstance(timestamp, str) and re.fullmatch(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z', timestamp), 'Valid review submission time required')
+        return datetime.datetime.strptime(timestamp, '%Y-%m-%dT%H:%M:%SZ')
+    timed_votes = [(submitted_at(review), review) for review in votes]
+    latest_time = max(timestamp for timestamp, review in timed_votes)
+    latest_votes = [review for timestamp, review in timed_votes if timestamp == latest_time]
+    require(len({(review['state'], review['commit_id']) for review in latest_votes}) == 1, 'Conflicting latest review votes')
+    latest = latest_votes[0]
     require(latest['state'] == 'APPROVED' and latest['commit_id'] == head, 'Latest wstein approval must cover this exact head')
     files = get('/pulls/' + str(number) + '/files?per_page=100&page=1')
     names = safe_files(files, pr, bundle)

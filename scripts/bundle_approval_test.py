@@ -15,7 +15,7 @@ class ApprovalTests(unittest.TestCase):
   self.bundle='toolbox'; self.lock='bundles/toolbox/tools.lock.json'; self.inventory='docs/tools.md'
   self.pr={'number':42,'node_id':'PR42','state':'open','merged':False,'commits':1,'changed_files':2,'head':{'sha':A,'ref':'automation/toolbox-upgrade-123-1','repo':REPO},'base':{'ref':'main','sha':B,'repo':REPO},'user':{'login':'github-actions[bot]','type':'Bot'},'html_url':'https://github.com/wstein/bundledock/pull/42'}
   self.files=[{'filename':self.lock,'status':'modified','changes':2},{'filename':self.inventory,'status':'modified','changes':2}]
-  self.data={'':REPO,'/git/ref/heads/main':{'object':{'sha':B}},'/pulls/42':self.pr,'/pulls/42/files?per_page=100&page=1':self.files,'/pulls/42/reviews?per_page=100&page=1':[{'id':1,'state':'APPROVED','commit_id':A,'user':{'login':'wstein','type':'User'}}],'/compare/'+B+'...'+A:{'merge_base_commit':{'sha':B},'files':self.files},'/git/commits/'+A:{'tree':{'sha':T}},'/contents/'+self.lock+'?ref='+A:{'encoding':'base64','content':'bmV3'},'/contents/'+self.lock+'?ref='+B:{'encoding':'base64','content':'b2xk'}}
+  self.data={'':REPO,'/git/ref/heads/main':{'object':{'sha':B}},'/pulls/42':self.pr,'/pulls/42/files?per_page=100&page=1':self.files,'/pulls/42/reviews?per_page=100&page=1':[{'id':1,'submitted_at':'2026-10-12T10:00:00Z','state':'APPROVED','commit_id':A,'user':{'login':'wstein','type':'User'}}],'/compare/'+B+'...'+A:{'merge_base_commit':{'sha':B},'files':self.files},'/git/commits/'+A:{'tree':{'sha':T}},'/contents/'+self.lock+'?ref='+A:{'encoding':'base64','content':'bmV3'},'/contents/'+self.lock+'?ref='+B:{'encoding':'base64','content':'b2xk'}}
  def get(self,path):return copy.deepcopy(self.data[path])
  def test_one_exact_approval(self):self.assertEqual(gate.approved_pr(42,self.bundle,self.get)['head']['sha'],A)
  def test_reject_wrong_or_stale_approval(self):
@@ -26,8 +26,28 @@ class ApprovalTests(unittest.TestCase):
     with self.assertRaises(ValueError):gate.approved_pr(42,self.bundle,self.get)
     self.data['/pulls/42/reviews?per_page=100&page=1']=original
  def test_latest_vote_and_head_changes_reject(self):
-  self.data['/pulls/42/reviews?per_page=100&page=1'].append({'id':2,'state':'CHANGES_REQUESTED','commit_id':A,'user':{'login':'wstein','type':'User'}})
+  self.data['/pulls/42/reviews?per_page=100&page=1'].append({'id':2,'submitted_at':'2026-10-12T10:01:00Z','state':'CHANGES_REQUESTED','commit_id':A,'user':{'login':'wstein','type':'User'}})
   with self.assertRaises(ValueError):gate.approved_pr(42,self.bundle,self.get)
+ def test_submission_chronology_overrides_creation_id(self):
+  votes=self.data['/pulls/42/reviews?per_page=100&page=1']
+  votes[0]['id']=2
+  votes.append(dict(votes[0],id=1,state='CHANGES_REQUESTED',submitted_at='2026-10-12T10:01:00Z'))
+  with self.assertRaises(ValueError):gate.approved_pr(42,self.bundle,self.get)
+ def test_conflicting_latest_timestamp_rejects(self):
+  votes=self.data['/pulls/42/reviews?per_page=100&page=1']
+  votes[0]['id']=2
+  votes.append(dict(votes[0],id=1,state='CHANGES_REQUESTED'))
+  with self.assertRaises(ValueError):gate.approved_pr(42,self.bundle,self.get)
+ def test_commented_review_is_nonvoting(self):
+  votes=self.data['/pulls/42/reviews?per_page=100&page=1']
+  votes.append(dict(votes[0],id=2,state='COMMENTED',submitted_at='2026-10-12T10:01:00Z'))
+  self.assertEqual(gate.approved_pr(42,self.bundle,self.get)['head']['sha'],A)
+ def test_missing_or_invalid_vote_time_rejects(self):
+  vote=self.data['/pulls/42/reviews?per_page=100&page=1'][0]
+  for timestamp in (None,'invalid','2026-99-12T10:00:00Z'):
+   with self.subTest(timestamp=timestamp):
+    vote['submitted_at']=timestamp
+    with self.assertRaises(ValueError):gate.approved_pr(42,self.bundle,self.get)
  def test_wrong_bundle_rejects(self):
   for bundle in ('node','bun','code-server','arbitrary'):
    with self.subTest(bundle=bundle),self.assertRaises(ValueError):gate.approved_pr(42,bundle,self.get)
