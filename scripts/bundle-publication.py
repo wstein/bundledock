@@ -82,7 +82,7 @@ def approved_pr(number, name, get, merged=False):
     return pr
 
 
-def source_run(event, get):
+def approval_run(event, get):
     source = event['workflow_run']
     require(isinstance(source['id'], int) and source['id'] > 0 and isinstance(source['run_attempt'], int) and source['run_attempt'] > 0, 'Complete source run identity required')
     workflow = get('/actions/workflows/' + SOURCE_WORKFLOW)
@@ -103,6 +103,44 @@ def source_run(event, get):
         require(commit['commit']['tree']['sha'] == get('/git/commits/' + head)['tree']['sha'], 'Synthetic source tree differs from approved head')
         require([parent['sha'] for parent in commit['parents']] == [get('/git/ref/heads/main')['object']['sha'], head], 'Wrong synthetic merge identity')
     return name, pr
+
+
+def source_run(event, get):
+    source = event['workflow_run']
+    require(isinstance(source['id'], int) and source['id'] > 0 and isinstance(source['run_attempt'], int) and source['run_attempt'] > 0, 'Complete source CI identity required')
+    workflow = get('/actions/workflows/ci.yml')
+    run = get('/actions/runs/' + str(source['id']) + '/attempts/' + str(source['run_attempt']))
+    require(run['id'] == source['id'] and run['run_attempt'] == source['run_attempt'] and run['workflow_id'] == workflow['id'] and workflow['id'] > 0, 'Wrong source CI workflow/attempt')
+    require(run['path'] == workflow['path'] == '.github/workflows/ci.yml', 'Wrong source CI path')
+    require(run['repository']['full_name'] == run['head_repository']['full_name'] == REPOSITORY and run['event'] == 'workflow_dispatch', 'Untrusted exact-head source CI origin')
+    require(run['status'] == 'completed' and run['conclusion'] == 'success', 'Exact-head source CI must succeed')
+    associated = get('/commits/' + sha(run['head_sha']) + '/pulls?per_page=100&page=1')
+    require(isinstance(associated, list) and len(associated) < 100, 'Ambiguous source PRs')
+    candidates = [get('/pulls/' + str(item['number'])) for item in associated]
+    candidates = [pr for pr in candidates if pr['state'] == 'open' and pr['head']['sha'] == run['head_sha'] and pr['head']['ref'] == run['head_branch']]
+    require(len(candidates) == 1, 'Exactly one exact-head open source PR required')
+    name = bundle_for_pr(candidates[0]['number'], get)
+    pr = approved_pr(candidates[0]['number'], name, get)
+    require(run['head_sha'] == pr['head']['sha'] and run['head_branch'] == pr['head']['ref'], 'Source CI tested a different head')
+    jobs = get('/actions/runs/' + str(source['id']) + '/attempts/' + str(source['run_attempt']) + '/jobs?per_page=100&page=1')['jobs']
+    require(len(jobs) < 100, 'Ambiguous source CI jobs')
+    checks = [job for job in jobs if job['name'] == 'check']
+    require(len(checks) == 1 and checks[0]['status'] == 'completed' and checks[0]['conclusion'] == 'success' and checks[0]['head_sha'] == pr['head']['sha'], 'Required exact-head check must succeed')
+    match = re.fullmatch(r'https://api.github.com/repos/wstein/bundledock/check-runs/([1-9][0-9]*)', checks[0]['check_run_url'])
+    require(match is not None, 'Required check identity missing')
+    check = get('/check-runs/' + match[1])
+    require(check['app']['id'] == 15368 and check['name'] == 'check' and check['head_sha'] == pr['head']['sha'] and check['status'] == 'completed' and check['conclusion'] == 'success', 'Required GitHub Actions app check must succeed on exact head')
+    return name, pr
+
+
+def validate_caller(get, bundle):
+    identity = os.environ
+    require(re.fullmatch('[1-9][0-9]*', identity.get('GITHUB_RUN_ID', '')) and re.fullmatch('[1-9][0-9]*', identity.get('GITHUB_RUN_ATTEMPT', '')), 'Complete caller identity required')
+    run = get('/actions/runs/' + identity['GITHUB_RUN_ID'] + '/attempts/' + identity['GITHUB_RUN_ATTEMPT'])
+    workflow = get('/actions/workflows/' + bundle['workflow'])
+    require(run['id'] == int(identity['GITHUB_RUN_ID']) and run['run_attempt'] == int(identity['GITHUB_RUN_ATTEMPT']) and run['workflow_id'] == workflow['id'] and workflow['id'] > 0, 'Wrong publication caller workflow/attempt')
+    require(run['path'] == workflow['path'] == '.github/workflows/' + bundle['workflow'] and run['event'] == 'workflow_run' and run['head_sha'] == identity['GITHUB_SHA'], 'Wrong real publication caller identity')
+    require(run['repository']['full_name'] == run['head_repository']['full_name'] == REPOSITORY, 'Wrong publisher repository')
 
 
 def bundle_for_pr(number, get):
@@ -136,6 +174,29 @@ def validate(event, get, name='toolbox'):
     return revision, pr['html_url']
 
 
+def dispatch_source(event, request):
+    name, pr = approval_run(event, request)
+    # Fresh validation immediately before dispatch prevents head/base movement
+    # between provenance reads and write preparation.
+    pr = approved_pr(pr['number'], name, request)
+    request('/actions/workflows/ci.yml/dispatches', 'POST', {'ref':pr['head']['ref'],'inputs':{'expected_head_sha':pr['head']['sha']}})
+    return {'bundle':name,'head':pr['head']['sha']}
+
+
+def merge_approved(event, request):
+    name, pr = source_run(event, request)
+    tested_head = pr['head']['sha']
+    pr = approved_pr(pr['number'], name, request)
+    require(pr['head']['sha'] == tested_head, 'Head changed after source CI validation')
+    result = request('/pulls/'+str(pr['number'])+'/merge', 'PUT', {'sha':tested_head,'merge_method':'rebase'})
+    require(result['merged'] is True, 'Merge was refused')
+    revision = sha(result['sha'])
+    merged = approved_pr(pr['number'], name, request, merged=True)
+    require(merged['head']['sha'] == tested_head and merged['merge_commit_sha'] == revision and request('/git/ref/heads/main')['object']['sha'] == revision, 'Main or head moved after merge')
+    request('/actions/workflows/ci.yml/dispatches', 'POST', {'ref':'main','inputs':{'expected_head_sha':revision}})
+    return {'bundle':name,'sha':revision}
+
+
 class NoRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         return None
@@ -159,7 +220,7 @@ class GitHub:
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--bundle', default='toolbox')
-    parser.add_argument('--mode', choices=('publication','review','merge','config'), default='publication')
+    parser.add_argument('--mode', choices=('publication','review','dispatch-source','merge','config'), default='publication')
     args = parser.parse_args()
     require(os.environ.get('GITHUB_REPOSITORY') == REPOSITORY, 'Wrong runtime repository')
     event = json.loads(Path(os.environ['GITHUB_EVENT_PATH']).read_text())
@@ -174,22 +235,12 @@ def main():
         pr = approved_pr(number, name, api.request)
         require(event['review']['commit_id'] == pr['head']['sha'], 'Review event covers old head')
         output = {'bundle':name,'head':pr['head']['sha']}
-    elif args.mode == 'merge':
-        require(os.environ['GITHUB_EVENT_NAME'] == 'workflow_run', 'Trusted source completion required')
-        name, pr = source_run(event, api.request)
-        # Revalidate immediately before the optimistic PR-head lease. GitHub
-        # cannot lease target main; merged-tree equality prevents publication
-        # if concurrent target changes introduce unreviewed source.
-        pr = approved_pr(pr['number'], name, api.request)
-        result = api.request('/pulls/'+str(pr['number'])+'/merge', 'PUT', {'sha':pr['head']['sha'],'merge_method':'rebase'})
-        require(result['merged'] is True, 'Merge was refused')
-        revision = sha(result['sha'])
-        merged = approved_pr(pr['number'], name, api.request, merged=True)
-        require(merged['merge_commit_sha'] == revision and api.request('/git/ref/heads/main')['object']['sha'] == revision, 'Main moved after merge')
-        api.request('/actions/workflows/ci.yml/dispatches', 'POST', {'ref':'main','inputs':{'source_sha':revision}})
-        output = {'bundle':name,'sha':revision}
+    elif args.mode in ('dispatch-source','merge'):
+        require(os.environ['GITHUB_EVENT_NAME'] == 'workflow_run', 'Trusted completion required')
+        output = dispatch_source(event, api.request) if args.mode == 'dispatch-source' else merge_approved(event, api.request)
     else:
         require(os.environ['GITHUB_EVENT_NAME'] == 'workflow_run', 'Only CI completion is automatic publication authority')
+        validate_caller(api.request, config.select_bundle(args.bundle))
         revision, url = validate(event, api.request, args.bundle)
         require(not os.environ.get('PUBLICATION_SHA') or os.environ['PUBLICATION_SHA'] == revision, 'Approved source changed')
         require(subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip() == revision, 'Checkout differs from approved source')

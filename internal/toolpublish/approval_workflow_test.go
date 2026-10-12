@@ -12,35 +12,30 @@ func TestMergedToolboxApprovalFixtures(t *testing.T) {
 	if _, err := exec.LookPath("python3"); err != nil {
 		t.Skip("requires python3: ", err)
 	}
-	cmd := exec.Command("python3", "../../scripts/toolbox_publication_test.py")
+	cmd := exec.Command("python3", "../../scripts/bundle_approval_test.py")
 	if output, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("approval fixtures: %v\n%s", err, output)
 	}
 }
 
-func TestMergedToolboxBuildDependsOnHumanApproval(t *testing.T) {
-	b, err := os.ReadFile("../../.github/workflows/bundledock-toolbox.yml")
+func TestApprovedBundlesShareFrozenPublication(t *testing.T) {
+	b, err := os.ReadFile("../../.github/workflows/bundle-publish.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
 	w := string(b)
-	for _, required := range []string{"workflow_run:", "workflows: [CI]", "types: [completed]", "  preflight:", "  approval:", "name: Approve toolbox ${{ needs.preflight.outputs.sha }}", "name: toolbox-publication", "url: ${{ needs.preflight.outputs.pr_url }}", "needs: [preflight, approval]", "needs.approval.result == 'success'", "PUBLICATION_SHA: ${{ needs.preflight.outputs.sha }}", "--frozen-lock"} {
+	for _, required := range []string{"workflow_call:", "needs: preflight", "PUBLICATION_SHA: ${{ needs.preflight.outputs.sha }}", "--frozen-lock", "--bundle \"$BUNDLE\"", "run: python3 scripts/bundle-publication.py"} {
 		if !strings.Contains(w, required) {
-			t.Errorf("missing approval contract %s", required)
+			t.Error("missing " + required)
 		}
 	}
-	start := strings.Index(w, "\n  preflight:")
-	if start < 0 {
-		t.Fatal("missing preflight")
+	if strings.Contains(w, "environment:") {
+		t.Fatal("sole PR approval must require no environment intervention")
 	}
-	preflight := w[start:strings.Index(w, "\n  resolve:")]
-	trusted := w[start:strings.Index(w, "\n  approval:")]
-	if !strings.Contains(trusted, "ref: ${{ github.sha }}") || strings.Contains(trusted, "ref: ${{ github.event.workflow_run.head_sha }}") {
-		t.Fatal("preflight must never execute CI-controlled source")
-	}
-	for _, forbidden := range []string{"setup-go", "go build", "go run", "docker ", "make check"} {
-		if strings.Contains(preflight, forbidden) {
-			t.Errorf("compiler/build before approval: %s", forbidden)
+	preflight := w[strings.Index(w, "\n  preflight:"):strings.Index(w, "\n  resolve:")]
+	for _, bad := range []string{"setup-go", "go build", "go run", "docker ", "make check"} {
+		if strings.Contains(preflight, bad) {
+			t.Fatal("artifact compiler before validated approval", bad)
 		}
 	}
 	for _, name := range []string{"resolve", "native", "promote"} {
@@ -48,8 +43,8 @@ func TestMergedToolboxBuildDependsOnHumanApproval(t *testing.T) {
 		if keys := regexp.MustCompile(`(?m)^  [a-z]+:`).FindAllStringIndex(job, -1); len(keys) > 1 {
 			job = job[:keys[1][0]]
 		}
-		if !strings.Contains(job, "run: python3 scripts/toolbox-publication.py") {
-			t.Errorf("%s lacks automatic provenance recheck", name)
+		if !strings.Contains(job, "run: python3 scripts/bundle-publication.py") {
+			t.Fatal(name + " missing approval provenance recheck")
 		}
 	}
 }

@@ -158,8 +158,11 @@ func publicationCommit(bundle string) (string, error) {
 		return os.Getenv("GITHUB_SHA"), nil
 	}
 	sha := os.Getenv("PUBLICATION_SHA")
-	if bundle != "toolbox" || len(sha) != 40 || strings.Trim(sha, "0123456789abcdef") != "" {
-		return "", fmt.Errorf("automatic publication requires an explicit approved toolbox SHA")
+	if _, err := toolpublish.SelectBundle(bundle); err != nil {
+		return "", err
+	}
+	if len(sha) != 40 || strings.Trim(sha, "0123456789abcdef") != "" {
+		return "", fmt.Errorf("automatic publication requires an explicit approved bundle SHA")
 	}
 	return sha, nil
 }
@@ -191,8 +194,8 @@ func publicationDecision(lock, event string, baseline func() (string, error)) (b
 }
 
 func publicationDecisionForBundle(lock, event, bundle string, baseline func() (string, error)) (bool, error) {
-	if event == "workflow_run" && bundle != "toolbox" {
-		return false, fmt.Errorf("automatic publication is toolbox-only")
+	if _, err := toolpublish.SelectBundle(bundle); err != nil {
+		return false, err
 	}
 	publish, err := publicationDecision(lock, event, baseline)
 	if (bundle == "code-server" || bundle == "node" || bundle == "bun") && event == "workflow_dispatch" && errors.Is(err, toolpublish.ErrBaselineAbsent) {
@@ -232,12 +235,12 @@ func execute(args []string) error {
 	if err != nil {
 		return err
 	}
-	if *frozen && (args[0] != "resolve" || bundle.Name != "toolbox" || os.Getenv("GITHUB_EVENT_NAME") != "workflow_run") {
-		return fmt.Errorf("frozen lock is only supported for merged toolbox publication")
+	if *frozen && (args[0] != "resolve" || os.Getenv("GITHUB_EVENT_NAME") != "workflow_run") {
+		return fmt.Errorf("frozen lock is only supported for approved merged publication")
 	}
 	if args[0] == "resolve" {
 		if os.Getenv("GITHUB_EVENT_NAME") == "workflow_run" && !*frozen {
-			return fmt.Errorf("merged toolbox publication must use the frozen lock")
+			return fmt.Errorf("merged publication must use the frozen lock")
 		}
 		image, err := toolpublish.RepositoryImageForBundle(os.Getenv("REPOSITORY_URL"), bundle.Name)
 		if err != nil {

@@ -10,12 +10,12 @@ import (
 )
 
 func TestPublicationWorkflowRepositoryConfiguration(t *testing.T) {
-	data, err := os.ReadFile("../../.github/workflows/bundledock-toolbox.yml")
+	data, err := os.ReadFile("../../.github/workflows/bundle-publish.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
 	workflow := string(data)
-	if !strings.HasPrefix(workflow, "name: Publish toolbox\n") || !strings.Contains(workflow, "REPOSITORY_URL: ${{ vars.REPOSITORY_URL }}") {
+	if !strings.HasPrefix(workflow, "name: Shared bundle publication\n") || !strings.Contains(workflow, "REPOSITORY_URL: ${{ vars.REPOSITORY_URL }}") {
 		t.Fatal("workflow must expose Publish toolbox and use the repository namespace variable")
 	}
 	for _, obsolete := range []string{"QUAY_IMAGE", "QUAY_USERNAME", "QUAY_PASSWORD"} {
@@ -71,7 +71,7 @@ func TestPublicationWorkflowRepositoryConfiguration(t *testing.T) {
 }
 
 func TestPublicationKeepsNativeAndPromotionGates(t *testing.T) {
-	b, err := os.ReadFile("../../.github/workflows/bundledock-toolbox.yml")
+	b, err := os.ReadFile("../../.github/workflows/bundle-publish.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -142,11 +142,15 @@ func TestAutomaticCIOnlyChecksSource(t *testing.T) {
 }
 
 func TestPublicationRequiresManualApprovedRevision(t *testing.T) {
-	data, err := os.ReadFile("../../.github/workflows/bundledock-toolbox.yml")
+	data, err := os.ReadFile("../../.github/workflows/bundle-publish.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
-	w := string(data)
+	wrapper, err := os.ReadFile("../../.github/workflows/bundledock-toolbox.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := string(wrapper) + "\n" + string(data)
 	start, end := strings.Index(w, "\non:\n"), strings.Index(w, "\npermissions:")
 	if start < 0 || end < start {
 		t.Fatal("missing workflow event contract")

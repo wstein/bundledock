@@ -352,7 +352,7 @@ func TestFrozenToolboxLockNeverResolves(t *testing.T) {
 	}
 }
 
-func TestAutomaticPublicationSourceIsExplicitAndToolboxOnly(t *testing.T) {
+func TestAutomaticPublicationSourceIsExplicitForAllBundles(t *testing.T) {
 	t.Setenv("GITHUB_EVENT_NAME", "workflow_run")
 	t.Setenv("GITHUB_SHA", strings.Repeat("b", 40))
 	t.Setenv("PUBLICATION_SHA", strings.Repeat("a", 40))
@@ -360,8 +360,13 @@ func TestAutomaticPublicationSourceIsExplicitAndToolboxOnly(t *testing.T) {
 	if err != nil || got != strings.Repeat("a", 40) {
 		t.Fatalf("source=%s error=%v", got, err)
 	}
-	if _, err = publicationCommit("node"); err == nil {
-		t.Fatal("automatic node publication allowed")
+	for _, bundle := range []string{"node", "bun", "code-server"} {
+		if got, err = publicationCommit(bundle); err != nil || got != strings.Repeat("a", 40) {
+			t.Fatal("explicit bundle source rejected", bundle, err)
+		}
+	}
+	if _, err = publicationCommit("unknown"); err == nil {
+		t.Fatal("unknown bundle accepted")
 	}
 	t.Setenv("PUBLICATION_SHA", "")
 	if _, err = publicationCommit("toolbox"); err == nil {
@@ -374,7 +379,7 @@ func TestAutomaticPublicationSourceIsExplicitAndToolboxOnly(t *testing.T) {
 	}
 }
 
-func TestMergedToolboxPlanUsesBaselineAndOtherBundlesReject(t *testing.T) {
+func TestMergedBundlePlanUsesBaseline(t *testing.T) {
 	lock, err := os.ReadFile("../../bundles/toolbox/tools.lock.json")
 	if err != nil {
 		t.Fatal(err)
@@ -389,12 +394,8 @@ func TestMergedToolboxPlanUsesBaselineAndOtherBundlesReject(t *testing.T) {
 	}
 	for _, bundle := range []string{"toolbox", "node", "bun", "code-server"} {
 		publish, err := publicationDecisionForBundle(path, "workflow_run", bundle, func() (string, error) { return digest, nil })
-		if bundle == "toolbox" {
-			if err != nil || publish {
-				t.Fatalf("unchanged merged lock publication=%v error=%v", publish, err)
-			}
-		} else if err == nil {
-			t.Fatal("automatic publication accepted", bundle)
+		if err != nil || publish {
+			t.Fatalf("unchanged merged lock publication=%v error=%v", publish, err)
 		}
 	}
 	publish, err := publicationDecisionForBundle(path, "workflow_run", "toolbox", func() (string, error) { return "changed", nil })
@@ -403,5 +404,38 @@ func TestMergedToolboxPlanUsesBaselineAndOtherBundlesReject(t *testing.T) {
 	}
 	if _, err = publicationDecisionForBundle(path, "workflow_run", "toolbox", func() (string, error) { return "", fmt.Errorf("unavailable") }); err == nil {
 		t.Fatal("missing baseline accepted")
+	}
+}
+
+func TestFrozenPublicationUsesExactLockForEveryBundle(t *testing.T) {
+	for _, name := range []string{"toolbox", "code-server", "node", "bun"} {
+		t.Run(name, func(t *testing.T) {
+			bundle, err := toolpublish.SelectBundle(name)
+			if err != nil {
+				t.Fatal(err)
+			}
+			original, err := os.ReadFile("../../" + bundle.Directory + "/tools.lock.json")
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Chdir(t.TempDir())
+			if err = os.MkdirAll(bundle.Directory, 0700); err != nil {
+				t.Fatal(err)
+			}
+			if err = os.WriteFile(bundle.Directory+"/tools.lock.json", original, 0600); err != nil {
+				t.Fatal(err)
+			}
+			meta, err := toolpublish.NewMetadata(bundle.Directory+"/tools.lock.json", "quay.io/example/"+name, "2026.10.10-b12.1", strings.Repeat("a", 40), "https://github.com/example/repo", "2026-10-10T03:17:00Z", "123")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err = resolveFrozen("resolved", meta); err != nil {
+				t.Fatal(err)
+			}
+			got, err := os.ReadFile("resolved/tools.lock.json")
+			if err != nil || string(got) != string(original) {
+				t.Fatal("frozen bytes changed", err)
+			}
+		})
 	}
 }
