@@ -14,9 +14,15 @@ release readiness.
 
 Builds and releases require explicit user approval of the intended operation
 and source revision. Pushes, merges, schedules, bot updates, and lock-only PRs
-must never dispatch a native build or publication automatically. Toolbox
-publication is manual-only from default `main`, with the user's full approved
-SHA matching the run revision. Do not tag, publish, activate an image, or push
+supply no build approval. Toolbox publication may prepare a read-only request
+after successful source CI for an exact merged bot updater PR on current `main`.
+The protected `toolbox-publication` environment must require explicit approval
+by `wstein` before any artifact compiler or native work, with admin bypass
+disabled and a main-only branch restriction. That path publishes the exact
+merged lock without fresh upstream resolution and revalidates source and
+protection after approval and before promotion. Manual toolbox publication
+retains the user's full approved SHA matching the run revision. Other bundles
+remain manual-only. Do not tag, publish, activate an image, or push
 Git changes without explicit authorization. A local commit or merge supplies
 none of those approvals.
 
