@@ -5,9 +5,24 @@ AMD64 and ARM64, with an independent catalog, lock, carrier image and volume
 mounted read-only at `/opt/bundledock/codex`.
 
 <!-- BEGIN PUBLISHED BUNDLE -->
-No verified publication receipt exists yet. This carrier is prepared in source;
-its initial build and publication require explicit approval of the exact full
-source revision and intended operation. Native runtime coverage is unverified.
+<!-- publication-record: {"attempt":"1","commit":"cfdc89d576b8c8534e932d4601dbd973cc6cde4d","created":"2026-10-12T18:08:15Z","digest":"sha256:eb5ec6514b7476c55d1d2c0c1def871b982026f0a75144ddab33e9af4a3f40ec","image":"quay.io/bundledock/codex","lock_sha256":"b9e96e3972d42fbf740021379e99ce60f0d5f046b20bd1d2b9756fc96f999aae","reference":"quay.io/bundledock/codex@sha256:eb5ec6514b7476c55d1d2c0c1def871b982026f0a75144ddab33e9af4a3f40ec","run_attempt":"1","run_id":"38288791159","source":"https://github.com/wstein/bundledock","tag":"0.162.1-b1"} -->
+## Published bundle
+
+Version: `0.162.1-b1`
+
+Index digest: `sha256:eb5ec6514b7476c55d1d2c0c1def871b982026f0a75144ddab33e9af4a3f40ec`
+
+Source: [`cfdc89d576b8c8534e932d4601dbd973cc6cde4d`](https://github.com/wstein/bundledock/commit/cfdc89d576b8c8534e932d4601dbd973cc6cde4d)
+
+Publication: [run 38288791159, attempt 1](https://github.com/wstein/bundledock/actions/runs/38288791159/attempts/1)
+
+Pull this published carrier by its immutable index digest:
+
+```sh
+docker pull quay.io/bundledock/codex@sha256:eb5ec6514b7476c55d1d2c0c1def871b982026f0a75144ddab33e9af4a3f40ec
+```
+
+The source inventory below describes the current lock; this publication retains its exact source revision.
 <!-- END PUBLISHED BUNDLE -->
 
 <!-- BEGIN GENERATED TOOL INVENTORY -->
