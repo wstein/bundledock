@@ -9,39 +9,36 @@ import (
 )
 
 func TestCodeServerWorkflowSourcesSeparateApprovalAndArtifacts(t *testing.T) {
-	for name, required := range map[string][]string{
-		"bundledock-code-server.yml": {"name: Publish code-server", "workflow_dispatch:", "inputs.approved_sha == github.sha", "scripts/approve-publication.sh", "--bundle code-server", "resolved-code-server-${{ github.run_attempt }}", "code-server-published-${{ matrix.architecture }}-${{ github.run_attempt }}", "ubuntu-24.04-arm"},
-		"code-server-upgrade.yml":    {"name: Propose code-server upgrades", "- cron: '50 6 * * *'", "default: true", "BUNDLE: code-server", "code-server-upgrade-${{ github.run_attempt }}", "code-server.lock.json", "code-server.md", "base.sha"},
-	} {
-		b, err := os.ReadFile("../../.github/workflows/" + name)
+	for _, file := range []string{"bundledock-code-server.yml", "code-server-upgrade.yml"} {
+		data, err := os.ReadFile("../../.github/workflows/" + file)
 		if err != nil {
 			t.Fatal(err)
 		}
-		s := string(b)
-		for _, want := range required {
-			if !strings.Contains(s, want) {
-				t.Errorf("%s missing %s", name, want)
+		source := string(data)
+		for _, required := range []string{"bundle: code-server", "workflow_dispatch:"} {
+			if !strings.Contains(source, required) {
+				t.Fatal(file + " missing " + required)
 			}
 		}
-		for _, bad := range []string{"  push:", "pull_request:", "workflow_run:"} {
-			if strings.Contains(s, bad) {
-				t.Errorf("%s forbidden %s", name, bad)
+		if strings.HasPrefix(file, "bundledock-") {
+			for _, required := range []string{"name: Publish code-server", "uses: ./.github/workflows/bundle-publish.yml", "workflows: [CI]", "approved_sha:"} {
+				if !strings.Contains(source, required) {
+					t.Fatal(file + " missing " + required)
+				}
 			}
-		}
-		if name == "bundledock-code-server.yml" && strings.Contains(s, "cron:") {
-			t.Fatal("native publication must remain manual-only")
-		}
-		for _, line := range strings.Split(s, "\n") {
-			if strings.Contains(line, "uses:") {
-				ref := strings.Fields(strings.SplitN(line, "uses:", 2)[1])[0]
-				parts := strings.Split(ref, "@")
-				if len(parts) != 2 || len(parts[1]) != 40 {
-					t.Fatal("unpinned action " + line)
+			if strings.Contains(source, "cron:") {
+				t.Fatal("publication must have no schedule")
+			}
+		} else {
+			for _, required := range []string{"name: Propose code-server upgrades", "uses: ./.github/workflows/bundle-upgrade.yml", "- cron: '50 6 * * *'", "default: true"} {
+				if !strings.Contains(source, required) {
+					t.Fatal(file + " missing " + required)
 				}
 			}
 		}
 	}
 }
+
 func TestCodeServerSmokeAdapterUsesOwnReadOnlyVolume(t *testing.T) {
 	if _, err := exec.LookPath("sh"); err != nil {
 		t.Skip(err)

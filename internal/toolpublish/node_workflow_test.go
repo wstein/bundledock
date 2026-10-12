@@ -9,39 +9,36 @@ import (
 )
 
 func TestNodeWorkflowSourcesSeparateApprovalAndArtifacts(t *testing.T) {
-	for name, required := range map[string][]string{
-		"bundledock-node.yml": {"name: Publish node", "workflow_dispatch:", "inputs.approved_sha == github.sha", "scripts/approve-publication.sh", "--bundle node", "resolved-node-${{ github.run_attempt }}", "node-published-${{ matrix.architecture }}-${{ github.run_attempt }}", "ubuntu-24.04-arm"},
-		"node-upgrade.yml":    {"name: Propose node upgrades", "- cron: '50 6 * * *'", "default: true", "BUNDLE: node", "node-upgrade-${{ github.run_attempt }}", "node.lock.json", "node.md", "base.sha"},
-	} {
-		b, err := os.ReadFile("../../.github/workflows/" + name)
+	for _, file := range []string{"bundledock-node.yml", "node-upgrade.yml"} {
+		data, err := os.ReadFile("../../.github/workflows/" + file)
 		if err != nil {
 			t.Fatal(err)
 		}
-		s := string(b)
-		for _, want := range required {
-			if !strings.Contains(s, want) {
-				t.Errorf("%s missing %s", name, want)
+		source := string(data)
+		for _, required := range []string{"bundle: node", "workflow_dispatch:"} {
+			if !strings.Contains(source, required) {
+				t.Fatal(file + " missing " + required)
 			}
 		}
-		for _, bad := range []string{"  push:", "pull_request:", "workflow_run:"} {
-			if strings.Contains(s, bad) {
-				t.Errorf("%s forbidden %s", name, bad)
+		if strings.HasPrefix(file, "bundledock-") {
+			for _, required := range []string{"name: Publish node", "uses: ./.github/workflows/bundle-publish.yml", "workflows: [CI]", "approved_sha:"} {
+				if !strings.Contains(source, required) {
+					t.Fatal(file + " missing " + required)
+				}
 			}
-		}
-		if name == "bundledock-node.yml" && strings.Contains(s, "cron:") {
-			t.Fatal("native publication must remain manual-only")
-		}
-		for _, line := range strings.Split(s, "\n") {
-			if strings.Contains(line, "uses:") {
-				ref := strings.Fields(strings.SplitN(line, "uses:", 2)[1])[0]
-				parts := strings.Split(ref, "@")
-				if len(parts) != 2 || len(parts[1]) != 40 {
-					t.Fatal("unpinned action " + line)
+			if strings.Contains(source, "cron:") {
+				t.Fatal("publication must have no schedule")
+			}
+		} else {
+			for _, required := range []string{"name: Propose node upgrades", "uses: ./.github/workflows/bundle-upgrade.yml", "- cron: '50 6 * * *'", "default: true"} {
+				if !strings.Contains(source, required) {
+					t.Fatal(file + " missing " + required)
 				}
 			}
 		}
 	}
 }
+
 func TestNodeSmokeAdapterUsesOwnReadOnlyVolume(t *testing.T) {
 	if _, err := exec.LookPath("sh"); err != nil {
 		t.Skip(err)

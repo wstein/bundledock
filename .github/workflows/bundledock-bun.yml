@@ -1,201 +1,26 @@
 name: Publish bun
 
 on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
   workflow_dispatch:
     inputs:
       approved_sha:
-        description: Full main commit SHA explicitly approved by the user for this build and publication
+        description: Full main commit SHA explicitly approved for build and publication
         required: true
         type: string
 
 permissions:
   contents: read
-
-# A single publisher owns stable. Queue user-approved manual runs without
-# cancelling a native smoke test or allowing concurrent stable updates.
-concurrency:
-  group: bundledock-bun-publish
-  cancel-in-progress: false
+  actions: read
+  pull-requests: read
 
 jobs:
-  resolve:
-    permissions:
-      contents: read
-      actions: read
-    outputs:
-      publish: ${{ steps.plan.outputs.publish }}
-    if: >-
-      github.event_name == 'workflow_dispatch' &&
-      github.event.repository.default_branch == 'main' &&
-      github.ref == 'refs/heads/main' &&
-      github.event.sender.type == 'User' &&
-      inputs.approved_sha == github.sha
-    runs-on: ubuntu-24.04
-    timeout-minutes: 60
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-          ref: ${{ github.sha }}
-      - name: Require the user's approval for this exact main revision
-        env:
-          APPROVED_SHA: ${{ inputs.approved_sha }}
-          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
-          SENDER_TYPE: ${{ github.event.sender.type }}
-          TRIGGERING_ACTOR: ${{ github.triggering_actor }}
-        run: sh scripts/approve-publication.sh
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version-file: .go-version
-          cache: false
-      - name: Check manager and publication gates
-        run: make check
-      - name: Compile CI adapter
-        run: go build -o "$RUNNER_TEMP/tools-publish" ./cmd/tools-publish
-      - name: Resolve all tools once
-        env:
-          REPOSITORY_URL: ${{ vars.REPOSITORY_URL }}
-          # Manager sends this read-only token only to api.github.com.
-          GITHUB_TOKEN: ${{ github.token }}
-        run: '"$RUNNER_TEMP/tools-publish" resolve --bundle bun'
-      - name: Compare resolved tools with the published baseline
-        id: plan
-        env:
-          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
-          GITHUB_TOKEN: ${{ github.token }}
-          REPOSITORY_USERNAME: ${{ vars.REPOSITORY_USERNAME }}
-          REPOSITORY_TOKEN: ${{ secrets.REPOSITORY_TOKEN }}
-        # Fixed-host HTTP reads request a pull-only Quay token. No Docker login
-        # or registry writes occur until the native smoke tests pass.
-        run: '"$RUNNER_TEMP/tools-publish" plan --bundle bun'
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: resolved-bun-${{ github.run_attempt }}
-          path: resolved/
-          if-no-files-found: error
-          retention-days: 90
-
-  native:
-    if: needs.resolve.outputs.publish == 'true'
-    needs: resolve
-    runs-on: ${{ matrix.runner }}
-    timeout-minutes: 90
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - architecture: amd64
-            runner: ubuntu-24.04
-          - architecture: arm64
-            runner: ubuntu-24.04-arm
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-          ref: ${{ github.sha }}
-      - name: Require the user's approval for this exact main revision
-        env:
-          APPROVED_SHA: ${{ inputs.approved_sha }}
-          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
-          SENDER_TYPE: ${{ github.event.sender.type }}
-          TRIGGERING_ACTOR: ${{ github.triggering_actor }}
-        run: sh scripts/approve-publication.sh
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version-file: .go-version
-          cache: false
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: resolved-bun-${{ github.run_attempt }}
-          path: resolved/
-      - name: Use temporary registry credentials
-        run: echo "DOCKER_CONFIG=$RUNNER_TEMP/quay-auth" >> "$GITHUB_ENV"
-      - name: Compile CI adapter
-        run: go build -o "$RUNNER_TEMP/tools-publish" ./cmd/tools-publish
-      - name: Build once and smoke on the native architecture
-        env:
-          ARCHITECTURE: ${{ matrix.architecture }}
-        run: '"$RUNNER_TEMP/tools-publish" build --bundle bun --architecture "$ARCHITECTURE"'
-      - name: Log in to Quay after native smoke passes
-        env:
-          REPOSITORY_USERNAME: ${{ vars.REPOSITORY_USERNAME }}
-          REPOSITORY_TOKEN: ${{ secrets.REPOSITORY_TOKEN }}
-        run: printf '%s' "$REPOSITORY_TOKEN" | docker login quay.io --username "$REPOSITORY_USERNAME" --password-stdin
-      - name: Push the exact smoked image to its run staging tag
-        env:
-          REPOSITORY_USERNAME: ${{ vars.REPOSITORY_USERNAME }}
-          REPOSITORY_TOKEN: ${{ secrets.REPOSITORY_TOKEN }}
-          ARCHITECTURE: ${{ matrix.architecture }}
-        run: '"$RUNNER_TEMP/tools-publish" push --bundle bun --architecture "$ARCHITECTURE"'
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: bun-published-${{ matrix.architecture }}-${{ github.run_attempt }}
-          path: published-${{ matrix.architecture }}.json
-          if-no-files-found: error
-          retention-days: 90
-      - name: Remove registry credentials
-        if: always()
-        run: docker logout quay.io
-
-  promote:
-    if: needs.resolve.outputs.publish == 'true'
-    permissions:
-      contents: read
-      actions: read
-    # The matrix must succeed in its entirety. A failed native smoke test leaves
-    # stable and the final version tag untouched, even if the other arch staged.
-    needs: [resolve, native]
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-          ref: ${{ github.sha }}
-      - name: Require the user's approval for this exact main revision
-        env:
-          APPROVED_SHA: ${{ inputs.approved_sha }}
-          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
-          SENDER_TYPE: ${{ github.event.sender.type }}
-          TRIGGERING_ACTOR: ${{ github.triggering_actor }}
-        run: sh scripts/approve-publication.sh
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version-file: .go-version
-          cache: false
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: resolved-bun-${{ github.run_attempt }}
-          path: resolved/
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          pattern: bun-published-*-${{ github.run_attempt }}
-          path: receipts/
-      - name: Use temporary registry credentials
-        run: echo "DOCKER_CONFIG=$RUNNER_TEMP/quay-auth" >> "$GITHUB_ENV"
-      - name: Compile CI adapter
-        run: go build -o "$RUNNER_TEMP/tools-publish" ./cmd/tools-publish
-      - name: Refuse publication when a newer eligible run exists
-        env:
-          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
-          GITHUB_TOKEN: ${{ github.token }}
-        run: '"$RUNNER_TEMP/tools-publish" newest --bundle bun'
-      - name: Log in to Quay
-        env:
-          REPOSITORY_USERNAME: ${{ vars.REPOSITORY_USERNAME }}
-          REPOSITORY_TOKEN: ${{ secrets.REPOSITORY_TOKEN }}
-        run: printf '%s' "$REPOSITORY_TOKEN" | docker login quay.io --username "$REPOSITORY_USERNAME" --password-stdin
-      - name: Verify both platform manifests and promote version, stable and latest
-        env:
-          REPOSITORY_USERNAME: ${{ vars.REPOSITORY_USERNAME }}
-          REPOSITORY_TOKEN: ${{ secrets.REPOSITORY_TOKEN }}
-        run: '"$RUNNER_TEMP/tools-publish" promote --bundle bun'
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: bun-publication-${{ github.run_attempt }}
-          path: publication.json
-          if-no-files-found: error
-          retention-days: 90
-      - name: Remove registry credentials
-        if: always()
-        run: docker logout quay.io
+  publication:
+    uses: ./.github/workflows/bundle-publish.yml
+    with:
+      bundle: bun
+      approved_sha: ${{ inputs.approved_sha || '' }}
+    secrets:
+      REPOSITORY_TOKEN: ${{ secrets.REPOSITORY_TOKEN }}

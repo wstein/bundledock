@@ -141,7 +141,7 @@ func TestNewerNoopJobPaginationIsBounded(t *testing.T) {
 	}
 }
 
-func TestNewestWorkflowRunIsToolboxOnly(t *testing.T) {
+func TestNewestWorkflowRunBindsEachBundleCaller(t *testing.T) {
 	current := `{"id":123,"run_number":10,"run_attempt":2,"event":"workflow_run","head_branch":"main","head_sha":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","created_at":"2026-10-10T03:17:00Z","workflow_id":77}`
 	for _, workflow := range []string{"bundledock-toolbox.yml", "bundledock-node.yml", "bundledock-bun.yml", "bundledock-code-server.yml"} {
 		client := &http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
@@ -155,7 +155,7 @@ func TestNewestWorkflowRunIsToolboxOnly(t *testing.T) {
 			return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(body)), Header: make(http.Header)}, nil
 		})}
 		err := CheckNewestForWorkflow(context.Background(), client, "example/repo", "main", 123, 2, strings.Repeat("a", 40), "token", workflow)
-		if (err == nil) != (workflow == "bundledock-toolbox.yml") {
+		if err != nil {
 			t.Fatalf("workflow=%s error=%v", workflow, err)
 		}
 	}

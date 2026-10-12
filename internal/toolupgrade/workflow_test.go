@@ -200,7 +200,7 @@ func TestDeniedPRExplainsPrerequisite(t *testing.T) {
 	}
 }
 func TestWorkflowManualLeastPrivilege(t *testing.T) {
-	b, err := os.ReadFile("../../.github/workflows/toolbox-upgrade.yml")
+	b, err := upgradeWorkflowSource()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -218,6 +218,9 @@ func TestWorkflowManualLeastPrivilege(t *testing.T) {
 	for _, line := range strings.Split(s, "\n") {
 		if strings.Contains(line, "uses:") {
 			ref := strings.Fields(strings.SplitN(line, "uses:", 2)[1])[0]
+			if ref == "./.github/workflows/bundle-upgrade.yml" {
+				continue
+			}
 			parts := strings.Split(ref, "@")
 			if len(parts) != 2 || len(parts[1]) != 40 {
 				t.Errorf("unpinned action %s", line)
@@ -287,7 +290,7 @@ func TestPublisherRejectsUnrelatedDocumentation(t *testing.T) {
 }
 
 func TestWorkflowDailyAndManualWriteGates(t *testing.T) {
-	b, err := os.ReadFile("../../.github/workflows/toolbox-upgrade.yml")
+	b, err := upgradeWorkflowSource()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -304,7 +307,7 @@ func TestWorkflowDailyAndManualWriteGates(t *testing.T) {
 	if !strings.Contains(s, "if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)") {
 		t.Fatal("resolver must allow only schedule/manual on default branch")
 	}
-	if !strings.Contains(s, "TOOL: ${{ github.event_name == 'workflow_dispatch' && inputs.tool || '' }}") {
+	if !strings.Contains(s, "TOOL: ${{ inputs.tool }}") {
 		t.Fatal("scheduled runs must resolve all tools independently of manual inputs")
 	}
 }
@@ -579,4 +582,16 @@ func TestBunNoChangeCreatesNoProposal(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(value(env, "UPGRADE_RESULT"), "bun.lock.json")); !os.IsNotExist(err) {
 		t.Fatal("no-op emitted proposal")
 	}
+}
+
+func upgradeWorkflowSource() ([]byte, error) {
+	wrapper, err := os.ReadFile("../../.github/workflows/toolbox-upgrade.yml")
+	if err != nil {
+		return nil, err
+	}
+	body, err := os.ReadFile("../../.github/workflows/bundle-upgrade.yml")
+	if err != nil {
+		return nil, err
+	}
+	return append(wrapper, body...), nil
 }

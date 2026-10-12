@@ -38,4 +38,110 @@ class ApprovalTests(unittest.TestCase):
   self.files[1]['filename']='.github/workflows/ci.yml'
   with self.assertRaises(ValueError):gate.approved_pr(42,self.bundle,self.get)
 
+
+ def source_fixture(self, workflow='ci.yml', event='workflow_dispatch'):
+  self.event={'repository':REPO,'workflow_run':{'id':123,'run_attempt':2,'head_sha':A}}
+  run={'id':123,'run_attempt':2,'workflow_id':7,'path':'.github/workflows/'+workflow,'event':event,'head_sha':A,'head_branch':self.pr['head']['ref'],'status':'completed','conclusion':'success','repository':REPO,'head_repository':REPO,'pull_requests':[{'number':42,'head':{'sha':A}}]}
+  self.data['/actions/workflows/'+workflow]={'id':7,'path':'.github/workflows/'+workflow}
+  self.data['/actions/runs/123/attempts/2']=run
+  self.data['/commits/'+A+'/pulls?per_page=100&page=1']=[{'number':42}]
+  self.data['/actions/runs/123/attempts/2/jobs?per_page=100&page=1']={'jobs':[{'name':'check','status':'completed','conclusion':'success','head_sha':A,'check_run_url':'https://api.github.com/repos/wstein/bundledock/check-runs/99'}]}
+  self.data['/check-runs/99']={'app':{'id':15368},'name':'check','head_sha':A,'status':'completed','conclusion':'success'}
+  return run
+ def test_exact_source_ci_and_attempt_rejections(self):
+  run=self.source_fixture()
+  self.assertEqual(gate.source_run(self.event,self.get)[0],'toolbox')
+  original=copy.deepcopy(run)
+  for change in ({'workflow_id':8},{'path':'.github/workflows/other.yml'},{'run_attempt':3},{'head_sha':B},{'event':'pull_request_review'},{'conclusion':'failure'},{'head_branch':'main'}):
+   with self.subTest(change=change):
+    run.clear();run.update(original);run.update(change)
+    with self.assertRaises((ValueError,KeyError)):gate.source_run(self.event,self.get)
+ def test_review_run_synthetic_merge_identity(self):
+  run=self.source_fixture('bundle-review-source.yml','pull_request_review')
+  self.assertEqual(gate.approval_run(self.event,self.get)[0],'toolbox')
+  synthetic='d'*40
+  run['head_sha']=synthetic
+  self.data['/commits/'+synthetic]={'commit':{'tree':{'sha':T}},'parents':[{'sha':B},{'sha':A}]}
+  self.assertEqual(gate.approval_run(self.event,self.get)[0],'toolbox')
+  self.data['/commits/'+synthetic]['parents'].reverse()
+  with self.assertRaises(ValueError):gate.approval_run(self.event,self.get)
+ def test_merged_approved_tree_and_main_ci(self):
+  run=self.source_fixture()
+  self.data['/git/ref/heads/main']['object']['sha']=A
+  run['head_branch']='main'
+  self.pr.update(merged=True,state='closed',merge_commit_sha=A)
+  self.data['/commits/'+A]={'commit':{'tree':{'sha':T}},'parents':[{'sha':B}],'files':self.files}
+  self.assertEqual(gate.validate(self.event,self.get), (A,self.pr['html_url']))
+  self.data['/commits/'+A]['commit']['tree']['sha']=B
+  with self.assertRaises(ValueError):gate.validate(self.event,self.get)
+ def test_required_check_head_must_match(self):
+  self.source_fixture()
+  self.data['/actions/runs/123/attempts/2/jobs?per_page=100&page=1']['jobs'][0]['head_sha']=B
+  with self.assertRaises(ValueError):gate.source_run(self.event,self.get)
+ def test_all_bundle_registry_and_callers(self):
+  import os
+  from unittest.mock import patch
+  for name in ('toolbox','code-server','node','bun'):
+   with self.subTest(name=name):
+    bundle=gate.config.select_bundle(name)
+    workflow={'id':8,'path':'.github/workflows/'+bundle['workflow']}
+    run=dict(workflow,id=456,workflow_id=8,run_attempt=2,event='workflow_run',head_sha=A,repository=REPO,head_repository=REPO)
+    def get(path):
+     return workflow if path.startswith('/actions/workflows/') else run
+    with patch.dict(os.environ,{'GITHUB_RUN_ID':'456','GITHUB_RUN_ATTEMPT':'2','GITHUB_SHA':A}):
+     gate.validate_caller(get,bundle)
+     run['path']='.github/workflows/wrong.yml'
+     with self.assertRaises(ValueError):gate.validate_caller(get,bundle)
+
+
+ def test_substituted_check_app_rejects(self):
+  self.source_fixture()
+  self.data['/check-runs/99']['app']['id']=42
+  with self.assertRaises(ValueError):gate.source_run(self.event,self.get)
+ def test_no_write_after_vote_revoked_during_revalidation(self):
+  self.source_fixture()
+  writes=[]; reads=0
+  def request(path, method='GET', payload=None):
+   nonlocal reads
+   if method!='GET':writes.append((path,method,payload));raise AssertionError('unexpected write')
+   if path=='/pulls/42/reviews?per_page=100&page=1':
+    reads+=1
+    if reads>=2:self.data[path][0]['state']='DISMISSED'
+   return self.get(path)
+  with self.assertRaises(ValueError):gate.merge_approved(self.event,request)
+  self.assertEqual(writes,[])
+ def test_postmerge_tree_drift_never_dispatches_publication_ci(self):
+  self.source_fixture();writes=[]
+  def request(path, method='GET', payload=None):
+   if method=='PUT':
+    writes.append((path,method,payload))
+    self.pr.update(merged=True,state='closed',merge_commit_sha=A)
+    self.data['/commits/'+A]={'commit':{'tree':{'sha':B}},'parents':[{'sha':B}],'files':self.files}
+    return {'merged':True,'sha':A}
+   if method!='GET':writes.append((path,method,payload));return None
+   return self.get(path)
+  with self.assertRaises(ValueError):gate.merge_approved(self.event,request)
+  self.assertEqual(len(writes),1)
+  self.assertEqual(writes[0][2],{'sha':A,'merge_method':'rebase'})
+
+
+class WorkflowResultTests(unittest.TestCase):
+ def test_shared_job_conditions_fail_closed(self):
+  import re
+  from types import SimpleNamespace as NS
+  workflow=(Path(__file__).parents[1]/'.github/workflows/bundle-publish.yml').read_text()
+  for name in ('resolve','native','promote'):
+   body=re.search(r'^  '+name+r':\n(.*?)(?=^  [a-z]+:|\Z)',workflow,re.M|re.S).group(1)
+   expression=re.search(r'^    if: >-\n((?:      .*\n)+)',body,re.M).group(1)
+   expression=' '.join(expression.split()).replace('&&',' and ').replace('||',' or ')
+   for event in ('workflow_run','workflow_dispatch','push','unknown'):
+    for result in ('success','failure','cancelled','skipped'):
+     github=NS(event_name=event,event=NS(repository=NS(default_branch='main'),sender=NS(type='User')),ref='refs/heads/main',sha=A)
+     needs=NS(preflight=NS(result=result),resolve=NS(result='success',outputs=NS(publish='true')),native=NS(result='success'))
+     inputs=NS(approved_sha=A)
+     actual=eval(expression,{'__builtins__':{}},{'github':github,'needs':needs,'inputs':inputs})
+     self.assertEqual(actual,result=='success' and event in ('workflow_run','workflow_dispatch'))
+   github.event_name='workflow_dispatch';needs.preflight.result='success';inputs.approved_sha=B
+   self.assertFalse(eval(expression,{'__builtins__':{}},{'github':github,'needs':needs,'inputs':inputs}))
+
 if __name__=='__main__':unittest.main()
