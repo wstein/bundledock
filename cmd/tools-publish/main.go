@@ -153,7 +153,7 @@ func resolveSingleton(directory string, meta toolpublish.Metadata, frozen bool, 
 	if err != nil {
 		return err
 	}
-	meta, err = toolpublish.NewMetadata(lock, meta.Image, tag, meta.Commit, meta.Source, meta.Created, meta.RunID, attempt)
+	meta, err = toolpublish.NewMetadataForBundle(bundle.Name, lock, meta.Image, tag, meta.Commit, meta.Source, meta.Created, meta.RunID, attempt)
 	if err != nil {
 		return err
 	}
@@ -276,24 +276,26 @@ func execute(args []string) error {
 		}
 		now := time.Now().UTC()
 		tag := now.Format("2006.01.02") + "-b" + os.Getenv("GITHUB_RUN_NUMBER") + "." + os.Getenv("GITHUB_RUN_ATTEMPT")
-		meta, err := toolpublish.NewMetadata(bundle.Directory+"/tools.lock.json", image, tag, commit, os.Getenv("GITHUB_SERVER_URL")+"/"+os.Getenv("GITHUB_REPOSITORY"), now.Format("2006-01-02T15:04:05Z"), os.Getenv("GITHUB_RUN_ID"))
+		meta, err := toolpublish.NewMetadataForBundle(bundle.Name, bundle.Directory+"/tools.lock.json", image, tag, commit, os.Getenv("GITHUB_SERVER_URL")+"/"+os.Getenv("GITHUB_REPOSITORY"), now.Format("2006-01-02T15:04:05Z"), os.Getenv("GITHUB_RUN_ID"))
 		if err != nil {
 			return err
 		}
 		if bundle.Name != "toolbox" {
 			return resolveSingleton(*directory, meta, *frozen, os.Getenv("GITHUB_RUN_ATTEMPT"), run, func(image string, data []byte) (string, error) {
 				// Source tags reserve packaging revisions even if an OCI tag is removed.
-				refs, err := run("git", "ls-remote", "--tags", "origin", "refs/tags/"+bundle.Name+"/*")
+				args := []string{"git", "ls-remote", "--tags", "origin"}
+				for _, name := range bundle.SourceTagNamespaces() {
+					args = append(args, "refs/tags/"+name+"/*")
+				}
+				refs, err := run(args...)
 				if err != nil {
 					return "", err
 				}
-				reserved := []string{}
-				for _, line := range strings.Split(string(refs), "\n") {
-					fields := strings.Fields(line)
-					if len(fields) == 2 && !strings.HasSuffix(fields[1], "^{}") {
-						reserved = append(reserved, strings.TrimPrefix(fields[1], "refs/tags/"+bundle.Name+"/"))
-					}
+				reserved, err := toolpublish.SourceTagReservations(bundle, refs)
+				if err != nil {
+					return "", err
 				}
+
 				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 				defer cancel()
 				return toolpublish.AllocateSingletonTag(ctx, nil, image, data, os.Getenv("REPOSITORY_USERNAME"), os.Getenv("REPOSITORY_TOKEN"), reserved...)
@@ -311,7 +313,7 @@ func execute(args []string) error {
 	if err := artifactIdentity(meta, os.Getenv("GITHUB_RUN_ID"), os.Getenv("GITHUB_RUN_NUMBER"), os.Getenv("GITHUB_RUN_ATTEMPT"), commit); err != nil {
 		return err
 	}
-	if !strings.HasSuffix(meta.Image, "/"+bundle.Name) {
+	if toolpublish.BundleForMetadata(meta).Name != bundle.Name || !strings.HasSuffix(meta.Image, "/"+bundle.Repository) {
 		return fmt.Errorf("artifact belongs to a different bundle")
 	}
 	adapter := toolpublish.Adapter{Run: run, TagAbsent: func(image, tag string) error {
@@ -324,7 +326,7 @@ func execute(args []string) error {
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 		defer cancel()
 		publish, err := publicationDecisionForBundle(lock, os.Getenv("GITHUB_EVENT_NAME"), bundle.Name, func() (string, error) {
-			return toolpublish.PublishedToolDigest(ctx, nil, meta.Image, os.Getenv("REPOSITORY_USERNAME"), os.Getenv("REPOSITORY_TOKEN"), func(published toolpublish.Metadata) ([]byte, error) {
+			return toolpublish.PublishedToolDigestForBundle(ctx, nil, bundle.Name, meta.Image, os.Getenv("REPOSITORY_USERNAME"), os.Getenv("REPOSITORY_TOKEN"), func(published toolpublish.Metadata) ([]byte, error) {
 				return toolpublish.PublishedLockArtifact(ctx, nil, os.Getenv("GITHUB_REPOSITORY"), os.Getenv("DEFAULT_BRANCH"), os.Getenv("GITHUB_TOKEN"), published)
 			})
 		})
@@ -412,7 +414,7 @@ func execute(args []string) error {
 			if err != nil {
 				return err
 			}
-			_, err = fmt.Fprintf(f, "Published `%s`\n\nVersion tag: `%s`; stable and latest verified at the same registry digest.\n\nLock SHA256: `%s`.\n", result.Reference, meta.Tag, meta.LockSHA256)
+			_, err = fmt.Fprintf(f, "Published `%s`\n\nVersion tag: `%s`; aliases %s verified at the same registry digest.\n\nLock SHA256: `%s`.\n", result.Reference, meta.Tag, bundle.Aliases, meta.LockSHA256)
 			closeErr := f.Close()
 			if err != nil {
 				return err

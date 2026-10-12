@@ -14,6 +14,7 @@ import (
 )
 
 type Metadata struct {
+	Bundle     string `json:"bundle,omitempty"`
 	Image      string `json:"image"`
 	RunID      string `json:"run_id"`
 	RunAttempt string `json:"run_attempt,omitempty"`
@@ -45,7 +46,7 @@ type Adapter struct {
 	TagAbsent    func(image, tag string) error
 }
 
-var imagePattern = regexp.MustCompile(`^quay\.io/[a-z0-9]+(?:[._-][a-z0-9]+)*/(toolbox|code-server|node|node-current|bun|codex|agy|claude)$`)
+var imagePattern = regexp.MustCompile(`^quay\.io/[a-z0-9]+(?:[._-][a-z0-9]+)*/(toolbox|code-server|node|bun|codex|agy|claude)$`)
 var tagPattern = regexp.MustCompile(`^(?:\d{4}\.\d{2}\.\d{2}-b[1-9]\d*\.[1-9]\d*|(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)-b[1-9]\d*)$`)
 var runIDPattern = regexp.MustCompile(`^[1-9]\d*$`)
 var commitPattern = regexp.MustCompile(`^[a-f0-9]{40}$`)
@@ -71,7 +72,18 @@ func HashFile(path string) (string, error) {
 }
 
 func NewMetadata(lock, image, tag, commit, source, created, runID string, attempt ...string) (Metadata, error) {
-	m := Metadata{Image: image, Tag: tag, Commit: commit, Source: source, Created: created, RunID: runID}
+	return newMetadata("", lock, image, tag, commit, source, created, runID, attempt...)
+}
+
+func NewMetadataForBundle(bundle, lock, image, tag, commit, source, created, runID string, attempt ...string) (Metadata, error) {
+	return newMetadata(bundle, lock, image, tag, commit, source, created, runID, attempt...)
+}
+func newMetadata(bundle, lock, image, tag, commit, source, created, runID string, attempt ...string) (Metadata, error) {
+	m := Metadata{Bundle: bundle, Image: image, Tag: tag, Commit: commit, Source: source, Created: created, RunID: runID}
+	b := BundleForMetadata(m)
+	if err := validateBundleImage(b, image); err != nil {
+		return m, err
+	}
 	if !imagePattern.MatchString(image) {
 		return m, fmt.Errorf("publication image must be quay.io/<namespace>/{toolbox,code-server,node,bun,codex,agy,claude}")
 	}
@@ -79,7 +91,10 @@ func NewMetadata(lock, image, tag, commit, source, created, runID string, attemp
 		return m, fmt.Errorf("invalid date/run/attempt tag, source commit or run ID")
 	}
 	if singletonTagPattern.MatchString(tag) {
-		if bundleForImage(image).Name == "toolbox" || len(attempt) != 1 || !runIDPattern.MatchString(attempt[0]) {
+		if b.Repository == "node" && bundle == "" {
+			return m, fmt.Errorf("Node channel source identity required for new semantic publications")
+		}
+		if b.Name == "toolbox" || len(attempt) != 1 || !runIDPattern.MatchString(attempt[0]) {
 			return m, fmt.Errorf("singleton tag requires workflow attempt")
 		}
 		m.RunAttempt = attempt[0]
@@ -87,7 +102,7 @@ func NewMetadata(lock, image, tag, commit, source, created, runID string, attemp
 		if err != nil {
 			return m, err
 		}
-		version, err := SingletonVersion(data, bundleForImage(image).Name)
+		version, err := SingletonVersion(data, b.Name)
 		if err != nil || !strings.HasPrefix(tag, version+"-b") {
 			return m, fmt.Errorf("version tag differs from frozen upstream lock")
 		}
@@ -111,7 +126,7 @@ func metadataAttempt(m Metadata) []string {
 }
 
 func validate(m Metadata, lock string) error {
-	expected, err := NewMetadata(lock, m.Image, m.Tag, m.Commit, m.Source, m.Created, m.RunID, metadataAttempt(m)...)
+	expected, err := newMetadata(m.Bundle, lock, m.Image, m.Tag, m.Commit, m.Source, m.Created, m.RunID, metadataAttempt(m)...)
 	if err != nil {
 		return err
 	}
@@ -150,11 +165,12 @@ func labels(m Metadata, lock, arch string) (map[string]string, error) {
 		return nil, err
 	}
 	return map[string]string{
-		"org.opencontainers.image.title": "bundledock-" + bundleForImage(m.Image).Name, "org.opencontainers.image.source": m.Source,
+		"org.opencontainers.image.title": "bundledock-" + BundleForMetadata(m).Name, "org.opencontainers.image.source": m.Source,
 		"org.opencontainers.image.revision": m.Commit, "org.opencontainers.image.created": m.Created,
 		"org.opencontainers.image.version": m.Tag, "io.bundledock.tools.lock-sha256": m.LockSHA256,
 		"io.bundledock.tools.versions": string(encoded), "io.bundledock.github.run-id": m.RunID,
 		"io.bundledock.github.run-attempt": m.RunAttempt,
+		"io.bundledock.bundle":             BundleForMetadata(m).Name,
 		platformsLabel:                     semantic,
 	}, nil
 }
@@ -224,7 +240,7 @@ func (a Adapter) Build(m Metadata, lock, arch, consumer string) (Receipt, error)
 	if runtime.GOOS != "linux" || native != arch || (arch != "amd64" && arch != "arm64") {
 		return r, fmt.Errorf("native Linux architecture required")
 	}
-	bundle := bundleForImage(m.Image)
+	bundle := BundleForMetadata(m)
 	args := []string{"docker", "build", "--pull", "--platform", "linux/" + arch, "-f", bundle.Directory + "/Dockerfile", "-t", "bundledock-" + bundle.Name + ":build-" + m.Tag + "-" + arch}
 	imageLabels, err := labels(m, lock, arch)
 	if err != nil {
@@ -395,7 +411,7 @@ func (a Adapter) Promote(m Metadata, lock string, receipts []Receipt) (Publicati
 	}
 
 	// Alias updates are sequential; a later failure cannot roll back earlier tags.
-	for _, alias := range []string{"stable", "latest"} {
+	for _, alias := range BundleForMetadata(m).PublicationAliases() {
 		if _, err = a.Run("docker", "buildx", "imagetools", "create", "--tag", m.Image+":"+alias, ref); err != nil {
 			return result, fmt.Errorf("update %s alias: %w", alias, err)
 		}

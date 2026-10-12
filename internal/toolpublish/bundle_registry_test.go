@@ -27,7 +27,7 @@ func TestPrecompilerRegistryMatchesNativeSelection(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if settings["name"] != bundle.Name || settings["directory"] != bundle.Directory || settings["workflow"] != bundle.Workflow || settings["artifact"] != bundle.Artifact || settings["lock"] != bundle.Directory+"/tools.lock.json" {
+		if settings["name"] != bundle.Name || settings["directory"] != bundle.Directory || settings["workflow"] != bundle.Workflow || settings["repository"] != bundle.Repository || settings["aliases"] != bundle.Aliases || settings["artifact"] != bundle.Artifact || settings["lock"] != bundle.Directory+"/tools.lock.json" {
 			t.Fatal("precompiler registry differs for", name)
 		}
 	}
