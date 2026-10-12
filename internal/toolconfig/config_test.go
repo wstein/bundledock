@@ -184,7 +184,7 @@ func TestLoadInputsAllowsNarrowTmuxRanges(t *testing.T) {
 					t.Fatal(err)
 				}
 				if name == "tools.txt" {
-					b = []byte(strings.Replace(string(b), "tmux>=3.7.3,<4.0.0", requirement, 1))
+					b = []byte(strings.Replace(string(b), "tmux>=3.7.3", requirement, 1))
 				}
 				if err := os.WriteFile(filepath.Join(dir, name), b, 0644); err != nil {
 					t.Fatal(err)

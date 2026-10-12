@@ -197,13 +197,20 @@ make run ARGS="tools upgrade gh"    # resolve only GitHub CLI
 make run ARGS="tools upgrade --directory bundles/toolbox" # explicit bundle directory
 ```
 
-`tools.txt` contains one desired requirement per line: `gh>=2.102.0,<3.0.0`
-or `gh==2.102.0`. Commas mean AND; ranges require inclusive lower and exclusive
-upper bounds. Versions must be complete stable `major.minor.patch` values;
-prereleases and build metadata are excluded. Comments start with `#`. The initial
-0.x requirements stop at the next minor version; other initial requirements stop
-at the next major version. Editing this file changes the desired range, not the
-installed tools.
+`tools.txt` contains one desired requirement per line: `gh>=2.102.0`
+for a minimum, `node>=24.0.0,<25.0.0` for a bounded range, or
+`helix==25.7.1` for an exact pin. Commas mean AND; lower bounds are inclusive
+and upper bounds are exclusive. Versions must be complete stable
+`major.minor.patch` values; prereleases and build metadata are excluded.
+Comments start with `#`. Generic CLI requirements use minimum bounds so future
+stable releases remain eligible. The minimum records the existing accepted
+baseline; it does not upgrade an installed tool. Node retains its selected LTS
+major, Bun its runtime major, and code-server its standalone carrier major.
+Helix retains its explicit calendar-version/runtime pin. These exceptions need
+separate compatibility review before changing their bounds. Provider tag
+normalization, archive recipes and both-architecture checks still apply to every
+candidate; a minimum does not permit unsupported release formats.
+Editing this file changes the desired range, not the installed tools.
 
 `tools.packages.json` is the trusted declarative package catalog. It names upstream
 providers, repositories, tag prefixes, platform aliases, asset templates, supported
