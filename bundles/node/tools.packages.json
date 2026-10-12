@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "packages": {
+    "node": {
+      "provider": "node",
+      "tag_prefix": "v",
+      "base_url": "https://nodejs.org/dist",
+      "metadata_url": "https://nodejs.org/dist/index.json",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "x64",
+        "arm64": "arm64"
+      },
+      "asset": "node-v{version}-linux-{arch}.tar.gz",
+      "allowed_hosts": [
+        "nodejs.org"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "tar.gz",
+        "profile": "node-runtime",
+        "members": {
+          "bin/node": "payload/bin/node"
+        },
+        "preserve": true
+      },
+      "notices": [
+        "licenses/node/LICENSE",
+        "licenses/node/SOURCE"
+      ]
+    }
+  }
+}
