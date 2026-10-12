@@ -58,14 +58,14 @@ No plugins or user configuration are installed for either alternative.
 
 ## Propose upgrades with GitHub Actions
 
-The **Propose tool upgrades** workflow (`.github/workflows/toolbox-upgrade.yml`)
+The **Propose toolbox upgrades** workflow (`.github/workflows/toolbox-upgrade.yml`)
 runs daily at **06:00 UTC** from the repository default branch. Scheduled runs
 resolve all desired stable tools within `tools.txt` constraints and open a
 reviewable PR only when the lock or its generated inventory changes. GitHub
 may delay scheduled runs; the cron time is not a delivery guarantee. The
 schedule starts after a human merges this workflow onto the default branch.
 
-For a manual test, open **Actions → Propose tool upgrades → Run workflow**,
+For a manual test, open **Actions → Propose toolbox upgrades → Run workflow**,
 select the default branch, keep `dry_run=true`, and optionally set `tool=gh`
 for a bounded first run. An empty tool input resolves every desired tool.
 The workflow refuses non-default-branch runs. A new manual workflow must

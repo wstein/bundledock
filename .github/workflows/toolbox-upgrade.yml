@@ -1,4 +1,4 @@
-name: Propose tool upgrades
+name: Propose toolbox upgrades
 
 on:
   schedule:
