@@ -153,11 +153,11 @@ case "${1:-}" in
     cat > "$body" <<BODY
 Resolve official stable releases within the selected bundles' existing tools.txt constraints and update only their locks and generated source version inventories. Selected bundles: ${bundles[*]}. Both supported architectures were resolved and verified by the existing BundleDock manager, and transferred locks were revalidated before this proposal.
 
-Review the lock diff and run required source checks before merging. No image, CLI release or documentation build, publication, or consumer activation is performed. Those operations need separate explicit approval.
+Review the lock diff. An APPROVED review by wstein covering this exact PR head authorizes guarded source CI, protected merge, and frozen-lock publication without further intervention. Approval applies only to this reviewed lock and source inventory. This proposal performs no artifact build; CLI releases, documentation builds, and consumer activation require separate explicit authorization.
 
 Run: https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID (attempt $GITHUB_RUN_ATTEMPT).
 
-Pull requests created with GITHUB_TOKEN do not automatically trigger ordinary pull_request workflows. Run CI manually on this branch, or follow the repository's human review process before merging.
+Pull requests created with GITHUB_TOKEN do not automatically trigger ordinary pull_request workflows. The trusted approval controller dispatches source CI for the exact approved head, verifies required checks and current approval before merging, then dispatches main CI to start frozen-lock publication. Head or main movement stops automation until a fresh applicable approval.
 BODY
     if ! url=$(gh pr create --repo "$GITHUB_REPOSITORY" --base "$DEFAULT_BRANCH" --head "$branch" --title "$title" --body-file "$body" 2>&1); then
       printf '%s\n' "$url" >&2
