@@ -51,7 +51,7 @@ func checkNewest(ctx context.Context, client *http.Client, repository, branch st
 	if err := get("/actions/runs/"+strconv.FormatInt(id, 10), &current); err != nil {
 		return err
 	}
-	if current.ID != id || current.Attempt != attempt || current.Commit != commit || current.Branch != branch || current.WorkflowID < 1 || current.Number < 1 || (current.Event != "schedule" && current.Event != "workflow_dispatch") {
+	if current.ID != id || current.Attempt != attempt || current.Commit != commit || current.Branch != branch || current.WorkflowID < 1 || current.Number < 1 || (current.Event != "schedule" && current.Event != "workflow_dispatch" && !(workflow == "bundledock-toolbox.yml" && current.Event == "workflow_run")) {
 		return fmt.Errorf("current run identity is no longer eligible for publication")
 	}
 	if workflow != "" {
@@ -83,7 +83,7 @@ func checkNewest(ctx context.Context, client *http.Client, repository, branch st
 			return fmt.Errorf("GitHub run search exceeds 1000-result limit; start a fresh manual run")
 		}
 		for _, run := range list.Runs {
-			if run.Branch != branch || (run.Event != "schedule" && run.Event != "workflow_dispatch") {
+			if run.Branch != branch || (run.Event != "schedule" && run.Event != "workflow_dispatch" && !(workflow == "bundledock-toolbox.yml" && run.Event == "workflow_run")) {
 				continue
 			}
 			if run.Number > current.Number {
@@ -139,6 +139,13 @@ func nativeEligibility(get func(string, any) error, run workflowRun) (bool, erro
 			}
 		}
 		if len(list.Jobs) < 100 {
+			// A workflow_run is only a request until human approval and successful
+			// resolution reach native work. Unrelated CI completions can queue behind
+			// this workflow's concurrency group without superseding publication.
+			// Current-main provenance is checked separately immediately before promotion.
+			if run.Event == "workflow_run" {
+				return resolved && eligible, nil
+			}
 			if eligible {
 				return true, nil
 			}

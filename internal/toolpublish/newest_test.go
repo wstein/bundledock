@@ -140,3 +140,43 @@ func TestNewerNoopJobPaginationIsBounded(t *testing.T) {
 		t.Fatalf("unbounded eligibility search: %t %v %d", eligible, err, calls)
 	}
 }
+
+func TestNewestWorkflowRunIsToolboxOnly(t *testing.T) {
+	current := `{"id":123,"run_number":10,"run_attempt":2,"event":"workflow_run","head_branch":"main","head_sha":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","created_at":"2026-10-10T03:17:00Z","workflow_id":77}`
+	for _, workflow := range []string{"bundledock-toolbox.yml", "bundledock-node.yml", "bundledock-bun.yml", "bundledock-code-server.yml"} {
+		client := &http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+			body := current
+			if strings.Contains(r.URL.Path, "/workflows/") {
+				body = `{"id":77}`
+			}
+			if strings.HasSuffix(r.URL.Path, "/runs") {
+				body = `{"workflow_runs":[` + current + `]}`
+			}
+			return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(body)), Header: make(http.Header)}, nil
+		})}
+		err := CheckNewestForWorkflow(context.Background(), client, "example/repo", "main", 123, 2, strings.Repeat("a", 40), "token", workflow)
+		if (err == nil) != (workflow == "bundledock-toolbox.yml") {
+			t.Fatalf("workflow=%s error=%v", workflow, err)
+		}
+	}
+}
+
+func TestNewerAutomaticRunSupersedesOnlyAfterApprovalAndResolution(t *testing.T) {
+	for _, tc := range []struct {
+		name, jobs string
+		eligible   bool
+	}{
+		{"queued unrelated CI", `{"jobs":[]}`, false},
+		{"rejected preflight", `{"jobs":[{"name":"preflight","status":"completed","conclusion":"failure"},{"name":"native","status":"completed","conclusion":"skipped"}]}`, false},
+		{"waiting approval", `{"jobs":[{"name":"preflight","status":"completed","conclusion":"success"},{"name":"Approve toolbox SHA","status":"waiting"}]}`, false},
+		{"failed resolver", `{"jobs":[{"name":"resolve","status":"completed","conclusion":"failure"},{"name":"native","status":"completed","conclusion":"skipped"}]}`, false},
+		{"approved native", `{"jobs":[{"name":"resolve","status":"completed","conclusion":"success"},{"name":"native (amd64, ubuntu-24.04)","status":"in_progress"}]}`, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			eligible, err := nativeEligibility(func(_ string, out any) error { return json.Unmarshal([]byte(tc.jobs), out) }, workflowRun{ID: 124, Attempt: 1, Event: "workflow_run"})
+			if err != nil || eligible != tc.eligible {
+				t.Fatalf("eligible=%v error=%v", eligible, err)
+			}
+		})
+	}
+}
