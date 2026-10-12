@@ -29,6 +29,37 @@ docker pull quay.io/bundledock/toolbox@sha256:40bae37ef7fd7b8e7131803850801ed41c
 The source inventory below describes the current lock; this publication retains its exact source revision.
 <!-- END PUBLISHED BUNDLE -->
 
+## Retained notices
+
+New bundles store all staged `licenses/<package>/...` files, including full
+license texts, source records and vendored dependency notices, in one
+`licenses.tar.gz` at the bundle root. Original member paths and bytes are
+preserved. `licenses.index.json` remains plain text for offline discovery: it
+maps every member to its package, size and SHA256 and records the archive
+SHA256. `SHA256SUMS` covers both files. Payload-internal notices stay with their
+unchanged runtime assets. This changes the installed loose notice paths; the
+source notice directories in this repository remain unchanged. The published
+image above predates this source change.
+
+The existing carrier's `init-volume` helper can list the index or print one
+complete notice without external gzip/tar tools, network access or volume writes:
+
+```sh
+docker run --rm --network none "$IMAGE" --list-licenses
+docker run --rm --network none "$IMAGE" --license licenses/gh/LICENSE
+```
+
+Use a carrier built from this source change as `IMAGE`; earlier published
+carriers retain their existing notice layout and initializer flags. The helper
+lives in the carrier, not the mounted tool volume. A mounted consumer can read
+`licenses.index.json` directly, or read `licenses.tar.gz` with compatible archive
+tools. For a mounted root, the carrier helper accepts `--source` with that
+mounted path. Requests require the complete member path from the index,
+avoiding ambiguous basenames across packages. The helper checks the index/archive
+checksums, member hashes and sizes, rejects unsafe or duplicate paths, and
+bounds expansion before printing bytes. Retaining these notices does not
+establish a complete transitive license audit.
+
 ## Source inventory
 
 The default bundle lives in `bundles/toolbox/`: `packages.txt`,

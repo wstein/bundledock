@@ -49,12 +49,16 @@ Official prebuilt binaries remain unchanged. No Terraform binaries are
 rebranded and no third-party source compilation occurs.
 
 The safe tar extractor selects `tofu` as the regular executable `bin/tofu`,
-retaining archive `LICENSE`, `README.md` and `CHANGELOG.md` under
-`licenses/opentofu`. The full official MPL-2.0 license and source provenance
-are also retained there. Traversal, links, special files, duplicate paths and
+retaining archive `LICENSE`, `README.md` and `CHANGELOG.md` as
+`licenses/opentofu/...` members in `licenses.tar.gz`. The full official MPL-2.0
+license and source provenance remain complete. A plain `licenses.index.json`
+maps the retained members and their hashes; see [notice access](toolbox.md#retained-notices)
+for the offline carrier helper and the change from loose installed paths. Traversal, links, special files, duplicate paths and
 non-executable selected files are rejected. Existing regular-file manifests
 and volume initialization verify hashes, modes and exact tree membership on
-first and repeated initialization. A runtime launcher is unnecessary.
+first and repeated initialization. The smoke adapter also reads every OpenTofu
+notice through the carrier helper before checking the read-only consumer.
+A runtime launcher is unnecessary.
 
 ## Consumer use
 
