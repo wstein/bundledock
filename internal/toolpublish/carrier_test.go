@@ -106,7 +106,11 @@ run)
   case "$1" in
    --rm) shift ;;
    --entrypoint) entrypoint=$2; shift 2 ;;
-   --mount) mount=$2; mounts="$mounts $2"; shift 2 ;;
+   --mount)
+    case "$2" in
+     type=bind,src=*) source=${2#type=bind,src=}; source=${source%%,dst=*}; [ -f "$source" ] || exit 67 ;;
+    esac
+    mount=$2; mounts="$mounts $2"; shift 2 ;;
    --network|--user|--tmpfs|--env) shift 2 ;;
    *) image=$1; shift; break ;;
   esac
@@ -147,7 +151,7 @@ esac
 		t.Fatal(err)
 	}
 	calls := filepath.Join(dir, "calls")
-	cmd := exec.Command("sh", "../../bundles/toolbox/smoke.sh", "carrier:fixture", "consumer:fixture")
+	cmd := exec.Command("sh", "../../bundles/toolbox/scripts/smoke.sh", "carrier:fixture", "consumer:fixture")
 	cmd.Env = append(os.Environ(), "PATH="+dir+":"+os.Getenv("PATH"), "CARRIER_CALLS="+calls, "CARRIER_STATE="+filepath.Join(dir, "state"))
 	output, err := cmd.CombinedOutput()
 	if err != nil {

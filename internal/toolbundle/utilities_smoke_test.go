@@ -8,7 +8,7 @@ import (
 )
 
 func TestUtilitiesSmokeRejectsWrongOutput(t *testing.T) {
-	script, err := filepath.Abs("../../bundles/toolbox/utilities-smoke.sh")
+	script, err := filepath.Abs("../../bundles/toolbox/scripts/utilities-smoke.sh")
 	if err != nil {
 		t.Fatal(err)
 	}

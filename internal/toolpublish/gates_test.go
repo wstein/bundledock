@@ -140,7 +140,7 @@ func TestBuildSmokeThenPushExactImage(t *testing.T) {
 		if reflect.DeepEqual(c, []string{"docker", "pull", "consumer:test"}) {
 			pull = i
 		}
-		if reflect.DeepEqual(c, []string{"sh", "bundles/toolbox/smoke.sh", f.id, "consumer:test"}) {
+		if reflect.DeepEqual(c, []string{"sh", "bundles/toolbox/scripts/smoke.sh", f.id, "consumer:test"}) {
 			smoke = i
 		}
 		if prefix(c, "docker", "push") {
@@ -513,7 +513,7 @@ func TestCodeServerBuildUsesDedicatedCarrierAndSmoke(t *testing.T) {
 		}
 		if prefix(args, "sh") {
 			smoke = true
-			if !reflect.DeepEqual(args, []string{"sh", "bundles/code-server/smoke.sh", r.ImageID, "consumer:test"}) {
+			if !reflect.DeepEqual(args, []string{"sh", "bundles/code-server/scripts/smoke.sh", r.ImageID, "consumer:test"}) {
 				t.Fatalf("wrong smoke %v", args)
 			}
 		}

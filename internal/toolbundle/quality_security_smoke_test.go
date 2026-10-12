@@ -14,7 +14,7 @@ func TestQualitySecurityOfflineSmoke(t *testing.T) {
 	if toolPath == "" {
 		t.Skip("real quality/security binaries not supplied")
 	}
-	script, err := filepath.Abs("../../bundles/toolbox/quality-security-smoke.sh")
+	script, err := filepath.Abs("../../bundles/toolbox/scripts/quality-security-smoke.sh")
 	if err != nil {
 		t.Fatal(err)
 	}

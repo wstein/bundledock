@@ -25,7 +25,7 @@ if sys.argv[1:3]==['volume','create']:print('fixture-volume')
 ''')
                 docker.chmod(0o755)
                 env = dict(os.environ, PATH=str(directory)+':'+os.environ['PATH'], CALL_LOG=str(log))
-                subprocess.run(['sh', str(ROOT/'bundles'/name/'smoke.sh')], env=env, check=True)
+                subprocess.run(['sh', str(ROOT/'bundles'/name/'scripts'/'smoke.sh')], cwd=directory, env=env, check=True)
                 calls = [json.loads(line) for line in log.read_text().splitlines()]
                 runs = [call for call in calls if call[0] == 'run']
                 self.assertEqual(len(runs), 4)
@@ -43,8 +43,9 @@ if sys.argv[1:3]==['volume','create']:print('fixture-volume')
                     self.assertIn('DISABLE_UPDATES=1', call)
                     self.assertIn('DISABLE_AUTOUPDATER=1', call)
                     self.assertIn('type=volume,src=fixture-volume,dst=/opt/bundledock/'+name+',readonly,volume-nocopy', call)
-                    source = ROOT/'bundles'/name/'consumer-smoke.sh'
+                    source = ROOT/'bundles'/name/'scripts'/'consumer-smoke.sh'
                     self.assertTrue(source.is_file())
+                    self.assertIn('type=bind,src='+str(source)+',dst=/'+name+'-smoke.sh,readonly', call)
 
     def test_consumer_prepares_codex_home_before_invocation(self):
         for existing_config in (False, True):
@@ -77,7 +78,7 @@ printf '%s\\n' "$*" >> "$CODEX_HOME/calls"
                 touch = tools / 'touch'
                 touch.write_text('#!/bin/sh\nexit 1\n')
                 touch.chmod(0o755)
-                source = (ROOT / 'bundles/codex/consumer-smoke.sh').read_text()
+                source = (ROOT / 'bundles/codex/scripts/consumer-smoke.sh').read_text()
                 self.assertEqual(source.count('root=/opt/bundledock/codex\n'), 1)
                 source = source.replace('root=/opt/bundledock/codex\n',
                                         'root=' + shlex.quote(str(payload)) + '\n')
