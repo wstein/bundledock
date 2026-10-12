@@ -1,14 +1,35 @@
 ---
-title: Tool catalog and upgrades
+title: Toolbox bundle
 description: Inspect pinned tool versions and resolve verified upgrades for both architectures.
 weight: 20
 ---
 
-# Tool catalog and upgrades
+# Toolbox bundle
 
 [Back to BundleDock](../README.md)
 
-## Pinned tools
+<!-- BEGIN PUBLISHED BUNDLE -->
+<!-- publication-record: {"attempt":"1","commit":"812e7caac782595b9302292603bbe49e890ca96e","digest":"sha256:40bae37ef7fd7b8e7131803850801ed41cfb23a6ef774bc2e40f95ee81e59a1c","image":"quay.io/bundledock/toolbox","reference":"quay.io/bundledock/toolbox@sha256:40bae37ef7fd7b8e7131803850801ed41cfb23a6ef774bc2e40f95ee81e59a1c","run_id":"38088214128","source":"https://github.com/wstein/bundledock","tag":"2026.10.10-b4.1"} -->
+## Published bundle
+
+Version: `2026.10.10-b4.1`
+
+Index digest: `sha256:40bae37ef7fd7b8e7131803850801ed41cfb23a6ef774bc2e40f95ee81e59a1c`
+
+Source: [`812e7caac782595b9302292603bbe49e890ca96e`](https://github.com/wstein/bundledock/commit/812e7caac782595b9302292603bbe49e890ca96e)
+
+Publication: [run 38088214128, attempt 1](https://github.com/wstein/bundledock/actions/runs/38088214128/attempts/1)
+
+Pull this published carrier by its immutable index digest:
+
+```sh
+docker pull quay.io/bundledock/toolbox@sha256:40bae37ef7fd7b8e7131803850801ed41cfb23a6ef774bc2e40f95ee81e59a1c
+```
+
+The source inventory below describes the current lock; this publication retains its exact source revision.
+<!-- END PUBLISHED BUNDLE -->
+
+## Source inventory
 
 The default bundle lives in `bundles/toolbox/`: `tools.txt`,
 `tools.packages.json`, `tools.lock.json`, its Dockerfile, smoke scripts and licenses.
@@ -103,7 +124,13 @@ A PR opened with `GITHUB_TOKEN` does not automatically start ordinary
 new topic branch and complete human review before merging. A successful
 resolver or CI run verifies source and lock behavior, not native image smoke
 coverage. Building, publishing, or activating the new lock still requires
-explicit human approval of the operation and revision. One exact-head PR approval by `wstein` authorizes the guarded [source CI, merge and frozen-lock publication flow](publication.md) for an eligible bundle updater. It publishes the exact reviewed lock without fresh upstream resolution or a later environment approval. Publication does not activate a consumer image.
+approval of the operation and revision. For each bundle, wstein’s approval of
+the exact updater PR revision authorizes the reviewed lock’s publication after
+source CI and merge. The [publication workflow](publication.md) validates that
+approval and the merged source before native work; no second approval prompt
+is required. Manual publication of an exact approved `main` SHA remains available.
+Publication uses the reviewed lock without resolving newer releases and does
+not activate a consumer image.
 
 ## Keep the source inventory consistent
 
@@ -111,7 +138,8 @@ The pinned-version table above is managed between the
 `BEGIN GENERATED TOOL INVENTORY` and `END GENERATED TOOL INVENTORY` comments.
 Its versions come from `tools.lock.json` for both supported architectures;
 existing catalog tag prefixes determine the display version, and existing
-labels and row order remain presentation metadata. Missing catalog IDs or
+labels remain presentation metadata. Rows sort alphabetically by the displayed
+label, ignoring case. Missing catalog IDs or
 architecture version differences fail generation rather than omitting a tool.
 
 After changing a lock locally, run:

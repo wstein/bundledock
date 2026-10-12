@@ -7,6 +7,27 @@ configuration remain unchanged. No browser service starts automatically.
 
 The current standalone pin comes from this bundle's own lock:
 
+<!-- BEGIN PUBLISHED BUNDLE -->
+<!-- publication-record: {"attempt":"1","commit":"9f25e0065885dce912658986bf26c178dddbaf36","digest":"sha256:07d3452052c1c5cb34cd6545b1975cd3dda589b9ee66710e5c765ea541ae49f1","image":"quay.io/bundledock/code-server","reference":"quay.io/bundledock/code-server@sha256:07d3452052c1c5cb34cd6545b1975cd3dda589b9ee66710e5c765ea541ae49f1","run_id":"38192754108","source":"https://github.com/wstein/bundledock","tag":"2026.10.12-b1.1"} -->
+## Published bundle
+
+Version: `2026.10.12-b1.1`
+
+Index digest: `sha256:07d3452052c1c5cb34cd6545b1975cd3dda589b9ee66710e5c765ea541ae49f1`
+
+Source: [`9f25e0065885dce912658986bf26c178dddbaf36`](https://github.com/wstein/bundledock/commit/9f25e0065885dce912658986bf26c178dddbaf36)
+
+Publication: [run 38192754108, attempt 1](https://github.com/wstein/bundledock/actions/runs/38192754108/attempts/1)
+
+Pull this published carrier by its immutable index digest:
+
+```sh
+docker pull quay.io/bundledock/code-server@sha256:07d3452052c1c5cb34cd6545b1975cd3dda589b9ee66710e5c765ea541ae49f1
+```
+
+The source inventory below describes the current lock; this publication retains its exact source revision.
+<!-- END PUBLISHED BUNDLE -->
+
 <!-- BEGIN GENERATED TOOL INVENTORY -->
 | Tool | Pinned version |
 | --- | --- |

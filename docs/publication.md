@@ -252,3 +252,23 @@ python3 -B scripts/bundle-git-tags.py --backfill --bundle node \
 Git tag writes are atomic individually. If a later backfill conflicts, previously
 verified tags remain; resolve the conflict before continuing. Registry writes
 and Git tag writes are separate systems and cannot be one atomic transaction.
+
+## Published guide updates
+
+After successful verified promotion and source tagging, the shared publisher
+opens a normal `publication-docs/<bundle>/<version>` PR for the corresponding
+bundle guide. Its managed publication section records the immutable version,
+index digest, exact source SHA, workflow run and digest-pinned pull example.
+The generated tool table remains the current source inventory, separate from
+the published record. Version badges read Quay directly and need no README bot
+commit.
+
+This job edits Markdown source only. It creates a topic from fresh `main` using
+GitHub's create-only reference API, never advances an existing topic, and reuses
+an existing PR only when its tree, parent, head and target match. Conflicting
+records, newer published versions, moved main or topic refs and malformed
+receipts fail closed. Source CI is explicitly dispatched for the exact docs
+head because `GITHUB_TOKEN` PR creation does not trigger ordinary PR workflows.
+The docs job has contents, pull-request and Actions write permission; earlier
+compiler and native jobs retain read permissions. No documentation build,
+automatic docs merge or consumer activation is performed by this job.

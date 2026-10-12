@@ -18,11 +18,11 @@ permissions:
 
 jobs:
   publication:
-    # Reusable-workflow ceiling; only its post-promotion tag job requests write.
+    # Reusable-workflow ceiling; write scopes are used only by post-promotion jobs.
     permissions:
       contents: write
-      actions: read
-      pull-requests: read
+      actions: write
+      pull-requests: write
     uses: ./.github/workflows/bundle-publish.yml
     with:
       bundle: node

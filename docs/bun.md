@@ -3,6 +3,27 @@
 `bundles/bun` supplies official stable prebuilt Bun for Linux AMD64 and ARM64,
 with its own catalog, lock, image, volume and `/opt/bundledock/bun` mount.
 
+<!-- BEGIN PUBLISHED BUNDLE -->
+<!-- publication-record: {"attempt":"1","commit":"4fd4d161efafea4f25da4839582e22d7e0a8ee91","digest":"sha256:730dd49c9b3c72615977204da4715bb46c828f5c92b962af155ee1099191b8c7","image":"quay.io/bundledock/bun","reference":"quay.io/bundledock/bun@sha256:730dd49c9b3c72615977204da4715bb46c828f5c92b962af155ee1099191b8c7","run_id":"38198677231","source":"https://github.com/wstein/bundledock","tag":"2026.10.12-b1.1"} -->
+## Published bundle
+
+Version: `2026.10.12-b1.1`
+
+Index digest: `sha256:730dd49c9b3c72615977204da4715bb46c828f5c92b962af155ee1099191b8c7`
+
+Source: [`4fd4d161efafea4f25da4839582e22d7e0a8ee91`](https://github.com/wstein/bundledock/commit/4fd4d161efafea4f25da4839582e22d7e0a8ee91)
+
+Publication: [run 38198677231, attempt 1](https://github.com/wstein/bundledock/actions/runs/38198677231/attempts/1)
+
+Pull this published carrier by its immutable index digest:
+
+```sh
+docker pull quay.io/bundledock/bun@sha256:730dd49c9b3c72615977204da4715bb46c828f5c92b962af155ee1099191b8c7
+```
+
+The source inventory below describes the current lock; this publication retains its exact source revision.
+<!-- END PUBLISHED BUNDLE -->
+
 <!-- BEGIN GENERATED TOOL INVENTORY -->
 | Tool | Pinned version |
 | --- | --- |

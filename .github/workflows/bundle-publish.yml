@@ -331,3 +331,36 @@ jobs:
           GIT_COMMITTER_NAME: github-actions[bot]
           GIT_COMMITTER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
         run: python3 -B scripts/bundle-git-tags.py --publication publication.json --bundle "$BUNDLE" --write
+
+  documentation:
+    if: >-
+      needs.promote.result == 'success' && needs.tag.result == 'success' &&
+      needs.resolve.outputs.publish == 'true'
+    needs: [preflight, resolve, promote, tag]
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ needs.preflight.outputs.sha }}
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ${{ inputs.bundle }}-publication-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/publication-docs-receipt
+      - name: Propose verified publication Markdown source and run source CI
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BUNDLE: ${{ inputs.bundle }}
+          REPOSITORY_URL: ${{ vars.REPOSITORY_URL }}
+          PUBLICATION_SHA: ${{ needs.preflight.outputs.sha }}
+        run: |
+          python3 -B scripts/publication-docs.py \
+            --receipt "$RUNNER_TEMP/publication-docs-receipt/publication.json" \
+            --bundle "$BUNDLE" --image "${REPOSITORY_URL%/}/$BUNDLE" \
+            --sha "$PUBLICATION_SHA" --run-id "$GITHUB_RUN_ID" \
+            --attempt "$GITHUB_RUN_ATTEMPT" --propose
