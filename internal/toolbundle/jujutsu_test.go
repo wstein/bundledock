@@ -47,7 +47,7 @@ func TestJujutsuArchiveInstallsBinaryAndExactLicense(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				data, err := os.ReadFile(filepath.Join(dst, "licenses", "jj", "LICENSE"))
+				data, err := readInstalledFile(t, dst, "licenses/jj/LICENSE")
 				if err != nil || string(data) != license {
 					t.Fatalf("full license not preserved: %v %q", err, data)
 				}

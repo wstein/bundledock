@@ -64,8 +64,8 @@ func TestQualityUtilitiesInstallExecutablesAndFullNotices(t *testing.T) {
 					notices = append(notices, filepath.Base(source))
 				}
 				for _, notice := range notices {
-					info, err := os.Stat(filepath.Join(dst, "licenses", name, notice))
-					if err != nil || info.Size() == 0 {
+					data, err := readInstalledFile(t, dst, "licenses/"+name+"/"+notice)
+					if err != nil || len(data) == 0 {
 						t.Fatalf("%s/%s: %v", name, notice, err)
 					}
 				}

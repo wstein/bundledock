@@ -53,8 +53,8 @@ func TestHugoOfficialArchives(t *testing.T) {
 			}
 			t.Logf("%s archive=%d binary=%d bytes", arch, archiveInfo.Size(), info.Size())
 			for _, notice := range []string{"LICENSE", "SOURCE"} {
-				info, err := os.Stat(filepath.Join(dst, "licenses", "hugo", notice))
-				if err != nil || info.Size() == 0 {
+				data, err := readInstalledFile(t, dst, "licenses/hugo/"+notice)
+				if err != nil || len(data) == 0 {
 					t.Fatalf("Hugo %s: %v", notice, err)
 				}
 			}
