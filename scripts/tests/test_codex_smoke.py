@@ -1,6 +1,7 @@
 """Source-only adapters: fake Docker records orchestration, never builds images."""
 import json
 import os
+import shlex
 from pathlib import Path
 import subprocess
 import tempfile
@@ -44,3 +45,54 @@ if sys.argv[1:3]==['volume','create']:print('fixture-volume')
                     self.assertIn('type=volume,src=fixture-volume,dst=/opt/bundledock/'+name+',readonly,volume-nocopy', call)
                     source = ROOT/'bundles'/name/'consumer-smoke.sh'
                     self.assertTrue(source.is_file())
+
+    def test_consumer_prepares_codex_home_before_invocation(self):
+        for existing_config in (False, True):
+            with self.subTest(existing_config=existing_config), tempfile.TemporaryDirectory() as directory:
+                directory = Path(directory)
+                home = directory / 'writable home'
+                home.mkdir()
+                codex_home = home / '.codex'
+                if existing_config:
+                    codex_home.mkdir()
+                    (codex_home / 'config.toml').write_text('model = "fixture-model"\n')
+                payload = directory / 'readonly payload'
+                for name in ('.ready', 'codex-package.json', 'bin/codex-code-mode-host',
+                             'codex-path/rg', 'codex-resources/bwrap', 'codex-resources/zsh/bin/zsh'):
+                    target = payload / name
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    target.write_text('fixture')
+                    target.chmod(0o555)
+                codex = payload / 'bin/codex'
+                codex.write_text('''#!/bin/sh
+set -eu
+[ "$CODEX_HOME" = "$HOME/.codex" ]
+[ -d "$CODEX_HOME" ] || { echo 'CODEX_HOME does not exist' >&2; exit 42; }
+printf '%s\\n' "$*" >> "$CODEX_HOME/calls"
+''')
+                codex.chmod(0o555)
+                # Model the read-only payload check without mounting a real image.
+                tools = directory / 'tools'
+                tools.mkdir()
+                touch = tools / 'touch'
+                touch.write_text('#!/bin/sh\nexit 1\n')
+                touch.chmod(0o755)
+                source = (ROOT / 'bundles/codex/consumer-smoke.sh').read_text()
+                self.assertEqual(source.count('root=/opt/bundledock/codex\n'), 1)
+                source = source.replace('root=/opt/bundledock/codex\n',
+                                        'root=' + shlex.quote(str(payload)) + '\n')
+                script = directory / 'consumer-smoke.sh'
+                script.write_text(source)
+                before = {str(p.relative_to(payload)): p.read_bytes()
+                          for p in payload.rglob('*') if p.is_file()}
+                env = dict(os.environ, HOME=str(home), PATH=str(tools)+':'+os.environ['PATH'])
+                result = subprocess.run(['sh', str(script)], env=env, capture_output=True, text=True)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual((codex_home / 'calls').read_text().splitlines(), [
+                    '--version', 'app-server daemon start', 'app-server daemon version',
+                    'app-server daemon stop', 'app-server daemon stop'])
+                if existing_config:
+                    self.assertEqual((codex_home / 'config.toml').read_text(), 'model = "fixture-model"\n')
+                after = {str(p.relative_to(payload)): p.read_bytes()
+                         for p in payload.rglob('*') if p.is_file()}
+                self.assertEqual(before, after)
