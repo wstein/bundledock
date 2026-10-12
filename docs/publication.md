@@ -8,74 +8,68 @@ weight: 40
 
 [Back to BundleDock](../README.md)
 
-[The publication workflow](../.github/workflows/bundledock-toolbox.yml) supports
-manual publication and a human approval request after a merged toolbox upgrade.
-For manual publication, use Actions → **Publish toolbox** → **Run workflow**,
-select default branch `main`, and enter the explicitly approved full
-40-character commit in `approved_sha`. That input must equal the run's
-`github.sha`. Other branches, bots and bot reruns are rejected before compilation.
-Each build job rechecks this approval. Manual dispatch keeps its existing fresh
-upstream resolution and does not require the environment described below.
+The four named **Publish toolbox**, **Publish code-server**, **Publish node** and
+**Publish bun** entrypoints call one shared publication workflow. Their existing
+names, filenames, bundle-specific native smoke checks and manual exact-SHA
+fallback remain. The four **Propose … upgrades** entrypoints call one shared
+source-only updater, retaining the daily 06:50 UTC schedule and manual dry-run
+default.
 
-After **CI** succeeds for a push to current `main`, read-only preflight accepts
-only a merged `github-actions[bot]` toolbox updater PR with an
-`automation/toolbox-upgrade-*` branch (including the previous
-`automation/tool-upgrade-*` prefix). Both the PR and actual merged commit must
-change only the toolbox lock and its optional generated `docs/tools.md`
-inventory, with different lock bytes from the merge's first parent. Failed CI,
-unmerged PRs, unrelated changes, missing provenance and stale main revisions
-are rejected. The request displays the exact SHA and links the merged PR.
+For an automatic upgrade, review the lock and generated inventory in the
+`github-actions[bot]` updater PR and approve its exact head as **wstein**. That
+single approval authorizes the remaining sequence without another intervention:
 
-Before this path can run, an administrator must configure the existing GitHub
-**toolbox-publication** environment with exactly one required reviewer, the
-user **wstein**, **Prevent self-review** disabled, administrator bypass disabled,
-and exactly one custom deployment branch policy: branch **main**. Allowing
-self-review lets the maintainer approve an update they merged; approval is still
-an explicit human action. No workflow creates or configures this environment.
-Missing protection, additional reviewers or teams, unavailable API access, or
-broader branch policies stop the request before any artifact compilation.
-Environment support and read-only API visibility depend on the repository's
-GitHub plan and permissions; a denied query fails closed.
+1. A read-only review validator accepts only the correct same-repository bot
+   branch, its own lock and inventory, and the latest non-dismissed exact-head
+   approval. Workflow code changes, renamed/deleted files and missing provenance
+   are rejected.
+2. A controller running trusted default-main code dispatches **CI** on that exact
+   updater branch. The full `expected_head_sha` must match the CI run before
+   `make check`. The successful required `check` must belong to GitHub Actions
+   and cover the approved head, rather than a synthetic review merge SHA.
+3. The controller revalidates approval, head and current-main ancestry, then
+   requests GitHub's protected rebase merge with an optimistic exact-head SHA.
+   It uses the existing strict required check, administrator enforcement and
+   linear-history protection; it does not bypass them or change settings.
+4. The merged tree must equal the approved head tree. The controller explicitly
+   dispatches source-only **CI** on the merged main SHA, because a merge using
+   `GITHUB_TOKEN` does not start ordinary push CI. Its completion permits only
+   the matching bundle publisher to copy the exact committed lock bytes.
+5. The publisher checks approval, tree equality and current main before artifact
+   compilers, native jobs and final registry promotion. Both native smoke checks
+   and existing baseline, artifact and registry gates must pass.
 
-In Actions, inspect **Approve toolbox <full SHA>**, follow its merged PR link,
-and explicitly approve the environment deployment to authorize the toolbox
-build and publication for that revision. The approval job rechecks provenance,
-current main, and environment protection. Every later compiler job rechecks
-them, and promotion checks again immediately before registry writes. If main
-moves while waiting or building, the old source cannot be promoted. The approved
-path copies the committed lock bytes without upstream discovery; all native
-jobs and promotion consume that one hashed artifact. A matching published tool
-baseline skips native builds and publication.
+A changed head or main advance stops this sequence and requires a new review;
+the controller does not rewrite an approved branch. The merge API leases the PR
+head, not target main. If target movement races a merge, approved/merged tree
+comparison prevents publication of unreviewed source. API failures, ambiguous
+pagination and missing required provenance fail closed. The existing
+`toolbox-publication` environment is unused by this path and is not changed or
+deleted. Source PRs and documentation PRs cannot enter this updater-only flow.
 
-These helper checks are provenance checks, not authorization on their own.
-The immutable reviewed workflow's dependency on GitHub's protected environment
-supplies approval; setting `PUBLICATION_SHA` or invoking a helper does not.
-Source fixtures verify rejection behavior and job dependency conditions. Live
-approval, native builds and publication remain unverified until a separately
-authorized configured run succeeds. Other bundle publishers remain manual-only.
+For manual publication, select **Run workflow** on default branch `main` and
+enter the explicitly approved full 40-character SHA in `approved_sha`. It must
+equal the immutable run SHA. Every build job retains the human actor and SHA
+gate. Manual dispatch authorizes fresh upstream resolution, both native builds
+and publication even when pins are unchanged. Automation must not impersonate a
+human to dispatch this path. Consumer image activation needs separate approval.
 
-A manual dispatch expresses approval for both native image builds/smokes and
-publication, including the fresh upstream resolution within the reviewed tool
-ranges. It is not approval to activate a consumer image. Automation must never
-invoke manual dispatch, including with a human-owned token. GitHub event context
-cannot distinguish a person's UI dispatch from automation using that person's
-credentials. Restrict workflow dispatch credentials and repository writers
-separately. The daily lock-only PR workflow stops at source review; the separate
-protected-environment approval authorizes later toolbox native builds.
+Automatic publication compares the frozen lock with the existing published
+baseline and skips native work when assets already match. Runs share a
+per-bundle concurrency group. Newer automatic requests supersede a publisher
+only after successful resolution reaches native work; queued or unapproved
+requests do not. Current-main revalidation separately rejects stale sources.
+Manual runs and unavailable API responses retain fail-closed newest-run checks.
+Reruns must revalidate the same approval and current source; use **Re-run all
+jobs** to produce artifacts for the current attempt.
 
-Publication runs share one concurrency group; an active run is allowed to finish.
-Before promotion, a read-only GitHub API check rejects a run superseded by a newer
-eligible run, including one whose native build failed. A newer run with successful
-resolution and skipped native jobs is a proven no-op and does not supersede an
-older changed publication. Newer automatic CI handoffs supersede only after
-successful resolution reaches native work: queued, rejected or unapproved
-requests supply no build authority. Current-main revalidation separately prevents
-older automatic sources from promoting after main moves. Unknown manual-run
-eligibility and unavailable API queries fail closed, with bounded queries for
-the exact run attempt. This prevents an old queued run or rerun
-from rolling stable back. Obtain explicit user approval before a fresh manual run or rerun. When rerunning,
-choose **Re-run all jobs** so the resolver creates current-attempt artifacts;
-that approval applies to the same original run SHA.
+The shared helper validates provenance; variables such as `PUBLICATION_SHA`
+are not approval evidence. Tests cover exact review/head/attempt/caller identity,
+synthetic merge rejection, required-check application identity, frozen lock
+bytes, stale-review writes and approved/merged tree equality. The automatic
+sequence remains unverified live until an explicitly authorized configured run
+succeeds. No workflow run, image build or publication was performed to author
+this source change.
 
 Set up the destination before the first publication:
 
