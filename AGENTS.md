@@ -26,7 +26,11 @@ approval. Existing environment settings remain untouched. Manual publication
 retains exact full-SHA human dispatch. Source PRs, documentation PRs, schedules,
 bot activity and local commits alone supply no artifact build approval.
 Tagging and publication must follow the explicitly authorized workflow scope;
-consumer activation remains a separate explicit authorization. Do not perform
+consumer activation remains a separate explicit authorization. Successful approved
+publication includes one annotated `<bundle>/<immutable-version>` source tag,
+after verification of the final index and image aliases. Never overwrite source
+tags or create moving Git aliases. Backfills require separate explicit approval
+and independently verified deployed-image/source/workflow provenance. Do not perform
 live merges, workflow runs, builds or settings changes while authoring source.
 
 Third-party tools must use official stable prebuilt releases. Never build them
