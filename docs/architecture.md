@@ -63,7 +63,7 @@ Follow the [quick start](../README.md#quick-start) to mount the printed volume.
 Bundle roots use `/opt/bundledock/<bundle-name>`. For example, mount the
 `toolbox` read-only at `/opt/bundledock/toolbox` and put
 `/opt/bundledock/toolbox/bin` on PATH. The optional [code-server](code-server.md),
-[Node.js](node.md) and [Bun](bun.md) bundles use sibling roots and separate
+[Node.js](node.md), [Bun](bun.md), [Codex](codex.md), [Antigravity](agy.md) and [Claude](claude.md) bundles use sibling roots and separate
 volumes. Each bundle keeps its own metadata, assets and licenses inside its root.
 The builder accepts `--destination` for another root. Bundle metadata and packaged
 assets use relative paths, so an existing image-derived volume can be mounted there
@@ -85,7 +85,7 @@ Other images must supply compatible system libraries, Git, and CA certificates;
 mounting this volume does not install those dependencies. Override `IMAGE`
 or `CONSUMER` when invoking Make to select another image or test consumer.
 The shared `bundle-build`, `bundle-smoke` and `bundle-volume` targets accept
-`BUNDLE=toolbox|code-server|node|bun` (default `toolbox`). Each bundle uses its own
+`BUNDLE=toolbox|code-server|node|bun|codex|agy|claude` (default `toolbox`). Each bundle uses its own
 Dockerfile and smoke script; volume initialization uses the resolved immutable
 image ID and preserves the `bundledock-<bundle>-<digest>` naming convention.
 
