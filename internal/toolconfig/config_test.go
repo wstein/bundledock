@@ -23,7 +23,7 @@ func TestDesiredBoundedStableVersions(t *testing.T) {
 			t.Errorf("%s %s: %v", tc.name, tc.version, got)
 		}
 	}
-	for _, input := range []string{"gh>=2.0.0", "gh<3.0.0", "gh>=3.0.0,<2.0.0", "gh~=2.0", "gh==v2.0.0", "gh==02.0.0", "gh==2.0.0\ngh==2.0.0", "gh>=2.0.0, <3.0.0, ==2.1.0", "gh==2.0.0 extra", "gh==2.0.0-beta"} {
+	for _, input := range []string{"gh<3.0.0", "gh>=3.0.0,<2.0.0", "gh~=2.0", "gh==v2.0.0", "gh==02.0.0", "gh==2.0.0\ngh==2.0.0", "gh>=2.0.0, <3.0.0, ==2.1.0", "gh==2.0.0 extra", "gh==2.0.0-beta"} {
 		if _, err := ParseDesired(strings.NewReader(input)); err == nil {
 			t.Errorf("accepted %q", input)
 		}
