@@ -33,7 +33,7 @@ The source inventory below describes the current lock; this publication retains 
 
 The default bundle lives in `bundles/toolbox/`: `packages.txt`,
 `packages.catalog.json`, `packages.lock.json`, its Dockerfile, smoke scripts and licenses.
-Shared Go code remains at the repository root. The source toolbox contains 32
+Shared Go code remains at the repository root. The source toolbox contains 33
 common tools. Codex, Antigravity and Claude are supplied by their separate
 [Codex](codex.md), [Antigravity](agy.md) and [Claude Code](claude.md) bundles.
 The published toolbox recorded above still includes those agents; this source
@@ -61,6 +61,7 @@ and `arm64`; builds verify every download.
 | Hugo (`hugo`, standard) | 0.167.0 |
 | hyperfine (`hyperfine`) | 2.0.0 |
 | jq | 1.8.2 |
+| Jujutsu (`jj`) | 0.46.0 |
 | just (`just`) | 1.58.0 |
 | lychee (`lychee`) | 0.24.2 |
 | Mike Farah yq (`yq`) | 4.54.1 |
@@ -296,6 +297,28 @@ completion directory. regctl assets are raw executables. These recipes retain
 the existing extractor's rejection of archive links. Source tests use synthetic
 artifacts and smoke stubs. Native execution, OCI builds/smoke, vulnerability scans
 and consumer activation remain unverified pending separate approval.
+
+## Jujutsu version control
+
+The source toolbox includes [Jujutsu (`jj`) 0.46.0](https://github.com/jj-vcs/jj/releases/tag/v0.46.0)
+from the official Linux AMD64 and ARM64 musl prebuilts. `jj` provides a Git-backed
+version control interface. BundleDock installs `bin/jj` and the full upstream
+Apache-2.0 license; it does not initialize or migrate consumer repositories or
+edit user configuration. Keep repository state and user configuration in writable
+locations outside the toolbox mount. See the [upstream tutorial](https://docs.jj-vcs.dev/latest/tutorial/)
+for an introduction.
+
+Both archives were downloaded and SHA256 checked against official release API
+digests on 2026-10-12. They contain `jj`, `LICENSE` and `README.md`, with no
+separate runtime tree. Source tests cover stable release resolution, both
+architecture recipes, checksum rejection and exact license retention. The
+consumer smoke creates a private temporary Git-backed repository, runs `jj new`
+and checks its description through `jj log`; inherited Git selectors and Jujutsu
+configuration are cleared before tool execution. Source tests exercise this
+smoke with synthetic Jujutsu commands and an isolated Git fixture. No upstream
+Jujutsu binary was executed during source verification. Native AMD64/ARM64
+execution and OCI build/smoke remain unverified until separately authorized;
+the pinned consumer image does not acquire Jujutsu from this source change.
 
 ## Shell, recipe, Python and file utilities
 
