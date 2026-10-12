@@ -63,13 +63,14 @@ class PublicationDocsTest(unittest.TestCase):
                 source = (repository / relative).read_bytes()
                 path.write_bytes(source)
                 receipt = json.loads(json.dumps(self.receipt))
-                receipt.update(image='quay.io/bundledock/' + bundle,
+                receipt.update(bundle=bundle, image='quay.io/bundledock/' + self.module._CONFIG.select_bundle(bundle)['repository'],
                                tag='2099.01.01-b1.1' if bundle == 'toolbox' else '999.0.0-b1',
                                run_attempt='1')
                 receipt['reference'] = receipt['image'] + '@' + receipt['digest']
                 for platform in receipt['platforms']:
                     platform.update({key: receipt[key] for key in self.module.FIELDS})
                     platform['run_attempt'] = '1'
+                    platform['bundle'] = bundle
                 record = self.module.validate(receipt, bundle, receipt['image'], 'a'*40, '123', '1')
                 self.assertTrue(self.module.update(root, bundle, record))
                 prefix, managed = source.decode().split(self.module.BEGIN)

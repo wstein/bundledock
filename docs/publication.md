@@ -307,3 +307,26 @@ The optional [Node Current carrier](node-current.md) is planned and unpublished.
 Its first publication requires separate exact-revision build/publication approval;
 an updater approval cannot bootstrap an absent baseline. Existing Node LTS pins
 and consumer activation remain unchanged.
+
+### Shared Node repository
+
+`node` and `node-current` are canonical source identities sharing the output
+repository `quay.io/bundledock/node`. Their publication workflows serialize on
+that repository without cancellation. Their newest-run guards retain separate
+source workflow identities. Both source tag namespaces reserve packaging
+revisions alongside the complete authenticated OCI tag listing; existing
+immutable tags are never replaced.
+
+LTS updates only `stable`, `lts`, and `latest`; Current updates only `current`.
+Promotion and subsequent source tagging verify that channel's aliases. New
+receipts and OCI configs bind the canonical source bundle explicitly; historical
+LTS date-tag receipts remain readable. A Current receipt without source identity
+is rejected. Alias updates are sequential and cannot roll back an earlier alias
+if a later write fails; a successful receipt requires every selected alias to
+resolve to the tested immutable index.
+
+The README Node badges identify channels and link to their verified publication
+records. They intentionally do not select the first version tag from the shared
+repository, which can belong to either channel. The managed guide is the source
+of the verified version and digest. Current remains unpublished until a separately
+approved exact-revision build and publication succeeds.

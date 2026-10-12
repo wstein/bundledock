@@ -6,11 +6,17 @@ continues to supply Node.js 24 LTS with its existing catalog, lock, image,
 volume and consumer configuration.
 
 <!-- BEGIN PUBLISHED BUNDLE -->
+## Published bundle
+
 **Planned, unpublished:** no Node Current image or publication receipt has
 been verified. First publication requires separate explicit approval of the
 exact full source revision and intended build/publication operation. No Quay
 repository setup, image build, workflow dispatch, source tag or consumer
 activation is part of this source change.
+
+The shared [Node repository](https://quay.io/repository/bundledock/node?tab=tags)
+will expose `:current` only after a separately approved publication. Its LTS
+aliases do not establish a Current publication.
 <!-- END PUBLISHED BUNDLE -->
 
 <!-- BEGIN GENERATED TOOL INVENTORY -->
@@ -62,11 +68,14 @@ bundle's lock alone, using canonical tool ID `node`. The thin
 06:50 UTC and supports manual dry runs. It never builds or dispatches publication.
 
 `bundledock-node-current.yml` calls the existing shared publication workflow
-with separate workflow, image (`quay.io/bundledock/node-current`), artifacts,
-volume and source tag identity. An absent published baseline stops automatic
+with its own workflow, artifacts, volume and source tag identity. Both Node
+channels publish to `quay.io/bundledock/node`. Current promotion updates only
+`:current`; LTS promotion updates `:lts`, `:latest` and the backward compatible
+`:stable`. An unqualified Node pull therefore follows LTS. An absent published baseline stops automatic
 updater publication; only separately authorized exact-SHA manual dispatch can
 bootstrap publication. After an established published baseline, the normal
 [exact-head updater approval flow](publication.md) applies. Version tags use
-`26.11.1-bN`, with registry-allocated packaging revisions, and successful approved
+`26.11.1-bN`, with packaging revisions allocated across the complete shared registry tag list
+and both `node/*` and `node-current/*` source tag namespaces, and successful approved
 publication creates `node-current/<immutable-version>`. No image digest, tag or
 successful workflow run is claimed here.
