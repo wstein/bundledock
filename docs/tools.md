@@ -22,7 +22,7 @@ and `arm64`; builds verify every download.
 | --- | --- |
 | Codex | 0.162.1 |
 | Claude Code | 2.1.296 |
-| Antigravity | 1.3.2 |
+| Antigravity | 1.3.3 |
 | GitHub CLI | 2.102.0 |
 | jq | 1.8.2 |
 | ripgrep (`rg`) | 15.2.0 |
