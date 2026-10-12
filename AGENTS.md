@@ -72,6 +72,7 @@ still pins an older image, so do not assume these commands exist in a running se
 | GitHub workflows | `gh`. |
 | Work with Jujutsu repositories | `jj`. |
 | Browse Git repositories interactively | `lazygit`. |
+| Manage Git large file storage | `git-lfs` (opt-in repository setup). |
 | Manage terminal workspaces and agent sessions | `herdr`. |
 | Use the preferred interactive shell | `fish`. |
 | Use an alternative structured shell | `nu` (Nushell). |

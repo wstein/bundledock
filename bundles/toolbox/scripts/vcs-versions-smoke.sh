@@ -11,4 +11,7 @@ env -i PATH="$PATH" HOME="$work/home" XDG_CONFIG_HOME="$work/config" \
         version=$(lazygit --version)
         printf "%s\n" "$version"
         case "$version" in *version=[0-9]*) ;; *) exit 1 ;; esac
+        version=$(git-lfs version)
+        printf "%s\n" "$version"
+        case "$version" in git-lfs/[0-9]*) ;; *) exit 1 ;; esac
     ' sh "$work"
