@@ -37,8 +37,15 @@ tags or create moving Git aliases. Backfills require separate explicit approval
 and independently verified deployed-image/source/workflow provenance. Do not perform
 live merges, workflow runs, builds or settings changes while authoring source.
 
-Third-party tools must use official stable prebuilt releases. Never build them
-from source or silently patch their binaries or embedded dependencies. If a
+Third-party tools must use official stable prebuilt releases, except for the
+explicitly user-authorized git-trim v0.4.3 source recipe documented in
+[git-trim source exception](docs/toolbox.md#git-trim-source-exception). That
+exception is limited to upstream commit
+`65288617a637029573a5c3517abcb95b050ea02b`, its unchanged Cargo.lock and the fixed
+digest-pinned Rust recipe on Linux AMD64 and ARM64. New versions or recipe changes
+require source review; build approval still requires the exact BundleDock source
+revision and intended operation. Never build other third-party tools from source
+or silently patch any tool binary or embedded dependency. If a
 security fix is not yet available in an official stable prebuilt release, wait
 for that release and record the remaining findings in existing documentation.
 This does not restrict compiling BundleDock's own CLI, builder, or initializer.
@@ -70,6 +77,7 @@ still pins an older image, so do not assume these commands exist in a running se
 | Process structured data | `jq` for JSON; `yq` for YAML. |
 | Manage Python environments and run Python tools | `uv` and `uvx`. |
 | GitHub workflows | `gh`. |
+| Inspect Git branch cleanup plans | `git-trim` (start with `git trim --dry-run --no-update`). |
 | Work with Jujutsu repositories | `jj`. |
 | Browse Git repositories interactively | `lazygit`. |
 | Manage Git large file storage | `git-lfs` (opt-in repository setup). |

@@ -57,8 +57,10 @@ unavailable checks. Historical native smoke results do not verify a new lock.
 
 ## Tools, security, and licensing
 
-Third-party tools must use official stable prebuilt releases. Do not build them
-from source or patch their binaries or embedded dependencies. Follow the
+Third-party tools must use official stable prebuilt releases, with the single
+user-authorized [git-trim v0.4.3 source exception](docs/toolbox.md#git-trim-source-exception)
+defined in [AGENTS.md](AGENTS.md). Do not build other tools from source or patch
+any tool binary or embedded dependency. Follow the
 [tool upgrade guide](docs/toolbox.md#upgrade-the-lock), retain upstream notices,
 and verify archives on both supported architectures. When no patched stable
 prebuilt is available, record the remaining findings in existing documentation;
