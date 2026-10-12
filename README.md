@@ -69,7 +69,7 @@ The bundle pins 24 tools, with these companion commands:
 | Static sites | [Hugo (standard)](https://github.com/gohugoio/hugo) |
 | Process monitoring | [bottom (`btm`)](https://github.com/ClementTsang/bottom), [btop](https://github.com/aristocratos/btop) |
 
-See [pinned versions and upgrades](docs/tools.md). Codex includes its native
+See [pinned versions and upgrades](docs/toolbox.md). Codex includes its native
 helpers; optional voice resources are omitted.
 
 ## Contributing
@@ -83,7 +83,7 @@ Browse the [documentation site](https://wstein.github.io/bundledock/) or read th
 Markdown sources in this repository:
 
 - [CLI and quick start](https://wstein.github.io/bundledock/cli/) ([source](README.md)): build the toolbox and use its shared volume.
-- [Tool catalog and upgrades](https://wstein.github.io/bundledock/guides/tools/) ([source](docs/tools.md)): pinned versions and lock updates.
+- [Tool catalog and upgrades](https://wstein.github.io/bundledock/guides/toolbox/) ([source](docs/toolbox.md)): pinned versions and lock updates.
 - [Architecture](https://wstein.github.io/bundledock/guides/architecture/) ([source](docs/architecture.md)): shared volumes, rollback, and consumer requirements.
 - [Development and verification](https://wstein.github.io/bundledock/guides/development/) ([source](docs/development.md)): CLI commands, checks, and recorded coverage.
 - [Publication](https://wstein.github.io/bundledock/guides/publication/) ([source](docs/publication.md)): Quay setup and manual approval of an exact `main` SHA.

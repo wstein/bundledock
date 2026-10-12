@@ -32,7 +32,7 @@ disableKinds = ['taxonomy', 'term', 'RSS']
 [[module.mounts]]
   source = 'docs'
   target = 'content/guides'
-  files = ['architecture.md', 'development.md', 'publication.md', 'tools.md']
+  files = ['architecture.md', 'development.md', 'publication.md', 'toolbox.md']
 [[module.mounts]]
   source = 'site/layouts'
   target = 'layouts'

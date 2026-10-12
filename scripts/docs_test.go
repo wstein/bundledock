@@ -38,7 +38,7 @@ func TestDocsBuild(t *testing.T) {
 	for page, text := range map[string]string{
 		"index.html":                     "Build once. Share your tools.",
 		"cli/index.html":                 "Quick start",
-		"guides/tools/index.html":        "gh==2.102.0",
+		"guides/toolbox/index.html":        "gh==2.102.0",
 		"guides/architecture/index.html": "Consumer compatibility and build layout",
 		"guides/publication/index.html":  "REPOSITORY_USERNAME",
 		"guides/development/index.html":  "Verification evidence",

@@ -82,7 +82,7 @@ func TestHugoOfficialArchives(t *testing.T) {
 			if data, err := docs.CombinedOutput(); err != nil {
 				t.Fatalf("current BundleDock docs build: %v: %s", err, data)
 			}
-			for page, text := range map[string]string{"index.html": "Build once. Share your tools.", "guides/tools/index.html": "Hugo", "guides/development/index.html": "Verification evidence"} {
+			for page, text := range map[string]string{"index.html": "Build once. Share your tools.", "guides/toolbox/index.html": "Hugo", "guides/development/index.html": "Verification evidence"} {
 				data, err := os.ReadFile(filepath.Join(output, page))
 				if err != nil || !strings.Contains(string(data), text) {
 					t.Fatalf("rendered %s missing %q: %v", page, text, err)

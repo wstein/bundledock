@@ -50,7 +50,7 @@ func fixture(t *testing.T) (string, []string) {
 	if err := os.MkdirAll(filepath.Join(dir, "bundles/toolbox"), 0755); err != nil {
 		t.Fatal(err)
 	}
-	for _, name := range []string{"bundles/toolbox/tools.lock.json", "bundles/toolbox/tools.packages.json", "docs/tools.md", "scripts/tool-inventory.py", "bundles/code-server/tools.txt", "bundles/code-server/tools.lock.json", "bundles/code-server/tools.packages.json", "docs/code-server.md", "bundles/node/tools.txt", "bundles/node/tools.lock.json", "bundles/node/tools.packages.json", "docs/node.md", "bundles/bun/tools.txt", "bundles/bun/tools.lock.json", "bundles/bun/tools.packages.json", "docs/bun.md"} {
+	for _, name := range []string{"bundles/toolbox/tools.lock.json", "bundles/toolbox/tools.packages.json", "docs/toolbox.md", "scripts/tool-inventory.py", "bundles/code-server/tools.txt", "bundles/code-server/tools.lock.json", "bundles/code-server/tools.packages.json", "docs/code-server.md", "bundles/node/tools.txt", "bundles/node/tools.lock.json", "bundles/node/tools.packages.json", "docs/node.md", "bundles/bun/tools.txt", "bundles/bun/tools.lock.json", "bundles/bun/tools.packages.json", "docs/bun.md"} {
 		data, err := os.ReadFile(filepath.Join(root, name))
 		if err != nil {
 			t.Fatal(err)
@@ -128,7 +128,7 @@ func TestResolveAndPublish(t *testing.T) {
 	if !strings.Contains(string(result), `"version": "v2.103.0"`) {
 		t.Fatalf("result %s", result)
 	}
-	must(t, dir, nil, "git", "restore", "bundles/toolbox/tools.lock.json", "docs/tools.md")
+	must(t, dir, nil, "git", "restore", "bundles/toolbox/tools.lock.json", "docs/toolbox.md")
 	remote := filepath.Join(t.TempDir(), "remote.git")
 	must(t, dir, nil, "git", "init", "--bare", remote)
 	must(t, dir, nil, "git", "remote", "add", "origin", remote)
@@ -140,7 +140,7 @@ func TestResolveAndPublish(t *testing.T) {
 	if !strings.Contains(got, `"version": "v2.103.0"`) {
 		t.Fatal(got)
 	}
-	inventory := must(t, dir, nil, "git", "show", "HEAD:docs/tools.md")
+	inventory := must(t, dir, nil, "git", "show", "HEAD:docs/toolbox.md")
 	if !strings.Contains(inventory, "| GitHub CLI | 2.103.0 |") {
 		t.Fatal("PR inventory missing updated version")
 	}
@@ -202,7 +202,7 @@ func TestDeniedPRExplainsPrerequisite(t *testing.T) {
 	if err != nil {
 		t.Fatalf("%v %s", err, out)
 	}
-	must(t, dir, nil, "git", "restore", "bundles/toolbox/tools.lock.json", "docs/tools.md")
+	must(t, dir, nil, "git", "restore", "bundles/toolbox/tools.lock.json", "docs/toolbox.md")
 	remote := filepath.Join(t.TempDir(), "remote.git")
 	must(t, dir, nil, "git", "init", "--bare", remote)
 	must(t, dir, nil, "git", "remote", "add", "origin", remote)
@@ -247,13 +247,13 @@ func TestWorkflowManualLeastPrivilege(t *testing.T) {
 
 func TestDocsOnlyDriftRepair(t *testing.T) {
 	dir, env := fixture(t)
-	path := filepath.Join(dir, "docs/tools.md")
+	path := filepath.Join(dir, "docs/toolbox.md")
 	b, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatal(err)
 	}
 	write(t, path, strings.Replace(string(b), "| GitHub CLI | 2.102.0 |", "| GitHub CLI | 0.0.0 |", 1))
-	must(t, dir, nil, "git", "add", "docs/tools.md")
+	must(t, dir, nil, "git", "add", "docs/toolbox.md")
 	must(t, dir, nil, "git", "commit", "-m", "stale inventory fixture")
 	out, err := adapter(t, dir, append(env, "NO_CHANGE=true"), "resolve")
 	if err != nil {
@@ -266,7 +266,7 @@ func TestDocsOnlyDriftRepair(t *testing.T) {
 	if !strings.Contains(string(outputs), "changed=true") {
 		t.Fatalf("docs drift ignored: %s", outputs)
 	}
-	must(t, dir, nil, "git", "restore", "docs/tools.md")
+	must(t, dir, nil, "git", "restore", "docs/toolbox.md")
 	remote := filepath.Join(t.TempDir(), "remote.git")
 	must(t, dir, nil, "git", "init", "--bare", remote)
 	must(t, dir, nil, "git", "remote", "add", "origin", remote)
@@ -275,7 +275,7 @@ func TestDocsOnlyDriftRepair(t *testing.T) {
 		t.Fatalf("publish: %v %s", err, out)
 	}
 	names := must(t, dir, nil, "git", "diff-tree", "--no-commit-id", "--name-only", "-r", "HEAD")
-	if names != "docs/tools.md\n" {
+	if names != "docs/toolbox.md\n" {
 		t.Fatalf("docs-only repair changed %s", names)
 	}
 }
@@ -291,7 +291,7 @@ func TestPublisherRejectsUnrelatedDocumentation(t *testing.T) {
 		t.Fatal(err)
 	}
 	write(t, artifact, string(b)+"\nUnexpected unrelated prose edit.\n")
-	must(t, dir, nil, "git", "restore", "bundles/toolbox/tools.lock.json", "docs/tools.md")
+	must(t, dir, nil, "git", "restore", "bundles/toolbox/tools.lock.json", "docs/toolbox.md")
 	out, err = adapter(t, dir, env, "publish")
 	if err == nil || !strings.Contains(out, "generated inventory") {
 		t.Fatalf("unrelated documentation accepted: %v %s", err, out)
@@ -325,7 +325,7 @@ func TestWorkflowDailyAndManualWriteGates(t *testing.T) {
 }
 func TestPublisherNoChangeCreatesNothing(t *testing.T) {
 	dir, env := fixture(t)
-	for _, pair := range [][2]string{{"bundles/toolbox/tools.lock.json", "toolbox.lock.json"}, {"docs/tools.md", "toolbox.md"}} {
+	for _, pair := range [][2]string{{"bundles/toolbox/tools.lock.json", "toolbox.lock.json"}, {"docs/toolbox.md", "toolbox.md"}} {
 		data, err := os.ReadFile(filepath.Join(dir, pair[0]))
 		if err != nil {
 			t.Fatal(err)
@@ -352,7 +352,7 @@ func TestCodeServerResolveUsesIndependentInputsAndInventory(t *testing.T) {
 	if err != nil {
 		t.Fatalf("code-server resolve: %v %s", err, out)
 	}
-	if got := must(t, dir, nil, "git", "diff", "--", "bundles/toolbox/tools.lock.json", "docs/tools.md"); got != "" {
+	if got := must(t, dir, nil, "git", "diff", "--", "bundles/toolbox/tools.lock.json", "docs/toolbox.md"); got != "" {
 		t.Fatal("code-server changed toolbox: " + got)
 	}
 	if got := must(t, dir, nil, "git", "show", "HEAD:bundles/toolbox/tools.lock.json"); got != before {
@@ -436,7 +436,7 @@ func TestNodeResolveUsesIndependentInputsAndInventory(t *testing.T) {
 	if err != nil {
 		t.Fatalf("node resolve: %v %s", err, out)
 	}
-	if got := must(t, dir, nil, "git", "diff", "--", "bundles/toolbox/tools.lock.json", "docs/tools.md"); got != "" {
+	if got := must(t, dir, nil, "git", "diff", "--", "bundles/toolbox/tools.lock.json", "docs/toolbox.md"); got != "" {
 		t.Fatal("node changed toolbox: " + got)
 	}
 	if got := must(t, dir, nil, "git", "show", "HEAD:bundles/toolbox/tools.lock.json"); got != before {
@@ -520,7 +520,7 @@ func TestBunResolveUsesIndependentInputsAndInventory(t *testing.T) {
 	if err != nil {
 		t.Fatalf("bun resolve: %v %s", err, out)
 	}
-	if got := must(t, dir, nil, "git", "diff", "--", "bundles/toolbox/tools.lock.json", "docs/tools.md"); got != "" {
+	if got := must(t, dir, nil, "git", "diff", "--", "bundles/toolbox/tools.lock.json", "docs/toolbox.md"); got != "" {
 		t.Fatal("bun changed toolbox: " + got)
 	}
 	if got := must(t, dir, nil, "git", "show", "HEAD:bundles/toolbox/tools.lock.json"); got != before {

@@ -11,7 +11,7 @@ publish, or activate an image. It summarizes the repository state inspected on
 2026-10-10 at `731c6fdb4b0da3b2c5c8a55b47a84dc8877aceb0`, plus the contribution
 and review templates introduced with this note. Later changes need their own
 verification; the authoritative tool inventory is the
-[catalog and lock](tools.md), not a count in these notes.
+[catalog and lock](toolbox.md), not a count in these notes.
 
 ## Draft release notes
 

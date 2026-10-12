@@ -13,7 +13,7 @@ locks=() inventories=() artifacts=()
 for bundle in "${bundles[@]}"; do
   locks+=("bundles/$bundle/tools.lock.json")
   if [[ $bundle == toolbox ]]; then
-    inventories+=(docs/tools.md)
+    inventories+=(docs/toolbox.md)
     artifacts+=(toolbox.lock.json toolbox.md)
   else
     inventories+=("docs/$bundle.md")
