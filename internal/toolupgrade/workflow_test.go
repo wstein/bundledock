@@ -50,7 +50,7 @@ func fixture(t *testing.T) (string, []string) {
 	if err := os.MkdirAll(filepath.Join(dir, "bundles/toolbox"), 0755); err != nil {
 		t.Fatal(err)
 	}
-	for _, name := range []string{"bundles/toolbox/tools.lock.json", "bundles/toolbox/tools.packages.json", "docs/tools.md", "scripts/tool-inventory.py", "bundles/code-server/tools.txt", "bundles/code-server/tools.lock.json", "bundles/code-server/tools.packages.json", "docs/code-server.md", "bundles/node/tools.txt", "bundles/node/tools.lock.json", "bundles/node/tools.packages.json", "docs/node.md"} {
+	for _, name := range []string{"bundles/toolbox/tools.lock.json", "bundles/toolbox/tools.packages.json", "docs/tools.md", "scripts/tool-inventory.py", "bundles/code-server/tools.txt", "bundles/code-server/tools.lock.json", "bundles/code-server/tools.packages.json", "docs/code-server.md", "bundles/node/tools.txt", "bundles/node/tools.lock.json", "bundles/node/tools.packages.json", "docs/node.md", "bundles/bun/tools.txt", "bundles/bun/tools.lock.json", "bundles/bun/tools.packages.json", "docs/bun.md"} {
 		data, err := os.ReadFile(filepath.Join(root, name))
 		if err != nil {
 			t.Fatal(err)
@@ -68,9 +68,9 @@ func fixture(t *testing.T) (string, []string) {
 	write(t, filepath.Join(fake, "go"), `#!/bin/sh
 set -eu
 printf '%s\n' "$*" >> "$CALLS"
-case "$*" in 'run ./cmd/bundledock tools upgrade gh'|'run ./cmd/bundledock tools upgrade'|'run ./cmd/bundledock tools upgrade code-server --directory bundles/code-server'|'run ./cmd/bundledock tools upgrade --directory bundles/code-server'|'run ./cmd/tools-publish validate --bundle code-server'|'run ./cmd/bundledock tools upgrade node --directory bundles/node'|'run ./cmd/bundledock tools upgrade --directory bundles/node'|'run ./cmd/tools-publish validate --bundle node') ;; *) exit 41 ;; esac
-case "$*" in 'run ./cmd/tools-publish validate --bundle code-server'|'run ./cmd/tools-publish validate --bundle node') exit 0 ;; esac
-case "$*" in *'--directory bundles/node') export RESOLVED_BUNDLE=node ;; *'--directory bundles/code-server') export RESOLVED_BUNDLE=code-server ;; *) export RESOLVED_BUNDLE=toolbox ;; esac
+case "$*" in 'run ./cmd/bundledock tools upgrade gh'|'run ./cmd/bundledock tools upgrade'|'run ./cmd/bundledock tools upgrade code-server --directory bundles/code-server'|'run ./cmd/bundledock tools upgrade --directory bundles/code-server'|'run ./cmd/tools-publish validate --bundle code-server'|'run ./cmd/bundledock tools upgrade node --directory bundles/node'|'run ./cmd/bundledock tools upgrade --directory bundles/node'|'run ./cmd/tools-publish validate --bundle node'|'run ./cmd/bundledock tools upgrade bun --directory bundles/bun'|'run ./cmd/bundledock tools upgrade --directory bundles/bun'|'run ./cmd/tools-publish validate --bundle bun') ;; *) exit 41 ;; esac
+case "$*" in 'run ./cmd/tools-publish validate --bundle code-server'|'run ./cmd/tools-publish validate --bundle node'|'run ./cmd/tools-publish validate --bundle bun') exit 0 ;; esac
+case "$*" in *'--directory bundles/bun') export RESOLVED_BUNDLE=bun ;; *'--directory bundles/node') export RESOLVED_BUNDLE=node ;; *'--directory bundles/code-server') export RESOLVED_BUNDLE=code-server ;; *) export RESOLVED_BUNDLE=toolbox ;; esac
 if [ "${FAIL_RESOLVER:-false}" = true ]; then exit 42; fi
 if [ "${NO_CHANGE:-false}" != true ]; then
 python3 - <<'PYTHON'
@@ -80,7 +80,7 @@ bundle=os.environ['RESOLVED_BUNDLE']
 p=Path('bundles')/bundle/'tools.lock.json'
 lock=json.loads(p.read_text())
 if os.environ.get('NO_CHANGE_'+bundle.upper().replace('-','_'))!='true':
- for arch in ('amd64','arm64'): lock['platforms'][arch]['gh' if bundle=='toolbox' else bundle]['version']={'code-server':'v4.142.0','node':'v24.22.0','toolbox':'v2.103.0'}[bundle]
+ for arch in ('amd64','arm64'): lock['platforms'][arch]['gh' if bundle=='toolbox' else bundle]['version']={'code-server':'v4.142.0','node':'v24.22.0','toolbox':'v2.103.0','bun':'bun-v1.4.4'}[bundle]
 p.write_text(json.dumps(lock,indent=2)+'\n')
 PYTHON
 fi
@@ -490,6 +490,90 @@ func TestNodeNoChangeCreatesNoProposal(t *testing.T) {
 		t.Fatalf("outputs %v %s", err, b)
 	}
 	if _, err := os.Stat(filepath.Join(value(env, "UPGRADE_RESULT"), "node.lock.json")); !os.IsNotExist(err) {
+		t.Fatal("no-op emitted proposal")
+	}
+}
+
+func TestBunResolveUsesIndependentInputsAndInventory(t *testing.T) {
+	dir, env := fixture(t)
+	env = append(env, "BUNDLE=bun", "TOOL=bun")
+	before := must(t, dir, nil, "git", "show", "HEAD:bundles/toolbox/tools.lock.json")
+	out, err := adapter(t, dir, env, "resolve")
+	if err != nil {
+		t.Fatalf("bun resolve: %v %s", err, out)
+	}
+	if got := must(t, dir, nil, "git", "diff", "--", "bundles/toolbox/tools.lock.json", "docs/tools.md"); got != "" {
+		t.Fatal("bun changed toolbox: " + got)
+	}
+	if got := must(t, dir, nil, "git", "show", "HEAD:bundles/toolbox/tools.lock.json"); got != before {
+		t.Fatal("changed baseline")
+	}
+	for name, want := range map[string]string{"bun.lock.json": "bun-v1.4.4", "bun.md": "| bun | 1.4.4 |"} {
+		b, err := os.ReadFile(filepath.Join(value(env, "UPGRADE_RESULT"), name))
+		if err != nil || !strings.Contains(string(b), want) {
+			t.Fatalf("artifact %s: %v %s", name, err, b)
+		}
+	}
+}
+
+func TestBunArtifactFailuresStopBeforeTopicCreation(t *testing.T) {
+	for _, kind := range []string{"stale base", "extra artifact", "linked artifact", "prose edit", "wrong architecture"} {
+		t.Run(kind, func(t *testing.T) {
+			dir, env := fixture(t)
+			env = append(env, "BUNDLE=bun", "TOOL=bun")
+			if out, err := adapter(t, dir, env, "resolve"); err != nil {
+				t.Fatalf("%v %s", err, out)
+			}
+			result := value(env, "UPGRADE_RESULT")
+			switch kind {
+			case "stale base":
+				write(t, filepath.Join(result, "base.sha"), strings.Repeat("a", 40)+"\n")
+			case "extra artifact":
+				write(t, filepath.Join(result, "other.lock.json"), "unexpected")
+			case "linked artifact":
+				p := filepath.Join(result, "bun.lock.json")
+				if err := os.Rename(p, p+".saved"); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.Symlink(p+".saved", p); err != nil {
+					t.Fatal(err)
+				}
+			case "prose edit":
+				p := filepath.Join(result, "bun.md")
+				b, err := os.ReadFile(p)
+				if err != nil {
+					t.Fatal(err)
+				}
+				write(t, p, string(b)+"unrelated prose\n")
+			case "wrong architecture":
+				p := filepath.Join(result, "bun.lock.json")
+				b, err := os.ReadFile(p)
+				if err != nil {
+					t.Fatal(err)
+				}
+				write(t, p, strings.Replace(string(b), "bun-v1.4.4", "bun-v1.4.5", 1))
+			}
+			must(t, dir, nil, "git", "restore", "bundles/bun/tools.lock.json", "docs/bun.md")
+			if out, err := adapter(t, dir, env, "publish"); err == nil {
+				t.Fatalf("accepted %s: %s", kind, out)
+			}
+			if branch := must(t, dir, nil, "git", "branch", "--show-current"); branch != "main\n" {
+				t.Fatal("created topic before rejection")
+			}
+		})
+	}
+}
+func TestBunNoChangeCreatesNoProposal(t *testing.T) {
+	dir, env := fixture(t)
+	env = append(env, "BUNDLE=bun", "TOOL=", "NO_CHANGE=true")
+	if out, err := adapter(t, dir, env, "resolve"); err != nil {
+		t.Fatalf("%v %s", err, out)
+	}
+	b, err := os.ReadFile(value(env, "GITHUB_OUTPUT"))
+	if err != nil || !strings.Contains(string(b), "changed=false") {
+		t.Fatalf("outputs %v %s", err, b)
+	}
+	if _, err := os.Stat(filepath.Join(value(env, "UPGRADE_RESULT"), "bun.lock.json")); !os.IsNotExist(err) {
 		t.Fatal("no-op emitted proposal")
 	}
 }
