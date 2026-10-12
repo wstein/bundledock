@@ -24,6 +24,7 @@ def load_helper():
 
 
 class ResolveTests(unittest.TestCase):
+    @unittest.skipUnless(shutil.which("git") and shutil.which("bash"), "requires git and bash")
     def test_actual_no_change_resolver_reports_verified_unpublished(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -56,6 +57,7 @@ class PublicationTests(unittest.TestCase):
         self.helper = load_helper()
         self.sha = 'a'*40
 
+    @unittest.skipUnless(shutil.which("git"), "requires git")
     def test_cli_reads_actual_git_head_with_fake_http(self):
         class Response(io.BytesIO):
             pass
@@ -118,7 +120,7 @@ class PublicationTests(unittest.TestCase):
             self.helper.publication_status('../escape','quay.io/bundledock')
 
     def test_published_requires_both_platforms_and_matching_provenance(self):
-        for broken in ('', 'missing-platform', 'wrong-source', 'bad-digest'):
+        for broken in ('', 'missing-platform', 'wrong-source', 'bad-digest', 'invalid-date', 'legacy-run-mismatch'):
             with self.subTest(broken=broken):
                 objects = {}
                 def store(value):
@@ -126,11 +128,12 @@ class PublicationTests(unittest.TestCase):
                     digest = 'sha256:'+hashlib.sha256(raw).hexdigest()
                     objects[digest] = raw
                     return digest
+                version = {'invalid-date':'2026.99.99-b1.1', 'legacy-run-mismatch':'2026.10.12-999-1'}.get(broken, '2026.10.12-b1.1')
                 descriptors = []
                 for arch in ('amd64','arm64'):
                     labels = {'org.opencontainers.image.source': self.helper.provenance.SOURCE,
                               'org.opencontainers.image.revision':self.sha,
-                              'org.opencontainers.image.version':'2026.10.12-b1.1',
+                              'org.opencontainers.image.version':version,
                               'io.bundledock.github.run-id':'123'}
                     if broken == 'wrong-source' and arch == 'arm64':
                         labels['org.opencontainers.image.source'] = 'wrong'
@@ -142,7 +145,7 @@ class PublicationTests(unittest.TestCase):
                 digest = store({'manifests':descriptors})
                 if broken == 'bad-digest':
                     digest = 'sha256:'+'0'*64
-                listing = json.dumps({'tags':[{'name':'2026.10.12-b1.1','manifest_digest':digest}], 'has_additional':False}).encode()
+                listing = json.dumps({'tags':[{'name':version,'manifest_digest':digest}], 'has_additional':False}).encode()
                 calls = []
                 def http(url, headers=None, signed_blob=False):
                     calls.append((url, headers))
@@ -152,7 +155,7 @@ class PublicationTests(unittest.TestCase):
                         self.assertIsNone(headers)
                         return b'{"token":"anonymous-token"}'
                     ref = url.rsplit('/',1)[1]
-                    return objects[digest] if ref == '2026.10.12-b1.1' else objects[ref]
+                    return objects[digest] if ref == version else objects[ref]
                 with patch.object(self.helper.provenance, 'request', side_effect=http):
                     self.assertEqual(self.helper.publication_status('codex','quay.io/bundledock'),
                                      'published' if not broken else 'unknown')

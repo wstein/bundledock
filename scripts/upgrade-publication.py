@@ -63,6 +63,7 @@ def publication_status(bundle, prefix):
             return 'unknown'
         record = dict(tag=candidate['name'], digest=candidate['manifest_digest'], source=provenance.SOURCE,
                       commit=commit, run_id=run_id, legacy=bool(legacy))
+        record.update(provenance.validate_version(record['tag'], run_id, legacy=True))
         provenance.verify_registry(record, registry)
         return 'published'
     except Exception:

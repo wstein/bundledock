@@ -30,20 +30,26 @@ def validate_record(record, legacy=False):
         raise ValueError('unexpected source repository or revision')
     if not DIGEST.fullmatch(r.get('digest', '')) or not re.fullmatch('[1-9][0-9]*', r.get('run_id', '')):
         raise ValueError('invalid index digest or workflow run')
-    match = VERSION.fullmatch(r.get('tag', ''))
-    r['legacy'] = False
+    r.update(validate_version(r.get('tag', ''), r['run_id'], legacy))
+    return r
+
+
+def validate_version(tag, run_id, legacy=False):
+    """Validate immutable version identity independently of deployment namespace."""
+    match = VERSION.fullmatch(tag)
+    fields = {'legacy': False}
     if not match and legacy:
-        match = LEGACY.fullmatch(r.get('tag', ''))
-        r['legacy'] = True
-        if match and match[2] != r['run_id']:
+        match = LEGACY.fullmatch(tag)
+        fields['legacy'] = True
+        if match and match[2] != run_id:
             raise ValueError('legacy run ID mismatch')
     if not match:
         raise ValueError('expected an immutable version tag')
     import datetime
     datetime.datetime.strptime(match[1], '%Y.%m.%d')
-    r['attempt'] = int(match[3])
-    r['run_number'] = None if r['legacy'] else int(match[2])
-    return r
+    fields['attempt'] = int(match[3])
+    fields['run_number'] = None if fields['legacy'] else int(match[2])
+    return fields
 
 
 def tag_name(r):
