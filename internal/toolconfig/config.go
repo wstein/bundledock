@@ -334,6 +334,11 @@ func (c Config) validate(strict bool) error {
 		default:
 			return fmt.Errorf("unknown install kind for %s", name)
 		}
+		if name == "opentofu" {
+			if len(c.Catalog.Packages) != 1 || p.Provider != "github" || p.Repository != "opentofu/opentofu" || p.TagPrefix != "v" || p.Normalization != "semver" || p.Asset != "tofu_{version}_linux_{arch}.tar.gz" || p.Architectures["amd64"] != "amd64" || p.Architectures["arm64"] != "arm64" || len(p.AllowedHosts) != 1 || p.AllowedHosts[0] != "github.com" || p.BaseURL != "" || p.MetadataURL != "" || p.Sidecar != "tofu_{version}_SHA256SUMS" || p.Install.Profile != "" || p.Install.Kind != "tar.gz" || p.Install.Preserve || len(p.Install.Members) != 1 || p.Install.Members["tofu"] != "bin/tofu" || len(p.Install.Aliases) != 0 || len(p.Install.ExcludeDirectories) != 0 {
+				return fmt.Errorf("invalid official OpenTofu CLI recipe")
+			}
+		}
 		if name == "bun" || p.Install.Profile == "bun-runtime" {
 			if name != "bun" || len(c.Catalog.Packages) != 1 || p.Provider != "github" || p.Repository != "oven-sh/bun" || p.TagPrefix != "bun-v" || p.Normalization != "semver" || p.Asset != "bun-linux-{arch}.zip" || p.Architectures["amd64"] != "x64-baseline" || p.Architectures["arm64"] != "aarch64" || len(p.AllowedHosts) != 1 || p.AllowedHosts[0] != "github.com" || p.BaseURL != "" || p.MetadataURL != "" || p.Sidecar != "SHASUMS256.txt" || p.Install.Profile != "bun-runtime" || p.Install.Kind != "zip" || !p.Install.Preserve || len(p.Install.Members) != 1 || p.Install.Members["bun"] != "payload/bun" || len(p.Install.Aliases) != 0 || len(p.Install.ExcludeDirectories) != 0 {
 				return fmt.Errorf("invalid official Bun runtime recipe")
@@ -403,6 +408,13 @@ func (c Config) validate(strict bool) error {
 			}
 			if err := ValidateURL(s.URL, p.AllowedHosts); err != nil {
 				return err
+			}
+			if strict && name == "opentofu" {
+				version := strings.TrimPrefix(s.Version, "v")
+				expected := "https://github.com/opentofu/opentofu/releases/download/" + s.Version + "/tofu_" + version + "_linux_" + arch + ".tar.gz"
+				if s.Version != "v"+version || s.URL != expected || s.Verification != "publisher-sha256" || s.SHA256 == "" {
+					return fmt.Errorf("invalid official OpenTofu pin")
+				}
 			}
 			if strict && p.Install.Profile == "bun-runtime" {
 				expected := "https://github.com/oven-sh/bun/releases/download/" + s.Version + "/bun-linux-" + p.Architectures[arch] + ".zip"

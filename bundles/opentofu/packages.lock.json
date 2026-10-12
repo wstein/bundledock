@@ -1,0 +1,23 @@
+{
+  "schema": 2,
+  "desired_digest": "1e04aedc820bb3be1a9d4c0033ed34e43fc3ffc0966815cdfce10a63d83ebb88",
+  "catalog_digest": "01e251c9a32c194fd56540735f269164f69dd78e386f02b2243b4c97b065a3de",
+  "platforms": {
+    "amd64": {
+      "opentofu": {
+        "version": "v1.13.1",
+        "url": "https://github.com/opentofu/opentofu/releases/download/v1.13.1/tofu_1.13.1_linux_amd64.tar.gz",
+        "sha256": "378ada19d4bc70c43732004e8159be771b23b9a5afdf059e5f8a2b3fa2c70a69",
+        "verification": "publisher-sha256"
+      }
+    },
+    "arm64": {
+      "opentofu": {
+        "version": "v1.13.1",
+        "url": "https://github.com/opentofu/opentofu/releases/download/v1.13.1/tofu_1.13.1_linux_arm64.tar.gz",
+        "sha256": "9c1ef375aa1852db0b2888aa921b640c71f8140d4682aa4fec99378a64fa7dc3",
+        "verification": "publisher-sha256"
+      }
+    }
+  }
+}
