@@ -8,10 +8,10 @@ export GO VERSION RELEASE_DIR
 
 BUNDLE ?= toolbox
 ifneq ($(words $(BUNDLE)),1)
-$(error BUNDLE must be toolbox, code-server, node, bun, codex, agy or claude)
+$(error BUNDLE must be toolbox, code-server, node, node-current, bun, codex, agy or claude)
 endif
-ifneq ($(filter toolbox code-server node bun codex agy claude,$(BUNDLE)),$(BUNDLE))
-$(error BUNDLE must be toolbox, code-server, node, bun, codex, agy or claude)
+ifneq ($(filter toolbox code-server node node-current bun codex agy claude,$(BUNDLE)),$(BUNDLE))
+$(error BUNDLE must be toolbox, code-server, node, node-current, bun, codex, agy or claude)
 endif
 IMAGE ?= bundledock-$(BUNDLE):poc
 CONSUMER ?= mcr.microsoft.com/devcontainers/go:2-1.27-trixie
@@ -37,7 +37,7 @@ help:
 	@printf '%s\n' 'make bundle-volume     Initialize the selected bundle volume' \
 	  'make bundle-smoke      Verify selected bundle in a read-only consumer' \
 	  'make bundle-test       Run focused source tests (no OCI build)' \
-	  'BUNDLE=toolbox|code-server|node|bun|codex|agy|claude; override IMAGE and CONSUMER as needed'
+	  'BUNDLE=toolbox|code-server|node|node-current|bun|codex|agy|claude; override IMAGE and CONSUMER as needed'
 
 bundle-build:
 	docker build -f bundles/$(BUNDLE)/Dockerfile -t "$$IMAGE" .
@@ -72,6 +72,7 @@ check:
 	python3 scripts/tool-inventory.py --check
 	python3 scripts/tool-inventory.py --bundle code-server --check
 	python3 scripts/tool-inventory.py --bundle node --check
+	python3 scripts/tool-inventory.py --bundle node-current --check
 	python3 scripts/tool-inventory.py --bundle bun --check
 	python3 scripts/tool-inventory.py --bundle codex --check
 	python3 scripts/tool-inventory.py --bundle agy --check

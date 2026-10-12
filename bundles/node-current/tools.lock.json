@@ -1,0 +1,23 @@
+{
+  "schema": 2,
+  "desired_digest": "388bbf76c1eac86b3bf40360d96367fe8c87a71098c578c9e4f7b45fd8cb3a31",
+  "catalog_digest": "59cba481564b0f33da8289cd4211195a81955d96a04ab96a4d30bf43e96439a4",
+  "platforms": {
+    "amd64": {
+      "node": {
+        "version": "v26.11.1",
+        "url": "https://nodejs.org/dist/v26.11.1/node-v26.11.1-linux-x64.tar.gz",
+        "sha256": "15fc043a51a5783f2f4b634561091658f5a7f0e3db03f997dca3a8033a33e45b",
+        "verification": "publisher-sha256"
+      }
+    },
+    "arm64": {
+      "node": {
+        "version": "v26.11.1",
+        "url": "https://nodejs.org/dist/v26.11.1/node-v26.11.1-linux-arm64.tar.gz",
+        "sha256": "170454fb022f5e9b5f6cc76c25fa32ef5100895be44eb04e92f9780591491bbf",
+        "verification": "publisher-sha256"
+      }
+    }
+  }
+}

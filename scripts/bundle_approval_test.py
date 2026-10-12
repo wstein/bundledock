@@ -49,7 +49,7 @@ class ApprovalTests(unittest.TestCase):
     vote['submitted_at']=timestamp
     with self.assertRaises(ValueError):gate.approved_pr(42,self.bundle,self.get)
  def test_wrong_bundle_rejects(self):
-  for bundle in ('node','bun','code-server','codex','agy','claude','arbitrary'):
+  for bundle in ('node','node-current','bun','code-server','codex','agy','claude','arbitrary'):
    with self.subTest(bundle=bundle),self.assertRaises(ValueError):gate.approved_pr(42,bundle,self.get)
  def test_unreviewed_main_drift_rejects(self):
   self.data['/git/ref/heads/main']['object']['sha']=T
@@ -132,7 +132,7 @@ class ApprovalTests(unittest.TestCase):
   self.assertIsNone(gate.validate(self.event,self.get,allow_ineligible=True))
  def test_other_bundle_requires_valid_updater_before_skip(self):
   self.merged_fixture()
-  for name in ('node','bun','code-server'):
+  for name in ('node','node-current','bun','code-server'):
    with self.subTest(bundle=name):
     self.assertIsNone(gate.validate(self.event,self.get,name,allow_ineligible=True))
   self.data['/pulls/42/reviews?per_page=100&page=1'][0]['state']='DISMISSED'
@@ -171,7 +171,7 @@ class ApprovalTests(unittest.TestCase):
  def test_all_bundle_registry_and_callers(self):
   import os
   from unittest.mock import patch
-  for name in ('toolbox','code-server','node','bun','codex','agy','claude'):
+  for name in ('toolbox','code-server','node','node-current','bun','codex','agy','claude'):
    with self.subTest(name=name):
     bundle=gate.config.select_bundle(name)
     workflow={'id':8,'path':'.github/workflows/'+bundle['workflow']}

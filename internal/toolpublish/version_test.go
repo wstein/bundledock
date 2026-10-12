@@ -12,7 +12,7 @@ import (
 func TestSingletonVersionAllocation(t *testing.T) {
 	for _, test := range []struct{ name, upstream string }{
 		{"codex", "0.162.1"}, {"agy", "1.3.3"}, {"claude", "2.1.296"},
-		{"node", "24.21.0"}, {"bun", "1.4.3"}, {"code-server", "4.141.0"},
+		{"node-current", "26.11.1"}, {"node", "24.21.0"}, {"bun", "1.4.3"}, {"code-server", "4.141.0"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			lock, err := os.ReadFile("../../bundles/" + test.name + "/tools.lock.json")

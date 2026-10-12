@@ -39,6 +39,7 @@ type Catalog struct {
 	Packages map[string]Package `json:"packages"`
 }
 type Package struct {
+	Channel       string            `json:"channel,omitempty"`
 	Provider      string            `json:"provider"`
 	Repository    string            `json:"repository,omitempty"`
 	TagPrefix     string            `json:"tag_prefix,omitempty"`
@@ -274,6 +275,9 @@ func (c Config) validate(strict bool) error {
 		}
 		if p.Normalization != "semver" && p.Normalization != "tmux-release" && p.Normalization != "helix-calendar" {
 			return fmt.Errorf("unknown normalization for %s", name)
+		}
+		if p.Channel != "" && (p.Provider != "node" || (p.Channel != "lts" && p.Channel != "current")) {
+			return fmt.Errorf("invalid provider channel for %s", name)
 		}
 		switch p.Provider {
 		case "node":

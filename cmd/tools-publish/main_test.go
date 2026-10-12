@@ -360,7 +360,7 @@ func TestAutomaticPublicationSourceIsExplicitForAllBundles(t *testing.T) {
 	if err != nil || got != strings.Repeat("a", 40) {
 		t.Fatalf("source=%s error=%v", got, err)
 	}
-	for _, bundle := range []string{"node", "bun", "code-server"} {
+	for _, bundle := range []string{"node", "node-current", "bun", "code-server"} {
 		if got, err = publicationCommit(bundle); err != nil || got != strings.Repeat("a", 40) {
 			t.Fatal("explicit bundle source rejected", bundle, err)
 		}
@@ -392,7 +392,7 @@ func TestMergedBundlePlanUsesBaseline(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, bundle := range []string{"toolbox", "node", "bun", "code-server", "codex", "agy", "claude"} {
+	for _, bundle := range []string{"toolbox", "node", "node-current", "bun", "code-server", "codex", "agy", "claude"} {
 		publish, err := publicationDecisionForBundle(path, "workflow_run", bundle, func() (string, error) { return digest, nil })
 		if err != nil || publish {
 			t.Fatalf("unchanged merged lock publication=%v error=%v", publish, err)
@@ -408,7 +408,7 @@ func TestMergedBundlePlanUsesBaseline(t *testing.T) {
 }
 
 func TestFrozenPublicationUsesExactLockForEveryBundle(t *testing.T) {
-	for _, name := range []string{"toolbox", "code-server", "node", "bun", "codex", "agy", "claude"} {
+	for _, name := range []string{"toolbox", "code-server", "node", "node-current", "bun", "codex", "agy", "claude"} {
 		t.Run(name, func(t *testing.T) {
 			bundle, err := toolpublish.SelectBundle(name)
 			if err != nil {

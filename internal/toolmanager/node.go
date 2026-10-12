@@ -8,9 +8,16 @@ import (
 	"strings"
 )
 
-// node resolves the official LTS index only. A newer release missing either
+// node resolves an explicit official LTS or Current channel. A newer release missing either
 // native archive fails closed rather than silently falling back.
 func (r resolver) node(ctx context.Context, p toolconfig.Package, c toolconfig.Constraint) (map[string]toolconfig.Spec, error) {
+	channel := p.Channel
+	if channel == "" {
+		channel = "lts"
+	}
+	if channel != "lts" && channel != "current" {
+		return nil, fmt.Errorf("invalid Node channel %q", channel)
+	}
 	b, _, err := r.metadata(ctx, p.MetadataURL)
 	if err != nil {
 		return nil, err
@@ -28,7 +35,8 @@ func (r resolver) node(ctx context.Context, p toolconfig.Package, c toolconfig.C
 	var files []string
 	for _, row := range rows {
 		var lts string
-		if json.Unmarshal(row.LTS, &lts) != nil || lts == "" {
+		isLTS := json.Unmarshal(row.LTS, &lts) == nil && lts != ""
+		if (channel == "lts" && !isLTS) || (channel == "current" && string(row.LTS) != "false") {
 			continue
 		}
 		v, err := toolconfig.ParseVersion(strings.TrimPrefix(row.Version, "v"))
@@ -42,7 +50,7 @@ func (r resolver) node(ctx context.Context, p toolconfig.Package, c toolconfig.C
 		}
 	}
 	if best == "" {
-		return nil, fmt.Errorf("no official Node LTS satisfies %s", c.String())
+		return nil, fmt.Errorf("no official Node %s satisfies %s", channel, c.String())
 	}
 	for _, a := range []string{"x64", "arm64"} {
 		found := false
@@ -52,7 +60,7 @@ func (r resolver) node(ctx context.Context, p toolconfig.Package, c toolconfig.C
 			}
 		}
 		if !found {
-			return nil, fmt.Errorf("Node LTS lacks linux-%s prebuilt", a)
+			return nil, fmt.Errorf("Node %s lacks linux-%s prebuilt", channel, a)
 		}
 	}
 	base := p.BaseURL + "/" + best + "/"

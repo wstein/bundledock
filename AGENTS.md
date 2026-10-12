@@ -14,7 +14,7 @@ release readiness.
 
 Builds and releases require explicit user approval of the intended operation
 and source revision. The approved automation exception covers toolbox,
-code-server, Node, Bun, Codex, Antigravity and Claude updater PRs authored by `github-actions[bot]`, changing
+code-server, Node LTS, Node Current, Bun, Codex, Antigravity and Claude updater PRs authored by `github-actions[bot]`, changing
 only their own lock and generated inventory. A latest non-dismissed `wstein`
 APPROVED review of the exact updater head authorizes source CI, a protected
 SHA-guarded rebase merge, and publication of that exact frozen lock. Source CI
@@ -22,7 +22,7 @@ must succeed on the approved head and GitHub's required `check` protection must
 be satisfied. Changed heads, a main advance, unrelated files, stale approvals,
 and an approved tree differing from the merged tree stop automation; do not
 rewrite the updater head or bypass protection. There is no later environment
-approval. Initial publication of Codex, Antigravity and Claude carriers requires
+approval. Initial publication of Node Current, Codex, Antigravity and Claude carriers requires
 separate explicit approval of the exact full source revision and intended
 build/publication operation; an updater PR cannot authorize a first publication.
 Verify repository visibility and robot access before that operation. Existing environment settings remain untouched. Manual publication
