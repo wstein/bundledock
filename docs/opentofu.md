@@ -13,13 +13,24 @@ for Linux AMD64 and ARM64. It has a separate catalog, lock, image, volume and
 projects manage provider versions, lock files, credentials and licenses.
 
 <!-- BEGIN PUBLISHED BUNDLE -->
-## Publication pending
+<!-- publication-record: {"attempt":"1","bundle":"opentofu","commit":"84216f3a45e35ba741cc8245f96803b5b9a2a31f","created":"2026-10-12T22:02:34Z","digest":"sha256:67bd27de607af0d950789a3a0308262141860a331bae31b3f2a9d170c0cb3414","image":"quay.io/bundledock/opentofu","lock_sha256":"142e60e99b8603649549d5dc83679f8257563772e6301c155cf6ec535b8dfd84","reference":"quay.io/bundledock/opentofu@sha256:67bd27de607af0d950789a3a0308262141860a331bae31b3f2a9d170c0cb3414","run_attempt":"1","run_id":"38314225387","source":"https://github.com/wstein/bundledock","tag":"1.13.1-b1"} -->
+## Published bundle
 
-This bundle is prepared in source. No image, native smoke result, source tag
-or verified publication receipt is available. The planned repository is
-`quay.io/bundledock/opentofu`; repository preparation is separate from source
-verification. Initial publication requires explicit approval of the full main
-source SHA through the manual publisher.
+Version: `1.13.1-b1`
+
+Index digest: `sha256:67bd27de607af0d950789a3a0308262141860a331bae31b3f2a9d170c0cb3414`
+
+Source: [`84216f3a45e35ba741cc8245f96803b5b9a2a31f`](https://github.com/wstein/bundledock/commit/84216f3a45e35ba741cc8245f96803b5b9a2a31f)
+
+Publication: [run 38314225387, attempt 1](https://github.com/wstein/bundledock/actions/runs/38314225387/attempts/1)
+
+Pull this published carrier by its immutable index digest:
+
+```sh
+docker pull quay.io/bundledock/opentofu@sha256:67bd27de607af0d950789a3a0308262141860a331bae31b3f2a9d170c0cb3414
+```
+
+The source inventory below describes the current lock; this publication retains its exact source revision.
 <!-- END PUBLISHED BUNDLE -->
 
 <!-- BEGIN GENERATED TOOL INVENTORY -->
