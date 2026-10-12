@@ -8,10 +8,10 @@ weight: 40
 
 [Back to BundleDock](../README.md)
 
-The eight named **Publish toolbox**, **Publish code-server**, **Publish node**, **Publish node-current**,
-**Publish bun**, **Publish codex**, **Publish agy** and **Publish claude** entrypoints call one shared publication workflow. Their existing
+The nine named **Publish toolbox**, **Publish code-server**, **Publish node**, **Publish node-current**,
+**Publish bun**, **Publish codex**, **Publish agy**, **Publish claude** and **Publish opentofu** entrypoints call one shared publication workflow. Their existing
 names, filenames, bundle-specific native smoke checks and manual exact-SHA
-fallback remain. The eight **Propose … upgrades** entrypoints call one shared
+fallback remain. The nine **Propose … upgrades** entrypoints call one shared
 source-only updater, retaining the daily 06:50 UTC schedule and manual dry-run
 default.
 
@@ -194,7 +194,7 @@ Toolbox keeps its UTC version format
 counter distinguishes reruns. Missing, malformed or nonpositive counters are
 rejected before resolving tools.
 
-The seven single-package bundles use `<upstream-version>-b<packaging-revision>`.
+The eight single-package bundles use `<upstream-version>-b<packaging-revision>`.
 The version comes from the resolved official lock and must match on AMD64 and
 ARM64. Official tag prefixes are removed: Codex `rust-v0.162.1` becomes
 `0.162.1-b1`, Bun `bun-v1.4.3` becomes `1.4.3-b1`, and Node `v24.21.0`
@@ -237,10 +237,10 @@ local checks and the scope of historical native CI results.
 
 ## Source tags for published bundles
 
-After successful image promotion, each of the toolbox, code-server, node, node-current, bun, codex, agy and claude
+After successful image promotion, each of the toolbox, code-server, node, node-current, bun, codex, agy, claude and opentofu
 workflows creates an annotated Git tag `<bundle>/<immutable-version>` at the
 image's exact source commit, for example `node/24.21.0-b1`. Approval of that
-publication includes this source tag. All eight bundles support the exact-head
+publication includes this source tag. All nine bundles support the exact-head
 review and merged-updater approval path described above; the shared read-only
 source approval gate is revalidated before automatic tagging. The controller
 workflow SHA remains distinct from the approved image source SHA, and both must

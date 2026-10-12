@@ -6,8 +6,8 @@ set -euo pipefail
 : "${GITHUB_STEP_SUMMARY:?set GITHUB_STEP_SUMMARY}"
 case "${BUNDLE:-toolbox}" in
   toolbox) bundles=(toolbox) ;;
-  code-server|node|node-current|bun|codex|agy|claude) bundles=("$BUNDLE") ;;
-  *) echo 'BUNDLE must be toolbox, code-server, node, node-current, bun, codex, agy or claude.' >&2; exit 1 ;;
+  code-server|node|node-current|bun|codex|agy|claude|opentofu) bundles=("$BUNDLE") ;;
+  *) echo 'BUNDLE must be toolbox, code-server, node, node-current, bun, codex, agy, claude or opentofu.' >&2; exit 1 ;;
 esac
 locks=() inventories=() artifacts=()
 for bundle in "${bundles[@]}"; do

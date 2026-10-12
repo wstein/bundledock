@@ -162,7 +162,7 @@ def bundle_for_pr(number, get, allow_ineligible=False):
         prefix = '(?:toolbox|tool)' if name == 'toolbox' else re.escape(name)
         if re.fullmatch('automation/' + prefix + r'-upgrade-[1-9][0-9]*-[1-9][0-9]*', branch):
             return name
-    require(not re.match(r'automation/(?:toolbox|tool|code-server|node|node-current|bun|codex|agy|claude)-upgrade', branch), 'Malformed bundle updater branch')
+    require(not re.match(r'automation/(?:toolbox|tool|code-server|node|node-current|bun|codex|agy|claude|opentofu)-upgrade', branch), 'Malformed bundle updater branch')
     if allow_ineligible:
         return None
     raise ValueError('Not a bundle updater PR')
