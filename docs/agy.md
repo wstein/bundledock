@@ -2,8 +2,8 @@
 
 `bundles/agy` supplies the official stable Linux AMD64 and ARM64 Antigravity CLI
 prebuilt with its own catalog, lock, carrier image, volume and
-`/opt/bundledock/agy` root. This preparation copies the existing toolbox's
-1.3.3 pins exactly. Toolbox inputs and consumer configuration are unchanged.
+`/opt/bundledock/agy` root. Its 1.3.3 pins are retained unchanged from the original
+toolbox split. The source toolbox no longer includes this agent.
 
 <!-- BEGIN PUBLISHED BUNDLE -->
 <!-- publication-record: {"attempt":"1","commit":"6515f2abea611eb117748cfca2ab1d87cbc25377","created":"2026-10-12T17:48:03Z","digest":"sha256:a96463845e3948487029f72ef1a242996b986c4bc50e42d68707308652284496","image":"quay.io/bundledock/agy","lock_sha256":"920fd6bbdcb41a53a6b4d1b41c6ee1143068383bbf717ea95d8ea0c1302b0638","reference":"quay.io/bundledock/agy@sha256:a96463845e3948487029f72ef1a242996b986c4bc50e42d68707308652284496","run_attempt":"1","run_id":"38286521432","source":"https://github.com/wstein/bundledock","tag":"1.3.3-b1"} -->

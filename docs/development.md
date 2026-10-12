@@ -396,8 +396,9 @@ isolated socket and the consumer's `/bin/bash`, then removes its session.
 Fish checks a pipeline, arithmetic, embedded functions and completions;
 Starship renders a minimal prompt and initializes within Fish using only writable
 consumer home state. uv uses a writable cache under each consumer's home; managed Python downloads
-are disabled, and its cache command runs offline. It also starts and stops Codex's
-local daemon to verify its retained native package is usable. It checks repeat initialization,
+are disabled, and its cache command runs offline. The standalone Codex smoke
+starts and stops its local daemon to verify the retained native package is usable.
+The toolbox smoke now rejects agent executables and Codex resources. It checks repeat initialization,
 read-only mounts, and rejection of changed, incomplete, or locked volumes. This verifies executable
 startup, not authentication, model requests, or agent sandbox behavior. Herdr
 only runs `--version`; its interactive UI, server, and agent integration need

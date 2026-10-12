@@ -1,32 +1,6 @@
 {
   "schema": 1,
   "packages": {
-    "codex": {
-      "provider": "github",
-      "repository": "openai/codex",
-      "tag_prefix": "rust-v",
-      "normalization": "semver",
-      "architectures": {
-        "amd64": "x86_64",
-        "arm64": "aarch64"
-      },
-      "asset": "codex-package-{arch}-unknown-linux-musl.tar.gz",
-      "allowed_hosts": [
-        "github.com"
-      ],
-      "verification": "official-or-download",
-      "install": {
-        "kind": "tar.gz",
-        "members": {
-          "bin/codex": "bin/codex"
-        },
-        "preserve": true,
-        "exclude_directories": [
-          "codex-resources/voice"
-        ]
-      },
-      "sidecar": "{asset}.sha256"
-    },
     "gh": {
       "provider": "github",
       "repository": "cli/cli",
@@ -48,29 +22,6 @@
         }
       },
       "sidecar": "gh_{version}_checksums.txt"
-    },
-    "agy": {
-      "provider": "antigravity",
-      "repository": "google-antigravity/antigravity-cli",
-      "normalization": "semver",
-      "architectures": {
-        "amd64": "amd64",
-        "arm64": "arm64"
-      },
-      "asset": "agy_cli_linux_{arch}.tar.gz",
-      "allowed_hosts": [
-        "github.com",
-        "storage.googleapis.com",
-        "antigravity-cli-auto-updater-974169037036.us-central1.run.app"
-      ],
-      "verification": "official-or-download",
-      "install": {
-        "kind": "tar.gz",
-        "members": {
-          "antigravity": "bin/agy"
-        }
-      },
-      "metadata_url": "https://antigravity-cli-auto-updater-974169037036.us-central1.run.app"
     },
     "jq": {
       "provider": "github",
@@ -233,28 +184,6 @@
         "licenses/uv/SOURCE"
       ],
       "sidecar": "{asset}.sha256"
-    },
-    "claude": {
-      "provider": "claude",
-      "repository": "anthropics/claude-code",
-      "tag_prefix": "v",
-      "base_url": "https://downloads.claude.ai/claude-code-releases",
-      "normalization": "semver",
-      "architectures": {
-        "amd64": "linux-x64",
-        "arm64": "linux-arm64"
-      },
-      "asset": "claude",
-      "allowed_hosts": [
-        "downloads.claude.ai"
-      ],
-      "verification": "official-or-download",
-      "install": {
-        "kind": "raw",
-        "members": {
-          "claude": "bin/claude"
-        }
-      }
     },
     "herdr": {
       "provider": "github",

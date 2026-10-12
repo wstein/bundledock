@@ -50,6 +50,40 @@ func checkout(t *testing.T) string {
 			t.Fatal(err)
 		}
 	}
+	// Exercise all providers from their owning bundles, even after toolbox splits.
+	c, err := toolconfig.Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"codex", "agy", "claude"} {
+		standalone, err := toolconfig.Load("../../bundles/" + name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		c.Desired[name] = standalone.Desired[name]
+		c.Catalog.Packages[name] = standalone.Catalog.Packages[name]
+		for arch := range c.Lock.Platforms {
+			c.Lock.Platforms[arch][name] = standalone.Lock.Platforms[arch][name]
+		}
+	}
+	c.Bind()
+	var desired strings.Builder
+	for name, constraint := range c.Desired {
+		fmt.Fprintln(&desired, name+constraint.String())
+	}
+	catalog, err := json.Marshal(c.Catalog)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lock, err := json.Marshal(c.Lock)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for name, content := range map[string][]byte{"packages.txt": []byte(desired.String()), "packages.catalog.json": catalog, "packages.lock.json": lock} {
+		if err := os.WriteFile(filepath.Join(dir, name), content, 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
 	return dir
 }
 func readLock(t *testing.T, dir string) []byte {

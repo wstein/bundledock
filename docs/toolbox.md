@@ -33,7 +33,11 @@ The source inventory below describes the current lock; this publication retains 
 
 The default bundle lives in `bundles/toolbox/`: `packages.txt`,
 `packages.catalog.json`, `packages.lock.json`, its Dockerfile, smoke scripts and licenses.
-Shared Go code remains at the repository root.
+Shared Go code remains at the repository root. The source toolbox contains 24
+common tools. Codex, Antigravity and Claude are supplied by their separate
+[Codex](codex.md), [Antigravity](agy.md) and [Claude Code](claude.md) bundles.
+The published toolbox recorded above still includes those agents; this source
+removal has not been built or published.
 
 `packages.lock.json` pins vendor artifact URLs and checksums for Linux `amd64`
 and `arm64`; builds verify every download.
@@ -41,13 +45,10 @@ and `arm64`; builds verify every download.
 <!-- BEGIN GENERATED TOOL INVENTORY -->
 | Tool | Pinned version |
 | --- | --- |
-| Antigravity | 1.3.3 |
 | ast-grep (`ast-grep`) | 0.45.3 |
 | bat (`bat`) | 0.26.1 |
 | bottom (`btm`) | 0.14.9 |
 | btop (`btop`) | 1.4.7 |
-| Claude Code | 2.1.296 |
-| Codex | 0.162.1 |
 | fd (`fd`, `fdfind`) | 10.5.0 |
 | Fish (`fish`) | 4.9.3 |
 | fzf (`fzf`) | 0.74.5 |
@@ -235,8 +236,8 @@ Upgrades fetch fresh release metadata and select the numerically newest stable
 version within each requirement. GitHub release history is paginated. Optional `GITHUB_TOKEN` authentication is
 sent only to `api.github.com`; artifact and other provider requests never receive
 it. HTTP errors, including API rate limits, abort with the request URL and status.
-Claude and
-Antigravity combine official current manifests with historical GitHub releases.
+The standalone Claude and
+Antigravity bundles combine official current manifests with historical GitHub releases.
 The chosen version must supply both architectures;
 missing assets, metadata errors, or checksum failures abort without selecting an
 older version. All selected downloads are hashed and verified before the lock is
