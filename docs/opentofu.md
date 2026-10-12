@@ -1,6 +1,6 @@
 ---
 title: OpenTofu bundle
-description: Inspect the prepared OpenTofu source carrier and its pending publication status.
+description: Use the official OpenTofu CLI carrier and inspect its source inventory and publication receipt.
 ---
 
 # Optional OpenTofu bundle
@@ -69,8 +69,12 @@ make bundle-volume BUNDLE=opentofu
 Mount the printed `bundledock-opentofu-<full image ID>` volume read-only at
 `/opt/bundledock/opentofu`, and add `/opt/bundledock/opentofu/bin` to PATH.
 Use a stock language consumer image; the scratch carrier only initializes
-volumes. Native verification is prepared for the existing Debian Trixie
-consumer on both supported architectures and remains unexecuted.
+volumes. [Publication run 38314225387, attempt 1](https://github.com/wstein/bundledock/actions/runs/38314225387/attempts/1)
+built and passed native smoke on Linux AMD64 and ARM64 with the Debian Trixie
+consumer at source
+[`84216f3a45e35ba741cc8245f96803b5b9a2a31f`](https://github.com/wstein/bundledock/commit/84216f3a45e35ba741cc8245f96803b5b9a2a31f).
+That evidence covers the exact version and immutable index recorded in the
+[published bundle receipt](#published-bundle), rather than later source locks.
 
 Keep HOME, project directories, backend/local state, provider plugins, and
 caches writable outside the immutable bundle. OpenTofu's existing `.tofurc`,
@@ -83,7 +87,7 @@ locations that agree with its existing configuration; never point them into
 the bundle. Remote backends and provider installation may require networking
 and credentials supplied by the consumer.
 
-The prepared offline native smoke uses the built-in `terraform_data` resource
+The offline native smoke uses the built-in `terraform_data` resource
 without downloading a provider. It checks init, validate, plan, apply, local
 state, output, repeated volume initialization, concurrent read-only consumers,
 and preservation of a consumer-owned `.tofurc`.
@@ -107,5 +111,7 @@ smoke, publication, tagging and consumer activation remain separately gated.
 Source checks cover official recipe/pin rejection, synthetic archives and
 notices, repeated volume initialization and tampering, bundle/registry parity,
 version allocation, fake Docker adapters and shared upgrade/approval routing.
-They establish source behavior only. Runtime compatibility, provider workflows,
-vulnerability scans and native platform execution remain unverified.
+They establish source behavior only. The native publication evidence above
+covers the recorded carrier and offline smoke scenario. External provider
+workflows, other consumer environments and vulnerability scans remain
+unverified here; future source locks require their own native verification.
