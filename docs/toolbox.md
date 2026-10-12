@@ -33,7 +33,7 @@ The source inventory below describes the current lock; this publication retains 
 
 The default bundle lives in `bundles/toolbox/`: `packages.txt`,
 `packages.catalog.json`, `packages.lock.json`, its Dockerfile, smoke scripts and licenses.
-Shared Go code remains at the repository root. The source toolbox contains 34
+Shared Go code remains at the repository root. The source toolbox contains 35
 common tools. Codex, Antigravity and Claude are supplied by their separate
 [Codex](codex.md), [Antigravity](agy.md) and [Claude Code](claude.md) bundles.
 The published toolbox recorded above still includes those agents; this source
@@ -54,6 +54,7 @@ and `arm64`; builds verify every download.
 | fd (`fd`, `fdfind`) | 10.5.0 |
 | Fish (`fish`) | 4.9.3 |
 | fzf (`fzf`) | 0.74.5 |
+| Git LFS (`git-lfs`) | 3.8.0 |
 | GitHub CLI | 2.102.0 |
 | Gitleaks (`gitleaks`) | 8.30.1 |
 | Helix (`hx`) | 25.07.1 |
@@ -298,6 +299,26 @@ completion directory. regctl assets are raw executables. These recipes retain
 the existing extractor's rejection of archive links. Source tests use synthetic
 artifacts and smoke stubs. Native execution, OCI builds/smoke, vulnerability scans
 and consumer activation remain unverified pending separate approval.
+
+## Git Large File Storage
+
+The source toolbox includes [Git LFS 3.8.0](https://github.com/git-lfs/git-lfs/releases/tag/v3.8.0)
+from official Linux AMD64 and ARM64 prebuilts. `git-lfs` supplies Git large file
+storage commands. Repository setup is opt-in: BundleDock does not run
+`git lfs install`, install hooks, change Git configuration or track file patterns.
+The archive's `install.sh` is excluded. Consult the [upstream documentation](https://github.com/git-lfs/git-lfs/tree/v3.8.0/docs)
+when choosing repository-specific setup.
+
+Both binary archives were SHA256 checked against official release API digests
+and the contents of `sha256sums.asc` on 2026-10-12; its PGP signature was not
+verified. The archives omit a license file, so the exact source tag's full
+`LICENSE.md`, including its Go-derived code notice, is retained locally. The
+archive README, changelog and base manual are retained under `licenses/git-lfs/`.
+No separate runtime tree is required by this recipe. Source tests cover stable
+resolution, both installation recipes, and license retention. Consumer smoke
+uses only `git-lfs version` in an isolated temporary directory. Native execution,
+OCI build/smoke, repository hooks and network transfers remain unverified;
+the pinned consumer image is unchanged.
 
 ## lazygit terminal interface
 

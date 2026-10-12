@@ -1,0 +1,9 @@
+Upstream: https://github.com/git-lfs/git-lfs
+License: MIT; included Go-derived code retains its BSD notice in LICENSE.md.
+Pinned release: v3.8.0
+Release: https://github.com/git-lfs/git-lfs/releases/tag/v3.8.0
+Checksums: https://github.com/git-lfs/git-lfs/releases/download/v3.8.0/sha256sums.asc
+License source: https://raw.githubusercontent.com/git-lfs/git-lfs/v3.8.0/LICENSE.md
+License SHA256: 4fae9062ab5cdd5fb15486b728534d8aded8b4ae9d84b6d66a956f5162c366b6
+The official binary archives omit LICENSE.md, so its full pinned source text is retained locally. README.md, CHANGELOG.md and the base manual are retained from each binary archive. install.sh is not installed or executed.
+Official AMD64/ARM64 release API SHA256 digests and sha256sums.asc contents verified against downloaded archives by read-only inspection on 2026-10-12. The PGP signature was not verified. No upstream binaries were executed or modified.
