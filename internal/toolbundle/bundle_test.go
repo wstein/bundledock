@@ -76,6 +76,9 @@ func fixture(t *testing.T) (map[string][]byte, map[string]Spec, *httptest.Server
 	t.Helper()
 	payloads := map[string][]byte{
 		"helix":    helixArchive(t, "helix-25.07.1-x86_64-linux", "", 0),
+		"fzf":      archive(t, member{"fzf", "fzf executable", 0755, 0}),
+		"bat":      archive(t, member{"bat-v0.26.1-x86_64-unknown-linux-musl/bat", "bat executable", 0755, 0}),
+		"regctl":   []byte("regctl executable"),
 		"hugo":     archive(t, member{"hugo", "hugo executable", 0755, 0}, member{"LICENSE", "hugo license", 0644, 0}),
 		"typos":    archive(t, member{"./typos", "typos executable", 0755, 0}, member{"./LICENSE-MIT", "typos mit", 0644, 0}, member{"./LICENSE-APACHE", "typos apache", 0644, 0}),
 		"lychee":   archive(t, member{"lychee-x86_64-unknown-linux-musl/lychee", "lychee executable", 0755, 0}),

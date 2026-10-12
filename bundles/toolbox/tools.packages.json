@@ -632,6 +632,96 @@
         "licenses/helix/LICENSE",
         "licenses/helix/GRAMMAR-NOTICES"
       ]
+    },
+    "fzf": {
+      "provider": "github",
+      "repository": "junegunn/fzf",
+      "tag_prefix": "v",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "amd64",
+        "arm64": "arm64"
+      },
+      "asset": "fzf-{version}-linux_{arch}.tar.gz",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "tar.gz",
+        "members": {
+          "fzf": "bin/fzf"
+        }
+      },
+      "notices": [
+        "licenses/fzf/SOURCE",
+        "licenses/fzf/LICENSE",
+        "licenses/fzf/src-LICENSE"
+      ],
+      "sidecar": "fzf_{version}_checksums.txt"
+    },
+    "bat": {
+      "provider": "github",
+      "repository": "sharkdp/bat",
+      "tag_prefix": "v",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "x86_64",
+        "arm64": "aarch64"
+      },
+      "asset": "bat-v{version}-{arch}-unknown-linux-musl.tar.gz",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "tar.gz",
+        "members": {
+          "bat": "bin/bat"
+        },
+        "archive_notices": [
+          "CHANGELOG.md",
+          "README.md",
+          "bat.1",
+          "bat.bash",
+          "bat.fish",
+          "_bat.ps1",
+          "bat.zsh"
+        ]
+      },
+      "notices": [
+        "licenses/bat/SOURCE",
+        "licenses/bat/LICENSE-MIT",
+        "licenses/bat/LICENSE-APACHE",
+        "licenses/bat/NOTICE",
+        "licenses/bat/SYNTAX-THEME-NOTICES",
+        "licenses/bat/SYNTAX-THEME-INVENTORY"
+      ]
+    },
+    "regctl": {
+      "provider": "github",
+      "repository": "regclient/regclient",
+      "tag_prefix": "v",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "amd64",
+        "arm64": "arm64"
+      },
+      "asset": "regctl-linux-{arch}",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "raw",
+        "members": {
+          "regctl": "bin/regctl"
+        }
+      },
+      "notices": [
+        "licenses/regctl/SOURCE",
+        "licenses/regctl/LICENSE"
+      ]
     }
   }
 }

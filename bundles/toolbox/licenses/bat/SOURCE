@@ -1,0 +1,6 @@
+Upstream: https://github.com/sharkdp/bat
+Pinned release: v0.26.1
+Source archive: https://api.github.com/repos/sharkdp/bat/tarball/v0.26.1
+Source SHA256: 6e85d27ba32382f06ae47432701af63dfb9120d66a1146103e75d2525f1dd6f8
+Official release asset digests were verified before read-only inspection.
+SYNTAX-THEME-NOTICES is the upstream assets/acknowledgements.bin zlib/bincode string, decoded without modifying the prebuilt binary. SYNTAX-THEME-INVENTORY lists its notice headings.
