@@ -39,7 +39,7 @@ func TestAgentBundleSelection(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if b.Directory != "bundles/"+name || b.Workflow != "bundledock-"+name+".yml" || b.Artifact != "resolved-"+name {
+		if b.Directory != "bundles/"+name || b.Workflow != "publish-bundles.yml" || b.Artifact != "resolved-"+name {
 			t.Fatal(b)
 		}
 		image := "quay.io/bundledock/" + name

@@ -9,6 +9,7 @@ class WorkflowTests(unittest.TestCase):
         workflow = (ROOT/'.github/workflows/bundle-publish.yml').read_text()
         self.assertIn('\n  tag:\n',workflow)
         before, tagging = workflow.split('\n  tag:\n')
+        tagging = tagging.split('\n  documentation:\n')[0]
         self.assertNotIn('contents: write',before)
         self.assertIn('contents: write',tagging)
         self.assertIn('needs: [preflight, resolve, promote]',tagging)
@@ -32,7 +33,7 @@ class WorkflowTests(unittest.TestCase):
 
     def test_thin_callers_allow_tag_permission_without_build_tokens(self):
         for bundle in ('toolbox','code-server','node','node-current','bun','codex','agy','claude','opentofu'):
-            workflow=(ROOT/'.github/workflows'/('bundledock-'+bundle+'.yml')).read_text()
+            workflow=(ROOT/'.github/workflows'/'publish-bundles.yml').read_text()
             default, job=workflow.split('\njobs:\n')
             with self.subTest(bundle=bundle):
                 self.assertIn('contents: read',default)

@@ -54,7 +54,7 @@ func TestNodeNewestBindsDedicatedWorkflow(t *testing.T) {
 			client := &http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
 				body := current
 				switch r.URL.Path {
-				case "/repos/example/repo/actions/workflows/bundledock-node.yml":
+				case "/repos/example/repo/actions/workflows/publish-bundles.yml":
 					body = `{"id":` + workflowID + `}`
 				case "/repos/example/repo/actions/workflows/77/runs":
 					body = `{"workflow_runs":[` + current + `]}`
@@ -64,7 +64,7 @@ func TestNodeNewestBindsDedicatedWorkflow(t *testing.T) {
 				}
 				return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(body)), Header: make(http.Header)}, nil
 			})}
-			err := CheckNewestForWorkflow(context.Background(), client, "example/repo", "main", 123, 2, strings.Repeat("a", 40), "fixture-token", "bundledock-node.yml")
+			err := CheckNewestForWorkflow(context.Background(), client, "example/repo", "main", 123, 2, strings.Repeat("a", 40), "fixture-token", "publish-bundles.yml")
 			if (err != nil) != (workflowID != "77") {
 				t.Fatalf("identity %s: %v", workflowID, err)
 			}

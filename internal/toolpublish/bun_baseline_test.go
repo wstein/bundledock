@@ -54,7 +54,7 @@ func TestBunNewestBindsDedicatedWorkflow(t *testing.T) {
 			client := &http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
 				body := current
 				switch r.URL.Path {
-				case "/repos/example/repo/actions/workflows/bundledock-bun.yml":
+				case "/repos/example/repo/actions/workflows/publish-bundles.yml":
 					body = `{"id":` + workflowID + `}`
 				case "/repos/example/repo/actions/workflows/77/runs":
 					body = `{"workflow_runs":[` + current + `]}`
@@ -64,7 +64,7 @@ func TestBunNewestBindsDedicatedWorkflow(t *testing.T) {
 				}
 				return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(body)), Header: make(http.Header)}, nil
 			})}
-			err := CheckNewestForWorkflow(context.Background(), client, "example/repo", "main", 123, 2, strings.Repeat("a", 40), "fixture-token", "bundledock-bun.yml")
+			err := CheckNewestForWorkflow(context.Background(), client, "example/repo", "main", 123, 2, strings.Repeat("a", 40), "fixture-token", "publish-bundles.yml")
 			if (err != nil) != (workflowID != "77") {
 				t.Fatalf("identity %s: %v", workflowID, err)
 			}
@@ -77,7 +77,7 @@ func TestBunPublicationSelectsOwnSources(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if b.Directory != "bundles/bun" || b.Workflow != "bundledock-bun.yml" || b.Artifact != "resolved-bun" {
+	if b.Directory != "bundles/bun" || b.Workflow != "publish-bundles.yml" || b.Artifact != "resolved-bun" {
 		t.Fatal(b)
 	}
 	m, err := NewMetadata("../../bundles/bun/packages.lock.json", "quay.io/example/bun", "2026.10.12-b1.1", strings.Repeat("a", 40), "https://github.com/example/repo", "2026-10-12T03:17:00Z", "123")

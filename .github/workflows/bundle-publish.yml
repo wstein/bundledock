@@ -25,6 +25,7 @@ concurrency:
 
 jobs:
   preflight:
+    name: preflight (${{ inputs.bundle }})
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' &&
@@ -41,6 +42,7 @@ jobs:
       pr_url: ${{ steps.source.outputs.pr_url }}
       artifact: ${{ steps.source.outputs.artifact }}
       eligible: ${{ steps.source.outputs.eligible }}
+      status: ${{ steps.source.outputs.status }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -373,3 +375,39 @@ jobs:
             --bundle "$BUNDLE" --image "${REPOSITORY_URL%/}/$(python3 -B scripts/bundle-config.py --repository "$BUNDLE")" \
             --sha "$PUBLICATION_SHA" --run-id "$GITHUB_RUN_ID" \
             --attempt "$GITHUB_RUN_ATTEMPT" --propose
+
+  outcome:
+    if: always()
+    needs: [preflight, resolve, native, promote, tag, documentation]
+    permissions:
+      contents: read
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Summarize this bundle publication outcome
+        env:
+          BUNDLE: ${{ inputs.bundle }}
+          ELIGIBLE: ${{ needs.preflight.outputs.eligible }}
+          STATUS: ${{ needs.preflight.outputs.status }}
+          PUBLISH: ${{ needs.resolve.outputs.publish }}
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          python3 - <<'PYTHON'
+          import json, os
+          results = json.loads(os.environ['RESULTS'])
+          failed = any(item['result'] in ('failure', 'cancelled') for item in results.values())
+          if os.environ['STATUS'] in ('rejected', 'pending', 'blocked_owner_merge', 'ineligible'):
+              outcome = os.environ['STATUS']
+          elif failed:
+              outcome = 'build-failed'
+          elif os.environ['ELIGIBLE'] != 'true':
+              outcome = os.environ['STATUS'] or 'ineligible'
+          elif os.environ['PUBLISH'] != 'true':
+              outcome = 'unchanged'
+          elif all(results[name]['result'] == 'success' for name in ('promote', 'tag', 'documentation')):
+              outcome = 'published'
+          else:
+              outcome = 'build-failed'
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
+              summary.write('Bundle ' + os.environ['BUNDLE'] + ': **' + outcome + '**\n')
+          PYTHON

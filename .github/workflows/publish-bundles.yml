@@ -1,0 +1,79 @@
+name: Publish bundles
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      bundle:
+        description: Single bundle explicitly approved for build and publication
+        type: choice
+        required: true
+        options:
+          - toolbox
+          - code-server
+          - node
+          - node-current
+          - bun
+          - codex
+          - agy
+          - claude
+          - opentofu
+      approved_sha:
+        description: Full main commit SHA explicitly approved for build and publication
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+
+jobs:
+  plan:
+    name: plan (${{ inputs.bundle || 'automatic' }})
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      bundle: ${{ steps.source.outputs.bundle }}
+      sha: ${{ steps.source.outputs.sha }}
+      eligible: ${{ steps.source.outputs.eligible }}
+      status: ${{ steps.source.outputs.status }}
+      pr_url: ${{ steps.source.outputs.pr_url }}
+      reason: ${{ steps.source.outputs.reason }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          # Planner executes trusted default-branch code, never CI payload source.
+          ref: ${{ github.sha }}
+      - name: Select one eligible bundle without compiling artifacts
+        id: source
+        env:
+          BUNDLE: ${{ inputs.bundle || '' }}
+          GITHUB_TOKEN: ${{ github.token }}
+          APPROVED_SHA: ${{ inputs.approved_sha || '' }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          SENDER_TYPE: ${{ github.event.sender.type }}
+          TRIGGERING_ACTOR: ${{ github.triggering_actor }}
+        run: python3 scripts/bundle-publication.py --mode plan
+
+  publication:
+    needs: plan
+    if: needs.plan.outputs.eligible == 'true'
+    # Write scopes are consumed only by post-promotion jobs in the shared helper.
+    permissions:
+      contents: write
+      actions: write
+      pull-requests: write
+    uses: ./.github/workflows/bundle-publish.yml
+    with:
+      bundle: ${{ needs.plan.outputs.bundle }}
+      approved_sha: ${{ inputs.approved_sha || '' }}
+    secrets:
+      REPOSITORY_TOKEN: ${{ secrets.REPOSITORY_TOKEN }}

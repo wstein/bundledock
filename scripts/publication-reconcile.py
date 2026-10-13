@@ -225,11 +225,15 @@ def verify_receipt_registry(record, receipt, registry):
                 'Registry lock or build time differs from receipt')
 
 
-def validate_attempt(run, selection, revision, run_id, attempt):
+def validate_attempt(run, selection, revision, run_id, attempt, historical=False):
+    paths = {'.github/workflows/' + selection['workflow']}
+    if historical:
+        # Only read-only reconciliation can inspect legacy per-bundle callers.
+        paths.add('.github/workflows/bundledock-' + selection['name'] + '.yml')
     require(run.get('id') == int(run_id) and run.get('run_attempt') == int(attempt)
             and run.get('repository', {}).get('full_name') == REPOSITORY
             and run.get('head_repository', {}).get('full_name') == REPOSITORY
-            and run.get('path') == '.github/workflows/' + selection['workflow']
+            and run.get('path') in paths
             and run.get('head_branch') == 'main'
             and run.get('event') in ('workflow_dispatch', 'workflow_run'), 'Workflow attempt identity mismatch')
     # Automatic run head is the controller, not necessarily the approved image source.
@@ -268,7 +272,7 @@ def reconcile(bundle, revision, run_id, attempt, api, registry_factory=tags.Regi
     selection = approval.config.select_bundle(bundle)
     path = '/actions/runs/' + run_id + '/attempts/' + attempt
     run = api.get(path)
-    validate_attempt(run, selection, revision, run_id, attempt)
+    validate_attempt(run, selection, revision, run_id, attempt, historical=True)
     result = dict(bundle=bundle, requested_source_sha=revision, controller_sha=run['head_sha'], run_id=run_id, run_attempt=attempt,
                   event=run['event'], conclusion=run.get('conclusion'), state='pending')
     if run.get('status') != 'completed' or run.get('conclusion') not in ('success', 'failure', 'cancelled', 'timed_out', 'action_required', 'neutral', 'stale'):
