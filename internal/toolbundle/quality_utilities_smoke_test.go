@@ -19,7 +19,7 @@ func TestQualityUtilitiesSmokeRejectsWrongBehavior(t *testing.T) {
 		"ruff":       `case "$*" in --version) echo 'ruff 0.17.0';; *) cat >/dev/null; echo 'x = 1';; esac`,
 		"delta":      `case "$*" in --version) echo 'delta 0.20.1';; '--no-gitconfig --paging=never') cat;; *) exit 2;; esac`,
 		"watchexec":  `case "$*" in --version) echo 'watchexec 2.8.0';; '-1 --shell=none --workdir '*) echo watch-smoke;; *) exit 2;; esac`,
-		"hyperfine":  `case "$*" in --version) echo 'hyperfine 2.0.0';; *) while test "$1" != --export-json; do shift; done; shift; echo '{"results":[{"command":"true","times":[0.001]}]}' > "$1";; esac`,
+		"hyperfine":  `case "$*" in --version) echo 'hyperfine 2.0.0';; *) while test "$1" != --export-json; do shift; done; shift; echo '{"schema_version":2,"results":[{"command":"true","measurements":[{"time_wall_clock":{"value":0.001,"unit":"second"},"exit_code":0}]}]}' > "$1";; esac`,
 		"age-keygen": `case "$*" in --version) echo v1.3.2;; -o*) echo AGE-SECRET-KEY-SYNTHETIC > "$2";; -y*) echo age1synthetic;; esac`,
 		"age":        `case "$*" in --version) echo v1.3.2;; *) while test "$1" != -o; do shift; done; shift; output=$1; shift; cat "$1" > "$output";; esac`,
 	}
