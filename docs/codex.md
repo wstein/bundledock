@@ -9,7 +9,7 @@ description: Use the official Codex package and native helpers with writable con
 
 `bundles/codex` supplies the official stable prebuilt Codex package for Linux
 AMD64 and ARM64, with an independent catalog, lock, carrier image and volume
-mounted read-only at `/opt/bundledock/codex`.
+mounted read-only at `/opt/bdock/codex`.
 
 <!-- BEGIN PUBLISHED BUNDLE -->
 <!-- publication-record: {"attempt":"1","commit":"cfdc89d576b8c8534e932d4601dbd973cc6cde4d","created":"2026-10-12T18:08:15Z","digest":"sha256:eb5ec6514b7476c55d1d2c0c1def871b982026f0a75144ddab33e9af4a3f40ec","image":"quay.io/bundledock/codex","lock_sha256":"b9e96e3972d42fbf740021379e99ce60f0d5f046b20bd1d2b9756fc96f999aae","reference":"quay.io/bundledock/codex@sha256:eb5ec6514b7476c55d1d2c0c1def871b982026f0a75144ddab33e9af4a3f40ec","run_attempt":"1","run_id":"38288791159","source":"https://github.com/wstein/bundledock","tag":"0.162.1-b1"} -->
@@ -62,7 +62,7 @@ make bundle-volume BUNDLE=codex
 ```
 
 Mount the printed `bundledock-codex-<full image ID>` volume at
-`/opt/bundledock/codex` read-only and add `/opt/bundledock/codex/bin` to PATH.
+`/opt/bdock/codex` read-only and add `/opt/bdock/codex/bin` to PATH.
 Use a stock language consumer image; the scratch carrier only initializes its
 volume. Keep HOME, `CODEX_HOME`, caches and project files writable outside the
 bundle. Existing user configuration filenames and environment pass through.

@@ -69,8 +69,8 @@ make bundle-volume BUNDLE=node-current
 ```
 
 Mount the printed image-derived `bundledock-node-current-<full image ID>` volume
-read-only at `/opt/bundledock/node-current` in a stock glibc language image.
-Add `/opt/bundledock/node-current/bin` to PATH. Keep HOME, npm cache, global
+read-only at `/opt/bdock/node-current` in a stock glibc language image.
+Add `/opt/bdock/node-current/bin` to PATH. Keep HOME, npm cache, global
 prefix and projects outside the mount; follow the [Node consumer guidance](node.md#manual-consumer-use).
 No user configuration filename or default consumer activation changes.
 

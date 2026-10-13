@@ -19,7 +19,7 @@ optional consumer devcontainer; its integration and pinned image are maintained
 there. Make inherits `GOFLAGS`; OCI build commands pass `-trimpath` explicitly.
 
 The local output image is `bundledock-toolbox`, its installed prefix is
-`/opt/bundledock/toolbox`, and new volumes default to `bundledock-toolbox-<digest>`.
+`/opt/bdock/toolbox`, and new volumes default to `bundledock-toolbox-<digest>`.
 Existing volumes remain reusable with their original images: pass the existing
 name as the second argument to `sh bundles/toolbox/scripts/volume.sh <image> <volume-name>`.
 This selects the existing data without copying or renaming the volume. Anchorage
@@ -147,7 +147,7 @@ documentation build passed using the extracted binary's explicit path.
 Native AMD64 execution and Docker consumer smoke were unavailable in this ARM64
 host session; both platforms have a native smoke matrix in the manual publication workflow,
 which requires explicit user approval before it runs.
-The consumer smoke uses `/opt/bundledock/toolbox/bin/hugo` directly, with
+The consumer smoke uses `/opt/bdock/toolbox/bin/hugo` directly, with
 `--network none` and writable HOME/cache/output outside the read-only bundle.
 
 To repeat the optional official archive check without upstream requests, place
@@ -263,7 +263,7 @@ This verification pins that index without changing the consumer's tag.
 
 The verifier initializes disposable volumes through `scripts/bundle-volume.sh`
 after every pull succeeds. Both offline non-root consumer runs mount all five
-bundles read-only at their sibling `/opt/bundledock/<bundle>` paths. They share
+bundles read-only at their sibling `/opt/bdock/<bundle>` paths. They share
 a disposable writable HOME, npm cache/prefix and retained config markers;
 agent commands must resolve from their own mounts ahead of Node and toolbox.
 The checks execute versions, validate Codex helper resources and Node's actual
@@ -274,8 +274,10 @@ native runtime compatibility.
 
 [Run 38294738647, attempt 1](https://github.com/wstein/bundledock/actions/runs/38294738647/attempts/1)
 passed both native jobs on Linux AMD64 and ARM64 on 2026-10-12 from source
-`27e5abc2f4649aec8abc75ac68c647319dc0f931`. This verifies the five recorded
-image pins together against the pinned stock Go consumer. It does not verify
+`27e5abc2f4649aec8abc75ac68c647319dc0f931`. This historical run verified the five recorded
+image pins together against the pinned stock Go consumer at the previous
+`/opt/bundledock/<bundle>` consumer roots. The current verifier's `/opt/bdock`
+mounts have source-only fixture coverage until a separately approved native run. It does not verify
 a reduced toolbox image, future locks, authenticated agent workflows or model
 requests, and does not change consumer activation.
 
@@ -411,7 +413,7 @@ a redacted synthetic secret, embedded Dockerfile configuration findings, and a
 synthetic package in an SBOM. They scan only their generated local fixtures.
 Trivy configuration smoke uses embedded checks with check updates disabled and
 does not download a vulnerability database. Trivy vulnerability scans require
-separately managed databases and writable caches outside `/opt/bundledock/toolbox`;
+separately managed databases and writable caches outside `/opt/bdock/toolbox`;
 no database is baked into the bundle. Syft update checks are disabled in smoke.
 Nushell processes structured records. A headless tmux server uses an
 isolated socket and the consumer's `/bin/bash`, then removes its session.

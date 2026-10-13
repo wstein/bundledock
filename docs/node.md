@@ -9,7 +9,7 @@ description: Use the independent Node.js LTS carrier with npm/npx and a writable
 
 `bundles/node` supplies the official stable Node.js LTS prebuilt Linux AMD64
 and ARM64 runtime and its bundled npm/npx. It has its own catalog, lock, image,
-volume and `/opt/bundledock/node` root. The toolbox and code-server defaults,
+volume and `/opt/bdock/node` root. The toolbox and code-server defaults,
 pins and consumer configuration are unchanged. No Ruby or generic language
 bundle mechanism is included.
 
@@ -73,9 +73,9 @@ make bundle-volume BUNDLE=node
 ```
 
 Mount the printed image-derived `bundledock-node-<full image ID>` volume
-read-only at `/opt/bundledock/node`. Use a stock glibc language image, such as
+read-only at `/opt/bdock/node`. Use a stock glibc language image, such as
 the existing Debian Trixie Go consumer; the scratch carrier only initializes
-volumes. Add `/opt/bundledock/node/bin` to consumer PATH. The npm/npx forwarding
+volumes. Add `/opt/bdock/node/bin` to consumer PATH. The npm/npx forwarding
 launchers invoke the bundled Node executable and original npm JavaScript by
 absolute path, and prepend this bundle's bin for npm child processes. Arguments
 and HOME pass through unchanged. No user configuration file is written.
@@ -86,7 +86,7 @@ the consumer explicitly, for example:
 
 ```sh
 export npm_config_prefix="$HOME/.local/share/npm"
-export PATH="/opt/bundledock/node/bin:$npm_config_prefix/bin:$PATH"
+export PATH="/opt/bdock/node/bin:$npm_config_prefix/bin:$PATH"
 ```
 
 Existing npm environment/configuration overrides are preserved. Select an

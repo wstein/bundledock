@@ -9,7 +9,7 @@ description: Use the official OpenTofu CLI carrier and inspect its source invent
 
 `bundles/opentofu` supplies the official stable prebuilt OpenTofu CLI (`tofu`)
 for Linux AMD64 and ARM64. It has a separate catalog, lock, image, volume and
-`/opt/bundledock/opentofu` mount. Providers are not bundled or pinned here;
+`/opt/bdock/opentofu` mount. Providers are not bundled or pinned here;
 projects manage provider versions, lock files, credentials and licenses.
 
 <!-- BEGIN PUBLISHED BUNDLE -->
@@ -71,7 +71,7 @@ make bundle-volume BUNDLE=opentofu
 ```
 
 Mount the printed `bundledock-opentofu-<full image ID>` volume read-only at
-`/opt/bundledock/opentofu`, and add `/opt/bundledock/opentofu/bin` to PATH.
+`/opt/bdock/opentofu`, and add `/opt/bdock/opentofu/bin` to PATH.
 Use a stock language consumer image; the scratch carrier only initializes
 volumes. [Publication run 38314225387, attempt 1](https://github.com/wstein/bundledock/actions/runs/38314225387/attempts/1)
 built and passed native smoke on Linux AMD64 and ARM64 with the Debian Trixie
