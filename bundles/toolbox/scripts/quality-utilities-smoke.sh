@@ -15,7 +15,7 @@ age-keygen --version
 test "$(printf '%s\n' '#!/bin/sh' 'echo smoke' | shellcheck --norc -s sh -)" = ''
 test "$(printf '%s\n' 'echo  smoke' | shfmt -ln posix)" = 'echo smoke'
 printf '%s\n' 'smoke:' '    @echo recipe-smoke' > "$work/justfile"
-test "$(just --no-dotenv --justfile "$work/justfile" --working-directory "$work" --quiet smoke)" = recipe-smoke
+test "$(just --no-dotenv --justfile "$work/justfile" --working-directory "$work" smoke)" = recipe-smoke
 test "$(printf '%s\n' 'x=1' | ruff format --isolated --no-cache --stdin-filename smoke.py -)" = 'x = 1'
 printf '%s\n' '--- a/smoke' '+++ b/smoke' '@@ -1 +1 @@' '-before-smoke' '+after-smoke' | delta --no-gitconfig --paging=never > "$work/diff"
 grep -q after-smoke "$work/diff"
