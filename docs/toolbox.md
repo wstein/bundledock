@@ -31,50 +31,50 @@ The source inventory below describes the current lock; this publication retains 
 
 ## Spec Kit launcher (source)
 
-The current source also supplies an owned `specify` launcher beside `uvx`.
-This is separate from the 33 downloaded catalog tools and is not present in
-older published images. The launcher runs `uvx --from specify-cli==1.1.3 specify`
-with source builds and Python downloads disabled. It requires `python3` 3.11+
-from the consumer's stock language image; it rejects virtual environments and recognized uv-managed Python paths,
-including a configured `UV_PYTHON_INSTALL_DIR`. Arbitrarily relocated interpreter
-provenance cannot be inferred, so provide the language image's own `python3`. It does not install Python or globally install Spec Kit.
-
-Run it explicitly when wanted:
+The source supplies an owned `specify` launcher for `specify-cli==1.1.3`,
+separate from downloaded catalog tools and absent from older published images.
+It uses plain pip in a dedicated writable virtual environment. Supply `python3`
+3.11+ with `venv` and pip from the consumer's stock language image; the launcher
+rejects virtual environments and recognized uv-managed interpreters, including
+`UV_PYTHON_INSTALL_DIR`. Arbitrarily relocated interpreter provenance cannot be
+inferred, so provide the image's own Python.
 
 ```sh
 specify --help
 specify init my-project
 ```
 
-First use needs network access to resolve the pinned CLI and its dependencies
-into uv's cache. Transitive dependency versions are not frozen, and an empty
-cache cannot run offline. `--no-build` requires compatible wheels; a missing
-wheel fails rather than compiling third-party code. Use writable `HOME` and
-`UV_CACHE_DIR` outside `/opt/bdock/toolbox`; the default cache is
-`${XDG_CACHE_HOME:-$HOME/.cache}/uv`. Cached tool environments live there too.
-The launcher selects official PyPI, clears alternate index, find-links, constraint, and override
-environment settings, ignores uv configuration files, disables managed interpreters,
-and passes arguments and exit status through. `UV_OFFLINE` remains available
-for a populated cache. It creates no project, hooks,
-or agent configuration unless the command you explicitly invoke requests it;
-`specify init`, for example, writes a project.
+First use needs network access to the official PyPI index and compatible
+prebuilt wheels for the image's Python version, ABI and platform. Source builds,
+Python downloads, global installs and project environments are never used.
+The exact top-level wheel and SHA256 are recorded in bundled requirements;
+**transitive dependency versions remain unfrozen** and are resolved on first
+installation. A missing compatible wheel fails clearly. A completed environment
+can run offline; pip's download cache alone is not a completed environment.
+
+Use writable `HOME` outside the toolbox. Environments live under
+`${XDG_DATA_HOME:-$HOME/.local/share}/bundledock/tools/specify`, keyed by package
+metadata, helper source, interpreter and ABI. Downloads use
+`${XDG_CACHE_HOME:-$HOME/.cache}/bundledock/pip/specify`. XDG overrides must be
+absolute paths outside the toolbox. Concurrent first uses serialize, interrupted
+installs retry safely, and changed metadata or Python creates a separate
+environment. Earlier environments remain available. The launcher ignores pip
+configuration, clears installer and Python environment overrides, uses only
+wheels, and preserves the working directory, arguments and exit status. Explicit
+commands such as `specify init` can create projects and agent configuration.
 
 [Official PyPI metadata](https://pypi.org/pypi/specify-cli/1.1.3/json) records
-Python `>=3.11`, the `specify` entry point, and the universal prebuilt wheel
-`specify_cli-1.1.3-py3-none-any.whl` with SHA256
+Python `>=3.11` and the universal wheel `specify_cli-1.1.3-py3-none-any.whl`, SHA256
 `9cc0712dbdffb8a035f1d3f4b80f678eeeddc14b3cf1437d26056df2c60ee127`.
-That wheel and its [GitHub MIT license](https://github.com/github/spec-kit/blob/v1.1.3/LICENSE) were inspected without installation.
-This digest is source verification evidence, not a hash lock enforced by the
-version-only runtime invocation. Installed package notices stay in uv's tool
-environment; the immutable bundle contains only BundleDock's launcher, not
-Spec Kit or its dependencies. The manifest records `launchers.specify`
-separately from downloaded `tools`, and `SHA256SUMS` covers the launcher.
+The immutable bundle contains the owned launcher, shared Python helper and
+requirements metadata, with no installed Python runtime or packages. Installed
+package notices stay in the writable environment. `launchers.specify` records
+the pin separately from downloaded `tools`; `SHA256SUMS` covers all launcher
+source and requirements. The catalog updater does not change this pin.
 
-The toolbox updater continues to update downloaded catalog tools only.
-Changing this launcher pin requires a source PR and renewed upstream review.
-Source tests execute synthetic Python and uvx fixtures, with no network or
-installation. Native consumer smoke and first-use package resolution remain
-separate checks requiring an approved image build.
+Source tests execute stdlib Python and synthetic venv/pip fixtures without
+network access or package installation. Native consumer smoke and real first-use
+resolution remain separate checks requiring an approved image build.
 
 ## Retained notices
 
