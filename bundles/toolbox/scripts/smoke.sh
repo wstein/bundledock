@@ -21,6 +21,7 @@ check() {
         --mount "type=volume,src=$volume,dst=/opt/bundledock/toolbox,readonly,volume-nocopy" \
         --mount "type=bind,src=$script_dir/quality-security-smoke.sh,dst=/quality-security-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/quality-utilities-smoke.sh,dst=/quality-utilities-smoke.sh,readonly" \
+        --mount "type=bind,src=$script_dir/mise-smoke.sh,dst=/mise-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/utilities-smoke.sh,dst=/utilities-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/helix-smoke.sh,dst=/helix-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/vcs-versions-smoke.sh,dst=/vcs-versions-smoke.sh,readonly" \
@@ -105,6 +106,8 @@ check() {
             # First use resolves packages online; offline smoke checks staging only.
             test -x /opt/bundledock/toolbox/bin/specify
             test "$(uv --offline cache dir)" = "$UV_CACHE_DIR"
+            stage "mise version"
+            sh /mise-smoke.sh
             stage "fzf bat and registry utilities"
             sh /utilities-smoke.sh
             stage "shell formatting recipes Python diffs watching benchmarks and encryption"

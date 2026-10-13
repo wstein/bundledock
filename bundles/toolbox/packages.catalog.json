@@ -1023,6 +1023,32 @@
         "licenses/git-trim/LICENSE",
         "licenses/git-trim/SOURCE"
       ]
+    },
+    "mise": {
+      "provider": "github",
+      "repository": "jdx/mise",
+      "tag_prefix": "v",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "x64",
+        "arm64": "arm64"
+      },
+      "asset": "mise-v{version}-linux-{arch}-musl",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "sidecar": "SHASUMS256.txt",
+      "install": {
+        "kind": "raw",
+        "members": {
+          "mise": "bin/mise"
+        }
+      },
+      "notices": [
+        "licenses/mise/LICENSE",
+        "licenses/mise/SOURCE"
+      ]
     }
   }
 }

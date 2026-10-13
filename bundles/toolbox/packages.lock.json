@@ -1,7 +1,7 @@
 {
   "schema": 2,
-  "desired_digest": "da2a7a574221174dfdea5ed42bbabf18b787b4f85ab84436261f3549e3ae4665",
-  "catalog_digest": "20fb46479abf3b9d82b850584cdd9b9b02ed4b7e2f94ca2db10b25a21be738bc",
+  "desired_digest": "15d8e7efa32c33f125dff452c67a4c34956ce664a5c827a2ec91c60291a062b7",
+  "catalog_digest": "281a7975f31da0c918c4619beef6593e175b07076a45185eb36f52790e8705c0",
   "platforms": {
     "amd64": {
       "age": {
@@ -231,6 +231,12 @@
         "version": "v4.54.1",
         "url": "https://github.com/mikefarah/yq/releases/download/v4.54.1/yq_linux_amd64",
         "sha256": "8e34fc298390875de416e6a4afcb8cabeceb25d9aa8506c1a2f9353cf702ea5f",
+        "verification": "publisher-sha256"
+      },
+      "mise": {
+        "version": "v2026.10.8",
+        "url": "https://github.com/jdx/mise/releases/download/v2026.10.8/mise-v2026.10.8-linux-x64-musl",
+        "sha256": "043dc6b9077db988269ca2f85059851cb09fc080355350021363e95a5e227f84",
         "verification": "publisher-sha256"
       }
     },
@@ -462,6 +468,12 @@
         "version": "v4.54.1",
         "url": "https://github.com/mikefarah/yq/releases/download/v4.54.1/yq_linux_arm64",
         "sha256": "189088da0c6429ec5178dfaab1a114805f6cab0b61b165ab236efedf1d57a71b",
+        "verification": "publisher-sha256"
+      },
+      "mise": {
+        "version": "v2026.10.8",
+        "url": "https://github.com/jdx/mise/releases/download/v2026.10.8/mise-v2026.10.8-linux-arm64-musl",
+        "sha256": "d9c5447ad5084b7bf9705ef2913dfad97268235f15849a51e88a21ede7e7204a",
         "verification": "publisher-sha256"
       }
     }

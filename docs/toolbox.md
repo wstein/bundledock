@@ -147,6 +147,7 @@ and `arm64`; builds verify every download.
 | Leaf (`leaf`) | 1.29.0 |
 | lychee (`lychee`) | 0.24.2 |
 | Mike Farah yq (`yq`) | 4.54.1 |
+| mise (`mise`) | 2026.10.8 |
 | Nushell (`nu`) | 0.116.1 |
 | regctl (`regctl`) | 0.11.6 |
 | ripgrep (`rg`) | 15.2.0 |

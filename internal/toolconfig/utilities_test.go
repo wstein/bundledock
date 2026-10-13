@@ -11,6 +11,7 @@ func TestToolboxUtilities(t *testing.T) {
 		{"fzf", "junegunn/fzf", "tar.gz", "v0.74.5"},
 		{"bat", "sharkdp/bat", "tar.gz", "v0.26.1"},
 		{"regctl", "regclient/regclient", "raw", "v0.11.6"},
+		{"mise", "jdx/mise", "raw", "v2026.10.8"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			p, ok := c.Catalog.Packages[tc.name]
