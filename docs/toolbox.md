@@ -77,7 +77,7 @@ and `arm64`; builds verify every download.
 | Tool | Pinned version |
 | --- | --- |
 | age (`age`, `age-keygen`, `age-inspect`, plugins) | 1.3.2 |
-| ast-grep (`ast-grep`) | 0.45.3 |
+| ast-grep (`ast-grep`) | 0.50.0 |
 | bat (`bat`) | 0.26.1 |
 | bottom (`btm`) | 0.14.9 |
 | btop (`btop`) | 1.4.7 |
