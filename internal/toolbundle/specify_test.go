@@ -1,7 +1,6 @@
 package toolbundle
 
 import (
-	"bytes"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -9,160 +8,266 @@ import (
 	"testing"
 )
 
-// Only synthetic uvx and Python scripts execute; this test never installs tools.
-func TestSpecifyLauncher(t *testing.T) {
-	dst := t.TempDir()
+// These fixtures execute only stdlib Python and synthetic pip/venv commands.
+func specifyFixture(t *testing.T) (string, string, string) { return pythonToolFixture(t, "specify") }
+
+func pythonToolFixture(t *testing.T, tool string) (string, string, string) {
+	t.Helper()
+	dst, home, bin := t.TempDir(), t.TempDir(), t.TempDir()
 	root, err := os.OpenRoot(dst)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer root.Close()
-	p := testPackages(t)["uv"]
-	if err := Extract(root, "uv", p, bytes.NewReader(archive(t, member{"uv", "uv", 0755, 0}, member{"uvx", "#!/bin/sh\ntest -z \"${UV_INDEX+x}${UV_DEFAULT_INDEX+x}${UV_INDEX_URL+x}${UV_EXTRA_INDEX_URL+x}${UV_FIND_LINKS+x}${PIP_INDEX_URL+x}${PIP_EXTRA_INDEX_URL+x}${PIP_FIND_LINKS+x}${UV_OVERRIDE+x}${UV_CONSTRAINT+x}${UV_WORKING_DIR+x}\" || exit 99\nprintf '%s\\n' \"$UV_PYTHON_DOWNLOADS\" \"$UV_PYTHON_PREFERENCE\" \"$UV_CACHE_DIR\" \"$@\"\nexit 23\n", 0755, 0}))); err != nil {
+	writer := writeSpecifyLauncher
+	if tool == "tldr" {
+		writer = writeTldrLauncher
+	}
+	if err := writer(root); err != nil {
 		t.Fatal(err)
 	}
-	pythonBin := t.TempDir()
-	python := filepath.Join(pythonBin, "python3")
-	if err := os.WriteFile(python, []byte("#!/bin/sh\nexit 0\n"), 0755); err != nil {
+	python, err := exec.LookPath("python3")
+	if err != nil {
+		t.Skip("fixture Python unavailable")
+	}
+	fixture := filepath.Join(bin, "fixture.py")
+	script := `import os, pathlib, runpy, sys
+args = sys.argv[1:]
+home = pathlib.Path(os.environ["HOME"])
+if args[:3] == ["-I", "-B", "-m"]:
+    with (home / "calls").open("a") as out:
+        out.write(repr(args) + "\\n")
+    if args[3] == "venv":
+        venv = pathlib.Path(args[-1]); (venv / "bin").mkdir(parents=True)
+        (venv / "pyvenv.cfg").write_text("home = " + str(pathlib.Path(__file__).parent) + "\ninclude-system-site-packages = false\n")
+        (venv / "bin/python").symlink_to(pathlib.Path(__file__).with_name("python3"))
+    elif args[3] == "pip":
+        assert os.environ.get("PIP_CONFIG_FILE") == "/dev/null"
+        assert not any(k.startswith("PIP_") and k != "PIP_CONFIG_FILE" for k in os.environ)
+        assert not any(k.startswith("PYTHON") or k.startswith("UV_") for k in os.environ)
+        assert "--only-binary=:all:" in args and "--index-url" in args
+        assert args[args.index("--index-url")+1] == "https://pypi.org/simple"
+        if (home / "fail-install").exists(): sys.exit(7)
+        venv = pathlib.Path(os.environ["PATH"].split(os.pathsep)[0]).parent
+        name = "tldr" if "tldr" in str(venv) else "specify"
+        tool = venv / "bin" / name
+        tool.write_text('import os, sys\nassert not any(k.startswith(("PIP_", "PYTHON", "UV_")) for k in os.environ)\nprint("\\n".join(sys.argv[1:]))\nsys.exit(23)\n')
+        tool.chmod(0o755)
+    else: raise AssertionError(args)
+elif args[:2] == ["-I", "-B"] and (args[2].endswith("/bin/specify") or args[2].endswith("/bin/tldr")):
+    sys.argv = args[2:]
+    runpy.run_path(sys.argv[0], run_name="__main__")
+else:
+    assert args[:2] == ["-I", "-B"]
+    sys.executable = str(pathlib.Path(__file__).with_name("python3"))
+    if (home / "preflight").exists(): exec((home / "preflight").read_text())
+    sys.argv = args[2:]
+    runpy.run_path(sys.argv[0], run_name="__main__")
+`
+	if err := os.WriteFile(fixture, []byte(script), 0644); err != nil {
 		t.Fatal(err)
 	}
-	home := t.TempDir()
-	cache := filepath.Join(home, "cache with spaces")
-	cmd := exec.Command(filepath.Join(dst, "bin/specify"), "init", "project with spaces", "--here")
-	cmd.Dir = pythonBin
-	cmd.Env = []string{"PATH=.:/bin", "HOME=" + home, "UV_CACHE_DIR=" + cache, "UV_INDEX=https://untrusted.invalid/simple", "UV_DEFAULT_INDEX=https://untrusted.invalid/simple", "UV_INDEX_URL=https://untrusted.invalid/simple", "UV_EXTRA_INDEX_URL=https://untrusted.invalid/simple", "UV_FIND_LINKS=/untrusted/wheels", "PIP_INDEX_URL=https://untrusted.invalid/simple", "PIP_EXTRA_INDEX_URL=https://untrusted.invalid/simple", "PIP_FIND_LINKS=/untrusted/wheels", "UV_OVERRIDE=/untrusted/override.txt", "UV_CONSTRAINT=/untrusted/constraint.txt", "UV_WORKING_DIR=/untrusted/project"}
-	got, err := cmd.CombinedOutput()
+	wrapper := "#!/bin/sh\nexec '" + python + "' -I -B '" + fixture + "' \"$@\"\n"
+	if err := os.WriteFile(filepath.Join(bin, "python3"), []byte(wrapper), 0755); err != nil {
+		t.Fatal(err)
+	}
+	return dst, home, bin
+}
+
+func specifyCommand(dst, home, bin string, args ...string) *exec.Cmd {
+	return pythonToolCommand(dst, home, bin, "specify", args...)
+}
+
+func pythonToolCommand(dst, home, bin, tool string, args ...string) *exec.Cmd {
+	cmd := exec.Command(filepath.Join(dst, "bin/"+tool), args...)
+	cmd.Env = []string{"PATH=" + bin + ":/bin", "HOME=" + home, "PIP_INDEX_URL=https://untrusted.invalid", "PIP_EXTRA_INDEX_URL=https://untrusted.invalid", "PIP_TARGET=/untrusted", "PIP_REQUIREMENT=/untrusted", "PIP_CONFIG_FILE=/untrusted", "PYTHONPATH=/untrusted", "UV_INDEX=https://untrusted.invalid"}
+	return cmd
+}
+
+func TestSpecifyLauncher(t *testing.T) {
+	dst, home, bin := specifyFixture(t)
+	for i := 0; i < 2; i++ {
+		got, err := specifyCommand(dst, home, bin, "init", "project with spaces", "--here").CombinedOutput()
+		if exit, ok := err.(*exec.ExitError); !ok || exit.ExitCode() != 23 || string(got) != "init\nproject with spaces\n--here\n" {
+			t.Fatalf("exit %v output %q", err, got)
+		}
+	}
+	calls, err := os.ReadFile(filepath.Join(home, "calls"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Count(string(calls), "'venv'") != 1 || strings.Count(string(calls), "'pip'") != 1 {
+		t.Fatalf("not reused: %s", calls)
+	}
+	if !strings.Contains(string(calls), "specify.requirements.txt") {
+		t.Fatal("owned requirements not used", string(calls))
+	}
+	if _, err := os.Stat(filepath.Join(home, ".cache/bundledock/pip/specify")); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestSpecifyFailedInstallCanRetry(t *testing.T) {
+	dst, home, bin := specifyFixture(t)
+	failure := filepath.Join(home, "fail-install")
+	if err := os.WriteFile(failure, nil, 0600); err != nil {
+		t.Fatal(err)
+	}
+	got, err := specifyCommand(dst, home, bin, "--help").CombinedOutput()
+	if err == nil || !strings.Contains(string(got), "wheel installation failed") {
+		t.Fatalf("err %v got %s", err, got)
+	}
+	if err := os.Remove(failure); err != nil {
+		t.Fatal(err)
+	}
+	got, err = specifyCommand(dst, home, bin, "--help").CombinedOutput()
 	if exit, ok := err.(*exec.ExitError); !ok || exit.ExitCode() != 23 {
-		t.Fatalf("exit: %v output %q", err, got)
+		t.Fatalf("retry err %v got %s", err, got)
 	}
-	want := "never\nonly-system\n" + cache + "\n--no-config\n--no-managed-python\n--no-python-downloads\n--no-build\n--default-index\nhttps://pypi.org/simple\n--python\n" + python + "\n--from\nspecify-cli==1.1.3\nspecify\ninit\nproject with spaces\n--here\n"
-	if string(got) != want {
-		t.Fatalf("got %q want %q", got, want)
-	}
-	if _, err := os.Stat(cache); err != nil {
-		t.Fatalf("writable cache unavailable: %v", err)
-	}
-	for _, env := range []struct{ extra, cache string }{
-		{"", filepath.Join(home, ".cache/uv")},
-		{"UV_CACHE_DIR=relative cache", filepath.Join(pythonBin, "relative cache")},
-		{"XDG_CACHE_HOME=" + filepath.Join(home, "xdg cache"), filepath.Join(home, "xdg cache/uv")},
-	} {
-		cmd := exec.Command(filepath.Join(dst, "bin/specify"), "--help")
-		cmd.Dir = pythonBin
-		cmd.Env = []string{"PATH=" + pythonBin + ":/bin", "HOME=" + home}
-		if env.extra != "" {
-			cmd.Env = append(cmd.Env, env.extra)
-		}
-		got, err := cmd.CombinedOutput()
-		if exit, ok := err.(*exec.ExitError); !ok || exit.ExitCode() != 23 || !strings.Contains(string(got), "\n"+env.cache+"\n") {
-			t.Fatalf("default cache: %v %q", err, got)
-		}
-	}
-	if err := WriteManifest(root, "amd64", map[string]Spec{}); err != nil {
-		t.Fatal(err)
-	}
-	manifest, err := os.ReadFile(filepath.Join(dst, "manifest.json"))
+	calls, err := os.ReadFile(filepath.Join(home, "calls"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(manifest), `"specify": "specify-cli==1.1.3"`) {
-		t.Fatal("runtime launcher pin absent from manifest")
-	}
-	sums, err := os.ReadFile(filepath.Join(dst, "SHA256SUMS"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !strings.Contains(string(sums), "  bin/specify\n") {
-		t.Fatal("launcher absent from checksums")
-	}
-	if _, err := BundleLinks(root, ""); err != nil {
-		t.Fatalf("read own manifest: %v", err)
-	}
-	bad := strings.Replace(string(manifest), "specify-cli==1.1.3", "specify-cli==9.9.9", 1)
-	if err := os.WriteFile(filepath.Join(dst, "manifest.json"), []byte(bad), 0644); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := BundleLinks(root, ""); err == nil || !strings.Contains(err.Error(), "invalid runtime launcher metadata") {
-		t.Fatalf("accepted invalid launcher metadata: %v", err)
+	if strings.Count(string(calls), "'venv'") != 2 {
+		t.Fatal("incomplete venv reused", string(calls))
 	}
 }
 
 func TestSpecifyPreflight(t *testing.T) {
-	for _, tc := range []struct{ name, python, home, cache, uvx, want string }{
-		{"missing python", "missing", "normal", "normal", "present", "Python 3.11+ is required"},
-		{"old python", "sys.version_info=(3,10,99)", "normal", "normal", "present", "Python 3.11+ from the language image"},
-		{"virtual python", "sys.prefix='/virtual'", "normal", "normal", "present", "Python 3.11+ from the language image"},
-		{"managed python", "sys.executable='/home/user/.local/share/uv/python/cpython/bin/python3'", "normal", "normal", "present", "Python 3.11+ from the language image"},
-		{"custom managed python", "sys.executable='/custom-managed/cpython/bin/python3'", "normal", "normal", "present", "Python 3.11+ from the language image"},
-		{"missing uvx", "exit 0", "normal", "normal", "missing", "uvx executable is missing"},
-		{"unset home", "exit 0", "unset", "normal", "present", "HOME must be a writable"},
-		{"invalid home", "exit 0", "invalid", "normal", "present", "HOME must be a writable"},
-		{"toolbox home", "exit 0", "bundle", "normal", "present", "HOME must be outside"},
-		{"toolbox cache", "exit 0", "normal", "bundle", "present", "UV_CACHE_DIR must be outside"},
-		{"invalid cache", "exit 0", "normal", "invalid", "present", "UV_CACHE_DIR must be writable"},
-		{"symlink cache", "exit 0", "normal", "symlink", "present", "UV_CACHE_DIR must be outside"},
+	for _, tc := range []struct{ name, code, want string }{
+		{"old Python", "sys.version_info=(3,10,99)", "Python 3.11+ from the language image"},
+		{"virtual Python", "sys.prefix='/virtual'", "Python 3.11+ from the language image"},
+		{"managed Python", "sys.executable='/home/user/.local/share/uv/python/cpython/bin/python3'", "Python 3.11+ from the language image"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			dst := t.TempDir()
-			root, err := os.OpenRoot(dst)
+			dst, home, bin := specifyFixture(t)
+			if err := os.WriteFile(filepath.Join(home, "preflight"), []byte(tc.code), 0600); err != nil {
+				t.Fatal(err)
+			}
+			got, err := specifyCommand(dst, home, bin, "--help").CombinedOutput()
+			if err == nil || !strings.Contains(string(got), tc.want) {
+				t.Fatalf("err %v got %s", err, got)
+			}
+			if _, err := os.Stat(filepath.Join(home, "calls")); !os.IsNotExist(err) {
+				t.Fatal("installer ran during failed preflight")
+			}
+		})
+	}
+}
+
+func TestSpecifyMetadata(t *testing.T) {
+	dst, _, _ := specifyFixture(t)
+	root, err := os.OpenRoot(dst)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer root.Close()
+	if err := WriteManifest(root, "amd64", map[string]Spec{}); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(filepath.Join(dst, "SHA256SUMS"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"bin/specify", "libexec/python-tool.py", "share/specify/specify.requirements.txt"} {
+		if !strings.Contains(string(data), "  "+name+"\n") {
+			t.Fatal("unhashed", name)
+		}
+	}
+	if _, err := BundleLinks(root, ""); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dst, "share/specify/specify.requirements.txt"), []byte("specify-cli==9.9.9\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := BundleLinks(root, ""); err == nil {
+		t.Fatal("accepted changed runtime requirements")
+	}
+}
+
+func TestSpecifyConcurrentFirstUse(t *testing.T) {
+	dst, home, bin := specifyFixture(t)
+	commands := make([]*exec.Cmd, 4)
+	for i := range commands {
+		commands[i] = specifyCommand(dst, home, bin, "--help")
+		if err := commands[i].Start(); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, cmd := range commands {
+		if err := cmd.Wait(); err == nil || err.(*exec.ExitError).ExitCode() != 23 {
+			t.Fatal(err)
+		}
+	}
+	calls, err := os.ReadFile(filepath.Join(home, "calls"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Count(string(calls), "'venv'") != 1 || strings.Count(string(calls), "'pip'") != 1 {
+		t.Fatal("concurrent duplicate install", string(calls))
+	}
+}
+
+func TestSpecifyChangedVenvRecreatesOwnedEnvironment(t *testing.T) {
+	for _, change := range []string{"configuration", "interpreter", "entrypoint"} {
+		t.Run(change, func(t *testing.T) {
+			dst, home, bin := specifyFixture(t)
+			got, err := specifyCommand(dst, home, bin, "--help").CombinedOutput()
+			if exit, ok := err.(*exec.ExitError); !ok || exit.ExitCode() != 23 {
+				t.Fatalf("err %v got %s", err, got)
+			}
+			dirs, err := filepath.Glob(filepath.Join(home, ".local/share/bundledock/tools/specify", "[a-f0-9]*"))
+			if err != nil || len(dirs) != 1 {
+				t.Fatal(err, dirs)
+			}
+			switch change {
+			case "configuration":
+				err = os.WriteFile(filepath.Join(dirs[0], "pyvenv.cfg"), []byte("home = /untrusted\ninclude-system-site-packages = true\n"), 0600)
+			case "interpreter":
+				err = os.Remove(filepath.Join(dirs[0], "bin/python"))
+				if err == nil {
+					err = os.Symlink("/untrusted/python", filepath.Join(dirs[0], "bin/python"))
+				}
+			case "entrypoint":
+				err = os.WriteFile(filepath.Join(dirs[0], "bin/specify"), []byte("raise RuntimeError('UNEXPECTED')"), 0755)
+			}
 			if err != nil {
 				t.Fatal(err)
 			}
-			defer root.Close()
-			if err := writeSpecifyLauncher(root); err != nil {
+			got, err = specifyCommand(dst, home, bin, "--help").CombinedOutput()
+			if exit, ok := err.(*exec.ExitError); !ok || exit.ExitCode() != 23 {
+				t.Fatalf("err %v got %s", err, got)
+			}
+			calls, err := os.ReadFile(filepath.Join(home, "calls"))
+			if err != nil {
 				t.Fatal(err)
 			}
-			if tc.uvx == "present" {
-				if err := WriteFile(root, "bin/uvx", strings.NewReader("#!/bin/sh\necho UNEXPECTED_UVX\n"), 0755); err != nil {
-					t.Fatal(err)
+			if strings.Count(string(calls), "'venv'") != 2 {
+				t.Fatal("changed environment reused", string(calls))
+			}
+		})
+	}
+}
+
+func TestSpecifyStateOutsideToolbox(t *testing.T) {
+	for _, variable := range []string{"HOME", "XDG_DATA_HOME", "XDG_CACHE_HOME"} {
+		t.Run(variable, func(t *testing.T) {
+			dst, home, bin := specifyFixture(t)
+			cmd := specifyCommand(dst, home, bin, "--help")
+			// Replace rather than duplicate HOME; getenv duplicate behavior differs by OS.
+			for i, value := range cmd.Env {
+				if strings.HasPrefix(value, variable+"=") {
+					cmd.Env = append(cmd.Env[:i], cmd.Env[i+1:]...)
+					break
 				}
 			}
-			bin := t.TempDir()
-			if strings.HasPrefix(tc.python, "sys.") {
-				systemPython, err := exec.LookPath("python3")
-				if err != nil {
-					t.Skip("Python fixture interpreter unavailable")
-				}
-				tc.python = "exec '" + systemPython + "' -I -B -c 'import sys; " + strings.ReplaceAll(tc.python, "'", `'\''`) + "; exec(sys.argv[1])' \"$4\""
-			}
-			if tc.python != "missing" {
-				if err := os.WriteFile(filepath.Join(bin, "python3"), []byte("#!/bin/sh\n"+tc.python+"\n"), 0755); err != nil {
-					t.Fatal(err)
-				}
-			}
-			// Limit PATH to fixtures; only harmless system mkdir is needed by preflight.
-			if err := os.Symlink("/bin/mkdir", filepath.Join(bin, "mkdir")); err != nil {
-				t.Fatal(err)
-			}
-			home := t.TempDir()
-			switch tc.home {
-			case "unset":
-				home = ""
-			case "invalid":
-				home = filepath.Join(home, "missing")
-			case "bundle":
-				home = dst
-			}
-			cache := filepath.Join(t.TempDir(), "cache")
-			switch tc.cache {
-			case "bundle":
-				cache = dst
-			case "invalid":
-				cache = filepath.Join(dst, "bin/specify/child")
-			case "symlink":
-				cache = filepath.Join(t.TempDir(), "link")
-				if err := os.Symlink(dst, cache); err != nil {
-					t.Fatal(err)
-				}
-			}
-			cmd := exec.Command(filepath.Join(dst, "bin/specify"), "--help")
-			cmd.Env = []string{"PATH=" + bin, "HOME=" + home, "UV_CACHE_DIR=" + cache, "UV_INDEX=https://untrusted.invalid/simple", "UV_DEFAULT_INDEX=https://untrusted.invalid/simple", "UV_INDEX_URL=https://untrusted.invalid/simple", "UV_EXTRA_INDEX_URL=https://untrusted.invalid/simple", "UV_FIND_LINKS=/untrusted/wheels", "PIP_INDEX_URL=https://untrusted.invalid/simple", "PIP_EXTRA_INDEX_URL=https://untrusted.invalid/simple", "PIP_FIND_LINKS=/untrusted/wheels", "UV_OVERRIDE=/untrusted/override.txt", "UV_CONSTRAINT=/untrusted/constraint.txt", "UV_WORKING_DIR=/untrusted/project"}
-			if tc.name == "custom managed python" {
-				cmd.Env = append(cmd.Env, "UV_PYTHON_INSTALL_DIR=/custom-managed")
-			}
+			cmd.Env = append(cmd.Env, variable+"="+dst)
 			got, err := cmd.CombinedOutput()
-			if err == nil || !strings.Contains(string(got), tc.want) || strings.Contains(string(got), "UNEXPECTED_UVX") {
-				t.Fatalf("err=%v output=%q want=%q", err, got, tc.want)
+			if err == nil || !strings.Contains(string(got), "must be outside the toolbox") {
+				t.Fatalf("err %v got %s", err, got)
+			}
+			if _, err := os.Stat(filepath.Join(home, "calls")); !os.IsNotExist(err) {
+				t.Fatal("installer executed on failed preflight")
 			}
 		})
 	}

@@ -233,19 +233,25 @@ func BundleLinks(root *os.Root, profile string) (map[string]string, error) {
 	if err := toolconfig.Decode(f, &m); err != nil {
 		return nil, err
 	}
-	if len(m.Launchers) != 0 {
-		if profile != "" || len(m.Launchers) != 1 || m.Launchers["specify"] != "specify-cli==1.1.3" {
+	for name, pin := range m.Launchers {
+		expected, validate := "specify-cli==1.1.3", validateSpecifyLauncher
+		if name == "tldr" {
+			expected, validate = "tldr==3.4.4", validateTldrLauncher
+		} else if name != "specify" {
 			return nil, fmt.Errorf("invalid runtime launcher metadata")
 		}
-		if err := CheckPath(root, "bin/specify"); err != nil {
+		if profile != "" || pin != expected {
+			return nil, fmt.Errorf("invalid runtime launcher metadata")
+		}
+		if err := validate(root); err != nil {
 			return nil, err
 		}
-		info, err := root.Stat("bin/specify")
+		info, err := root.Stat("bin/" + name)
 		if err != nil {
 			return nil, err
 		}
 		if !info.Mode().IsRegular() || info.Mode().Perm()&0111 == 0 {
-			return nil, fmt.Errorf("invalid specify launcher")
+			return nil, fmt.Errorf("invalid %s launcher", name)
 		}
 	}
 	if profile == "" {

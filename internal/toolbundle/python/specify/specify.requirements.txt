@@ -1,0 +1,2 @@
+# Exact official top-level wheel; transitive versions are intentionally unfrozen.
+specify-cli @ https://files.pythonhosted.org/packages/39/fa/f408b9b7b6333daf3efd7478e9211ecbbce2fb9e30975bfc5eea1f23b076/specify_cli-1.1.3-py3-none-any.whl#sha256=9cc0712dbdffb8a035f1d3f4b80f678eeeddc14b3cf1437d26056df2c60ee127

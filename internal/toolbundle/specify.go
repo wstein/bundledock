@@ -3,14 +3,20 @@ package toolbundle
 import (
 	_ "embed"
 	"os"
-	"strings"
 )
 
 //go:embed specify.sh
 var specifyLauncher string
 
-// The owned launcher uses the existing uv payload. Spec Kit is not installed in
-// the immutable bundle and is deliberately absent from the artifact lock.
+//go:embed python/specify/specify.requirements.txt
+var specifyRequirements string
+
+// The immutable toolbox carries owned source and metadata, never a Python
+// runtime or installed package. Plain pip installs into writable tool state.
 func writeSpecifyLauncher(root *os.Root) error {
-	return WriteFile(root, "bin/specify", strings.NewReader(specifyLauncher), 0755)
+	return writePythonLauncher(root, "specify", specifyLauncher, specifyRequirements)
+}
+
+func validateSpecifyLauncher(root *os.Root) error {
+	return validatePythonLauncher(root, "specify", specifyLauncher, specifyRequirements)
 }
