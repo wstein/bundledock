@@ -202,7 +202,7 @@ func parseSidecar(b []byte, asset string) (string, error) {
 		if len(fields) == 0 {
 			continue
 		}
-		if len(fields) == 1 || len(fields) == 2 && strings.TrimPrefix(fields[1], "*") == asset {
+		if len(fields) == 1 || len(fields) == 2 && strings.TrimPrefix(strings.TrimPrefix(fields[1], "*"), "./") == asset {
 			digest := fields[0]
 			decoded, err := hex.DecodeString(digest)
 			if err != nil || len(decoded) != 32 {

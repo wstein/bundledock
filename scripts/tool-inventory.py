@@ -34,6 +34,7 @@ LABELS = (
     ("ast-grep", "ast-grep (`ast-grep`)"),
     ("yq", "Mike Farah yq (`yq`)"),
     ("uv", "uv (`uv`, `uvx`)"),
+    ("mise", "mise (`mise`)"),
     ("herdr", "Herdr (`herdr`)"),
     ("fish", "Fish (`fish`)"),
     ("starship", "Starship (`starship`)"),

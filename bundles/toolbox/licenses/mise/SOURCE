@@ -1,0 +1,10 @@
+Upstream: https://github.com/jdx/mise
+Pinned release: v2026.10.8
+License: MIT
+License source: https://raw.githubusercontent.com/jdx/mise/v2026.10.8/LICENSE
+Official raw Linux MUSL assets and SHASUMS256.txt were downloaded and their
+SHA256 hashes matched the release API digests and checksum file on 2026-10-13.
+AMD64: 043dc6b9077db988269ca2f85059851cb09fc080355350021363e95a5e227f84
+ARM64: d9c5447ad5084b7bf9705ef2913dfad97268235f15849a51e88a21ede7e7204a
+Read-only ELF inspection confirmed x86-64/AArch64 and no ELF interpreter.
+No upstream executable was run. Runtime and image smoke remain deferred.
