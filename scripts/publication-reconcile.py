@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Read-only reconciliation of an exact publication attempt, receipt, OCI index and source tag."""
 import argparse
+import base64
 import importlib.util
 import io
 import json
@@ -136,6 +137,56 @@ def executed(job, name):
     require(len(steps) == 1 and completed(steps[0]), 'Required publication step did not execute successfully')
 
 
+def attempt_evidence(run, jobs):
+    """Retain only the exact attempt and executed native/promotion provenance."""
+    selected = []
+    for name, step in ((JOBS[1], SMOKE), (JOBS[2], SMOKE), (JOBS[3], PROMOTE)):
+        matches = [job for job in jobs if job.get('name') == name]
+        require(len(matches) == 1, 'Expected exact native/promotion job')
+        job = matches[0]
+        require(completed(job) and isinstance(job.get('id'), int) and job['id'] > 0
+                and job.get('run_id') == run['id'] and job.get('head_sha') == run['head_sha'],
+                'Native/promotion job identity mismatch')
+        executed(job, step)
+        selected.append({**{key: job[key] for key in ('id', 'name', 'run_id', 'head_sha', 'status', 'conclusion')},
+                         'steps': [{key: item[key] for key in ('name', 'status', 'conclusion')}
+                                   for item in job['steps'] if item.get('name') == step]})
+    return {**{key: run[key] for key in ('id', 'run_attempt', 'run_number', 'head_sha', 'event', 'path')},
+            'jobs': selected}
+
+
+def durable_receipt(bundle, run_id, attempt, run, jobs, api, evidence_ref=None):
+    path = docs.metadata_path(bundle)
+    if evidence_ref is not None:
+        comparison = api.get('/compare/' + evidence_ref + '...main')
+        require(comparison.get('merge_base_commit', {}).get('sha') == evidence_ref,
+                'Durable evidence revision is not on official main')
+    file = api.get('/contents/' + path + '?ref=' + (evidence_ref or 'main'))
+    require(isinstance(file, dict), 'Invalid tracked metadata response')
+    require(file.get('type') == 'file' and file.get('path') == path
+            and file.get('encoding') == 'base64', 'Expected tracked publication metadata')
+    require(isinstance(file.get('content'), str) and len(file['content']) <= 90000,
+            'Invalid or oversized tracked metadata content')
+    raw = base64.b64decode(''.join(file['content'].split()), validate=True)
+    require(len(raw) <= 65536, 'Oversized tracked publication metadata')
+    metadata = json.loads(raw)
+    require(isinstance(metadata, dict), 'Tracked publication metadata must be an object')
+    evidence = metadata.get('publication_evidence')
+    if not evidence or metadata.get('run_id') != run_id:
+        raise Pending('Exact durable publication evidence unavailable')
+    require(isinstance(evidence, dict), 'Durable publication evidence must be an object')
+    stored_attempt = evidence['attempt']
+    require(isinstance(stored_attempt, dict), 'Durable attempt must be an object')
+    if stored_attempt.get('run_attempt') != int(attempt):
+        raise Pending('Exact durable publication attempt unavailable')
+    require(stored_attempt == attempt_evidence(run, jobs), 'Durable attempt provenance mismatch')
+    receipt = evidence['receipt']
+    require(isinstance(receipt, dict), 'Durable receipt must be an object')
+    require(metadata.get('bundle') == bundle and all(metadata.get(key) == receipt.get(key)
+            for key in ('tag', 'digest', 'commit', 'image', 'run_id')), 'Durable metadata differs from receipt')
+    return receipt
+
+
 def receipt_from_archive(raw):
     require(len(raw) <= LIMIT, 'Oversized artifact archive')
     with zipfile.ZipFile(io.BytesIO(raw)) as archive:
@@ -174,13 +225,7 @@ def verify_receipt_registry(record, receipt, registry):
                 'Registry lock or build time differs from receipt')
 
 
-def reconcile(bundle, revision, run_id, attempt, api, registry_factory=tags.Registry):
-    approval.sha(revision)
-    require(re.fullmatch('[1-9][0-9]*', run_id or '') and re.fullmatch('[1-9][0-9]*', attempt or ''),
-            'Exact positive run ID and attempt required')
-    selection = approval.config.select_bundle(bundle)
-    path = '/actions/runs/' + run_id + '/attempts/' + attempt
-    run = api.get(path)
+def validate_attempt(run, selection, revision, run_id, attempt):
     require(run.get('id') == int(run_id) and run.get('run_attempt') == int(attempt)
             and run.get('repository', {}).get('full_name') == REPOSITORY
             and run.get('head_repository', {}).get('full_name') == REPOSITORY
@@ -191,6 +236,39 @@ def reconcile(bundle, revision, run_id, attempt, api, registry_factory=tags.Regi
     approval.sha(run.get('head_sha'))
     if run['event'] == 'workflow_dispatch':
         require(run['head_sha'] == revision, 'Manual run source mismatch')
+
+
+def capture_evidence(bundle, revision, run_id, attempt, receipt, api):
+    """Freeze verified receipt/provenance before the documentation proposal."""
+    docs.validate(receipt, bundle, receipt['image'], revision, run_id, attempt)
+    run = api.get('/actions/runs/' + run_id + '/attempts/' + attempt)
+    validate_attempt(run, approval.config.select_bundle(bundle), revision, run_id, attempt)
+    jobs = api.listing('/actions/runs/' + run_id + '/attempts/' + attempt + '/jobs', 'jobs')
+    evidence = attempt_evidence(run, jobs)
+    tag_jobs = [job for job in jobs if job.get('name') == JOBS[4]]
+    require(len(tag_jobs) == 1 and completed(tag_jobs[0])
+            and tag_jobs[0].get('run_id') == int(run_id) and tag_jobs[0].get('head_sha') == run['head_sha'],
+            'Expected successful source tag job')
+    executed(tag_jobs[0], TAG)
+    record = tags.validate_record(tags.bind_publication(receipt, bundle))
+    require(record['attempt'] == int(attempt) and (record['run_number'] is None or record['run_number'] == run.get('run_number')),
+            'Receipt attempt/run number mismatch')
+    comparison = api.get('/compare/' + revision + '...main')
+    require(comparison.get('merge_base_commit', {}).get('sha') == revision, 'Published source is not on official main')
+    verify_tag(record, api)
+    return dict(receipt=receipt, attempt=evidence)
+
+
+def reconcile(bundle, revision, run_id, attempt, api, registry_factory=tags.Registry, evidence_ref=None):
+    approval.sha(revision)
+    if evidence_ref is not None:
+        approval.sha(evidence_ref)
+    require(re.fullmatch('[1-9][0-9]*', run_id or '') and re.fullmatch('[1-9][0-9]*', attempt or ''),
+            'Exact positive run ID and attempt required')
+    selection = approval.config.select_bundle(bundle)
+    path = '/actions/runs/' + run_id + '/attempts/' + attempt
+    run = api.get(path)
+    validate_attempt(run, selection, revision, run_id, attempt)
     result = dict(bundle=bundle, requested_source_sha=revision, controller_sha=run['head_sha'], run_id=run_id, run_attempt=attempt,
                   event=run['event'], conclusion=run.get('conclusion'), state='pending')
     if run.get('status') != 'completed' or run.get('conclusion') not in ('success', 'failure', 'cancelled', 'timed_out', 'action_required', 'neutral', 'stale'):
@@ -202,24 +280,42 @@ def reconcile(bundle, revision, run_id, attempt, api, registry_factory=tags.Regi
     result.update(state=state, jobs={job['name']: job.get('conclusion') for job in jobs})
     if state in ('pending', 'incomplete'):
         return result
-    artifacts = api.listing('/actions/runs/' + run_id + '/artifacts', 'artifacts')
+    try:
+        artifacts = api.listing('/actions/runs/' + run_id + '/artifacts', 'artifacts')
+    except Pending:
+        if state == 'not-published':
+            raise
+        artifacts = []
     matches = [item for item in artifacts if item.get('name') == bundle + '-publication-' + attempt]
     require(len(matches) <= 1, 'Ambiguous canonical publication artifact')
     if state == 'not-published':
         require(not matches, 'Skipped publisher has a publication receipt')
-        return result
+        try:
+            durable_receipt(bundle, run_id, attempt, run, jobs, api, evidence_ref)
+        except Pending:
+            return result
+        raise ValueError('Skipped publisher has durable publication evidence')
     by_name = {job['name']: job for job in jobs}
     for name in JOBS[1:3]:
         executed(by_name[name], SMOKE)
     executed(by_name[JOBS[3]], PROMOTE)
-    if not matches or matches[0].get('expired') is not False:
-        raise Pending('Canonical publication artifact unavailable')
-    artifact = matches[0]
-    require(artifact.get('workflow_run', {}).get('id') == int(run_id)
-            and artifact['workflow_run'].get('head_sha') == run['head_sha']
-            and isinstance(artifact.get('id'), int) and artifact['id'] > 0,
-            'Artifact run/source identity mismatch')
-    receipt = receipt_from_archive(api.raw('/actions/artifacts/' + str(artifact['id']) + '/zip'))
+    unavailable = object()
+    receipt = unavailable
+    if matches:
+        artifact = matches[0]
+        require(artifact.get('workflow_run', {}).get('id') == int(run_id)
+                and artifact['workflow_run'].get('head_sha') == run['head_sha']
+                and isinstance(artifact.get('id'), int) and artifact['id'] > 0,
+                'Artifact run/source identity mismatch')
+        if not isinstance(artifact.get('expired'), bool):
+            raise Pending('Unknown artifact expiry state')
+        if not artifact['expired']:
+            try:
+                receipt = receipt_from_archive(api.raw('/actions/artifacts/' + str(artifact['id']) + '/zip'))
+            except Pending:
+                pass
+    if receipt is unavailable:
+        receipt = durable_receipt(bundle, run_id, attempt, run, jobs, api, evidence_ref)
     image = 'quay.io/bundledock/' + selection['repository']
     docs.validate(receipt, bundle, image, revision, run_id, attempt)
     record = tags.validate_record(tags.bind_publication(receipt, bundle))
@@ -251,9 +347,10 @@ def main():
     parser.add_argument('--sha', required=True)
     parser.add_argument('--run-id', required=True)
     parser.add_argument('--attempt', required=True)
+    parser.add_argument('--evidence-ref', help='Full official-main ancestor SHA holding historical publication metadata')
     args = parser.parse_args()
     try:
-        result = reconcile(args.bundle, args.sha, args.run_id, args.attempt, GitHub())
+        result = reconcile(args.bundle, args.sha, args.run_id, args.attempt, GitHub(), evidence_ref=args.evidence_ref)
         print(json.dumps(result, sort_keys=True))
         return 0 if result['state'] in ('published', 'not-published') else 2
     except Pending:

@@ -105,10 +105,11 @@ def replacement(source, record):
 
 
 def metadata_path(bundle):
-    return 'docs/' + bundle + '-published.json' if bundle in ('node', 'node-current') else None
+    require(bundle in BUNDLES, 'Unknown bundle')
+    return 'docs/' + bundle + '-published.json'
 
 
-def metadata(bundle, record, previous='{}'):
+def metadata(bundle, record, previous='{}', evidence=None):
     # Historical date tags do not encode an upstream version. Preserve an
     # independently verified value only for the exact same published identity.
     upstream = record['tag'].split('-b')[0] if _TAGS.SINGLETON.fullmatch(record['tag']) else 'unknown'
@@ -119,21 +120,23 @@ def metadata(bundle, record, previous='{}'):
             upstream = candidate
     result = {key: record[key] for key in ('tag', 'digest', 'commit', 'image', 'run_id')}
     result.update(bundle=bundle, upstream_version=upstream)
+    if evidence is not None:
+        result['publication_evidence'] = evidence
+    elif all(old.get(key) == record[key] for key in ('tag', 'digest', 'commit', 'image', 'run_id')) and 'publication_evidence' in old:
+        result['publication_evidence'] = old['publication_evidence']
     return json.dumps(result, sort_keys=True, indent=2) + '\n'
 
 
-def update(root, bundle, record):
+def update(root, bundle, record, evidence=None):
     root = root.resolve(strict=True)
-    paths = [BUNDLES[bundle]]
-    if metadata_path(bundle):
-        paths.append(metadata_path(bundle))
+    paths = [BUNDLES[bundle], metadata_path(bundle)]
     changes = []
     for relative in paths:
         path = root / relative
         require(not path.is_symlink() and not path.parent.is_symlink(), 'Linked documentation path forbidden')
         require(path.resolve().is_relative_to(root), 'Documentation path escapes repository')
         source = path.read_bytes().decode('utf-8') if path.exists() else '{}'
-        result = replacement(source, record) if relative == BUNDLES[bundle] else metadata(bundle, record, source)
+        result = replacement(source, record) if relative == BUNDLES[bundle] else metadata(bundle, record, source, evidence)
         if result != source:
             changes.append((path, result))
     for path, result in changes:
@@ -158,7 +161,7 @@ def api(path, payload=None):
     return json.loads(result.stdout)
 
 
-def propose(root, bundle, record):
+def propose(root, bundle, record, evidence=None):
     os.chdir(root)
     require(command('git', 'status', '--porcelain') == '', 'Working tree must be clean')
     require(command('gh', 'api', 'repos/' + REPOSITORY, '--jq', '.default_branch') == 'main', 'Wrong default branch')
@@ -173,12 +176,14 @@ def propose(root, bundle, record):
     changes = []
     if desired != source:
         changes.append({'path': path, 'mode': '100644', 'type': 'blob', 'content': desired})
-    badge_path = metadata_path(bundle)
-    if badge_path:
-        old_metadata = source_at(base, badge_path)
-        desired_metadata = metadata(bundle, record, old_metadata)
-        if desired_metadata != old_metadata:
-            changes.append({'path': badge_path, 'mode': '100644', 'type': 'blob', 'content': desired_metadata})
+    receipt_path = metadata_path(bundle)
+    # New bundle metadata may not exist on the base yet; list the exact
+    # tree first rather than swallowing a failed Git read.
+    exists = command('git', 'ls-tree', '--name-only', base, '--', receipt_path)
+    old_metadata = source_at(base, receipt_path) if exists == receipt_path else '{}'
+    desired_metadata = metadata(bundle, record, old_metadata, evidence)
+    if desired_metadata != old_metadata:
+        changes.append({'path': receipt_path, 'mode': '100644', 'type': 'blob', 'content': desired_metadata})
     if not changes:
         return 'Publication source already current'
     tree = api('git/commits/' + base)['tree']['sha']
@@ -233,8 +238,18 @@ def main():
     args = parser.parse_args()
     try:
         require(args.receipt.stat().st_size <= 65536, 'Oversized receipt')
-        record = validate(json.loads(args.receipt.read_text()), args.bundle, args.image, args.sha, args.run_id, args.attempt)
-        result = propose(args.root.resolve(), args.bundle, record) if args.propose else update(args.root, args.bundle, record)
+        receipt = json.loads(args.receipt.read_text())
+        record = validate(receipt, args.bundle, args.image, args.sha, args.run_id, args.attempt)
+        evidence = None
+        if args.propose:
+            spec = importlib.util.spec_from_file_location('publication_reconcile', Path(__file__).with_name('publication-reconcile.py'))
+            reconciliation = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(reconciliation)
+            try:
+                evidence = reconciliation.capture_evidence(args.bundle, args.sha, args.run_id, args.attempt, receipt, reconciliation.GitHub())
+            except reconciliation.Pending as error:
+                raise ValueError('Required publication evidence unavailable') from error
+        result = propose(args.root.resolve(), args.bundle, record, evidence) if args.propose else update(args.root, args.bundle, record)
         print(result)
     except (OSError, ValueError, KeyError, TypeError, subprocess.CalledProcessError) as error:
         print('publication docs: ' + str(error), file=sys.stderr)

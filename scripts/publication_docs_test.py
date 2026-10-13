@@ -108,6 +108,7 @@ class PublicationDocsTest(unittest.TestCase):
                     if args[:2]==('gh','api'): return 'main'
                     if args[:4]==('git','remote','get-url','origin'): return self.module.SOURCE+'.git'
                     if args[:2]==('git','fetch'): return ''
+                    if args[:2]==('git','ls-tree'): return 'docs/toolbox-published.json' if mode == 'current' else ''
                     if args[:3]==('git','rev-parse','origin/main'): return base
                     if args[:2]==('git','ls-remote'): return ('4'*40 if mode=='moved' else base)+'\trefs/heads/main'
                     if args[:3]==('gh','pr','list'):
@@ -119,7 +120,8 @@ class PublicationDocsTest(unittest.TestCase):
                     api_calls.append((path,payload))
                     if path=='git/commits/'+base: return {'tree':{'sha':'5'*40}}
                     if path=='git/trees':
-                        self.assertEqual(payload['tree'],[dict(path='docs/toolbox.md',mode='100644',type='blob',content=desired)])
+                        self.assertEqual(payload['tree'],[dict(path='docs/toolbox.md',mode='100644',type='blob',content=desired),
+                            dict(path='docs/toolbox-published.json',mode='100644',type='blob',content=self.module.metadata('toolbox',record))])
                         self.assertTrue(payload['tree'][0]['content'].startswith('\n\nbefore  \n'))
                         self.assertTrue(payload['tree'][0]['content'].endswith('\nafter  \n\n'))
                         return {'sha':tree}
@@ -136,7 +138,7 @@ class PublicationDocsTest(unittest.TestCase):
                     raise AssertionError(path)
                 old=Path.cwd()
                 try:
-                    with patch.object(self.module,'command',side_effect=fake), patch.object(self.module,'api',side_effect=fake_api), patch.object(self.module,'source_at',return_value=desired if mode=='current' else source):
+                    with patch.object(self.module,'command',side_effect=fake), patch.object(self.module,'api',side_effect=fake_api), patch.object(self.module,'source_at',side_effect=lambda base,path: self.module.metadata('toolbox',record) if path.endswith('.json') else (desired if mode=='current' else source)):
                         if mode in ['moved','conflict','wrong-pr','topic-moved']:
                             with self.assertRaises(ValueError): self.module.propose(root,'toolbox',record)
                         else: self.module.propose(root,'toolbox',record)
@@ -148,6 +150,16 @@ class PublicationDocsTest(unittest.TestCase):
                 else:
                     if mode!='current': self.assertTrue(any('expected_head_sha='+head in call for call in calls))
                 if mode=='identical': self.assertFalse(any(call[:3]==('gh','pr','create') for call in calls))
+
+    def test_every_bundle_metadata_retains_canonical_evidence_without_enlarging_markdown(self):
+        record = self.validate()
+        evidence = {'receipt': self.receipt, 'attempt': {'id': 123, 'run_attempt': 1}}
+        for bundle in self.module.BUNDLES:
+            with self.subTest(bundle=bundle):
+                self.assertEqual(self.module.metadata_path(bundle), 'docs/' + bundle + '-published.json')
+                metadata = json.loads(self.module.metadata(bundle, record, evidence=evidence))
+                self.assertEqual(metadata['publication_evidence'], evidence)
+                self.assertNotIn('platforms', self.module.render(record))
 
     def test_node_metadata_tracks_receipt_not_source_inventory(self):
         for bundle, tag, upstream in [('node', '24.21.0-b2', '24.21.0'),
