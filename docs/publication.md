@@ -298,6 +298,20 @@ badges read the managed `docs/node-published.json` and
 as the corresponding guide. They refresh after that PR is merged and the badge
 cache expires; they do not display the current source lock.
 
+For every bundle, the same PR also writes `docs/<bundle>-published.json`.
+Its existing display fields remain compatible with the Node badges. The
+`publication_evidence` object retains the complete canonical `publication.json`
+receipt and the exact workflow attempt identity: source/controller binding,
+event, workflow path, run ID/attempt/number, and both native smoke and promotion
+job IDs, conclusions and executed steps. Capture runs while the documentation
+job and parent run are still in progress; it requires the preceding native,
+promotion and tag jobs to have succeeded, source ancestry on official `main`,
+and the matching annotated source tag. The tag job already verified registry
+publication; capture adds no registry credentials to the documentation job.
+Git retains this source evidence after the 90-day CI artifact expires, once
+the publication PR has been merged. Existing historical metadata has no such
+evidence until a separately verified source update supplies it.
+
 This job edits Markdown and publication metadata source only. It creates a topic from fresh `main` using
 GitHub's create-only reference API, never advances an existing topic, and reuses
 an existing PR only when its tree, parent, head and target match. Conflicting
@@ -374,7 +388,13 @@ The helper reads the exact workflow attempt and its jobs, checks that both
 native build-and-smoke steps actually executed successfully, and checks promotion,
 tagging and documentation proposal steps. It downloads only the uniquely named
 `<bundle>-publication-<attempt>` artifact from that run and validates its canonical
-`publication.json` with the existing receipt validator. The receipt must bind
+`publication.json` with the existing receipt validator. If that artifact has
+expired, is missing, or its listing/download is unavailable, it can read the
+canonical receipt from the exact matching `publication_evidence` in official
+`main`'s `docs/<bundle>-published.json`. The stored attempt and native/promotion
+job/step snapshot must equal live GitHub evidence. An available contradictory
+artifact, malformed proof or unknown job/expiry state never permits fallback.
+The receipt must bind
 the requested source, run and attempt, both smoked platforms and immutable index.
 The helper independently hashes the live version index, architecture manifests
 and configs, compares them to the smoked receipt, verifies OCI source/run/lock
@@ -394,8 +414,19 @@ source SHA remain separate; only a verified receipt establishes `source_sha`.
 
 Exit status is `0` for `published` or `not-published`, `2` for pending or incomplete
 work (including a verified image with unfinished tag/docs work), and `1` for
-contradictory evidence. API outages and expired receipts remain pending, even if
-a badge is green. No state proves consumer activation. Immutable version evidence
+contradictory evidence. Artifact expiry alone can be covered by verified tracked
+evidence; unavailable live run/jobs, registry or tag evidence still leaves the
+result pending, even if a badge is green. No state proves consumer activation. Immutable version evidence
 is checked rather than current moving aliases, which may already identify a
 later publication. The helper never dispatches workflows, builds artifacts,
 writes registry data, creates tags, opens PRs, merges, or changes settings.
+
+By default, tracked metadata describes the latest merged publication. To read an
+older receipt retained in Git history, add `--evidence-ref <full-40-character-SHA>`
+with a commit containing that publication's metadata. The helper requires that
+commit to be an ancestor of official `main`; arbitrary branches, tags and local
+files are not evidence sources. The selected record must still match the exact
+requested source/run/attempt and all live checks. A newer or unrelated record
+leaves the older attempt pending. This covers CI artifact retention, not permanent
+archival of live GitHub job history or registry content; deleted/inaccessible live
+proof remains pending.
