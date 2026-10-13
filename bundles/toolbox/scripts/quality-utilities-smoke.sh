@@ -21,7 +21,15 @@ printf '%s\n' '--- a/smoke' '+++ b/smoke' '@@ -1 +1 @@' '-before-smoke' '+after-
 grep -q after-smoke "$work/diff"
 test "$(watchexec -1 --shell=none --workdir "$work" -- echo watch-smoke)" = watch-smoke
 hyperfine --warmup 0 --runs 1 --export-json "$work/benchmark.json" true
-grep -q '"times"' "$work/benchmark.json"
+jq -e '
+    .schema_version == 2 and (.results | length) == 1 and
+    .results[0].command == "true" and
+    (.results[0].measurements | length) == 1 and
+    (.results[0].measurements[0] |
+        .exit_code == 0 and .time_wall_clock.unit == "second" and
+        (.time_wall_clock.value | type) == "number" and
+        .time_wall_clock.value >= 0)
+' "$work/benchmark.json" > /dev/null
 age-keygen -o "$work/key.txt"
 recipient=$(age-keygen -y "$work/key.txt")
 case "$recipient" in age1*) ;; *) exit 1;; esac
