@@ -1,0 +1,16 @@
+Official tldr-pages Python client, tldr 3.4.4 (MIT), Python >=3.10.
+Source: https://github.com/tldr-pages/tldr-python-client
+Release metadata: https://pypi.org/pypi/tldr/3.4.4/json
+Entry point: tldr = tldr:cli
+The base distribution includes the CLI; its cli extra adds development tools.
+Linux runtime closure: tldr 3.4.4, shtab 1.12.1 (MPL-2.0), termcolor 3.3.0 (MIT).
+Dependency metadata: https://pypi.org/pypi/shtab/1.12.1/json
+Dependency metadata: https://pypi.org/pypi/termcolor/3.3.0/json
+The three universal py3-none-any wheels were read and their SHA256 verified
+against official PyPI metadata on 2026-10-13, without installing or executing.
+Exact wheel URLs and SHA256 digests are in tldr.requirements.txt.
+No source archive, native compilation, Windows-only colorama, or development
+extra is needed by this Linux closure. The unchanged wheel license texts are
+retained alongside this source record. Installed wheel notices remain in the
+user's private tool environment. BundleDock's carrier contains only its owned
+launcher/helper and these reviewed inputs/notices, not the installed tool.
