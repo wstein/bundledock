@@ -192,7 +192,9 @@ class GitHub:
     def request(self, path, method='GET', payload=None):
         require(path.startswith('/') or path == '', 'Relative API path required')
         body = None if payload is None else json.dumps(payload).encode()
-        request = urllib.request.Request('https://api.github.com/repos/' + REPOSITORY + path, data=body, method=method, headers={'Authorization':'Bearer '+self.token,'Accept':'application/vnd.github+json','Content-Type':'application/json','X-GitHub-Api-Version':'2026-03-10'})
+        # 2026-03-10 removes merge_commit_sha from PR responses; exact merged
+        # source authorization requires the supported 2022-11-28 contract.
+        request = urllib.request.Request('https://api.github.com/repos/' + REPOSITORY + path, data=body, method=method, headers={'Authorization':'Bearer '+self.token,'Accept':'application/vnd.github+json','Content-Type':'application/json','X-GitHub-Api-Version':'2022-11-28'})
         with self.opener.open(request, timeout=30) as response:
             data = response.read(8*1024*1024+1)
         require(len(data) <= 8*1024*1024, 'Oversized GitHub response')
