@@ -543,3 +543,28 @@ installation on both architectures and the isolated noninteractive smoke's
 image smoke on both architectures remain unverified until an explicitly
 approved build and smoke run. The smoke clears caller configuration overrides
 and confines Leaf's HOME, XDG paths and Markdown fixture to a temporary directory.
+
+## Optional mise version manager
+
+The source toolbox includes [mise 2026.10.8](https://github.com/jdx/mise/releases/tag/v2026.10.8)
+as `bin/mise`, using the official stable raw Linux MUSL executables for AMD64
+and ARM64. The desired constraint is `mise>=2026.10.8`; the lock pins both
+architectures and retains the full upstream MIT license. Upgrade the executable
+through BundleDock's lock rather than using `mise self-update` on the read-only
+mount.
+
+Use stock language containers as the default source of language toolchains.
+Mise is an optional version manager for projects that deliberately choose it.
+Adding it to the toolbox does not activate it, bootstrap runtimes, modify shell
+configuration, or run `mise use` or `mise install`. Any chosen runtime installation
+and shell integration is a separate user action. Keep HOME, XDG configuration,
+cache, data and state directories writable outside `/opt/bundledock/toolbox`.
+
+On 2026-10-13, the downloaded raw binary hashes matched both the official release
+API digests and `SHASUMS256.txt`. Read-only ELF inspection confirmed x86-64 and
+AArch64 and no ELF interpreter; no upstream executable was run. Source fixtures
+cover resolution, the minimum version, both architecture installation recipes,
+and an isolated, noninteractive `mise --version` smoke that clears inherited
+configuration and runs from a disposable HOME. Native runtime compatibility
+and read-only image smoke on both architectures remain deferred until explicit
+approval of the exact source revision and intended build/smoke operation.
