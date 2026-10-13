@@ -172,8 +172,11 @@ Keep the local TODO list untracked.
 ### Local CLI artifacts
 
 After explicit user approval, `make release VERSION=dev RELEASE_DIR=dist/cli` builds BundleDock's own CLI for
-Linux AMD64 and ARM64. It creates `bundledock-linux-amd64`,
-`bundledock-linux-arm64`, `LICENSE`, `PROVENANCE`, and `SHA256SUMS`; an existing destination
+Linux AMD64 and ARM64. For `VERSION=0.1.0`, it creates
+`bdock_0.1.0_linux_amd64.tar.gz`, `bdock_0.1.0_linux_arm64.tar.gz`, `LICENSE`,
+`PROVENANCE`, and `SHA256SUMS`; each archive contains the executable `bdock`,
+`LICENSE` and platform-specific `PROVENANCE`. Extract the archive for your
+architecture and install `bdock` on your PATH. An existing destination
 is refused. Verify the outputs with `cd dist/cli && sha256sum -c SHA256SUMS`.
 The target does not create a Git tag or publish a release.
 
