@@ -272,3 +272,54 @@ func TestSpecifyStateOutsideToolbox(t *testing.T) {
 		})
 	}
 }
+
+func TestSpecifyPreservesUnrecognizedState(t *testing.T) {
+	for _, state := range []string{"unowned directory", "symlink"} {
+		t.Run(state, func(t *testing.T) {
+			dst, home, bin := specifyFixture(t)
+			got, err := specifyCommand(dst, home, bin, "--help").CombinedOutput()
+			if exit, ok := err.(*exec.ExitError); !ok || exit.ExitCode() != 23 {
+				t.Fatalf("err %v got %s", err, got)
+			}
+			dirs, err := filepath.Glob(filepath.Join(home, ".local/share/bundledock/tools/specify", "[a-f0-9]*"))
+			if err != nil || len(dirs) != 1 {
+				t.Fatal(err, dirs)
+			}
+			preserved := dirs[0]
+			if state == "symlink" {
+				preserved = t.TempDir()
+				if err := os.Rename(dirs[0], dirs[0]+".saved"); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.Symlink(preserved, dirs[0]); err != nil {
+					t.Fatal(err)
+				}
+			} else if err := os.Remove(filepath.Join(dirs[0], ".bundledock-owned")); err != nil {
+				t.Fatal(err)
+			}
+			sentinel := filepath.Join(preserved, "user-content")
+			if err := os.WriteFile(sentinel, []byte("preserve me"), 0600); err != nil {
+				t.Fatal(err)
+			}
+			before, err := os.ReadFile(filepath.Join(home, "calls"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			got, err = specifyCommand(dst, home, bin, "--help").CombinedOutput()
+			if err == nil || (!strings.Contains(string(got), "unrecognized Python tool environment") && !strings.Contains(string(got), "must not be a symbolic link")) {
+				t.Fatalf("err %v got %s", err, got)
+			}
+			after, err := os.ReadFile(filepath.Join(home, "calls"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if string(before) != string(after) {
+				t.Fatal("installer ran against unrecognized state")
+			}
+			data, err := os.ReadFile(sentinel)
+			if err != nil || string(data) != "preserve me" {
+				t.Fatalf("protected content changed: %q %v", data, err)
+			}
+		})
+	}
+}
