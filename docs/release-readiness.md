@@ -23,11 +23,11 @@ verification; the authoritative tool inventory is the
 - The scratch OCI carrier provides pinned tools for read-only shared volumes.
   Tool inputs and licenses live under `bundles/toolbox/`.
 - Publication retains a durable published-tool baseline. The current
-  [approval flow](publication.md) accepts one exact-head updater PR approval by
-  wstein for source CI, guarded merge and frozen-lock publication across all
-  seven bundles, with first agent-carrier publication requiring separate
-  exact-revision operation approval. Manual publication of an exact approved `main` SHA remains
-  available. Native build/smoke checks gate registry writes.
+  [owner-merge flow](publication.md) accepts an actual human `wstein` merge of
+  an eligible bot updater for frozen-lock publication across all nine bundles
+  after successful exact merged-main CI. First publication requires separate
+  exact-revision operation approval. Manual publication of an exact approved
+  `main` SHA remains available. Native build/smoke checks gate registry writes.
 - A local Hugo site renders the existing guides using a verified official
   prebuilt dependency. Host documentation integration checks are opt-in.
 - [Contribution guidance](../CONTRIBUTING.md), bug and feature templates, and a
@@ -46,7 +46,7 @@ documentation build evidence for the final candidate, including both native
 architectures for changed tool/image behavior, before calling it ready. Routine
 source tests and vet remain automatic. Pushes, merges, schedules and bots alone
 do not authorize builds. Lock-only updaters do not dispatch native builds;
-the separate publisher validates the exact-head approval described above.
+the separate publisher validates the actual owner merge described above.
 
 [Embedded dependency findings](development.md#embedded-dependency-findings)
 remain open in Gitleaks, Syft, and Trivy. The recorded upstream inspection found

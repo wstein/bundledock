@@ -15,13 +15,17 @@ release readiness.
 Builds and releases require explicit user approval of the intended operation
 and source revision. The approved automation exception covers toolbox,
 code-server, Node LTS, Node Current, Bun, Codex, Antigravity, Claude and OpenTofu updater PRs authored by `github-actions[bot]`, changing
-only their own lock and generated inventory. A latest non-dismissed `wstein`
-APPROVED review of the exact updater head authorizes source CI, a protected
-SHA-guarded rebase merge, and publication of that exact frozen lock. Source CI
-must succeed on the approved head and GitHub's required `check` protection must
-be satisfied. Changed heads, a main advance, unrelated files, stale approvals,
-and an approved tree differing from the merged tree stop automation; do not
-rewrite the updater head or bypass protection. There is no later environment
+only their own lock and generated inventory. The actual human owner `wstein`
+merging an eligible updater authorizes publication of that exact frozen lock;
+a submitted APPROVED review is not required. Source merges are the human's job:
+no review-triggered controller may merge or dispatch builds. The successful
+exact merged-main CI and required GitHub Actions `check` must cover that source.
+The publisher verifies the actual `merged_by` identity, bot author, branch and
+own-file scope, exact merged source and updater-head tree equality, frozen lock,
+and current main before build jobs and promotion. Changed heads, a main advance,
+unrelated files, ambiguous or unavailable API evidence, and differing trees stop
+automatic publication. Existing branch protection and required checks remain.
+There is no later environment
 approval. Initial publication of Node Current, Codex, Antigravity, Claude and OpenTofu carriers requires
 separate explicit approval of the exact full source revision and intended
 build/publication operation; an updater PR cannot authorize a first publication.

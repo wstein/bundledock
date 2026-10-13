@@ -78,14 +78,14 @@ responsibility; the smoke script only checks offline version invocation.
 ## Updates, publication and evidence
 
 `bdock tools upgrade --directory bundles/claude` updates this bundle alone.
-The `claude-upgrade.yml` wrapper runs daily at 06:50 UTC, supports manual dry runs
+The `propose-upgrades.yml` workflow runs daily at 06:50 UTC, supports manual dry runs
 by default and proposes only its lock and generated source inventory through
 the shared updater. It never builds or dispatches native publication.
 
-`bundledock-claude.yml` uses the shared [publication workflow](publication.md).
+`publish-bundles.yml` uses the shared [publication workflow](publication.md).
 Initial native builds and publication require explicit manual approval of the
 full source SHA. Future eligible lock-only updater proposals follow the same
-exact-head **wstein** approval, source CI, guarded merge and frozen-lock publication
+actual human **wstein** merge, exact merged-main CI and frozen-lock publication
 flow as the other bundles. The separate destination is
 `quay.io/bundledock/claude`; the verified initial publication is recorded above.
 Registry visibility and robot permissions were verified for that operation.

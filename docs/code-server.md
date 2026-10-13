@@ -120,16 +120,16 @@ Resolve only this bundle's inputs with:
 bdock tools upgrade --directory bundles/code-server
 ```
 
-The separate code-server upgrade workflow runs daily at 06:50 UTC and offers
+The **Propose upgrades** workflow with `bundle=code-server` runs daily at 06:50 UTC and offers
 manual dry runs by default. It proposes only this lock and its generated source
-inventory. The existing toolbox upgrade workflow stays separate. Neither
-upgrade workflow builds or publishes images. Future stable archives must pass
+inventory. Each bundle retains a separate proposal PR. The upgrade workflow never
+builds or publishes images. Future stable archives must pass
 the same structural profile; changed archive layouts fail closed until reviewed.
 
-The separate **Publish code-server** workflow
-(`.github/workflows/bundledock-code-server.yml`) supports the shared
-[automatic updater approval flow](publication.md): one exact-head approval by
-**wstein** authorizes source CI, guarded merge and frozen-lock publication.
+The **Publish bundles** workflow with `bundle=code-server`
+(`.github/workflows/publish-bundles.yml`) supports the shared
+[automatic updater approval flow](publication.md): an actual human **wstein** merge authorizes frozen-lock publication after
+successful exact merged-main CI.
 Manual dispatch on default `main` with the exact full approved SHA remains
 available. It uses the
 existing `REPOSITORY_URL` Quay namespace and publishes to its separate

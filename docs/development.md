@@ -207,7 +207,7 @@ adapter tests without building an OCI image.
 - `bundles/toolbox/`: Dockerfile, smoke/volume adapters, licenses and bundle inputs.
 - `bundles/toolbox/{packages.txt,packages.catalog.json,packages.lock.json}`: desired versions, trusted recipes, and verified pins.
 - `.github/workflows/ci.yml`: pull request and push formatting, source tests and vet.
-- `.github/workflows/bundledock-*.yml`: named entrypoints for shared approved bundle publication.
+- `.github/workflows/publish-bundles.yml`: one bundle-selecting publication entrypoint.
 - `assets`, `brand`: approved brand assets, licensed font sources, and generation provenance.
 
 ## Repository history
@@ -229,18 +229,18 @@ Its test compilation verifies source without creating CLI release artifacts,
 OCI images, or a documentation site. Automatic native image and CLI artifact
 builds are disabled.
 
-The [shared bundle publication flow](publication.md) accepts one exact-head
-approval by `wstein` for an eligible bot updater PR. Trusted source CI checks the
-approved head before a protected SHA-guarded rebase merge; the controller then
-dispatches main source CI explicitly. Only the matching publisher may use the
-exact merged lock, and the merged tree must equal the approved tree. Approval,
-current main and provenance are rechecked before artifact compilers and
-promotion. No later environment approval is required. Existing strict required
-checks and linear-history protection remain; the workflow changes no settings.
-Manual publication retains its human actor and full run-SHA gate. Source,
-documentation and unrelated bot PRs do not authorize builds. Human-token
-automation cannot be identified from actor context alone; do not use it to
-impersonate manual dispatch.
+The [shared bundle publication flow](publication.md) accepts the actual human
+owner `wstein` merging an eligible bot updater PR as authorization for that
+exact frozen lock. Source merges remain human operations; the review-triggered
+merge controller is removed. Successful exact merged-main source CI and its
+required GitHub Actions check precede publication. The publisher verifies owner
+merge identity, bot branch and own-file scope, exact merged/updater tree equality,
+current main and provenance before artifact compilers and promotion. First
+publication and manual publication retain their human actor and full run-SHA
+gates. Existing required checks and linear-history protection remain; these
+workflows change no settings. Ordinary source, documentation and unrelated bot
+PRs do not authorize builds. Do not use human credentials to impersonate manual
+dispatch. Consumer activation requires separate explicit authorization.
 
 ### Verify the existing five published consumers
 
