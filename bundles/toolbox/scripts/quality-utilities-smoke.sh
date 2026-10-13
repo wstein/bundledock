@@ -18,7 +18,12 @@ printf '%s\n' 'smoke:' '    @echo recipe-smoke' > "$work/justfile"
 test "$(just --no-dotenv --justfile "$work/justfile" --working-directory "$work" smoke)" = recipe-smoke
 test "$(printf '%s\n' 'x=1' | ruff format --isolated --no-cache --stdin-filename smoke.py -)" = 'x = 1'
 printf '%s\n' '--- a/smoke' '+++ b/smoke' '@@ -1 +1 @@' '-before-smoke' '+after-smoke' | delta --no-gitconfig --paging=never > "$work/diff"
-grep -q after-smoke "$work/diff"
+# Preserve the renderer; normalize intraline SGR and erase-line escapes only
+# in the comparison copy. Piped rendering must still exit zero.
+escape=$(printf '\033')
+sed "s/${escape}\[[0-9;]*[mK]//g" "$work/diff" > "$work/diff-text"
+grep -qx before-smoke "$work/diff-text"
+grep -qx after-smoke "$work/diff-text"
 test "$(watchexec -1 --shell=none --workdir "$work" -- echo watch-smoke)" = watch-smoke
 hyperfine --warmup 0 --runs 1 --export-json "$work/benchmark.json" true
 jq -e '
