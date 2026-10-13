@@ -23,7 +23,7 @@ cp LICENSE "$destination/LICENSE"
 for arch in amd64 arm64; do
     CGO_ENABLED=0 GOOS=linux GOARCH="$arch" GOAMD64=v1 GOARM64=v8.0 GOFLAGS= \
         "$go" build -trimpath -ldflags "-X main.version=$version" \
-        -o "$destination/bundledock-linux-$arch" ./cmd/bundledock
+        -o "$destination/bundledock-linux-$arch" ./cmd/bdock
 done
 cat > "$destination/PROVENANCE" <<PROVENANCE
 source_revision=$revision

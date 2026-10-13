@@ -270,7 +270,7 @@ func (c Config) validate(strict bool) error {
 		return fmt.Errorf("unsupported catalog/lock schema")
 	}
 	if strict && (c.Lock.DesiredDigest != c.DesiredDigest() || c.Lock.CatalogDigest != c.CatalogDigest()) {
-		return fmt.Errorf("packages.lock.json identity differs from packages.txt or packages.catalog.json; run bundledock tools upgrade (desired %s/%s catalog %s/%s)", c.Lock.DesiredDigest, c.DesiredDigest(), c.Lock.CatalogDigest, c.CatalogDigest())
+		return fmt.Errorf("packages.lock.json identity differs from packages.txt or packages.catalog.json; run bdock tools upgrade (desired %s/%s catalog %s/%s)", c.Lock.DesiredDigest, c.DesiredDigest(), c.Lock.CatalogDigest, c.CatalogDigest())
 	}
 	if len(c.Desired) != len(c.Catalog.Packages) || len(c.Lock.Platforms) != 2 {
 		return fmt.Errorf("desired tools, catalog and both lock architectures must agree")

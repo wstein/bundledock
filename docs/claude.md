@@ -58,7 +58,7 @@ remains a separate operation requiring explicit approval. To initialize an
 image-derived volume from the verified carrier:
 
 ```sh
-bundledock tools volume --image quay.io/bundledock/claude@sha256:4b02222a4954f174a46af2a7ef732c2f0ff7b7bb7b462875491dd80aabf1940f --bundle claude
+bdock tools volume --image quay.io/bundledock/claude@sha256:4b02222a4954f174a46af2a7ef732c2f0ff7b7bb7b462875491dd80aabf1940f --bundle claude
 ```
 
 Mount the printed `bundledock-claude-<full image ID>` volume read-only at
@@ -77,7 +77,7 @@ responsibility; the smoke script only checks offline version invocation.
 
 ## Updates, publication and evidence
 
-`bundledock tools upgrade --directory bundles/claude` updates this bundle alone.
+`bdock tools upgrade --directory bundles/claude` updates this bundle alone.
 The `claude-upgrade.yml` wrapper runs daily at 06:50 UTC, supports manual dry runs
 by default and proposes only its lock and generated source inventory through
 the shared updater. It never builds or dispatches native publication.

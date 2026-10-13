@@ -61,7 +61,7 @@ remains a separate operation requiring explicit approval. To initialize an
 image-derived volume from the verified carrier:
 
 ```sh
-bundledock tools volume --image quay.io/bundledock/agy@sha256:a96463845e3948487029f72ef1a242996b986c4bc50e42d68707308652284496 --bundle agy
+bdock tools volume --image quay.io/bundledock/agy@sha256:a96463845e3948487029f72ef1a242996b986c4bc50e42d68707308652284496 --bundle agy
 ```
 
 Mount the printed `bundledock-agy-<full image ID>` volume read-only at
@@ -80,7 +80,7 @@ responsibility; the smoke script only checks offline version invocation.
 
 ## Updates, publication and evidence
 
-`bundledock tools upgrade --directory bundles/agy` updates this bundle alone.
+`bdock tools upgrade --directory bundles/agy` updates this bundle alone.
 The `agy-upgrade.yml` wrapper runs daily at 06:50 UTC, supports manual dry runs
 by default and proposes only its lock and generated source inventory through
 the shared updater. It never builds or dispatches native publication.

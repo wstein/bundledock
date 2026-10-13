@@ -35,8 +35,8 @@ make check
 ```
 
 The CLI uses [Cobra](https://github.com/spf13/cobra) and currently provides help,
-a development version identifier, `bundledock tools upgrade [tool]`, and
-`bundledock tools volume --image <image>`.
+a development version identifier, `bdock tools upgrade [tool]`, and
+`bdock tools volume --image <image>`.
 The volume command uses the host Docker CLI, resolves the image once to its immutable
 ID, and runs the initializer with networking disabled.
 
@@ -49,7 +49,7 @@ render a site. A push, merge, schedule, bot update or local commit is not approv
 Report builds deferred for approval separately from passing source checks.
 
 Make targets are thin wrappers around Go commands. Run `make help` for available
-targets. Builds write `bin/bundledock`; `make clean` removes the binary.
+targets. Builds write `bin/bdock`; `make clean` removes the binary.
 
 ### Local documentation site
 
@@ -198,7 +198,7 @@ adapter tests without building an OCI image.
 
 ## Repository layout
 
-- `cmd/bundledock`: Go CLI entry point.
+- `cmd/bdock`: Go CLI entry point.
 - `cmd/tools-bundle`, `cmd/tools-init`, `cmd/tools-publish`: build, initialization, and publication adapters.
 - `internal`: package catalog, upstream resolution, bundle extraction, volume validation, and Docker adapters.
 - `bundles/toolbox/`: Dockerfile, smoke/volume adapters, licenses and bundle inputs.

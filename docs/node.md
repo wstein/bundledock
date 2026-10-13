@@ -97,7 +97,7 @@ Runtime compatibility beyond the Debian consumer has not been established.
 
 ## Updates, publication and evidence
 
-`bundledock tools upgrade --directory bundles/node` updates this bundle alone.
+`bdock tools upgrade --directory bundles/node` updates this bundle alone.
 The Node upgrade workflow runs daily at 06:50 UTC and offers manual dry runs
 by default. It proposes only the Node lock and generated source inventory,
 validates transferred lock/base SHA and artifact membership, and never builds

@@ -76,7 +76,7 @@ No user configuration filename or default consumer activation changes.
 
 ## Updates and publication
 
-`bundledock tools upgrade --directory bundles/node-current` updates this
+`bdock tools upgrade --directory bundles/node-current` updates this
 bundle's lock alone, using canonical tool ID `node`. The thin
 `node-current-upgrade.yml` wrapper calls the shared lock-only updater daily at
 06:50 UTC and supports manual dry runs. It never builds or dispatches publication.

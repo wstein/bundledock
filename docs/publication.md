@@ -141,7 +141,7 @@ Docker login and all registry writes occur only after each native smoke passes.
 Check [GitHub runner availability and plan limits](https://docs.github.com/en/actions/how-tos/write-workflows/choose-where-workflows-run/choose-the-runner-for-a-job)
 for `ubuntu-24.04` (AMD64) and `ubuntu-24.04-arm` (ARM64).
 
-For manual dispatch, one resolver runs `bundledock tools upgrade` for all tools;
+For manual dispatch, one resolver runs `bdock tools upgrade` for all tools;
 the merged-upgrade path freezes the committed lock. Both upload the exact
 lock bytes and shared source commit, UTC build time, lock SHA256, run tag and full
 GitHub run ID (`run_id`).

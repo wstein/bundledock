@@ -81,7 +81,7 @@ require their own approved native build and smoke checks.
 
 ## Updates and publication
 
-`bundledock tools upgrade --directory bundles/codex` resolves Codex alone.
+`bdock tools upgrade --directory bundles/codex` resolves Codex alone.
 The daily 06:50 UTC proposal and manual dry-run workflows use the shared
 source-only updater. It can change only its own lock and generated inventory.
 A later exact-head **wstein** approval follows the shared guarded source CI,
