@@ -239,7 +239,7 @@ func execute(args []string) error {
 	flags := flag.NewFlagSet("tools-publish "+args[0], flag.ContinueOnError)
 	bundleName := flags.String("bundle", "toolbox", "publication bundle (toolbox, code-server, node, node-current, bun, codex, agy, claude or opentofu)")
 	directory := flags.String("directory", "resolved", "resolved artifact directory")
-	frozen := flags.Bool("frozen-lock", false, "use the exact committed toolbox lock without upstream resolution")
+	frozen := flags.Bool("frozen-lock", false, "use the exact committed bundle lock without upstream resolution")
 	arch := flags.String("architecture", "", "native target architecture")
 	consumer := flags.String("consumer", "mcr.microsoft.com/devcontainers/go:2-1.27-trixie", "consumer baseline")
 	receipts := flags.String("receipts", "receipts", "published receipt artifact directory")
@@ -253,6 +253,9 @@ func execute(args []string) error {
 	if err != nil {
 		return err
 	}
+	if *frozen && args[0] != "resolve" {
+		return fmt.Errorf("frozen lock is only supported for publication resolution")
+	}
 	if args[0] == "validate" {
 		_, err := toolconfig.Load(bundle.Directory)
 		return err
@@ -263,8 +266,17 @@ func execute(args []string) error {
 	if err != nil {
 		return err
 	}
-	if *frozen && (args[0] != "resolve" || os.Getenv("GITHUB_EVENT_NAME") != "workflow_run") {
-		return fmt.Errorf("frozen lock is only supported for approved merged publication")
+	if *frozen {
+		switch os.Getenv("GITHUB_EVENT_NAME") {
+		case "workflow_run":
+			// The automatic path retains its separately verified merge proof.
+		case "workflow_dispatch":
+			if _, err := run("sh", "scripts/approve-publication.sh"); err != nil {
+				return err
+			}
+		default:
+			return fmt.Errorf("frozen lock requires approved manual or merged publication")
+		}
 	}
 	if args[0] == "resolve" {
 		if os.Getenv("GITHUB_EVENT_NAME") == "workflow_run" && !*frozen {

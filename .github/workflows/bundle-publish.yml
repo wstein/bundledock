@@ -116,6 +116,10 @@ jobs:
         run: go build -o "$RUNNER_TEMP/tools-publish" ./cmd/tools-publish
       - name: Resolve all tools once
         env:
+          APPROVED_SHA: ${{ inputs.approved_sha }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          SENDER_TYPE: ${{ github.event.sender.type }}
+          TRIGGERING_ACTOR: ${{ github.triggering_actor }}
           REPOSITORY_URL: ${{ vars.REPOSITORY_URL }}
           # Singleton version allocation requests only a pull-scoped token.
           REPOSITORY_USERNAME: ${{ vars.REPOSITORY_USERNAME }}
@@ -123,11 +127,7 @@ jobs:
           # Manager sends this read-only token only to api.github.com.
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          if [ "$GITHUB_EVENT_NAME" = workflow_run ]; then
-            "$RUNNER_TEMP/tools-publish" resolve --bundle "$BUNDLE" --frozen-lock
-          else
-            "$RUNNER_TEMP/tools-publish" resolve --bundle "$BUNDLE"
-          fi
+          "$RUNNER_TEMP/tools-publish" resolve --bundle "$BUNDLE" --frozen-lock
       - name: Compare resolved tools with the published baseline
         id: plan
         env:

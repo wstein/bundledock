@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -223,6 +224,9 @@ func TestValidateCodeServerLockWithoutPublicationEnvironment(t *testing.T) {
 	t.Chdir(root)
 	if err := execute([]string{"validate", "--bundle", "code-server"}); err != nil {
 		t.Fatal(err)
+	}
+	if err := execute([]string{"validate", "--bundle", "code-server", "--frozen-lock"}); err == nil {
+		t.Fatal("accepted frozen lock outside publication resolution")
 	}
 	if err := execute([]string{"validate", "--bundle", "../toolbox"}); err == nil {
 		t.Fatal("accepted unknown bundle")
@@ -509,5 +513,125 @@ func TestResolveSingletonNamesTheResolvedLockOnce(t *testing.T) {
 	}
 	if calls != 0 {
 		t.Fatal("frozen publication resolved upstream")
+	}
+}
+
+// Exercise the real CLI and approval script with no resolver or registry access.
+func TestExecuteFrozenPublication(t *testing.T) {
+	if _, err := exec.LookPath("sh"); err != nil {
+		t.Skip("host shell unavailable")
+	}
+	gate, err := os.ReadFile("../../scripts/approve-publication.sh")
+	if err != nil {
+		t.Fatal(err)
+	}
+	sha := strings.Repeat("a", 40)
+	cases := []struct {
+		name, key, value string
+		wantErr          bool
+	}{
+		{"approved manual", "", "", false},
+		{"approved merged", "GITHUB_EVENT_NAME", "workflow_run", false},
+		{"missing approval", "APPROVED_SHA", "", true},
+		{"short approval", "APPROVED_SHA", "aaaaaaa", true},
+		{"uppercase approval", "APPROVED_SHA", strings.Repeat("A", 40), true},
+		{"nonhex approval", "APPROVED_SHA", strings.Repeat("g", 40), true},
+		{"different approval", "APPROVED_SHA", strings.Repeat("b", 40), true},
+		{"different source", "GITHUB_SHA", strings.Repeat("b", 40), true},
+		{"different default", "DEFAULT_BRANCH", "develop", true},
+		{"different ref", "GITHUB_REF", "refs/heads/topic", true},
+		{"bot sender", "SENDER_TYPE", "Bot", true},
+		{"missing sender", "SENDER_TYPE", "", true},
+		{"missing actor", "GITHUB_ACTOR", "", true},
+		{"bot actor", "GITHUB_ACTOR", "renovate[bot]", true},
+		{"actions actor", "GITHUB_ACTOR", "github-actions", true},
+		{"missing triggering actor", "TRIGGERING_ACTOR", "", true},
+		{"automated rerun", "TRIGGERING_ACTOR", "github-actions[bot]", true},
+		{"schedule", "GITHUB_EVENT_NAME", "schedule", true},
+		{"push", "GITHUB_EVENT_NAME", "push", true},
+		{"PR", "GITHUB_EVENT_NAME", "pull_request", true},
+		{"missing event", "GITHUB_EVENT_NAME", "", true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			t.Chdir(dir)
+			for _, path := range []string{toolconfig.ToolboxDirectory, "scripts"} {
+				if err := os.MkdirAll(path, 0700); err != nil {
+					t.Fatal(err)
+				}
+			}
+			lock := []byte("{\"reviewed\":\"exact lock bytes\"}\n")
+			if err := os.WriteFile(toolconfig.ToolboxLock, lock, 0600); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile("scripts/approve-publication.sh", gate, 0600); err != nil {
+				t.Fatal(err)
+			}
+			for _, name := range []string{"go", "git", "docker", "curl"} {
+				if err := os.WriteFile(name, []byte("#!/bin/sh\necho unexpected >> external-calls\nexit 99\n"), 0700); err != nil {
+					t.Fatal(err)
+				}
+			}
+			t.Setenv("PATH", dir+":"+os.Getenv("PATH"))
+			for key, value := range map[string]string{
+				"GITHUB_EVENT_NAME": "workflow_dispatch", "APPROVED_SHA": sha,
+				"GITHUB_SHA": sha, "PUBLICATION_SHA": sha, "DEFAULT_BRANCH": "main",
+				"GITHUB_REF": "refs/heads/main", "SENDER_TYPE": "User",
+				"GITHUB_ACTOR": "wstein", "TRIGGERING_ACTOR": "wstein",
+				"REPOSITORY_URL": "quay.io/bundledock", "GITHUB_SERVER_URL": "https://github.com",
+				"GITHUB_REPOSITORY": "wstein/bundledock", "GITHUB_RUN_ID": "38419885093",
+				"GITHUB_RUN_NUMBER": "12", "GITHUB_RUN_ATTEMPT": "1",
+			} {
+				t.Setenv(key, value)
+			}
+			if tc.key != "" {
+				t.Setenv(tc.key, tc.value)
+			}
+			err := execute([]string{"resolve", "--frozen-lock"})
+			if (err != nil) != tc.wantErr {
+				t.Fatalf("resolve error=%v, wantErr=%t", err, tc.wantErr)
+			}
+			if _, err := os.Stat("external-calls"); !os.IsNotExist(err) {
+				t.Fatalf("unexpected upstream command: %v", err)
+			}
+			if tc.wantErr {
+				if _, err := os.Stat("resolved"); !os.IsNotExist(err) {
+					t.Fatalf("rejected approval wrote artifact: %v", err)
+				}
+				return
+			}
+			for _, path := range []string{toolconfig.ToolboxLock, "resolved/packages.lock.json"} {
+				got, err := os.ReadFile(path)
+				if err != nil || string(got) != string(lock) {
+					t.Fatalf("lock changed at %s: %q %v", path, got, err)
+				}
+			}
+			var meta toolpublish.Metadata
+			if err := readJSON("resolved/provenance.json", &meta); err != nil {
+				t.Fatal(err)
+			}
+			sum, err := toolpublish.HashFile(toolconfig.ToolboxLock)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if meta.Commit != sha || meta.LockSHA256 != sum || meta.Source != "https://github.com/wstein/bundledock" || meta.Image != "quay.io/bundledock/toolbox" {
+				t.Fatalf("wrong frozen provenance: %+v", meta)
+			}
+		})
+	}
+}
+
+func TestExecuteFrozenModeRemainsResolveOnlyAndRequiredForMerged(t *testing.T) {
+	t.Chdir(t.TempDir())
+	t.Setenv("GITHUB_EVENT_NAME", "workflow_run")
+	t.Setenv("PUBLICATION_SHA", strings.Repeat("a", 40))
+	for _, args := range [][]string{{"resolve"}, {"plan", "--frozen-lock"}, {"build", "--frozen-lock"}, {"promote", "--frozen-lock"}} {
+		if err := execute(args); err == nil {
+			t.Fatalf("accepted unsupported mode %v", args)
+		}
+	}
+	if _, err := os.Stat("resolved"); !os.IsNotExist(err) {
+		t.Fatalf("invalid mode wrote artifact: %v", err)
 	}
 }
