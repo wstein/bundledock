@@ -123,6 +123,7 @@ describes the desired source inventory; published images retain their own pins:
 | Development utilities | [ShellCheck](https://github.com/koalaman/shellcheck), [shfmt](https://github.com/mvdan/sh), [just](https://github.com/casey/just), [Ruff](https://github.com/astral-sh/ruff), [delta](https://github.com/dandavison/delta), [watchexec](https://github.com/watchexec/watchexec), [hyperfine](https://github.com/sharkdp/hyperfine), [age](https://github.com/FiloSottile/age) |
 | OCI registries | [regctl](https://github.com/regclient/regclient) |
 | Python environments | [uv and uvx](https://github.com/astral-sh/uv) |
+| Spec-driven project setup | [Spec Kit (`specify`, pinned runtime launcher)](docs/toolbox.md#spec-kit-launcher-source) |
 | Shells and terminal workspaces | [Herdr](https://github.com/herdrdev/herdr), [Fish](https://github.com/fish-shell/fish-shell), [Starship](https://github.com/starship/starship), [Nushell (`nu`)](https://github.com/nushell/nushell), [tmux](https://github.com/tmux/tmux-builds) |
 | Quality and security | [typos](https://github.com/crate-ci/typos), [lychee](https://github.com/lycheeverse/lychee), [Gitleaks](https://github.com/gitleaks/gitleaks), [Trivy](https://github.com/aquasecurity/trivy), [Syft](https://github.com/anchore/syft) |
 | Terminal editor | [Helix (`hx`)](https://github.com/helix-editor/helix) |
