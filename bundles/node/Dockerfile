@@ -21,10 +21,11 @@ COPY bundles/node/packages.txt bundles/node/packages.catalog.json bundles/node/p
 COPY bundles/node/licenses /build/licenses
 FROM downloads AS builder
 ARG TARGETARCH
-RUN tools-bundle -arch "${TARGETARCH}" -destination /opt/bundledock/node
+RUN tools-bundle -arch "${TARGETARCH}" -destination /image-root/opt/bdock/node \
+    && ln -s /opt/bdock /image-root/opt/bundledock
 
 FROM scratch
-COPY --from=builder /opt/bundledock/node /opt/bundledock/node
+COPY --from=builder /image-root/opt/ /opt/
 COPY --from=compiler /out/init-volume /usr/local/bin/init-volume
-ENV PATH="/opt/bundledock/node/bin:/usr/local/bin"
-ENTRYPOINT ["/usr/local/bin/init-volume", "--source", "/opt/bundledock/node", "--profile", "node-runtime"]
+ENV PATH="/opt/bdock/node/bin:/usr/local/bin"
+ENTRYPOINT ["/usr/local/bin/init-volume", "--source", "/opt/bdock/node", "--profile", "node-runtime"]

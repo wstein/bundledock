@@ -1,7 +1,7 @@
 #!/bin/sh
 # Run only in an explicitly approved native consumer, without networking.
 set -eu
-root=/opt/bundledock/opentofu
+root=/opt/bdock/opentofu
 fail() {
     printf 'OpenTofu smoke failed: %s\n' "$1" >&2
     exit 1

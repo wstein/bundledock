@@ -19,7 +19,7 @@ func TestInitializerDefaultsAndRelocatedBundle(t *testing.T) {
 	}
 	t.Run("defaults", func(t *testing.T) {
 		output, err := exec.Command(binary, "--help").CombinedOutput()
-		if err != nil || !strings.Contains(string(output), `default "/opt/bundledock/toolbox"`) || !strings.Contains(string(output), `default "/bundle"`) {
+		if err != nil || !strings.Contains(string(output), `default "/opt/bdock/toolbox"`) || !strings.Contains(string(output), `default "/bundle"`) {
 			t.Fatalf("initializer defaults: %v\n%s", err, output)
 		}
 	})
@@ -28,9 +28,12 @@ func TestInitializerDefaultsAndRelocatedBundle(t *testing.T) {
 			t.Skip("requires /bin/sh: ", err)
 		}
 		parent := t.TempDir()
-		source := filepath.Join(parent, "opt", "workharbor")
+		source := filepath.Join(parent, "image", "opt", "bundledock", "toolbox")
 		target := filepath.Join(parent, "bundle")
-		mounted := filepath.Join(parent, "opt", "bundledock")
+		mounted := filepath.Join(parent, "opt", "bdock", "toolbox")
+		if err := os.MkdirAll(filepath.Dir(mounted), 0755); err != nil {
+			t.Fatal(err)
+		}
 		for _, dir := range []string{source, target} {
 			if err := os.MkdirAll(dir, 0755); err != nil {
 				t.Fatal(err)
@@ -83,7 +86,7 @@ func TestInitializerDefaultsAndRelocatedBundle(t *testing.T) {
 			t.Skip("requires /bin/sh: ", err)
 		}
 		parent := t.TempDir()
-		prefix := filepath.Join(parent, "opt", "bundledock")
+		prefix := filepath.Join(parent, "opt", "bdock")
 		sources := make(map[string]string)
 		manifests := make(map[string][]byte)
 		for _, name := range []string{"toolbox", "fixture-other"} {
@@ -126,6 +129,25 @@ func TestInitializerDefaultsAndRelocatedBundle(t *testing.T) {
 				t.Fatal(err)
 			}
 			sources[name], manifests[name] = source, manifest
+		}
+		// The compatibility link belongs outside both verified bundle roots.
+		legacy := filepath.Join(parent, "opt", "bundledock")
+		if err := os.Symlink(prefix, legacy); err != nil {
+			t.Fatal(err)
+		}
+		for name, manifest := range manifests {
+			output, err := exec.Command(filepath.Join(legacy, name, "bin", "fixture")).CombinedOutput()
+			if err != nil || string(output) != name+"\n" {
+				t.Fatalf("compatibility executable: %v %q", err, output)
+			}
+			output, err = exec.Command(binary, "--source", sources[name], "--target", filepath.Join(prefix, name)).CombinedOutput()
+			if err != nil {
+				t.Fatalf("verify canonical bundle with external compatibility link: %v %s", err, output)
+			}
+			got, err := os.ReadFile(filepath.Join(prefix, name, "manifest.json"))
+			if err != nil || !bytes.Equal(got, manifest) {
+				t.Fatalf("compatibility link changed manifest: %v", err)
+			}
 		}
 		entries, err := os.ReadDir(prefix)
 		if err != nil || len(entries) != 2 {

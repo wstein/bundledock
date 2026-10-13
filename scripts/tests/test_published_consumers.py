@@ -51,6 +51,8 @@ if args[:2] == ['volume', 'create']:
             volume = 'fixture-' + str(2*index+1)
             self.assertIn('type=volume,src='+volume+',dst=/bundle,volume-nocopy', call)
             self.assertIn('sha256:' + 64 * 'a', call)
+            self.assertNotIn('--source', call)
+            self.assertNotIn('--entrypoint', call)
             self.assertIn('none', call)
         consumer = runs[-1]
         self.assertEqual(runs[-2][runs[-2].index('--user')+1], '1000:1000')
@@ -65,7 +67,7 @@ if args[:2] == ['volume', 'create']:
         self.assertIn('HOME=/home/vscode', consumer)
         for index, name in enumerate(DIGESTS):
             volume = 'fixture-' + str(2*index+1)
-            self.assertIn('type=volume,src='+volume+',dst=/opt/bundledock/'+name+',readonly,volume-nocopy', consumer)
+            self.assertIn('type=volume,src='+volume+',dst=/opt/bdock/'+name+',readonly,volume-nocopy', consumer)
         self.assertEqual(consumer[consumer.index('--network')+1], 'none')
         self.assertEqual(len([call for call in calls if call[:2] == ['volume', 'rm']]), 6)
 
@@ -87,7 +89,7 @@ if args[:2] == ['volume', 'create']:
                         (bundle/'licenses.index.json').write_text('{}')
                     if layout == 'archive':
                         notice.unlink()
-                checks = source[start:end].replace('/opt/bundledock/', str(directory)+'/')
+                checks = source[start:end].replace('/opt/bdock/', str(directory)+'/')
                 result = subprocess.run(['sh', '-ec', checks], capture_output=True, text=True)
                 self.assertEqual(result.returncode == 0, succeeds, result.stderr)
 

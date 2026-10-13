@@ -21,10 +21,11 @@ COPY bundles/opentofu/packages.txt bundles/opentofu/packages.catalog.json bundle
 COPY bundles/opentofu/licenses /build/licenses
 FROM downloads AS builder
 ARG TARGETARCH
-RUN tools-bundle -arch "${TARGETARCH}" -destination /opt/bundledock/opentofu
+RUN tools-bundle -arch "${TARGETARCH}" -destination /image-root/opt/bdock/opentofu \
+    && ln -s /opt/bdock /image-root/opt/bundledock
 
 FROM scratch
-COPY --from=builder /opt/bundledock/opentofu /opt/bundledock/opentofu
+COPY --from=builder /image-root/opt/ /opt/
 COPY --from=compiler /out/init-volume /usr/local/bin/init-volume
-ENV PATH="/opt/bundledock/opentofu/bin:/usr/local/bin"
-ENTRYPOINT ["/usr/local/bin/init-volume", "--source", "/opt/bundledock/opentofu"]
+ENV PATH="/opt/bdock/opentofu/bin:/usr/local/bin"
+ENTRYPOINT ["/usr/local/bin/init-volume", "--source", "/opt/bdock/opentofu"]

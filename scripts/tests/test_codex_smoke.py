@@ -42,7 +42,7 @@ if sys.argv[1:3]==['volume','create']:print('fixture-volume')
                     self.assertIn('HOME=/home/bundledock', call)
                     self.assertIn('DISABLE_UPDATES=1', call)
                     self.assertIn('DISABLE_AUTOUPDATER=1', call)
-                    self.assertIn('type=volume,src=fixture-volume,dst=/opt/bundledock/'+name+',readonly,volume-nocopy', call)
+                    self.assertIn('type=volume,src=fixture-volume,dst=/opt/bdock/'+name+',readonly,volume-nocopy', call)
                     source = ROOT/'bundles'/name/'scripts'/'consumer-smoke.sh'
                     self.assertTrue(source.is_file())
                     self.assertIn('type=bind,src='+str(source)+',dst=/'+name+'-smoke.sh,readonly', call)
@@ -79,8 +79,8 @@ printf '%s\\n' "$*" >> "$CODEX_HOME/calls"
                 touch.write_text('#!/bin/sh\nexit 1\n')
                 touch.chmod(0o755)
                 source = (ROOT / 'bundles/codex/scripts/consumer-smoke.sh').read_text()
-                self.assertEqual(source.count('root=/opt/bundledock/codex\n'), 1)
-                source = source.replace('root=/opt/bundledock/codex\n',
+                self.assertEqual(source.count('root=/opt/bdock/codex\n'), 1)
+                source = source.replace('root=/opt/bdock/codex\n',
                                         'root=' + shlex.quote(str(payload)) + '\n')
                 script = directory / 'consumer-smoke.sh'
                 script.write_text(source)

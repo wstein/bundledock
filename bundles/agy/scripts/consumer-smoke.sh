@@ -1,7 +1,7 @@
 #!/bin/sh
 # Only run in an explicitly approved native glibc consumer, without networking.
 set -eu
-root=/opt/bundledock/agy
+root=/opt/bdock/agy
 export PATH="$root/bin:$PATH"
 export DISABLE_UPDATES=1 DISABLE_AUTOUPDATER=1
 test -f "$root/.ready"

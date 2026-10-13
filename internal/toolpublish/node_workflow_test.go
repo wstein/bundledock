@@ -56,13 +56,13 @@ volume) if [ "$2" = create ]; then printf 'fixture-volume\n'; fi ;;
 run)
 case "$*" in
 *sha256:fixture*) case "$*" in *'dst=/bundle,volume-nocopy sha256:fixture') ;; *) exit 31 ;; esac ;;
-*consumer:fixture*) case "$*" in *'dst=/opt/bundledock/node,readonly,volume-nocopy'*'consumer:fixture /node-smoke.sh') ;; *) exit 32 ;; esac ;;
+*consumer:fixture*) case "$*" in *'dst=/opt/bdock/node,readonly,volume-nocopy'*'consumer:fixture /node-smoke.sh') ;; *) exit 32 ;; esac ;;
 *) exit 33 ;;
 esac ;;
 *) exit 34 ;;
 esac
 `
-		if err := os.WriteFile(filepath.Join(dir, "docker"), []byte(strings.ReplaceAll(docker, "/opt/bundledock/node,", "/opt/bundledock/"+bundle+",")), 0700); err != nil {
+		if err := os.WriteFile(filepath.Join(dir, "docker"), []byte(strings.ReplaceAll(docker, "/opt/bdock/node,", "/opt/bdock/"+bundle+",")), 0700); err != nil {
 			t.Fatal(err)
 		}
 		cmd := exec.Command("sh", "../../bundles/"+bundle+"/scripts/smoke.sh", "carrier:fixture", "consumer:fixture")

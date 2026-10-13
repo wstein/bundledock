@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	source := flag.String("source", "/opt/bundledock/toolbox", "bundle directory in the image")
+	source := flag.String("source", "/opt/bdock/toolbox", "bundle directory in the image")
 	target := flag.String("target", "/bundle", "mounted tool volume directory")
 	profile := flag.String("profile", "", "explicit optional bundle profile (code-server-standalone, node-runtime or bun-runtime)")
 	list := flag.Bool("list-licenses", false, "verify and print the offline license index without initializing a volume")

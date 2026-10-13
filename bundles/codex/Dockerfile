@@ -21,10 +21,11 @@ COPY bundles/codex/packages.txt bundles/codex/packages.catalog.json bundles/code
 COPY bundles/codex/licenses /build/licenses
 FROM downloads AS builder
 ARG TARGETARCH
-RUN tools-bundle -arch "${TARGETARCH}" -destination /opt/bundledock/codex
+RUN tools-bundle -arch "${TARGETARCH}" -destination /image-root/opt/bdock/codex \
+    && ln -s /opt/bdock /image-root/opt/bundledock
 
 FROM scratch
-COPY --from=builder /opt/bundledock/codex /opt/bundledock/codex
+COPY --from=builder /image-root/opt/ /opt/
 COPY --from=compiler /out/init-volume /usr/local/bin/init-volume
-ENV PATH="/opt/bundledock/codex/bin:/usr/local/bin" DISABLE_UPDATES=1 DISABLE_AUTOUPDATER=1
-ENTRYPOINT ["/usr/local/bin/init-volume", "--source", "/opt/bundledock/codex"]
+ENV PATH="/opt/bdock/codex/bin:/usr/local/bin" DISABLE_UPDATES=1 DISABLE_AUTOUPDATER=1
+ENTRYPOINT ["/usr/local/bin/init-volume", "--source", "/opt/bdock/codex"]

@@ -46,7 +46,7 @@ for pin in $pins; do
             esac
             ;;
     esac
-    set -- "$@" --mount "type=volume,src=$volume,dst=/opt/bundledock/$name,readonly,volume-nocopy"
+    set -- "$@" --mount "type=volume,src=$volume,dst=/opt/bdock/$name,readonly,volume-nocopy"
 done
 home_volume=$(docker volume create)
 volumes="$volumes $home_volume"

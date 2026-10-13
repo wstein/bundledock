@@ -12,7 +12,7 @@ docker run --rm --network none --mount "type=volume,src=$volume,dst=/bundle,volu
 check() {
     docker run --rm --network none --user 1000:1000 \
         --tmpfs /home/bundledock:exec,uid=1000,gid=1000,mode=0700 \
-        --mount "type=volume,src=$volume,dst=/opt/bundledock/codex,readonly,volume-nocopy" \
+        --mount "type=volume,src=$volume,dst=/opt/bdock/codex,readonly,volume-nocopy" \
         --mount "type=bind,src=$script_dir/consumer-smoke.sh,dst=/codex-smoke.sh,readonly" \
         --env HOME=/home/bundledock --env DISABLE_UPDATES=1 --env DISABLE_AUTOUPDATER=1 --entrypoint /bin/sh "$consumer" /codex-smoke.sh
 }

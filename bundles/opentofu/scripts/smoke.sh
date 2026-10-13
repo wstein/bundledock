@@ -18,7 +18,7 @@ check() {
     docker run --rm --network none --user 1000:1000 \
       --tmpfs /home/bundledock:exec,uid=1000,gid=1000,mode=0700 \
       --env HOME=/home/bundledock \
-      --mount "type=volume,src=$volume,dst=/opt/bundledock/opentofu,readonly,volume-nocopy" \
+      --mount "type=volume,src=$volume,dst=/opt/bdock/opentofu,readonly,volume-nocopy" \
       --mount "type=bind,src=$script_dir/consumer-smoke.sh,dst=/opentofu-smoke.sh,readonly" \
       --entrypoint /bin/sh "$consumer" /opentofu-smoke.sh
 }

@@ -53,7 +53,7 @@ volume) if [ "$2" = create ]; then printf 'fixture-volume\n'; fi ;;
 run)
 case "$*" in
 *sha256:fixture*) case "$*" in *'dst=/bundle,volume-nocopy sha256:fixture'|*'sha256:fixture --license licenses/opentofu/LICENSE'|*'sha256:fixture --license licenses/opentofu/README.md'|*'sha256:fixture --license licenses/opentofu/CHANGELOG.md'|*'sha256:fixture --license licenses/opentofu/SOURCE') ;; *) exit 31 ;; esac ;;
-*consumer:fixture*) case "$*" in *'dst=/opt/bundledock/opentofu,readonly,volume-nocopy'*'consumer:fixture /opentofu-smoke.sh') ;; *) exit 32 ;; esac ;;
+*consumer:fixture*) case "$*" in *'dst=/opt/bdock/opentofu,readonly,volume-nocopy'*'consumer:fixture /opentofu-smoke.sh') ;; *) exit 32 ;; esac ;;
 *) exit 33 ;;
 esac ;;
 *) exit 34 ;;

@@ -1,7 +1,7 @@
 #!/bin/sh
 # Only run in an explicitly approved native glibc consumer, without networking.
 set -eu
-root=/opt/bundledock/node-current
+root=/opt/bdock/node-current
 export PATH="$root/bin:$PATH"
 export npm_config_cache="$HOME/.npm"
 export npm_config_prefix="$HOME/.local/share/npm"
@@ -13,7 +13,7 @@ test "$(readlink "$root/payload/bin/npx")" = ../lib/node_modules/npm/bin/npx-cli
 node --version
 npm --version
 npx --version
-node -e 'if (process.execPath !== "/opt/bundledock/node-current/payload/bin/node") process.exit(1)'
+node -e 'if (process.execPath !== "/opt/bdock/node-current/payload/bin/node") process.exit(1)'
 test "$(npm config get cache)" = "$npm_config_cache"
 test "$(npm config get prefix)" = "$npm_config_prefix"
 mkdir -p "$npm_config_cache" "$npm_config_prefix" "$HOME/project"
