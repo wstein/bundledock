@@ -13,7 +13,7 @@ import (
 func main() {
 	arch := flag.String("arch", "", "target architecture (amd64 or arm64)")
 	directory := flag.String("directory", "/build", "directory containing packages.txt, packages.catalog.json and packages.lock.json")
-	destination := flag.String("destination", "/opt/bundledock/toolbox", "bundle directory")
+	destination := flag.String("destination", "/opt/bdock/toolbox", "bundle directory")
 	gitTrimStage := flag.String("git-trim-stage", "", "sealed output of the fixed git-trim Docker recipe")
 	gitTrimSource := flag.String("git-trim-source", "", "source directory for the fixed git-trim recipe")
 	gitTrimMode := flag.String("git-trim-mode", "", "fixed git-trim recipe operation: prepare or seal")

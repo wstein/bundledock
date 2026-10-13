@@ -16,7 +16,7 @@ check() {
     docker run --rm --network none --user 1000:1000 \
       --tmpfs /home/bundledock:exec,uid=1000,gid=1000,mode=0700 \
       --env HOME=/home/bundledock \
-      --mount "type=volume,src=$volume,dst=/opt/bundledock/bun,readonly,volume-nocopy" \
+      --mount "type=volume,src=$volume,dst=/opt/bdock/bun,readonly,volume-nocopy" \
       --mount "type=bind,src=$script_dir/consumer-smoke.sh,dst=/bun-smoke.sh,readonly" \
       --entrypoint /bin/sh "$consumer" /bun-smoke.sh
 }

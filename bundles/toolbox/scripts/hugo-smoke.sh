@@ -2,7 +2,7 @@
 set -eu
 # OCI callers enforce --network none and supply writable HOME outside the bundle.
 # Use an explicit binary so a consumer's PATH cannot shadow the installed Hugo.
-hugo=${1:-/opt/bundledock/toolbox/bin/hugo}
+hugo=${1:-/opt/bdock/toolbox/bin/hugo}
 version=$("$hugo" version)
 printf '%s\n' "$version"
 case "$version" in

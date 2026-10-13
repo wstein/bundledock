@@ -1,7 +1,7 @@
 #!/bin/sh
 # Run only inside an approved native glibc consumer; no external network access.
 set -eu
-root=/opt/bundledock/code-server
+root=/opt/bdock/code-server
 node=$root/payload/lib/node
 test -f "$root/.ready"
 test -x "$node"

@@ -1,7 +1,7 @@
 #!/bin/sh
 # Runs only during explicitly approved native image smoke.
 set -eu
-root=/opt/bundledock/codex
+root=/opt/bdock/codex
 export PATH="$root/bin:$PATH"
 export CODEX_HOME="$HOME/.codex"
 mkdir -p "$CODEX_HOME"

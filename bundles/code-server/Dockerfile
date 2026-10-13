@@ -21,10 +21,11 @@ COPY bundles/code-server/packages.txt bundles/code-server/packages.catalog.json 
 COPY bundles/code-server/licenses /build/licenses
 FROM downloads AS builder
 ARG TARGETARCH
-RUN tools-bundle -arch "${TARGETARCH}" -destination /opt/bundledock/code-server
+RUN tools-bundle -arch "${TARGETARCH}" -destination /image-root/opt/bdock/code-server \
+    && ln -s /opt/bdock /image-root/opt/bundledock
 
 FROM scratch
-COPY --from=builder /opt/bundledock/code-server /opt/bundledock/code-server
+COPY --from=builder /image-root/opt/ /opt/
 COPY --from=compiler /out/init-volume /usr/local/bin/init-volume
-ENV PATH="/opt/bundledock/code-server/bin:/usr/local/bin"
-ENTRYPOINT ["/usr/local/bin/init-volume", "--source", "/opt/bundledock/code-server", "--profile", "code-server-standalone"]
+ENV PATH="/opt/bdock/code-server/bin:/usr/local/bin"
+ENTRYPOINT ["/usr/local/bin/init-volume", "--source", "/opt/bdock/code-server", "--profile", "code-server-standalone"]

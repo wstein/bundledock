@@ -14,11 +14,11 @@ esac
 [ -n "${HOME:-}" ] || fail 'HOME must be a writable directory outside the toolbox'
 [ -d "$HOME" ] && [ -w "$HOME" ] || fail 'HOME must be a writable directory outside the toolbox'
 home=$(CDPATH= cd -- "$HOME" && pwd -P)
-case "$home" in "$bundle"|"$bundle"/*|/opt/bundledock/toolbox|/opt/bundledock/toolbox/*) fail 'HOME must be outside the toolbox' ;; esac
+case "$home" in "$bundle"|"$bundle"/*|/opt/bdock/toolbox|/opt/bdock/toolbox/*|/opt/bundledock/toolbox|/opt/bundledock/toolbox/*) fail 'HOME must be outside the toolbox' ;; esac
 UV_CACHE_DIR=${UV_CACHE_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/uv}
 mkdir -p -- "$UV_CACHE_DIR" || fail 'UV_CACHE_DIR must be writable outside the toolbox'
 cache=$(CDPATH= cd -- "$UV_CACHE_DIR" && pwd -P)
-case "$cache" in "$bundle"|"$bundle"/*|/opt/bundledock/toolbox|/opt/bundledock/toolbox/*) fail 'UV_CACHE_DIR must be outside the toolbox' ;; esac
+case "$cache" in "$bundle"|"$bundle"/*|/opt/bdock/toolbox|/opt/bdock/toolbox/*|/opt/bundledock/toolbox|/opt/bundledock/toolbox/*) fail 'UV_CACHE_DIR must be outside the toolbox' ;; esac
 [ -w "$cache" ] || fail 'UV_CACHE_DIR must be writable outside the toolbox'
 # A caller may choose offline mode, but cannot redirect resolution to other
 # indexes or local source trees. --no-config alone does not ignore UV_* env.

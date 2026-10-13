@@ -53,7 +53,7 @@ volume) if [ "$2" = create ]; then printf 'fixture-volume\n'; fi ;;
 run)
 case "$*" in
 *sha256:fixture*) case "$*" in *'dst=/bundle,volume-nocopy sha256:fixture') ;; *) exit 31 ;; esac ;;
-*consumer:fixture*) case "$*" in *'dst=/opt/bundledock/code-server,readonly,volume-nocopy'*'consumer:fixture /code-server-smoke.sh') ;; *) exit 32 ;; esac ;;
+*consumer:fixture*) case "$*" in *'dst=/opt/bdock/code-server,readonly,volume-nocopy'*'consumer:fixture /code-server-smoke.sh') ;; *) exit 32 ;; esac ;;
 *) exit 33 ;;
 esac ;;
 *) exit 34 ;;

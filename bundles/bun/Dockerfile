@@ -21,10 +21,11 @@ COPY bundles/bun/packages.txt bundles/bun/packages.catalog.json bundles/bun/pack
 COPY bundles/bun/licenses /build/licenses
 FROM downloads AS builder
 ARG TARGETARCH
-RUN tools-bundle -arch "${TARGETARCH}" -destination /opt/bundledock/bun
+RUN tools-bundle -arch "${TARGETARCH}" -destination /image-root/opt/bdock/bun \
+    && ln -s /opt/bdock /image-root/opt/bundledock
 
 FROM scratch
-COPY --from=builder /opt/bundledock/bun /opt/bundledock/bun
+COPY --from=builder /image-root/opt/ /opt/
 COPY --from=compiler /out/init-volume /usr/local/bin/init-volume
-ENV PATH="/opt/bundledock/bun/bin:/usr/local/bin"
-ENTRYPOINT ["/usr/local/bin/init-volume", "--source", "/opt/bundledock/bun", "--profile", "bun-runtime"]
+ENV PATH="/opt/bdock/bun/bin:/usr/local/bin"
+ENTRYPOINT ["/usr/local/bin/init-volume", "--source", "/opt/bdock/bun", "--profile", "bun-runtime"]

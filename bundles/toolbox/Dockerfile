@@ -40,10 +40,11 @@ COPY bundles/toolbox/licenses /build/licenses
 FROM downloads AS builder
 ARG TARGETARCH
 COPY --from=git-trim-source /out /git-trim-stage
-RUN tools-bundle -arch "${TARGETARCH}" --git-trim-stage /git-trim-stage
+RUN tools-bundle -arch "${TARGETARCH}" -destination /image-root/opt/bdock/toolbox --git-trim-stage /git-trim-stage \
+    && ln -s /opt/bdock /image-root/opt/bundledock
 
 FROM scratch
-COPY --from=builder /opt/bundledock/toolbox /opt/bundledock/toolbox
+COPY --from=builder /image-root/opt/ /opt/
 COPY --from=compiler /out/init-volume /usr/local/bin/init-volume
-ENV PATH="/opt/bundledock/toolbox/bin:/usr/local/bin" DISABLE_UPDATES=1 DISABLE_AUTOUPDATER=1
+ENV PATH="/opt/bdock/toolbox/bin:/usr/local/bin" DISABLE_UPDATES=1 DISABLE_AUTOUPDATER=1
 ENTRYPOINT ["/usr/local/bin/init-volume"]

@@ -21,10 +21,11 @@ COPY bundles/agy/packages.txt bundles/agy/packages.catalog.json bundles/agy/pack
 COPY bundles/agy/licenses /build/licenses
 FROM downloads AS builder
 ARG TARGETARCH
-RUN tools-bundle -arch "${TARGETARCH}" -destination /opt/bundledock/agy
+RUN tools-bundle -arch "${TARGETARCH}" -destination /image-root/opt/bdock/agy \
+    && ln -s /opt/bdock /image-root/opt/bundledock
 
 FROM scratch
-COPY --from=builder /opt/bundledock/agy /opt/bundledock/agy
+COPY --from=builder /image-root/opt/ /opt/
 COPY --from=compiler /out/init-volume /usr/local/bin/init-volume
-ENV PATH="/opt/bundledock/agy/bin:/usr/local/bin" DISABLE_UPDATES=1 DISABLE_AUTOUPDATER=1
-ENTRYPOINT ["/usr/local/bin/init-volume", "--source", "/opt/bundledock/agy"]
+ENV PATH="/opt/bdock/agy/bin:/usr/local/bin" DISABLE_UPDATES=1 DISABLE_AUTOUPDATER=1
+ENTRYPOINT ["/usr/local/bin/init-volume", "--source", "/opt/bdock/agy"]

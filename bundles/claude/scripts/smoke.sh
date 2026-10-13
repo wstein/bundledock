@@ -17,7 +17,7 @@ check() {
       --tmpfs /home/bundledock:exec,uid=1000,gid=1000,mode=0700 \
       --env HOME=/home/bundledock \
       --env DISABLE_UPDATES=1 --env DISABLE_AUTOUPDATER=1 \
-      --mount "type=volume,src=$volume,dst=/opt/bundledock/claude,readonly,volume-nocopy" \
+      --mount "type=volume,src=$volume,dst=/opt/bdock/claude,readonly,volume-nocopy" \
       --mount "type=bind,src=$script_dir/consumer-smoke.sh,dst=/claude-smoke.sh,readonly" \
       --entrypoint /bin/sh "$consumer" /claude-smoke.sh
 }

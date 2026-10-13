@@ -54,8 +54,8 @@ if args[0]=='output': print('wrong' if os.environ['FAILURE']=='output' else 'bun
             touch.write_text('#!/bin/sh\n[ "$FAILURE" = readonly ]\n')
             touch.chmod(0o755)
             source = (ROOT / 'bundles/opentofu/scripts/consumer-smoke.sh').read_text()
-            self.assertEqual(source.count('root=/opt/bundledock/opentofu\n'), 1)
-            source = source.replace('root=/opt/bundledock/opentofu\n',
+            self.assertEqual(source.count('root=/opt/bdock/opentofu\n'), 1)
+            source = source.replace('root=/opt/bdock/opentofu\n',
                                     'root=' + shlex.quote(str(payload)) + '\n')
             script = directory / 'consumer.sh'
             script.write_text(source)

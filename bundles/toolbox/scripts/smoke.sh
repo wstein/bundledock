@@ -18,7 +18,7 @@ docker run --rm --network none --mount "type=volume,src=$volume,dst=/bundle,volu
 check() {
     docker run --rm --network none --user 1000:1000 \
         --tmpfs /home/bundledock:exec,uid=1000,gid=1000,mode=0700 \
-        --mount "type=volume,src=$volume,dst=/opt/bundledock/toolbox,readonly,volume-nocopy" \
+        --mount "type=volume,src=$volume,dst=/opt/bdock/toolbox,readonly,volume-nocopy" \
         --mount "type=bind,src=$script_dir/quality-security-smoke.sh,dst=/quality-security-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/quality-utilities-smoke.sh,dst=/quality-utilities-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/mise-smoke.sh,dst=/mise-smoke.sh,readonly" \
@@ -34,14 +34,14 @@ check() {
         --entrypoint /bin/sh "$consumer" -ec '
             stage() { printf "Toolbox consumer smoke stage: %s\n" "$1" >&2; }
             stage "ready manifest and standalone agent exclusion"
-            test -f /opt/bundledock/toolbox/.ready
+            test -f /opt/bdock/toolbox/.ready
             for agent in codex codex-code-mode-host agy claude; do
-                test ! -e "/opt/bundledock/toolbox/bin/$agent"
+                test ! -e "/opt/bdock/toolbox/bin/$agent"
             done
-            test ! -e /opt/bundledock/toolbox/codex-resources
-            test ! -e /opt/bundledock/toolbox/codex-path
-            test ! -e /opt/bundledock/toolbox/codex-package.json
-            export PATH="/opt/bundledock/toolbox/bin:$PATH"
+            test ! -e /opt/bdock/toolbox/codex-resources
+            test ! -e /opt/bdock/toolbox/codex-path
+            test ! -e /opt/bdock/toolbox/codex-package.json
+            export PATH="/opt/bdock/toolbox/bin:$PATH"
             stage "GitHub CLI"
             gh --version
             stage "herdr"
@@ -104,7 +104,7 @@ check() {
             uv --version
             uvx --version
             # First use resolves packages online; offline smoke checks staging only.
-            test -x /opt/bundledock/toolbox/bin/specify
+            test -x /opt/bdock/toolbox/bin/specify
             test "$(uv --offline cache dir)" = "$UV_CACHE_DIR"
             stage "mise version"
             sh /mise-smoke.sh
@@ -129,7 +129,7 @@ check() {
             stage "git-trim isolated dry-run"
             sh /git-trim-smoke.sh
             stage "read-only toolbox volume"
-            if touch /opt/bundledock/toolbox/write-test 2>/dev/null; then
+            if touch /opt/bdock/toolbox/write-test 2>/dev/null; then
                 echo "Unexpected write to tool volume" >&2
                 exit 1
             fi

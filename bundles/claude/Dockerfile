@@ -21,10 +21,11 @@ COPY bundles/claude/packages.txt bundles/claude/packages.catalog.json bundles/cl
 COPY bundles/claude/licenses /build/licenses
 FROM downloads AS builder
 ARG TARGETARCH
-RUN tools-bundle -arch "${TARGETARCH}" -destination /opt/bundledock/claude
+RUN tools-bundle -arch "${TARGETARCH}" -destination /image-root/opt/bdock/claude \
+    && ln -s /opt/bdock /image-root/opt/bundledock
 
 FROM scratch
-COPY --from=builder /opt/bundledock/claude /opt/bundledock/claude
+COPY --from=builder /image-root/opt/ /opt/
 COPY --from=compiler /out/init-volume /usr/local/bin/init-volume
-ENV PATH="/opt/bundledock/claude/bin:/usr/local/bin" DISABLE_UPDATES=1 DISABLE_AUTOUPDATER=1
-ENTRYPOINT ["/usr/local/bin/init-volume", "--source", "/opt/bundledock/claude"]
+ENV PATH="/opt/bdock/claude/bin:/usr/local/bin" DISABLE_UPDATES=1 DISABLE_AUTOUPDATER=1
+ENTRYPOINT ["/usr/local/bin/init-volume", "--source", "/opt/bdock/claude"]

@@ -65,35 +65,47 @@ func TestBuildStagesUseMinimalAlpineBases(t *testing.T) {
 }
 
 func TestScratchCarrierContract(t *testing.T) {
-	data, err := os.ReadFile("../../bundles/toolbox/Dockerfile")
-	if err != nil {
-		t.Fatal(err)
-	}
-	dockerfile := string(data)
-	final := dockerfile[strings.LastIndex(dockerfile, "\nFROM ")+1:]
-	if !strings.HasPrefix(final, "FROM scratch\n") {
-		t.Fatal("final carrier must start empty")
-	}
-	for _, line := range strings.Split(strings.TrimSpace(final), "\n")[1:] {
-		if !strings.HasPrefix(line, "COPY ") && !strings.HasPrefix(line, "ENV ") && !strings.HasPrefix(line, "ENTRYPOINT ") {
-			t.Fatalf("unexpected final carrier content: %s", line)
-		}
-	}
-	for _, required := range []string{
-		"COPY --from=builder /opt/bundledock/toolbox /opt/bundledock/toolbox",
-		"COPY --from=compiler /out/init-volume /usr/local/bin/init-volume",
-		`ENTRYPOINT ["/usr/local/bin/init-volume"]`,
-		`ENV PATH="/opt/bundledock/toolbox/bin:/usr/local/bin"`,
-	} {
-		if !strings.Contains(final, required) {
-			t.Fatalf("missing carrier contract: %s", required)
-		}
-	}
-	if strings.Count(final, "COPY ") != 2 || strings.Contains(final, "${PATH}") {
-		t.Fatal("carrier must contain only bundle and initializer with explicit PATH")
-	}
-	if !strings.Contains(dockerfile, "CGO_ENABLED=0 GOOS=linux GOARCH=$TARGETARCH go build -trimpath -o /out/init-volume") {
-		t.Fatal("initializer must be static and target-native")
+	for _, bundle := range []string{"toolbox", "code-server", "node", "node-current", "bun", "codex", "agy", "claude", "opentofu"} {
+		t.Run(bundle, func(t *testing.T) {
+			data, err := os.ReadFile("../../bundles/" + bundle + "/Dockerfile")
+			if err != nil {
+				t.Fatal(err)
+			}
+			dockerfile := string(data)
+			final := dockerfile[strings.LastIndex(dockerfile, "\nFROM ")+1:]
+			if !strings.HasPrefix(final, "FROM scratch\n") {
+				t.Fatal("final carrier must start empty")
+			}
+			for _, line := range strings.Split(strings.TrimSpace(final), "\n")[1:] {
+				if !strings.HasPrefix(line, "COPY ") && !strings.HasPrefix(line, "ENV ") && !strings.HasPrefix(line, "ENTRYPOINT ") {
+					t.Fatalf("unexpected final carrier content: %s", line)
+				}
+			}
+			for _, required := range []string{
+				"-destination /image-root/opt/bdock/" + bundle,
+				"ln -s /opt/bdock /image-root/opt/bundledock",
+				"COPY --from=builder /image-root/opt/ /opt/",
+				"COPY --from=compiler /out/init-volume /usr/local/bin/init-volume",
+				`ENV PATH="/opt/bdock/` + bundle + `/bin:/usr/local/bin"`,
+			} {
+				if !strings.Contains(dockerfile, required) {
+					t.Errorf("missing carrier contract: %s", required)
+				}
+			}
+			if bundle == "toolbox" {
+				if !strings.Contains(final, `ENTRYPOINT ["/usr/local/bin/init-volume"]`) {
+					t.Error("toolbox must use the initializer default")
+				}
+			} else if !strings.Contains(final, `"--source", "/opt/bdock/`+bundle+`"`) {
+				t.Error("initializer must select its canonical bundle root")
+			}
+			if strings.Count(final, "COPY ") != 2 || strings.Contains(final, "${PATH}") {
+				t.Fatal("carrier must contain only the isolated bundle tree and initializer with explicit PATH")
+			}
+			if !strings.Contains(dockerfile, "CGO_ENABLED=0 GOOS=linux GOARCH=$TARGETARCH go build -trimpath -o /out/init-volume") {
+				t.Fatal("initializer must be static and target-native")
+			}
+		})
 	}
 }
 
@@ -144,7 +156,7 @@ run)
      printf 'mutated %s\n' "$state" >> "$CARRIER_CALLS" ;;
     *)
      case "$mounts" in
-      *dst=/opt/bundledock/toolbox,readonly,volume-nocopy*) ;;
+      *dst=/opt/bdock/toolbox,readonly,volume-nocopy*) ;;
       *) echo 'consumer must mount the named toolbox root read-only' >&2; exit 66 ;;
      esac
      printf '%s\n' consumer >> "$CARRIER_CALLS" ;;

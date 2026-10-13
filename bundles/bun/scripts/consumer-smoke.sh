@@ -1,7 +1,7 @@
 #!/bin/sh
 # Only run in an explicitly approved native glibc consumer, without networking.
 set -eu
-root=/opt/bundledock/bun
+root=/opt/bdock/bun
 export PATH="$root/bin:$PATH"
 export BUN_INSTALL="$HOME/.bun"
 export BUN_INSTALL_CACHE_DIR="$HOME/.cache/bun/install"
@@ -13,7 +13,7 @@ test -f "$root/licenses.index.json"
 test "$(readlink "$root/payload/bunx")" = bun
 bun --version
 bunx --version
-bun -e 'if (process.execPath !== "/opt/bundledock/bun/payload/bun") process.exit(1)'
+bun -e 'if (process.execPath !== "/opt/bdock/bun/payload/bun") process.exit(1)'
 mkdir -p "$HOME/project" "$BUN_INSTALL_CACHE_DIR" "$BUN_INSTALL_GLOBAL_DIR" "$BUN_INSTALL_BIN"
 printf '%s\n' '{"name":"bundledock-bun-offline-fixture","version":"1.0.0","scripts":{"check":"bun check.js"}}' > "$HOME/project/package.json"
 printf '%s\n' 'if (!process.execPath.includes("/bun/payload/bun")) process.exit(1);' > "$HOME/project/check.js"
