@@ -245,6 +245,27 @@ func sealGitTrim(spec Spec, arch, source, stage string, native, fallback fs.FS) 
 			return err
 		}
 	}
+	status, err := fs.ReadFile(native, "var/lib/dpkg/status")
+	if err != nil {
+		return err
+	}
+	packageInfo := ""
+	for _, block := range strings.Split(string(status), "\n\n") {
+		if strings.HasPrefix(block, "Package: libssl-dev\n") &&
+			strings.Contains(block, "\nStatus: install ok installed\n") &&
+			strings.Contains(block, "\nArchitecture: "+arch+"\n") &&
+			strings.Contains(block, "\nVersion: ") {
+			packageInfo = block
+			break
+		}
+	}
+	if packageInfo == "" {
+		return fmt.Errorf("missing installed libssl-dev version provenance")
+	}
+	provenance := "Builder: " + toolconfig.GitTrimBuilder + "\n\n" + packageInfo + "\n"
+	if err := WriteFile(r, "licenses/git-trim/native/libssl-dev-SOURCE", strings.NewReader(provenance), 0644); err != nil {
+		return err
+	}
 	receipt := gitTrimReceipt{Spec: spec, Arch: arch, Files: map[string]string{}}
 	err = fs.WalkDir(r.FS(), ".", func(n string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -278,7 +299,11 @@ func gitTrimRuntimeNotices(arch string) map[string]string {
 	if arch == "arm64" {
 		triple = "aarch64-unknown-linux-gnu"
 	}
-	paths := map[string]string{"libssl-dev-copyright": "usr/share/doc/libssl-dev/copyright", "zlib1g-dev-copyright": "usr/share/doc/zlib1g-dev/copyright"}
+	paths := map[string]string{
+		"libssl-dev-copyright":   "usr/share/doc/libssl-dev/copyright",
+		"OpenSSL-LICENSE-APACHE": "usr/share/common-licenses/Apache-2.0",
+		"zlib1g-dev-copyright":   "usr/share/doc/zlib1g-dev/copyright",
+	}
 	for _, name := range []string{"COPYRIGHT", "LICENSE-MIT", "LICENSE-APACHE"} {
 		paths["rust-"+name] = "usr/local/rustup/toolchains/1.75.0-" + triple + "/share/doc/rust/" + name
 	}
