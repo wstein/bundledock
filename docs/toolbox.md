@@ -159,7 +159,7 @@ establish a complete transitive license audit.
 
 The default bundle lives in `bundles/toolbox/`: `packages.txt`,
 `packages.catalog.json`, `packages.lock.json`, its Dockerfile, smoke scripts and licenses.
-Shared Go code remains at the repository root. The source toolbox contains 38
+Shared Go code remains at the repository root. The source toolbox contains 39
 downloaded tools plus the two first-use Python launchers listed below. Codex, Antigravity and Claude are supplied by their separate
 [Codex](codex.md), [Antigravity](agy.md) and [Claude Code](claude.md) bundles.
 The published toolbox recorded above still includes those agents; this source
@@ -198,6 +198,7 @@ upstream metadata and persist when the native lock is refreshed.
 | lychee (`lychee`) | 0.24.2 | [Homepage](https://lychee.cli.rs) | [Source](https://github.com/lycheeverse/lychee) |
 | Mike Farah yq (`yq`) | 4.54.1 | [Homepage](https://mikefarah.gitbook.io/yq/) | [Source](https://github.com/mikefarah/yq) |
 | mise (`mise`) | 2026.10.8 | [Homepage](https://mise.jdx.dev) | [Source](https://github.com/jdx/mise) |
+| navi (`navi`) | 2.24.0 | [Homepage](https://github.com/denisidoro/navi) | [Source](https://github.com/denisidoro/navi) |
 | Nushell (`nu`) | 0.116.1 | [Homepage](https://www.nushell.sh/) | [Source](https://github.com/nushell/nushell) |
 | regctl (`regctl`) | 0.11.6 | [Homepage](https://regclient.org) | [Source](https://github.com/regclient/regclient) |
 | ripgrep (`rg`) | 15.2.0 | [Homepage](https://github.com/BurntSushi/ripgrep) | [Source](https://github.com/BurntSushi/ripgrep) |
@@ -619,3 +620,19 @@ and an isolated, noninteractive `mise --version` smoke that clears inherited
 configuration and runs from a disposable HOME. Native runtime compatibility
 and read-only image smoke on both architectures remain deferred until explicit
 approval of the exact source revision and intended build/smoke operation.
+
+## Navi interactive cheatsheets
+
+The source toolbox includes [navi 2.24.0](https://github.com/denisidoro/navi/releases/tag/v2.24.0)
+from official Linux AMD64 musl and ARM64 GNU prebuilts. It uses the bundled
+`fzf`. Cheatsheet commands can execute shell code: choose trusted sheets and
+review commands before running them. BundleDock does not fetch cheatsheets,
+execute examples, install shell hooks or activate Navi at shell startup.
+Keep HOME and any Navi configuration/cache in writable consumer storage.
+
+The release supplies no publisher checksum; the lock records SHA256 observed
+from official HTTPS downloads. Both binaries are UPX packed, so read-only ELF
+inspection cannot establish the original loader/library requirements. ARM64
+consumer compatibility remains unverified until an approved image build and
+native smoke run. The smoke probe checks only `navi --version`, without opening
+the interface or fetching sheets. This source addition has not been published.

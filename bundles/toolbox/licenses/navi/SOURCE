@@ -1,0 +1,9 @@
+Upstream: https://github.com/denisidoro/navi
+License: Apache-2.0
+Pinned release: v2.24.0
+Release: https://github.com/denisidoro/navi/releases/tag/v2.24.0
+Full LICENSE: https://raw.githubusercontent.com/denisidoro/navi/v2.24.0/LICENSE
+LICENSE SHA256: 58d1e17ffe5109a7ae296caafcadfdbe6a7d176f0bc4ab01e12a689b0499d8bd
+Official Linux AMD64 musl and ARM64 GNU archives downloaded and hashed on 2026-10-13. Neither release API digests nor checksum sidecars were supplied; lock verification is tls-download-sha256, not publisher verification.
+Both archives contain only ./navi. The full version-bound upstream LICENSE is retained separately. Both executables are UPX packed; readelf does not expose the original interpreter or dynamic dependencies. ARM64 is the official GNU/Linux target, not the Android target. Native consumer compatibility remains unverified pending an explicitly approved image build and smoke run. No upstream binaries were executed or modified.
+Retaining these notices does not establish a complete transitive license audit.
