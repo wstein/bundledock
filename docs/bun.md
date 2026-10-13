@@ -8,7 +8,7 @@ description: Use the official Bun runtime and bunx from a shared, read-only carr
 [All bundles](bundles.md)
 
 `bundles/bun` supplies official stable prebuilt Bun for Linux AMD64 and ARM64,
-with its own catalog, lock, image, volume and `/opt/bundledock/bun` mount.
+with its own catalog, lock, image, volume and `/opt/bdock/bun` mount.
 
 <!-- BEGIN PUBLISHED BUNDLE -->
 <!-- publication-record: {"attempt":"1","commit":"4fd4d161efafea4f25da4839582e22d7e0a8ee91","digest":"sha256:730dd49c9b3c72615977204da4715bb46c828f5c92b962af155ee1099191b8c7","image":"quay.io/bundledock/bun","reference":"quay.io/bundledock/bun@sha256:730dd49c9b3c72615977204da4715bb46c828f5c92b962af155ee1099191b8c7","run_id":"38198677231","source":"https://github.com/wstein/bundledock","tag":"2026.10.12-b1.1"} -->
@@ -72,7 +72,7 @@ make bundle-volume BUNDLE=bun
 ```
 
 Mount the printed `bundledock-bun-<full image ID>` volume read-only at
-`/opt/bundledock/bun`, and add `/opt/bundledock/bun/bin` to PATH. Use a stock
+`/opt/bdock/bun`, and add `/opt/bdock/bun/bin` to PATH. Use a stock
 glibc language consumer image, such as the existing Debian Trixie Go image.
 The scratch carrier initializes volumes; it is not a consumer runtime.
 The `bun` and `bunx` shell launchers forward every argument and the environment
@@ -92,7 +92,7 @@ export BUN_INSTALL="$HOME/.bun"
 export BUN_INSTALL_CACHE_DIR="$HOME/.cache/bun/install"
 export BUN_INSTALL_GLOBAL_DIR="$HOME/.local/share/bun/install/global"
 export BUN_INSTALL_BIN="$HOME/.local/bin"
-export PATH="/opt/bundledock/bun/bin:$BUN_INSTALL_BIN:$PATH"
+export PATH="/opt/bdock/bun/bin:$BUN_INSTALL_BIN:$PATH"
 ```
 
 Existing Bun environment and `bunfig.toml` settings pass through; no user

@@ -50,7 +50,7 @@ First use needs network access to resolve the pinned CLI and its dependencies
 into uv's cache. Transitive dependency versions are not frozen, and an empty
 cache cannot run offline. `--no-build` requires compatible wheels; a missing
 wheel fails rather than compiling third-party code. Use writable `HOME` and
-`UV_CACHE_DIR` outside `/opt/bundledock/toolbox`; the default cache is
+`UV_CACHE_DIR` outside `/opt/bdock/toolbox`; the default cache is
 `${XDG_CACHE_HOME:-$HOME/.cache}/uv`. Cached tool environments live there too.
 The launcher selects official PyPI, clears alternate index, find-links, constraint, and override
 environment settings, ignores uv configuration files, disables managed interpreters,
@@ -558,7 +558,7 @@ Mise is an optional version manager for projects that deliberately choose it.
 Adding it to the toolbox does not activate it, bootstrap runtimes, modify shell
 configuration, or run `mise use` or `mise install`. Any chosen runtime installation
 and shell integration is a separate user action. Keep HOME, XDG configuration,
-cache, data and state directories writable outside `/opt/bundledock/toolbox`.
+cache, data and state directories writable outside `/opt/bdock/toolbox`.
 
 On 2026-10-13, the downloaded raw binary hashes matched both the official release
 API digests and `SHASUMS256.txt`. Read-only ELF inspection confirmed x86-64 and

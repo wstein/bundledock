@@ -91,11 +91,16 @@ prints `Volume: bundledock-toolbox-<full image ID>`; use that volume name below:
 
 ```sh
 docker run --rm -it \
-  --mount type=volume,src=<printed-volume-name>,dst=/opt/bundledock/toolbox,readonly,volume-nocopy \
+  --mount type=volume,src=<printed-volume-name>,dst=/opt/bdock/toolbox,readonly,volume-nocopy \
   --env DISABLE_UPDATES=1 --env DISABLE_AUTOUPDATER=1 \
   mcr.microsoft.com/devcontainers/go:2-1.27-trixie \
-  sh -c 'export PATH="/opt/bundledock/toolbox/bin:$PATH"; exec bash'
+  sh -c 'export PATH="/opt/bdock/toolbox/bin:$PATH"; exec bash'
 ```
+
+Existing images keep their original initializer source; their relative volume
+contents can be mounted at `/opt/bdock/toolbox`. Future carriers include a temporary
+`/opt/bundledock -> /opt/bdock` link. Consumers needing legacy paths create that
+link during privileged setup; see [bundle roots](docs/architecture.md#shared-volumes).
 
 Keep credentials, configuration, caches, and environments in writable home
 directories or private volumes. The toolbox is read-only and contains no

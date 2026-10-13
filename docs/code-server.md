@@ -46,7 +46,7 @@ see the [official release](https://github.com/coder/code-server/releases/tag/v4.
 Each architecture has a pinned SHA-256. The builder verifies the entire
 archive before reading members. The full payload retains bundled Node, native
 modules, VS Code assets, built-in extensions, MIT license and all third-party
-notices under `/opt/bundledock/code-server/payload`.
+notices under `/opt/bdock/code-server/payload`.
 
 This standalone release needs a glibc consumer with glibc >= 2.28 and
 GLIBCXX >= 3.4.21; use a Debian-based stock language image. The scratch carrier
@@ -74,8 +74,8 @@ enable symbolic links; both caller opt-in and matching validated manifest
 metadata are required. Regular-file toolbox initialization keeps its default
 behavior.
 
-Mount the printed volume read-only at `/opt/bundledock/code-server`, alongside
-the separate toolbox mount. Add `/opt/bundledock/code-server/bin` to the
+Mount the printed volume read-only at `/opt/bdock/code-server`, alongside
+the separate toolbox mount. Add `/opt/bdock/code-server/bin` to the
 consumer's PATH if desired. The forwarding launcher preserves the upstream
 launcher's relative access to bundled Node and resources. The initializer
 preserves twelve internal `node_modules/.bin` symbolic links with their literal
@@ -100,11 +100,11 @@ docker run --rm -it \
   --user "$(id -u):$(id -g)" \
   --env HOME=/tmp/code-server-home \
   --tmpfs /tmp:rw,mode=1777 \
-  --mount "type=volume,src=$CODE_SERVER_VOLUME,dst=/opt/bundledock/code-server,readonly" \
+  --mount "type=volume,src=$CODE_SERVER_VOLUME,dst=/opt/bdock/code-server,readonly" \
   --publish 127.0.0.1:8080:8080 \
   --entrypoint /bin/sh \
   mcr.microsoft.com/devcontainers/go:2-1.27-trixie \
-  -c 'mkdir -p "$HOME"; exec /opt/bundledock/code-server/bin/code-server --bind-addr 0.0.0.0:8080 --auth password /tmp'
+  -c 'mkdir -p "$HOME"; exec /opt/bdock/code-server/bin/code-server --bind-addr 0.0.0.0:8080 --auth password /tmp'
 ```
 
 For a persistent consumer, use its existing writable home and workspace mounts.

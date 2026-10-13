@@ -15,7 +15,7 @@ common utilities. See the [quick start](../README.md#quick-start) and
 [consumer requirements](architecture.md#consumer-compatibility-and-build-layout).
 
 Each bundle has its own desired package list, catalog, verified lock, image,
-volume and `/opt/bundledock/<bundle>` root. A package is an upstream tool or
+volume and `/opt/bdock/<bundle>` root. A package is an upstream tool or
 runtime inside a bundle; a bundle is the independently versioned carrier that
 ships those packages. Select bundles independently with `BUNDLE=<bundle>` when
 using the Makefile. Keep HOME, credentials, caches, configuration and project

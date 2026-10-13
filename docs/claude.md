@@ -9,7 +9,7 @@ description: Use the official Claude CLI with its independent inventory and publ
 
 `bundles/claude` supplies the official stable Linux AMD64 and ARM64 Claude Code
 prebuilt with its own catalog, lock, carrier image, volume and
-`/opt/bundledock/claude` root. Its 2.1.296 pins are retained unchanged from the original
+`/opt/bdock/claude` root. Its 2.1.296 pins are retained unchanged from the original
 toolbox split. The source toolbox no longer includes this agent.
 
 <!-- BEGIN PUBLISHED BUNDLE -->
@@ -62,7 +62,7 @@ bdock tools volume --image quay.io/bundledock/claude@sha256:4b02222a4954f174a46a
 ```
 
 Mount the printed `bundledock-claude-<full image ID>` volume read-only at
-`/opt/bundledock/claude` and prepend `/opt/bundledock/claude/bin` to the consumer's
+`/opt/bdock/claude` and prepend `/opt/bdock/claude/bin` to the consumer's
 PATH. Use a stock glibc language image, such as the existing Debian Trixie Go
 consumer. The scratch carrier initializes volumes; it supplies no interactive
 runtime system libraries. Compatibility beyond this consumer remains unverified.

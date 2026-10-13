@@ -60,9 +60,9 @@ Initialization never removes an existing lock or retries a partial nonempty volu
 
 Follow the [quick start](../README.md#quick-start) to mount the printed volume.
 
-Bundle roots use `/opt/bundledock/<bundle-name>`. For example, mount the
-`toolbox` read-only at `/opt/bundledock/toolbox` and put
-`/opt/bundledock/toolbox/bin` on PATH. The optional [code-server](code-server.md),
+Bundle roots use `/opt/bdock/<bundle-name>`. For example, mount the
+`toolbox` read-only at `/opt/bdock/toolbox` and put
+`/opt/bdock/toolbox/bin` on PATH. The optional [code-server](code-server.md),
 [Node.js LTS](node.md), [Node.js Current](node-current.md), [Bun](bun.md),
 [Codex](codex.md), [Antigravity](agy.md), [Claude](claude.md) and
 [OpenTofu](opentofu.md) bundles use sibling roots and separate
@@ -70,12 +70,25 @@ volumes. Each bundle keeps its own metadata, assets and licenses inside its root
 The builder accepts `--destination` for another root. Bundle metadata and packaged
 assets use relative paths, so an existing image-derived volume can be mounted there
 without changing its image or volume identity. The initializer still mounts the volume at `/bundle` while copying or
-verifying it. New images read their source tree from `/opt/bundledock/toolbox`; the
+verifying it. New images read their source tree from `/opt/bdock/toolbox`; the
 initializer accepts `--source` and `--target` overrides for other locations.
 Older images retain their own initializer and source prefix; their relative
-volume contents can also be mounted at `/opt/bundledock/toolbox`. New volume names use
+volume contents can also be mounted at `/opt/bdock/toolbox`. New volume names use
 `bundledock-toolbox-<digest>`. To select an existing legacy volume by name, run
 `sh bundles/toolbox/scripts/volume.sh <original-image> <existing-volume-name>`.
+Future carriers also contain the temporary compatibility link
+`/opt/bundledock -> /opt/bdock`. Their builder stages assemble only the bundle
+and this sibling link under an isolated `/image-root/opt` tree, then copy that
+whole tree into the shell-free carrier. The link lives outside every verified
+bundle root; manifests and the rejection of absolute links inside bundles remain
+unchanged. Consumers that need old paths must create the same link in their own
+filesystem during privileged setup, before using their read-only mounts. Mount
+each volume once at its canonical `/opt/bdock/<bundle>` path; do not duplicate
+mounts or put the compatibility link inside a volume. Existing published images
+keep their original initializer source and entrypoint, even when their initialized
+volumes are mounted under the new consumer prefix. This source change does not
+rebuild or publish those images.
+
 Keep authentication and writable tool state in the user's home directory or
 separate private volumes. No credentials are included in the image. The read-only mount prevents tools from updating the
 shared executables; Claude updates are also disabled with environment variables.
@@ -111,7 +124,7 @@ pages and local HTML documentation from a full Fish installation are omitted. as
 the compatible Debian consumer libraries. `fd` and `fdfind` are identical regular
 files so the volume needs no symlinks. ast-grep's `sg` alias is excluded to preserve
 consumer commands. Upstream notices retain their `licenses/<package>/...` member paths inside
-`/opt/bundledock/toolbox/licenses.tar.gz`, with a plain `licenses.index.json`
+`/opt/bdock/toolbox/licenses.tar.gz`, with a plain `licenses.index.json`
 for discovery and an [offline carrier reader](toolbox.md#retained-notices).
 Previously published images retain their original loose notice layout.
 uv packages no Python runtime or Python packages; keep its cache, environments,

@@ -9,7 +9,7 @@ description: Use the official Antigravity CLI with its independent inventory and
 
 `bundles/agy` supplies the official stable Linux AMD64 and ARM64 Antigravity CLI
 prebuilt with its own catalog, lock, carrier image, volume and
-`/opt/bundledock/agy` root. Its 1.3.3 pins are retained unchanged from the original
+`/opt/bdock/agy` root. Its 1.3.3 pins are retained unchanged from the original
 toolbox split. The source toolbox no longer includes this agent.
 
 <!-- BEGIN PUBLISHED BUNDLE -->
@@ -65,7 +65,7 @@ bdock tools volume --image quay.io/bundledock/agy@sha256:a96463845e3948487029f72
 ```
 
 Mount the printed `bundledock-agy-<full image ID>` volume read-only at
-`/opt/bundledock/agy` and prepend `/opt/bundledock/agy/bin` to the consumer's
+`/opt/bdock/agy` and prepend `/opt/bdock/agy/bin` to the consumer's
 PATH. Use a stock glibc language image, such as the existing Debian Trixie Go
 consumer. The scratch carrier initializes volumes; it supplies no interactive
 runtime system libraries. Compatibility beyond this consumer remains unverified.
