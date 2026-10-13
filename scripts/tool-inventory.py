@@ -39,6 +39,7 @@ LABELS = (
     ("herdr", "Herdr (`herdr`)"),
     ("fish", "Fish (`fish`)"),
     ("starship", "Starship (`starship`)"),
+    ("navi", "navi (`navi`)"),
     ("nu", "Nushell (`nu`)"),
     ("tmux", "tmux (`tmux`)"),
     ("typos", "typos (`typos`)"),

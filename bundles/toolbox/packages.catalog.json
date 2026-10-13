@@ -1049,6 +1049,31 @@
         "licenses/mise/LICENSE",
         "licenses/mise/SOURCE"
       ]
+    },
+    "navi": {
+      "provider": "github",
+      "repository": "denisidoro/navi",
+      "tag_prefix": "v",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "x86_64-unknown-linux-musl",
+        "arm64": "aarch64-unknown-linux-gnu"
+      },
+      "asset": "navi-v{version}-{arch}.tar.gz",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "tar.gz",
+        "members": {
+          "navi": "bin/navi"
+        }
+      },
+      "notices": [
+        "licenses/navi/LICENSE",
+        "licenses/navi/SOURCE"
+      ]
     }
   }
 }
