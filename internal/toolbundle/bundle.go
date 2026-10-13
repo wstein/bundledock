@@ -407,6 +407,9 @@ func extract(root *os.Root, tool string, p toolconfig.Package, source io.Reader,
 		if err := writeSpecifyLauncher(root); err != nil {
 			return err
 		}
+		if err := writeTldrLauncher(root); err != nil {
+			return err
+		}
 	}
 	return copyAliases(root, p.Install.Aliases)
 }
@@ -432,11 +435,13 @@ func WriteManifest(root *os.Root, arch string, tools map[string]Spec) error {
 	return writeManifest(root, arch, tools, "", nil)
 }
 func writeManifest(root *os.Root, arch string, tools map[string]Spec, profile string, links map[string]string) error {
-	var launchers map[string]string
-	if _, err := root.Stat("bin/specify"); err == nil {
-		launchers = map[string]string{"specify": "specify-cli==1.1.3"}
-	} else if !os.IsNotExist(err) {
-		return err
+	launchers := map[string]string{}
+	for name, pin := range map[string]string{"specify": "specify-cli==1.1.3", "tldr": "tldr==3.4.4"} {
+		if _, err := root.Stat("bin/" + name); err == nil {
+			launchers[name] = pin
+		} else if !os.IsNotExist(err) {
+			return err
+		}
 	}
 	manifest := struct {
 		Schema    int               `json:"schema"`

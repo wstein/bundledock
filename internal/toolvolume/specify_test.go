@@ -50,7 +50,7 @@ func TestSpecifyLauncherSurvivesVolumeInitialization(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			for _, name := range []string{"bin/specify", "manifest.json", "SHA256SUMS"} {
+			for _, name := range []string{"bin/specify", "libexec/python-tool.py", "share/specify/specify.requirements.txt", "bin/tldr", "share/tldr/tldr.requirements.txt", "manifest.json", "SHA256SUMS"} {
 				before, err := os.ReadFile(filepath.Join(src, name))
 				if err != nil {
 					t.Fatal(err)
