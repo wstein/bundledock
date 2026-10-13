@@ -187,7 +187,7 @@ upstream metadata and persist when the native lock is refreshed.
 | GitHub CLI | 2.102.0 | [Homepage](https://cli.github.com) | [Source](https://github.com/cli/cli) |
 | Gitleaks (`gitleaks`) | 8.30.1 | [Homepage](https://gitleaks.io) | [Source](https://github.com/gitleaks/gitleaks) |
 | Helix (`hx`) | 25.07.1 | [Homepage](https://helix-editor.com) | [Source](https://github.com/helix-editor/helix) |
-| Herdr (`herdr`) | 0.9.3 | [Homepage](https://herdr.dev) | [Source](https://github.com/herdrdev/herdr) |
+| Herdr (`herdr`) | 0.9.4 | [Homepage](https://herdr.dev) | [Source](https://github.com/herdrdev/herdr) |
 | Hugo (`hugo`, standard) | 0.167.0 | [Homepage](https://gohugo.io) | [Source](https://github.com/gohugoio/hugo) |
 | hyperfine (`hyperfine`) | 2.0.0 | [Homepage](https://github.com/sharkdp/hyperfine) | [Source](https://github.com/sharkdp/hyperfine) |
 | jq | 1.8.2 | [Homepage](https://jqlang.org) | [Source](https://github.com/jqlang/jq) |
@@ -197,7 +197,7 @@ upstream metadata and persist when the native lock is refreshed.
 | Leaf (`leaf`) | 1.29.0 | [Homepage](https://leaf.rivolink.mg) | [Source](https://github.com/RivoLink/leaf) |
 | lychee (`lychee`) | 0.24.2 | [Homepage](https://lychee.cli.rs) | [Source](https://github.com/lycheeverse/lychee) |
 | Mike Farah yq (`yq`) | 4.54.1 | [Homepage](https://mikefarah.gitbook.io/yq/) | [Source](https://github.com/mikefarah/yq) |
-| mise (`mise`) | 2026.10.8 | [Homepage](https://mise.jdx.dev) | [Source](https://github.com/jdx/mise) |
+| mise (`mise`) | 2026.10.9 | [Homepage](https://mise.jdx.dev) | [Source](https://github.com/jdx/mise) |
 | navi (`navi`) | 2.24.0 | [Homepage](https://github.com/denisidoro/navi) | [Source](https://github.com/denisidoro/navi) |
 | Nushell (`nu`) | 0.116.1 | [Homepage](https://www.nushell.sh/) | [Source](https://github.com/nushell/nushell) |
 | regctl (`regctl`) | 0.11.6 | [Homepage](https://regclient.org) | [Source](https://github.com/regclient/regclient) |

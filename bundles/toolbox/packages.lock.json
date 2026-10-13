@@ -96,9 +96,9 @@
         "verification": "publisher-sha256"
       },
       "herdr": {
-        "version": "v0.9.3",
-        "url": "https://github.com/herdrdev/herdr/releases/download/v0.9.3/herdr-linux-x86_64",
-        "sha256": "18a8dc65f1c2fa485884344356dea1cfd911c6f06cf46fa78e193f4087f4dba7",
+        "version": "v0.9.4",
+        "url": "https://github.com/herdrdev/herdr/releases/download/v0.9.4/herdr-linux-x86_64",
+        "sha256": "493304fbefb0ed0ea0455f373b47f48d24e8774bc7974f4c916ad2e937675b23",
         "verification": "publisher-sha256"
       },
       "hugo": {
@@ -150,9 +150,9 @@
         "verification": "publisher-sha256"
       },
       "mise": {
-        "version": "v2026.10.8",
-        "url": "https://github.com/jdx/mise/releases/download/v2026.10.8/mise-v2026.10.8-linux-x64-musl",
-        "sha256": "043dc6b9077db988269ca2f85059851cb09fc080355350021363e95a5e227f84",
+        "version": "v2026.10.9",
+        "url": "https://github.com/jdx/mise/releases/download/v2026.10.9/mise-v2026.10.9-linux-x64-musl",
+        "sha256": "77fbb428fff656ec0bbacb99d7ed5b038a0e09a9cc0168909fcf3da56b5d51e0",
         "verification": "publisher-sha256"
       },
       "navi": {
@@ -345,9 +345,9 @@
         "verification": "publisher-sha256"
       },
       "herdr": {
-        "version": "v0.9.3",
-        "url": "https://github.com/herdrdev/herdr/releases/download/v0.9.3/herdr-linux-aarch64",
-        "sha256": "4de7aa3e25678812e92960de64f7c2aaa1bca1f0f80a3c5e559837e231e1f5c0",
+        "version": "v0.9.4",
+        "url": "https://github.com/herdrdev/herdr/releases/download/v0.9.4/herdr-linux-aarch64",
+        "sha256": "9511cb70982c1ef115f232058e7ed7cf9640aa5a2c0ca78934cefda3aeb093fd",
         "verification": "publisher-sha256"
       },
       "hugo": {
@@ -399,9 +399,9 @@
         "verification": "publisher-sha256"
       },
       "mise": {
-        "version": "v2026.10.8",
-        "url": "https://github.com/jdx/mise/releases/download/v2026.10.8/mise-v2026.10.8-linux-arm64-musl",
-        "sha256": "d9c5447ad5084b7bf9705ef2913dfad97268235f15849a51e88a21ede7e7204a",
+        "version": "v2026.10.9",
+        "url": "https://github.com/jdx/mise/releases/download/v2026.10.9/mise-v2026.10.9-linux-arm64-musl",
+        "sha256": "0c7f27abf12f80949837fe281137b6c68a8af47cd70068559516eb6160e1728d",
         "verification": "publisher-sha256"
       },
       "navi": {
