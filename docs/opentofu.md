@@ -98,7 +98,7 @@ and preservation of a consumer-owned `.tofurc`.
 
 ## Updates and publication
 
-`bundledock tools upgrade --directory bundles/opentofu` resolves the CLI alone
+`bdock tools upgrade --directory bundles/opentofu` resolves the CLI alone
 within `>=1.13.1,<2.0.0`. The thin upgrade workflow runs at 06:50 UTC and manual
 dry runs default to true. It changes only this lock and generated inventory;
 upgrades do not build or dispatch publication.

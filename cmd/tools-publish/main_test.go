@@ -31,7 +31,7 @@ func TestResolveOnceAndKeepExactArtifactBytes(t *testing.T) {
 	calls := 0
 	runner := func(args ...string) ([]byte, error) {
 		calls++
-		if !reflect.DeepEqual(args, []string{"go", "run", "./cmd/bundledock", "tools", "upgrade"}) {
+		if !reflect.DeepEqual(args, []string{"go", "run", "./cmd/bdock", "tools", "upgrade"}) {
 			t.Fatalf("unexpected resolver command %v", args)
 		}
 		return nil, os.WriteFile(toolconfig.ToolboxLock, resolved, 0600)
@@ -186,7 +186,7 @@ func TestResolveUsesRepositoryURL(t *testing.T) {
 				t.Fatal(err)
 			}
 			// Exercise execute's real environment adapter without resolving upstreams.
-			if err := os.WriteFile("go", []byte("#!/bin/sh\n[ \"$*\" = 'run ./cmd/bundledock tools upgrade' ]\n"), 0700); err != nil {
+			if err := os.WriteFile("go", []byte("#!/bin/sh\n[ \"$*\" = 'run ./cmd/bdock tools upgrade' ]\n"), 0700); err != nil {
 				t.Fatal(err)
 			}
 			t.Setenv("PATH", dir+":"+os.Getenv("PATH"))

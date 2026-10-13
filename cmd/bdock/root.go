@@ -6,7 +6,7 @@ var version = "dev"
 
 func newRootCommand() *cobra.Command {
 	root := &cobra.Command{
-		Use:          "bundledock",
+		Use:          "bdock",
 		Short:        "Build and manage OCI bundles",
 		Version:      version,
 		Args:         cobra.NoArgs,

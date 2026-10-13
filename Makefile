@@ -1,7 +1,7 @@
 GO ?= go
 GOFMT ?= gofmt
 PACKAGES := ./cmd/... ./internal/...
-BINARY := bin/bundledock
+BINARY := bin/bdock
 VERSION ?= dev
 RELEASE_DIR ?= dist/cli
 export GO VERSION RELEASE_DIR
@@ -21,7 +21,7 @@ export IMAGE CONSUMER
 
 help:
 	@printf '%s\n' \
-	  'make build             Build bin/bundledock' \
+	  'make build             Build bin/bdock' \
 	  'make release           Build local two-architecture CLI artifacts' \
 	  'make release-test      Verify CLI release artifacts end to end' \
 	  'make run ARGS="--help"  Run the CLI' \
@@ -43,7 +43,7 @@ bundle-build:
 	docker build -f bundles/$(BUNDLE)/Dockerfile -t "$$IMAGE" .
 
 bundle-test:
-	$(GO) test ./cmd/bundledock ./internal/toolmanager ./internal/toolconfig ./internal/toolbundle ./internal/toolvolume ./internal/dockercli
+	$(GO) test ./cmd/bdock ./internal/toolmanager ./internal/toolconfig ./internal/toolbundle ./internal/toolvolume ./internal/dockercli
 
 bundle-volume:
 	sh scripts/bundle-volume.sh "$$IMAGE" "$(BUNDLE)"
@@ -52,10 +52,10 @@ bundle-smoke:
 	sh bundles/$(BUNDLE)/scripts/smoke.sh "$$IMAGE" "$$CONSUMER"
 
 build:
-	$(GO) build -o $(BINARY) ./cmd/bundledock
+	$(GO) build -o $(BINARY) ./cmd/bdock
 
 run:
-	$(GO) run ./cmd/bundledock $(ARGS)
+	$(GO) run ./cmd/bdock $(ARGS)
 
 test:
 	$(GO) test $(PACKAGES)

@@ -12,9 +12,9 @@ func TestBundleDockCommandIdentity(t *testing.T) {
 		args []string
 		want string
 	}{
-		{"help", []string{"--help"}, "bundledock [flags]"},
-		{"tools help", []string{"tools", "--help"}, "bundledock tools [command]"},
-		{"version", []string{"--version"}, "bundledock version dev\n"},
+		{"help", []string{"--help"}, "bdock [flags]"},
+		{"tools help", []string{"tools", "--help"}, "bdock tools [command]"},
+		{"version", []string{"--version"}, "bdock version dev\n"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			var output bytes.Buffer
@@ -57,7 +57,7 @@ func TestBundleDockInjectedVersion(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatal(err)
 	}
-	if got, want := output.String(), "bundledock version local-test\n"; got != want {
+	if got, want := output.String(), "bdock version local-test\n"; got != want {
 		t.Fatalf("version output = %q, want %q", got, want)
 	}
 }

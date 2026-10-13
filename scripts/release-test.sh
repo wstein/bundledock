@@ -27,7 +27,7 @@ grep -Fx 'version=local-test' "$test_dir/first/PROVENANCE"
 if test "$(go env GOHOSTOS)" = linux; then
     case $(go env GOHOSTARCH) in
         amd64|arm64)
-            test "$("$test_dir/first/bundledock-linux-$(go env GOHOSTARCH)" --version)" = 'bundledock version local-test'
+            test "$("$test_dir/first/bundledock-linux-$(go env GOHOSTARCH)" --version)" = 'bdock version local-test'
             ;;
     esac
 fi

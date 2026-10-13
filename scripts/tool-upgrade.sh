@@ -79,7 +79,7 @@ case "${1:-}" in
       fi
       args=(); [[ -z $tool ]] || args+=("$tool")
       [[ $bundle == toolbox ]] || args+=(--directory "bundles/$bundle")
-      go run ./cmd/bundledock tools upgrade "${args[@]}"
+      go run ./cmd/bdock tools upgrade "${args[@]}"
     done
     require_changes_only "${locks[@]}"
     for bundle in "${bundles[@]}"; do

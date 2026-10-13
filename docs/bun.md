@@ -103,7 +103,7 @@ consumer remains unverified.
 
 ## Updates, publication and evidence
 
-`bundledock tools upgrade --directory bundles/bun` updates Bun alone. The
+`bdock tools upgrade --directory bundles/bun` updates Bun alone. The
 separate upgrade workflow runs daily at 06:50 UTC alongside the other
 bundle proposals, and offers manual dry runs by default. It updates only the
 Bun lock and generated source inventory. The transfer validates base SHA,

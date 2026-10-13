@@ -117,7 +117,7 @@ consumer configuration changes require a separate explicit decision.
 Resolve only this bundle's inputs with:
 
 ```sh
-bundledock tools upgrade --directory bundles/code-server
+bdock tools upgrade --directory bundles/code-server
 ```
 
 The separate code-server upgrade workflow runs daily at 06:50 UTC and offers

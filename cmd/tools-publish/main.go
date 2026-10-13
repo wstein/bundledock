@@ -126,7 +126,7 @@ func resolve(directory string, meta toolpublish.Metadata, runner func(...string)
 	// This is the only upstream resolution in a workflow run. No repository write
 	// or push follows; all other jobs download this one lock/provenance artifact.
 	bundle := toolpublish.BundleForMetadata(meta)
-	args := []string{"go", "run", "./cmd/bundledock", "tools", "upgrade"}
+	args := []string{"go", "run", "./cmd/bdock", "tools", "upgrade"}
 	if bundle.Name != "toolbox" {
 		args = append(args, "--directory", bundle.Directory)
 	}
@@ -140,7 +140,7 @@ func resolve(directory string, meta toolpublish.Metadata, runner func(...string)
 func resolveSingleton(directory string, meta toolpublish.Metadata, frozen bool, attempt string, runner func(...string) ([]byte, error), allocate func(string, []byte) (string, error)) error {
 	bundle := toolpublish.BundleForMetadata(meta)
 	if !frozen {
-		if _, err := runner("go", "run", "./cmd/bundledock", "tools", "upgrade", "--directory", bundle.Directory); err != nil {
+		if _, err := runner("go", "run", "./cmd/bdock", "tools", "upgrade", "--directory", bundle.Directory); err != nil {
 			return err
 		}
 	}

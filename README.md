@@ -17,6 +17,12 @@ consumer environment; the toolbox supplies common utilities alongside them.
 The supported bundle platforms are Linux AMD64 and ARM64. See each guide for
 its consumer requirements and measured runtime coverage.
 
+The public CLI is `bdock`. For development, use `make run ARGS="--help"`;
+after an approved local build, run `bin/bdock --help`. Existing CLI users should
+replace `bundledock` invocations with `bdock`; no compatibility alias is shipped.
+The BundleDock project name, repository, image references and volume paths stay
+the same.
+
 ## Bundles
 
 Published version badges link to [quay.io](https://quay.io/organization/bundledock).
