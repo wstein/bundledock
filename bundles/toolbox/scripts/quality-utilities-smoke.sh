@@ -19,7 +19,7 @@ test "$(just --no-dotenv --justfile "$work/justfile" --working-directory "$work"
 test "$(printf '%s\n' 'x=1' | ruff format --isolated --no-cache --stdin-filename smoke.py -)" = 'x = 1'
 printf '%s\n' '--- a/smoke' '+++ b/smoke' '@@ -1 +1 @@' '-before-smoke' '+after-smoke' | delta --no-gitconfig --paging=never > "$work/diff"
 grep -q after-smoke "$work/diff"
-test "$(watchexec --once --shell=none --workdir "$work" -- echo watch-smoke)" = watch-smoke
+test "$(watchexec -1 --shell=none --workdir "$work" -- echo watch-smoke)" = watch-smoke
 hyperfine --warmup 0 --runs 1 --export-json "$work/benchmark.json" true
 grep -q '"times"' "$work/benchmark.json"
 age-keygen -o "$work/key.txt"
