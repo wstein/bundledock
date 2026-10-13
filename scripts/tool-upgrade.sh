@@ -137,6 +137,7 @@ case "${1:-}" in
     if git diff --quiet -- "${paths[@]}"; then
       echo "No $proposal_name lock or inventory changes; no branch or pull request will be created." >> "$GITHUB_STEP_SUMMARY"; exit 0
     fi
+    proposal_base=$(git rev-parse HEAD)
     branch="automation/toolbox-upgrade-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
     if [[ ${bundles[0]} != toolbox ]]; then branch="automation/${bundles[0]}-upgrade-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"; fi
     git switch -c "$branch"
@@ -153,11 +154,11 @@ case "${1:-}" in
     cat > "$body" <<BODY
 Resolve official stable releases within the selected bundles' existing packages.txt constraints and update only their locks and generated source version inventories. Selected bundles: ${bundles[*]}. Both supported architectures were resolved and verified by the existing BundleDock manager, and transferred locks were revalidated before this proposal.
 
-Review the lock diff and run the required source checks. After an established published baseline, the actual human owner wstein merging this eligible updater authorizes frozen-lock publication after successful CI on the exact merged main source. A submitted APPROVED review is not required. Source merges remain human operations; no review controller merges PRs. Authorization covers only this updater lock and generated inventory. First publication requires separate explicit approval of the exact full source revision and intended build/publication operation; this updater cannot bootstrap an absent baseline. This proposal performs no artifact build; CLI releases, documentation builds, and consumer activation require separate explicit authorization.
+Review the lock diff and run the required source checks. After an established published baseline, the actual human owner wstein merging this eligible updater authorizes frozen-lock publication after successful CI on the exact merged main source. Source merges remain human operations after the required checks pass. Authorization covers only this updater lock and generated inventory. First publication requires separate explicit approval of the exact full source revision and intended build/publication operation; this updater cannot bootstrap an absent baseline. This proposal performs no artifact build; CLI releases, documentation builds, and consumer activation require separate explicit authorization.
 
 Run: https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID (attempt $GITHUB_RUN_ATTEMPT).
 
-Pull requests created with GITHUB_TOKEN do not automatically trigger ordinary pull_request workflows. Run source checks through the established protected human merge path. Successful CI on the exact owner-merged main revision starts the read-only publication planner, which verifies actual owner merge identity, exact source/tree and own-file scope before frozen-lock publication. Main movement, unavailable provenance or source inconsistencies stop automatic publication.
+GitHub may suppress or hold ordinary pull_request runs for bot-created proposals before jobs start. The proposer explicitly dispatches source-only CI for the exact fresh bot PR head after validating its repository, branch, main ancestry and own-file scope. Wait for the required source checks before human merge. Successful CI on the exact owner-merged main revision starts the read-only publication planner, which verifies actual owner merge identity, exact source/tree and own-file scope before frozen-lock publication. Main movement, unavailable provenance or source inconsistencies stop automatic publication.
 
 BODY
     if ! url=$(gh pr create --repo "$GITHUB_REPOSITORY" --base "$DEFAULT_BRANCH" --head "$branch" --title "$title" --body-file "$body" 2>&1); then
@@ -165,6 +166,9 @@ BODY
       echo 'PR creation failed. An administrator must explicitly permit GITHUB_TOKEN contents:write and pull-requests:write, and enable Settings > Actions > General > Workflow permissions > Allow GitHub Actions to create and approve pull requests (subject to organization policy). This workflow never changes those settings or uses a PAT. The topic branch may already exist; inspect it before retrying.' >&2; exit 1
     fi
     printf '%s\n' "$url" >> "$GITHUB_STEP_SUMMARY"
+    python3 scripts/updater-source-ci.py --bundle "${bundles[0]}" --branch "$branch" \
+      --base "$proposal_base" --head "$(git rev-parse HEAD)" --pr-url "$url" \
+      >> "$GITHUB_STEP_SUMMARY"
     ;;
   *) echo 'Usage: tool-upgrade.sh resolve|publish' >&2; exit 2 ;;
 esac

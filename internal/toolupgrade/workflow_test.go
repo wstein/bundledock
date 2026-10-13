@@ -62,7 +62,7 @@ func fixture(t *testing.T) (string, []string) {
 	if err := os.MkdirAll(filepath.Join(dir, "bundles/toolbox"), 0755); err != nil {
 		t.Fatal(err)
 	}
-	for _, name := range []string{"internal/toolbundle/python/specify/specify.requirements.txt", "internal/toolbundle/python/tldr/tldr.requirements.txt", "bundles/toolbox/packages.lock.json", "bundles/toolbox/packages.catalog.json", "docs/toolbox.md", "scripts/tool-inventory.py", "bundles/code-server/packages.txt", "bundles/code-server/packages.lock.json", "bundles/code-server/packages.catalog.json", "docs/code-server.md", "bundles/node/packages.txt", "bundles/node/packages.lock.json", "bundles/node/packages.catalog.json", "docs/node.md", "bundles/node-current/packages.txt", "bundles/node-current/packages.lock.json", "bundles/node-current/packages.catalog.json", "docs/node-current.md", "bundles/bun/packages.txt", "bundles/bun/packages.lock.json", "bundles/bun/packages.catalog.json", "docs/bun.md", "bundles/codex/packages.txt", "bundles/codex/packages.catalog.json", "bundles/codex/packages.lock.json", "docs/codex.md", "bundles/agy/packages.txt", "bundles/agy/packages.catalog.json", "bundles/agy/packages.lock.json", "docs/agy.md", "bundles/claude/packages.txt", "bundles/claude/packages.catalog.json", "bundles/claude/packages.lock.json", "docs/claude.md", "bundles/opentofu/packages.txt", "bundles/opentofu/packages.catalog.json", "bundles/opentofu/packages.lock.json", "docs/opentofu.md"} {
+	for _, name := range []string{"internal/toolbundle/python/specify/specify.requirements.txt", "internal/toolbundle/python/tldr/tldr.requirements.txt", "bundles/toolbox/packages.lock.json", "bundles/toolbox/packages.catalog.json", "docs/toolbox.md", "scripts/tool-inventory.py", "scripts/updater-source-ci.py", "scripts/bundle-config.py", "bundles/code-server/packages.txt", "bundles/code-server/packages.lock.json", "bundles/code-server/packages.catalog.json", "docs/code-server.md", "bundles/node/packages.txt", "bundles/node/packages.lock.json", "bundles/node/packages.catalog.json", "docs/node.md", "bundles/node-current/packages.txt", "bundles/node-current/packages.lock.json", "bundles/node-current/packages.catalog.json", "docs/node-current.md", "bundles/bun/packages.txt", "bundles/bun/packages.lock.json", "bundles/bun/packages.catalog.json", "docs/bun.md", "bundles/codex/packages.txt", "bundles/codex/packages.catalog.json", "bundles/codex/packages.lock.json", "docs/codex.md", "bundles/agy/packages.txt", "bundles/agy/packages.catalog.json", "bundles/agy/packages.lock.json", "docs/agy.md", "bundles/claude/packages.txt", "bundles/claude/packages.catalog.json", "bundles/claude/packages.lock.json", "docs/claude.md", "bundles/opentofu/packages.txt", "bundles/opentofu/packages.catalog.json", "bundles/opentofu/packages.lock.json", "docs/opentofu.md"} {
 		data, err := os.ReadFile(filepath.Join(root, name))
 		if err != nil {
 			t.Fatal(err)
@@ -105,13 +105,39 @@ PYTHON
 fi
 if [ "${EXTRA_EDIT:-false}" = true ]; then printf bad > extra-file; fi
 `)
-	write(t, filepath.Join(fake, "gh"), `#!/bin/sh
-set -eu
-printf '%s\n' "$*" >> "$CALLS"
-if [ "${DENY_PR:-false}" = true ]; then echo 'GitHub Actions is not permitted to create pull requests' >&2; exit 1; fi
-printf 'https://github.com/example/repo/pull/1\n'
+	write(t, filepath.Join(fake, "gh"), `#!/usr/bin/env python3
+import json,os,subprocess,sys
+args=sys.argv[1:]
+with open(os.environ['CALLS'],'a') as calls:
+ calls.write(' '.join(args)+'\n')
+ if '--input' in args: calls.write(sys.stdin.read()+'\n')
+repo='wstein/bundledock'
+url='https://github.com/'+repo+'/pull/1'
+if args[:2]==['pr','create']:
+ if os.environ.get('DENY_PR')=='true': sys.exit('GitHub Actions is not permitted to create pull requests')
+ print(url); sys.exit(0)
+assert args[0]=='api'
+if '--method' in args: sys.exit(0)
+def git(*args): return subprocess.check_output(['git',*args],text=True).strip()
+base=os.environ['GITHUB_SHA']; head=git('rev-parse','HEAD'); branch=git('branch','--show-current')
+files=[{'filename':name,'status':'modified'} for name in git('diff','--name-only',base,head).splitlines()]
+endpoint=args[1].removeprefix('repos/'+repo)
+if endpoint=='': value={'full_name':repo,'default_branch':'main'}
+elif endpoint=='/pulls/1':
+ value={'number':1,'html_url':url,'state':'open','draft':False,'merged':False,'commits':1,'changed_files':len(files),
+ 'user':{'login':'github-actions[bot]','type':'Bot'},'head':{'sha':head,'ref':branch,'repo':{'full_name':repo}},
+ 'base':{'sha':base,'ref':'main','repo':{'full_name':repo}}}
+elif endpoint.startswith('/pulls/1/files?'): value=files
+elif endpoint=='/git/ref/heads/main': value={'object':{'sha':base}}
+elif endpoint=='/git/ref/heads/'+branch: value={'object':{'sha':head}}
+elif endpoint.startswith('/compare/'):
+ value={'status':'ahead','ahead_by':1,'behind_by':0,'total_commits':1,'commits':[{'sha':head,'parents':[{'sha':base,'url':'https://api.github.com/parent'}]}],'files':files}
+elif endpoint=='/actions/workflows/ci.yml': value={'id':7,'path':'.github/workflows/ci.yml','state':'active'}
+elif endpoint.startswith('/actions/workflows/ci.yml/runs?'): value={'total_count':0,'workflow_runs':[]}
+else: sys.exit('Unexpected forge request: '+endpoint)
+print(json.dumps(value))
 `)
-	env := []string{"PATH=" + fake + ":" + os.Getenv("PATH"), "CALLS=" + filepath.Join(t.TempDir(), "calls"), "BUNDLE=toolbox", "TOOL=gh", "UPGRADE_RESULT=" + t.TempDir(), "GITHUB_OUTPUT=" + filepath.Join(t.TempDir(), "outputs"), "GITHUB_STEP_SUMMARY=" + filepath.Join(t.TempDir(), "summary"), "UPGRADE_SCRIPT=" + filepath.Join(root, "scripts/tool-upgrade.sh"), "GITHUB_REPOSITORY=example/repo", "GITHUB_RUN_ID=123", "GITHUB_RUN_ATTEMPT=1", "DEFAULT_BRANCH=main"}
+	env := []string{"PATH=" + fake + ":" + os.Getenv("PATH"), "CALLS=" + filepath.Join(t.TempDir(), "calls"), "BUNDLE=toolbox", "TOOL=gh", "UPGRADE_RESULT=" + t.TempDir(), "GITHUB_OUTPUT=" + filepath.Join(t.TempDir(), "outputs"), "GITHUB_STEP_SUMMARY=" + filepath.Join(t.TempDir(), "summary"), "UPGRADE_SCRIPT=" + filepath.Join(root, "scripts/tool-upgrade.sh"), "GITHUB_REPOSITORY=wstein/bundledock", "GITHUB_RUN_ID=123", "GITHUB_RUN_ATTEMPT=1", "DEFAULT_BRANCH=main", "GITHUB_REF=refs/heads/main"}
 	return dir, env
 }
 func value(env []string, key string) string {
@@ -124,6 +150,7 @@ func value(env []string, key string) string {
 }
 func adapter(t *testing.T, dir string, env []string, phase string) (string, error) {
 	t.Helper()
+	env = append(env, "GITHUB_SHA="+strings.TrimSpace(must(t, dir, nil, "git", "rev-parse", "HEAD")))
 	return run(t, dir, env, "bash", value(env, "UPGRADE_SCRIPT"), phase)
 }
 
@@ -234,7 +261,7 @@ func TestResolveAndPublish(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, text := range []string{"wstein", "exact merged main source", "successful CI", "human operations", "frozen-lock publication", "no review controller merges PRs"} {
+	for _, text := range []string{"wstein", "exact merged main source", "successful CI", "human operations", "frozen-lock publication", "after the required checks pass", "explicitly dispatches source-only CI"} {
 		if !strings.Contains(string(body), text) {
 			t.Fatalf("approval body missing %q: %s", text, body)
 		}
@@ -246,8 +273,13 @@ func TestResolveAndPublish(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(calls), "pr create --repo example/repo --base main --head automation/toolbox-upgrade-123-1 --title chore(toolbox): upgrade stable toolbox lock") {
+	if !strings.Contains(string(calls), "pr create --repo wstein/bundledock --base main --head automation/toolbox-upgrade-123-1 --title chore(toolbox): upgrade stable toolbox lock") {
 		t.Fatalf("calls %s", calls)
+	}
+	head := strings.TrimSpace(must(t, dir, nil, "git", "rev-parse", "HEAD"))
+	if !strings.Contains(string(calls), "api repos/wstein/bundledock/actions/workflows/ci.yml/dispatches --method POST --input -") ||
+		!strings.Contains(string(calls), `"ref": "automation/toolbox-upgrade-123-1", "inputs": {"expected_head_sha": "`+head+`"}`) {
+		t.Fatalf("missing exact pushed-head source CI dispatch: %s", calls)
 	}
 }
 func TestResolveFailuresAndNoChange(t *testing.T) {
@@ -289,6 +321,10 @@ func TestDeniedPRExplainsPrerequisite(t *testing.T) {
 	out, err = adapter(t, dir, append(env, "DENY_PR=true"), "publish")
 	if err == nil || !strings.Contains(out, "Allow GitHub Actions to create and approve pull requests") {
 		t.Fatalf("error %v output %s", err, out)
+	}
+	calls, err := os.ReadFile(value(env, "CALLS"))
+	if err != nil || strings.Contains(string(calls), "/dispatches") {
+		t.Fatalf("failed PR creation dispatched CI: %v %s", err, calls)
 	}
 }
 func TestWorkflowManualLeastPrivilege(t *testing.T) {
