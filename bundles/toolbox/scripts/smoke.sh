@@ -102,6 +102,8 @@ check() {
             stage "uv and uvx"
             uv --version
             uvx --version
+            # First use resolves packages online; offline smoke checks staging only.
+            test -x /opt/bundledock/toolbox/bin/specify
             test "$(uv --offline cache dir)" = "$UV_CACHE_DIR"
             stage "fzf bat and registry utilities"
             sh /utilities-smoke.sh
