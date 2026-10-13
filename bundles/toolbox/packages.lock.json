@@ -149,6 +149,18 @@
         "sha256": "73657a111819a30c47c08352896796f23d64e4eb2b3ed39b6d32149241566fc5",
         "verification": "publisher-sha256"
       },
+      "mise": {
+        "version": "v2026.10.8",
+        "url": "https://github.com/jdx/mise/releases/download/v2026.10.8/mise-v2026.10.8-linux-x64-musl",
+        "sha256": "043dc6b9077db988269ca2f85059851cb09fc080355350021363e95a5e227f84",
+        "verification": "publisher-sha256"
+      },
+      "navi": {
+        "version": "v2.24.0",
+        "url": "https://github.com/denisidoro/navi/releases/download/v2.24.0/navi-v2.24.0-x86_64-unknown-linux-musl.tar.gz",
+        "sha256": "f334047479241f7c8b48d091f4e814dcc798a51a74dfd04ee63cbf67e8c921ba",
+        "verification": "tls-download-sha256"
+      },
       "nu": {
         "version": "0.116.1",
         "url": "https://github.com/nushell/nushell/releases/download/0.116.1/nu-0.116.1-x86_64-unknown-linux-musl.tar.gz",
@@ -215,6 +227,12 @@
         "sha256": "93c301fd4120ff076e2cc2a6d6a61cab4a4bdb81899287c0938b452e56d1f454",
         "verification": "publisher-sha256"
       },
+      "typst": {
+        "version": "v0.15.1",
+        "url": "https://github.com/typst/typst/releases/download/v0.15.1/typst-x86_64-unknown-linux-musl.tar.xz",
+        "sha256": "a6d077d0a95eed5a2eba715b2dae06be954f624ccbf85758a03f389ded33118c",
+        "verification": "publisher-sha256"
+      },
       "uv": {
         "version": "0.13.0",
         "url": "https://github.com/astral-sh/uv/releases/download/0.13.0/uv-x86_64-unknown-linux-musl.tar.gz",
@@ -231,24 +249,6 @@
         "version": "v4.54.1",
         "url": "https://github.com/mikefarah/yq/releases/download/v4.54.1/yq_linux_amd64",
         "sha256": "8e34fc298390875de416e6a4afcb8cabeceb25d9aa8506c1a2f9353cf702ea5f",
-        "verification": "publisher-sha256"
-      },
-      "mise": {
-        "version": "v2026.10.8",
-        "url": "https://github.com/jdx/mise/releases/download/v2026.10.8/mise-v2026.10.8-linux-x64-musl",
-        "sha256": "043dc6b9077db988269ca2f85059851cb09fc080355350021363e95a5e227f84",
-        "verification": "publisher-sha256"
-      },
-      "navi": {
-        "version": "v2.24.0",
-        "url": "https://github.com/denisidoro/navi/releases/download/v2.24.0/navi-v2.24.0-x86_64-unknown-linux-musl.tar.gz",
-        "sha256": "f334047479241f7c8b48d091f4e814dcc798a51a74dfd04ee63cbf67e8c921ba",
-        "verification": "tls-download-sha256"
-      },
-      "typst": {
-        "version": "v0.15.1",
-        "url": "https://github.com/typst/typst/releases/download/v0.15.1/typst-x86_64-unknown-linux-musl.tar.xz",
-        "sha256": "a6d077d0a95eed5a2eba715b2dae06be954f624ccbf85758a03f389ded33118c",
         "verification": "publisher-sha256"
       }
     },
@@ -398,6 +398,18 @@
         "sha256": "5d0b0e3aeab240f41920c633a6eaf97599be6eedda034b36e858ede7dba5e535",
         "verification": "publisher-sha256"
       },
+      "mise": {
+        "version": "v2026.10.8",
+        "url": "https://github.com/jdx/mise/releases/download/v2026.10.8/mise-v2026.10.8-linux-arm64-musl",
+        "sha256": "d9c5447ad5084b7bf9705ef2913dfad97268235f15849a51e88a21ede7e7204a",
+        "verification": "publisher-sha256"
+      },
+      "navi": {
+        "version": "v2.24.0",
+        "url": "https://github.com/denisidoro/navi/releases/download/v2.24.0/navi-v2.24.0-aarch64-unknown-linux-gnu.tar.gz",
+        "sha256": "de99e69906a0e06ffd30a329645e15f9e96a6b42c49eaac8baccac9bc314768a",
+        "verification": "tls-download-sha256"
+      },
       "nu": {
         "version": "0.116.1",
         "url": "https://github.com/nushell/nushell/releases/download/0.116.1/nu-0.116.1-aarch64-unknown-linux-musl.tar.gz",
@@ -464,6 +476,12 @@
         "sha256": "2ac5e37b3236b3c07dec5cdf1527acf143aec4674a6089b0bf424d021b35e099",
         "verification": "publisher-sha256"
       },
+      "typst": {
+        "version": "v0.15.1",
+        "url": "https://github.com/typst/typst/releases/download/v0.15.1/typst-aarch64-unknown-linux-musl.tar.xz",
+        "sha256": "5aa8d74a3d906e60ea12a66ac2f37f8eef1b14cbad7182a745e393a10c23dcee",
+        "verification": "publisher-sha256"
+      },
       "uv": {
         "version": "0.13.0",
         "url": "https://github.com/astral-sh/uv/releases/download/0.13.0/uv-aarch64-unknown-linux-musl.tar.gz",
@@ -480,24 +498,6 @@
         "version": "v4.54.1",
         "url": "https://github.com/mikefarah/yq/releases/download/v4.54.1/yq_linux_arm64",
         "sha256": "189088da0c6429ec5178dfaab1a114805f6cab0b61b165ab236efedf1d57a71b",
-        "verification": "publisher-sha256"
-      },
-      "mise": {
-        "version": "v2026.10.8",
-        "url": "https://github.com/jdx/mise/releases/download/v2026.10.8/mise-v2026.10.8-linux-arm64-musl",
-        "sha256": "d9c5447ad5084b7bf9705ef2913dfad97268235f15849a51e88a21ede7e7204a",
-        "verification": "publisher-sha256"
-      },
-      "navi": {
-        "version": "v2.24.0",
-        "url": "https://github.com/denisidoro/navi/releases/download/v2.24.0/navi-v2.24.0-aarch64-unknown-linux-gnu.tar.gz",
-        "sha256": "de99e69906a0e06ffd30a329645e15f9e96a6b42c49eaac8baccac9bc314768a",
-        "verification": "tls-download-sha256"
-      },
-      "typst": {
-        "version": "v0.15.1",
-        "url": "https://github.com/typst/typst/releases/download/v0.15.1/typst-aarch64-unknown-linux-musl.tar.xz",
-        "sha256": "5aa8d74a3d906e60ea12a66ac2f37f8eef1b14cbad7182a745e393a10c23dcee",
         "verification": "publisher-sha256"
       }
     }
