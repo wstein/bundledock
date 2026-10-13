@@ -1,0 +1,111 @@
+{
+  "bundle": "agy",
+  "commit": "d61056ec61baa28d48c6154645428bdf3597ea0e",
+  "digest": "sha256:24098cefe326351a68789cacb5300b3349b2cb238d5061778a830346cb07a388",
+  "image": "quay.io/bundledock/agy",
+  "publication_evidence": {
+    "attempt": {
+      "event": "workflow_dispatch",
+      "head_sha": "d61056ec61baa28d48c6154645428bdf3597ea0e",
+      "id": 38423169502,
+      "jobs": [
+        {
+          "conclusion": "success",
+          "head_sha": "d61056ec61baa28d48c6154645428bdf3597ea0e",
+          "id": 115386375850,
+          "name": "publication / native (amd64, ubuntu-24.04)",
+          "run_id": 38423169502,
+          "status": "completed",
+          "steps": [
+            {
+              "conclusion": "success",
+              "name": "Build once and smoke on the native architecture",
+              "status": "completed"
+            }
+          ]
+        },
+        {
+          "conclusion": "success",
+          "head_sha": "d61056ec61baa28d48c6154645428bdf3597ea0e",
+          "id": 115386375979,
+          "name": "publication / native (arm64, ubuntu-24.04-arm)",
+          "run_id": 38423169502,
+          "status": "completed",
+          "steps": [
+            {
+              "conclusion": "success",
+              "name": "Build once and smoke on the native architecture",
+              "status": "completed"
+            }
+          ]
+        },
+        {
+          "conclusion": "success",
+          "head_sha": "d61056ec61baa28d48c6154645428bdf3597ea0e",
+          "id": 115387281731,
+          "name": "publication / promote",
+          "run_id": 38423169502,
+          "status": "completed",
+          "steps": [
+            {
+              "conclusion": "success",
+              "name": "Verify both platform manifests and promote version and canonical channel aliases",
+              "status": "completed"
+            }
+          ]
+        }
+      ],
+      "path": ".github/workflows/publish-bundles.yml",
+      "run_attempt": 1,
+      "run_number": 26
+    },
+    "receipt": {
+      "bundle": "agy",
+      "commit": "d61056ec61baa28d48c6154645428bdf3597ea0e",
+      "created": "2026-10-13T15:35:32Z",
+      "digest": "sha256:24098cefe326351a68789cacb5300b3349b2cb238d5061778a830346cb07a388",
+      "image": "quay.io/bundledock/agy",
+      "lock_sha256": "ae9f06091d16dffa60f9f007a7fcd8c6e8e39f08bd4857cd2212a5d37dabf401",
+      "platforms": [
+        {
+          "architecture": "amd64",
+          "bundle": "agy",
+          "commit": "d61056ec61baa28d48c6154645428bdf3597ea0e",
+          "created": "2026-10-13T15:35:32Z",
+          "digest": "sha256:13a8dd8c4d276b0485b4f7258052aef6164d350787b4361995d3b26f2a656877",
+          "image": "quay.io/bundledock/agy",
+          "image_id": "sha256:f5b39e4a96dadf18da660a6904a6918d9d72442fa3891c632dd784da1f53ec46",
+          "lock_sha256": "ae9f06091d16dffa60f9f007a7fcd8c6e8e39f08bd4857cd2212a5d37dabf401",
+          "run_attempt": "1",
+          "run_id": "38423169502",
+          "smoked": true,
+          "source": "https://github.com/wstein/bundledock",
+          "tag": "1.3.4-b1"
+        },
+        {
+          "architecture": "arm64",
+          "bundle": "agy",
+          "commit": "d61056ec61baa28d48c6154645428bdf3597ea0e",
+          "created": "2026-10-13T15:35:32Z",
+          "digest": "sha256:454494b667ccc01a2d6c6b5ceb09f4ed4e91036b6ff4b6c6437df82311c44bb8",
+          "image": "quay.io/bundledock/agy",
+          "image_id": "sha256:364184123aded378a155146cc7de4a396adcb02f85d20e8ea2a5f36499099813",
+          "lock_sha256": "ae9f06091d16dffa60f9f007a7fcd8c6e8e39f08bd4857cd2212a5d37dabf401",
+          "run_attempt": "1",
+          "run_id": "38423169502",
+          "smoked": true,
+          "source": "https://github.com/wstein/bundledock",
+          "tag": "1.3.4-b1"
+        }
+      ],
+      "reference": "quay.io/bundledock/agy@sha256:24098cefe326351a68789cacb5300b3349b2cb238d5061778a830346cb07a388",
+      "run_attempt": "1",
+      "run_id": "38423169502",
+      "source": "https://github.com/wstein/bundledock",
+      "tag": "1.3.4-b1"
+    }
+  },
+  "run_id": "38423169502",
+  "tag": "1.3.4-b1",
+  "upstream_version": "1.3.4"
+}
