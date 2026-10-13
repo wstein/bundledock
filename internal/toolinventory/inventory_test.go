@@ -19,7 +19,7 @@ func fixture(t *testing.T) (string, string) {
 		t.Fatal(err)
 	}
 	root := t.TempDir()
-	for _, name := range []string{"bundles/toolbox/packages.lock.json", "bundles/toolbox/packages.catalog.json", "docs/toolbox.md"} {
+	for _, name := range []string{"internal/toolbundle/python/specify/specify.requirements.txt", "internal/toolbundle/python/tldr/tldr.requirements.txt", "bundles/toolbox/packages.lock.json", "bundles/toolbox/packages.catalog.json", "docs/toolbox.md"} {
 		data, err := os.ReadFile(filepath.Join(repo, name))
 		if err != nil {
 			t.Fatal(err)
@@ -158,8 +158,8 @@ func TestInventoryUsesDisplayedLabelAlphabeticalOrder(t *testing.T) {
 			labels = append(labels, strings.TrimSpace(strings.Split(line, "|")[1]))
 		}
 	}
-	if len(labels) != 38 {
-		t.Fatalf("expected full real catalog, got %d rows", len(labels))
+	if len(labels) != 40 {
+		t.Fatalf("expected 38 catalog tools and two launchers, got %d rows", len(labels))
 	}
 	for i := 1; i < len(labels); i++ {
 		if strings.ToLower(labels[i-1]) > strings.ToLower(labels[i]) {

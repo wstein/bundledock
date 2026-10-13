@@ -121,46 +121,48 @@ removal has not been built or published.
 and `arm64`; builds verify every download.
 
 <!-- BEGIN GENERATED TOOL INVENTORY -->
-| Tool | Pinned version |
-| --- | --- |
-| age (`age`, `age-keygen`, `age-inspect`, plugins) | 1.3.2 |
-| ast-grep (`ast-grep`) | 0.50.0 |
-| bat (`bat`) | 0.26.1 |
-| bottom (`btm`) | 0.14.9 |
-| btop (`btop`) | 1.4.7 |
-| delta (`delta`) | 0.20.1 |
-| fd (`fd`, `fdfind`) | 10.5.0 |
-| Fish (`fish`) | 4.9.3 |
-| fzf (`fzf`) | 0.74.5 |
-| Git LFS (`git-lfs`) | 3.8.0 |
-| git-trim (`git-trim`, reviewed source exception) | 0.4.3 |
-| GitHub CLI | 2.102.0 |
-| Gitleaks (`gitleaks`) | 8.30.1 |
-| Helix (`hx`) | 25.07.1 |
-| Herdr (`herdr`) | 0.9.3 |
-| Hugo (`hugo`, standard) | 0.167.0 |
-| hyperfine (`hyperfine`) | 2.0.0 |
-| jq | 1.8.2 |
-| Jujutsu (`jj`) | 0.46.0 |
-| just (`just`) | 1.58.0 |
-| lazygit (`lazygit`) | 0.66.1 |
-| Leaf (`leaf`) | 1.29.0 |
-| lychee (`lychee`) | 0.24.2 |
-| Mike Farah yq (`yq`) | 4.54.1 |
-| mise (`mise`) | 2026.10.8 |
-| Nushell (`nu`) | 0.116.1 |
-| regctl (`regctl`) | 0.11.6 |
-| ripgrep (`rg`) | 15.2.0 |
-| Ruff (`ruff`) | 0.17.0 |
-| ShellCheck (`shellcheck`) | 0.11.0 |
-| shfmt (`shfmt`) | 3.14.1 |
-| Starship (`starship`) | 1.26.0 |
-| Syft (`syft`) | 1.54.1 |
-| tmux (`tmux`) | 3.7c (official static builds) |
-| Trivy (`trivy`) | 0.75.0 |
-| typos (`typos`) | 1.51.1 |
-| uv (`uv`, `uvx`) | 0.13.0 |
-| watchexec (`watchexec`) | 2.8.0 |
+| Tool | Pinned version | Homepage | Source |
+| --- | --- | --- | --- |
+| age (`age`, `age-keygen`, `age-inspect`, plugins) | 1.3.2 | [Homepage](https://age-encryption.org) | [Source](https://github.com/FiloSottile/age) |
+| ast-grep (`ast-grep`) | 0.50.0 | [Homepage](https://ast-grep.github.io/) | [Source](https://github.com/ast-grep/ast-grep) |
+| bat (`bat`) | 0.26.1 | [Homepage](https://github.com/sharkdp/bat) | [Source](https://github.com/sharkdp/bat) |
+| bottom (`btm`) | 0.14.9 | [Homepage](https://bottom.pages.dev) | [Source](https://github.com/ClementTsang/bottom) |
+| btop (`btop`) | 1.4.7 | [Homepage](https://github.com/aristocratos/btop) | [Source](https://github.com/aristocratos/btop) |
+| delta (`delta`) | 0.20.1 | [Homepage](https://dandavison.github.io/delta/) | [Source](https://github.com/dandavison/delta) |
+| fd (`fd`, `fdfind`) | 10.5.0 | [Homepage](https://github.com/sharkdp/fd) | [Source](https://github.com/sharkdp/fd) |
+| Fish (`fish`) | 4.9.3 | [Homepage](https://fishshell.com) | [Source](https://github.com/fish-shell/fish-shell) |
+| fzf (`fzf`) | 0.74.5 | [Homepage](https://junegunn.github.io/fzf/) | [Source](https://github.com/junegunn/fzf) |
+| Git LFS (`git-lfs`) | 3.8.0 | [Homepage](https://git-lfs.com) | [Source](https://github.com/git-lfs/git-lfs) |
+| git-trim (`git-trim`, reviewed source exception) | 0.4.3 | [Homepage](https://github.com/foriequal0/git-trim) | [Source](https://github.com/foriequal0/git-trim) |
+| GitHub CLI | 2.102.0 | [Homepage](https://cli.github.com) | [Source](https://github.com/cli/cli) |
+| Gitleaks (`gitleaks`) | 8.30.1 | [Homepage](https://gitleaks.io) | [Source](https://github.com/gitleaks/gitleaks) |
+| Helix (`hx`) | 25.07.1 | [Homepage](https://helix-editor.com) | [Source](https://github.com/helix-editor/helix) |
+| Herdr (`herdr`) | 0.9.3 | [Homepage](https://herdr.dev) | [Source](https://github.com/herdrdev/herdr) |
+| Hugo (`hugo`, standard) | 0.167.0 | [Homepage](https://gohugo.io) | [Source](https://github.com/gohugoio/hugo) |
+| hyperfine (`hyperfine`) | 2.0.0 | [Homepage](https://github.com/sharkdp/hyperfine) | [Source](https://github.com/sharkdp/hyperfine) |
+| jq | 1.8.2 | [Homepage](https://jqlang.org) | [Source](https://github.com/jqlang/jq) |
+| Jujutsu (`jj`) | 0.46.0 | [Homepage](https://jj-vcs.dev) | [Source](https://github.com/jj-vcs/jj) |
+| just (`just`) | 1.58.0 | [Homepage](https://just.systems) | [Source](https://github.com/casey/just) |
+| lazygit (`lazygit`) | 0.66.1 | [Homepage](https://github.com/jesseduffield/lazygit) | [Source](https://github.com/jesseduffield/lazygit) |
+| Leaf (`leaf`) | 1.29.0 | [Homepage](https://leaf.rivolink.mg) | [Source](https://github.com/RivoLink/leaf) |
+| lychee (`lychee`) | 0.24.2 | [Homepage](https://lychee.cli.rs) | [Source](https://github.com/lycheeverse/lychee) |
+| Mike Farah yq (`yq`) | 4.54.1 | [Homepage](https://mikefarah.gitbook.io/yq/) | [Source](https://github.com/mikefarah/yq) |
+| mise (`mise`) | 2026.10.8 | [Homepage](https://mise.jdx.dev) | [Source](https://github.com/jdx/mise) |
+| Nushell (`nu`) | 0.116.1 | [Homepage](https://www.nushell.sh/) | [Source](https://github.com/nushell/nushell) |
+| regctl (`regctl`) | 0.11.6 | [Homepage](https://regclient.org) | [Source](https://github.com/regclient/regclient) |
+| ripgrep (`rg`) | 15.2.0 | [Homepage](https://github.com/BurntSushi/ripgrep) | [Source](https://github.com/BurntSushi/ripgrep) |
+| Ruff (`ruff`) | 0.17.0 | [Homepage](https://docs.astral.sh/ruff) | [Source](https://github.com/astral-sh/ruff) |
+| ShellCheck (`shellcheck`) | 0.11.0 | [Homepage](https://www.shellcheck.net) | [Source](https://github.com/koalaman/shellcheck) |
+| shfmt (`shfmt`) | 3.14.1 | [Homepage](https://pkg.go.dev/mvdan.cc/sh/v3) | [Source](https://github.com/mvdan/sh) |
+| Spec Kit (`specify`, first-use pip launcher) | 1.1.3 | [Homepage](https://github.github.io/spec-kit/) | [Source](https://github.com/github/spec-kit) |
+| Starship (`starship`) | 1.26.0 | [Homepage](https://starship.rs) | [Source](https://github.com/starship/starship) |
+| Syft (`syft`) | 1.54.1 | [Homepage](https://github.com/anchore/syft) | [Source](https://github.com/anchore/syft) |
+| tldr (`tldr`, first-use pip launcher) | 3.4.4 | [Homepage](https://pypi.org/project/tldr/) | [Source](https://github.com/tldr-pages/tldr-python-client) |
+| tmux (`tmux`) | 3.7c (official static builds) | [Homepage](https://github.com/tmux/tmux-builds) | [Source](https://github.com/tmux/tmux-builds) |
+| Trivy (`trivy`) | 0.75.0 | [Homepage](https://trivy.dev) | [Source](https://github.com/aquasecurity/trivy) |
+| typos (`typos`) | 1.51.1 | [Homepage](https://github.com/crate-ci/typos) | [Source](https://github.com/crate-ci/typos) |
+| uv (`uv`, `uvx`) | 0.13.0 | [Homepage](https://docs.astral.sh/uv) | [Source](https://github.com/astral-sh/uv) |
+| watchexec (`watchexec`) | 2.8.0 | [Homepage](https://watchexec.github.io) | [Source](https://github.com/watchexec/watchexec) |
 <!-- END GENERATED TOOL INVENTORY -->
 
 Nushell and tmux are opt-in commands. tmux pins the published stable
