@@ -8,3 +8,4 @@ Builder: rust:1.75.0-bookworm@sha256:87f3b2f93b82995443a1a558c234212dafe79cfdc3a
 Recipe: git-trim-v0.4.3-rust1.75-bookworm-v1
 MIT copyright: SeongChan Lee (2020)
 Dependency and bundled native-library notices are collected from the verified vendored source during an explicitly approved build.
+OpenSSL static archives, full copyright, Apache-2.0 license and installed libssl-dev package/version provenance are retained from the digest-pinned builder image.

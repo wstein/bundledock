@@ -37,7 +37,7 @@ func TestGitTrimSealChecksCompleteVersionedDependencyClosure(t *testing.T) {
 		t.Fatal(err)
 	}
 	blocks := regexp.MustCompile(`(?m)^name = "([A-Za-z0-9_-]+)"\nversion = "([A-Za-z0-9.+_-]+)"\nsource = "registry\+https://github.com/rust-lang/crates.io-index"\nchecksum = "([a-f0-9]{64})"`).FindAllStringSubmatch(string(lock), -1)
-	for _, scenario := range []string{"valid", "changed checksum", "missing crate", "changed license", "missing fallback"} {
+	for _, scenario := range []string{"valid", "changed checksum", "missing crate", "changed license", "missing fallback", "missing OpenSSL license", "missing OpenSSL copyright", "missing OpenSSL version"} {
 		t.Run(scenario, func(t *testing.T) {
 			source := t.TempDir()
 			os.WriteFile(filepath.Join(source, "Cargo.lock"), lock, 0644)
@@ -69,6 +69,16 @@ func TestGitTrimSealChecksCompleteVersionedDependencyClosure(t *testing.T) {
 			for _, p := range gitTrimRuntimeNotices("amd64") {
 				native[p] = &fstest.MapFile{Data: []byte("native/runtime full fixture notice")}
 			}
+			native["usr/share/common-licenses/Apache-2.0"] = &fstest.MapFile{Data: []byte("full Apache-2.0 fixture license")}
+			native["var/lib/dpkg/status"] = &fstest.MapFile{Data: []byte("Package: libssl-dev\nStatus: install ok installed\nArchitecture: amd64\nVersion: 3.0.11-1~deb12u2\n\n")}
+			switch scenario {
+			case "missing OpenSSL license":
+				delete(native, "usr/share/common-licenses/Apache-2.0")
+			case "missing OpenSSL copyright":
+				delete(native, "usr/share/doc/libssl-dev/copyright")
+			case "missing OpenSSL version":
+				native["var/lib/dpkg/status"] = &fstest.MapFile{Data: []byte("Package: unrelated\nVersion: 1\n\n")}
+			}
 			fallback := os.DirFS("../../bundles/toolbox/licenses/git-trim/dependencies")
 			if scenario == "missing fallback" {
 				fallback = os.DirFS(t.TempDir())
@@ -78,6 +88,16 @@ func TestGitTrimSealChecksCompleteVersionedDependencyClosure(t *testing.T) {
 				t.Fatalf("seal %s: %v", scenario, err)
 			}
 			if scenario == "valid" {
+				for name, want := range map[string]string{
+					"OpenSSL-LICENSE-APACHE": "full Apache-2.0 fixture license",
+					"libssl-dev-copyright":   "native/runtime full fixture notice",
+					"libssl-dev-SOURCE":      "Builder: " + toolconfig.GitTrimBuilder + "\n\nPackage: libssl-dev\nStatus: install ok installed\nArchitecture: amd64\nVersion: 3.0.11-1~deb12u2\n",
+				} {
+					got, err := os.ReadFile(filepath.Join(stage, "licenses/git-trim/native", name))
+					if err != nil || string(got) != want {
+						t.Fatalf("retained OpenSSL %s: %q, %v", name, got, err)
+					}
+				}
 				for _, n := range []string{"hermit-abi-0.1.19/LICENSE", "hermit-abi-0.2.6/LICENSE", "terminal_size-0.1.17/LICENSE", "terminal_size-0.2.3/LICENSE", "enum-iterator-1.1.3/LICENSE"} {
 					if _, err := os.Stat(filepath.Join(stage, "licenses/git-trim/dependencies", n)); err != nil {
 						t.Fatal(err)
