@@ -203,7 +203,7 @@ class OwnerMergeTests(unittest.TestCase):
   get,reads=self.missing_merge_get()
   with tempfile.TemporaryDirectory() as directory:
    output=Path(directory)/'output'
-   with patch.dict(os.environ,{'GITHUB_OUTPUT':str(output)}),patch('time.sleep'),patch.object(gate,'main',side_effect=lambda:gate.validate(self.event,get)),self.assertRaisesRegex(SystemExit,'Bundle publication pending:.*expected_source='+A):gate.run()
+   with patch.dict(os.environ,{'GITHUB_OUTPUT':str(output)},clear=True),patch('time.sleep'),patch.object(gate,'main',side_effect=lambda:gate.validate(self.event,get)),self.assertRaisesRegex(SystemExit,'Bundle publication pending:.*expected_source='+A):gate.run()
    self.assertIn('eligible=false',output.read_text())
    self.assertIn('status=pending',output.read_text())
  def test_persistent_mismatch_captures_safe_expected_observed_values(self):
@@ -237,7 +237,7 @@ class OwnerMergeTests(unittest.TestCase):
    bundle=gate.config.select_bundle(name);workflow={'id':8,'path':'.github/workflows/'+bundle['workflow']}
    run=dict(workflow,id=456,workflow_id=8,run_attempt=2,event='workflow_run',head_sha=A,repository=REPO,head_repository=REPO)
    def get(path):return workflow if path.startswith('/actions/workflows/') else run
-   with patch.dict(os.environ,{'GITHUB_RUN_ID':'456','GITHUB_RUN_ATTEMPT':'2','GITHUB_SHA':A}):
+   with patch.dict(os.environ,{'GITHUB_RUN_ID':'456','GITHUB_RUN_ATTEMPT':'2','GITHUB_SHA':A},clear=True):
     gate.validate_caller(get,bundle)
     run['path']='.github/workflows/wrong.yml'
     with self.assertRaises(ValueError):gate.validate_caller(get,bundle)
@@ -248,11 +248,33 @@ class OwnerMergeTests(unittest.TestCase):
   with tempfile.TemporaryDirectory() as directory:
    event=Path(directory)/'event';event.write_text(json.dumps(self.event));output=Path(directory)/'output'
    env={'GITHUB_REPOSITORY':REPO['full_name'],'GITHUB_EVENT_NAME':'workflow_run','GITHUB_EVENT_PATH':str(event),'GITHUB_TOKEN':'fixture','GITHUB_OUTPUT':str(output)}
-   with patch.dict(os.environ,env),patch.object(sys,'argv',['gate','--mode','plan']),patch.object(gate,'GitHub') as api,patch.object(gate,'validate_caller'),patch.object(gate.subprocess,'check_output',return_value=A):
+   with patch.dict(os.environ,env,clear=True),patch.object(sys,'argv',['gate','--mode','plan']),patch.object(gate,'GitHub') as api,patch.object(gate,'validate_caller'),patch.object(gate.subprocess,'check_output',return_value=A):
     api.return_value.request.side_effect=self.get
     gate.main()
+    os.environ['PUBLICATION_SHA']=A
+    gate.main()
+    accepted=output.read_text()
+    os.environ['PUBLICATION_SHA']=B
+    with self.assertRaisesRegex(ValueError,'Authorized source changed'):gate.main()
+    self.assertEqual(output.read_text(),accepted)
    self.assertIn('bundle=toolbox',output.read_text())
    self.assertIn('eligible=true',output.read_text())
+ def test_publication_fixtures_ignore_ambient_environment(self):
+  import tempfile
+  with tempfile.TemporaryDirectory() as directory:
+   summary=Path(directory)/'summary';summary.write_text('Publisher summary remains unchanged\n')
+   ambient={'PUBLICATION_SHA':B,'APPROVED_SHA':B,'BUNDLE':'opentofu','GITHUB_SHA':B,'GITHUB_EVENT_NAME':'workflow_dispatch','GITHUB_REPOSITORY':'other/repository','GITHUB_TOKEN':'ambient-token','GITHUB_OUTPUT':str(Path(directory)/'output'),'GITHUB_STEP_SUMMARY':str(summary),'GITHUB_RUN_ID':'999','GITHUB_RUN_ATTEMPT':'9','GITHUB_ACTOR':'github-actions[bot]','TRIGGERING_ACTOR':'github-actions[bot]','SENDER_TYPE':'Bot','GITHUB_REF':'refs/heads/other','DEFAULT_BRANCH':'other'}
+   with patch.dict(os.environ,ambient):
+    expected=dict(os.environ)
+    for name in ('test_auto_plan_emits_bundle_contract','test_manual_plan_retains_real_approval_gate_and_current_main','test_all_bundles_and_caller_identity','test_missing_merge_execution_emits_pending_without_authorization','test_rejected_and_pending_execution_emit_explicit_outcomes'):
+     with self.subTest(fixture=name):
+      summary.write_text('Publisher summary remains unchanged\n')
+      result=unittest.TestResult()
+      OwnerMergeTests(name).run(result)
+      self.assertTrue(result.wasSuccessful(),result.errors+result.failures)
+      self.assertEqual(dict(os.environ),expected)
+      self.assertEqual(summary.read_text(),'Publisher summary remains unchanged\n')
+      self.assertFalse((Path(directory)/'output').exists())
  def test_all_bundle_owner_merges_use_own_paths(self):
   for name in gate.config.BUNDLES:
    with self.subTest(name=name):
@@ -268,7 +290,7 @@ class OwnerMergeTests(unittest.TestCase):
   with tempfile.TemporaryDirectory() as directory:
    event=Path(directory)/'event';event.write_text(json.dumps({'repository':REPO}));output=Path(directory)/'output'
    env={'GITHUB_REPOSITORY':REPO['full_name'],'GITHUB_EVENT_NAME':'workflow_dispatch','GITHUB_EVENT_PATH':str(event),'GITHUB_TOKEN':'fixture','GITHUB_OUTPUT':str(output),'BUNDLE':'node','APPROVED_SHA':A,'GITHUB_SHA':A,'DEFAULT_BRANCH':'main','GITHUB_REF':'refs/heads/main','SENDER_TYPE':'User','GITHUB_ACTOR':'wstein','TRIGGERING_ACTOR':'wstein'}
-   with patch.dict(os.environ,env),patch.object(sys,'argv',['gate','--mode','plan']),patch.object(gate,'GitHub') as api,patch.object(gate,'validate_caller'),patch.object(gate.subprocess,'check_output',return_value=A):
+   with patch.dict(os.environ,env,clear=True),patch.object(sys,'argv',['gate','--mode','plan']),patch.object(gate,'GitHub') as api,patch.object(gate,'validate_caller'),patch.object(gate.subprocess,'check_output',return_value=A):
     api.return_value.request.side_effect=self.get
     gate.main()
     self.assertIn('bundle=node',output.read_text())
@@ -281,7 +303,7 @@ class OwnerMergeTests(unittest.TestCase):
   for error,status in ((gate.OwnerMergeRequired('owner missing'),'blocked_owner_merge'),(ValueError('source mismatch'),'rejected'),(OSError('unavailable'),'pending')):
    with self.subTest(status=status), tempfile.TemporaryDirectory() as directory:
     output=Path(directory)/'output';summary=Path(directory)/'summary'
-    with patch.dict(os.environ,{'GITHUB_OUTPUT':str(output),'GITHUB_STEP_SUMMARY':str(summary)}),patch.object(gate,'main',side_effect=error),self.assertRaises(SystemExit):gate.run()
+    with patch.dict(os.environ,{'GITHUB_OUTPUT':str(output),'GITHUB_STEP_SUMMARY':str(summary)},clear=True),patch.object(gate,'main',side_effect=error),self.assertRaises(SystemExit):gate.run()
     self.assertIn('eligible=false',output.read_text())
     self.assertIn('status='+status,output.read_text())
     self.assertIn(status,summary.read_text())
