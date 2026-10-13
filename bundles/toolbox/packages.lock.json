@@ -4,10 +4,16 @@
   "catalog_digest": "20fb46479abf3b9d82b850584cdd9b9b02ed4b7e2f94ca2db10b25a21be738bc",
   "platforms": {
     "amd64": {
+      "age": {
+        "version": "v1.3.2",
+        "url": "https://github.com/FiloSottile/age/releases/download/v1.3.2/age-v1.3.2-linux-amd64.tar.gz",
+        "sha256": "cbe24006683f8eb669266162894b9a522a1af52f2665fbc63a4bb032ed26ac10",
+        "verification": "publisher-sha256"
+      },
       "ast-grep": {
-        "version": "0.45.3",
-        "url": "https://github.com/ast-grep/ast-grep/releases/download/0.45.3/app-x86_64-unknown-linux-gnu.zip",
-        "sha256": "f8ac830881339d1edee6b2652f54798c0f4da5a827f2db38a08ee31117783ce8",
+        "version": "0.50.0",
+        "url": "https://github.com/ast-grep/ast-grep/releases/download/0.50.0/app-x86_64-unknown-linux-gnu.zip",
+        "sha256": "0fd3f489639abb8465a914b74b8779171577582318d8a940d00399f59dba81c5",
         "verification": "publisher-sha256"
       },
       "bat": {
@@ -26,6 +32,12 @@
         "version": "v1.4.7",
         "url": "https://github.com/aristocratos/btop/releases/download/v1.4.7/btop-x86_64-unknown-linux-musl.tar.gz",
         "sha256": "5099054dd6a101bd12eb6ff3702a9a6a3f57aaa27923a0da478ae5b517faf335",
+        "verification": "publisher-sha256"
+      },
+      "delta": {
+        "version": "0.20.1",
+        "url": "https://github.com/dandavison/delta/releases/download/0.20.1/delta-0.20.1-x86_64-unknown-linux-musl.tar.gz",
+        "sha256": "69dcb4043f55c29118f408c6efd30115e0a4e0a6709253343b8c8fa814ab4a31",
         "verification": "publisher-sha256"
       },
       "fd": {
@@ -52,6 +64,25 @@
         "sha256": "bb766f710eef8ede859c18578c72c327597cd4c8a85b06001b1f3843c6019386",
         "verification": "publisher-sha256"
       },
+      "git-lfs": {
+        "version": "v3.8.0",
+        "url": "https://github.com/git-lfs/git-lfs/releases/download/v3.8.0/git-lfs-linux-amd64-v3.8.0.tar.gz",
+        "sha256": "e455e00f15d9b95661b8d53498ffb0c3367962cf1ec73c31ab7369516cd6ab8d",
+        "verification": "publisher-sha256"
+      },
+      "git-trim": {
+        "version": "v0.4.3",
+        "url": "https://codeload.github.com/foriequal0/git-trim/tar.gz/65288617a637029573a5c3517abcb95b050ea02b",
+        "sha256": "dffccf97f3801976a647f5d03629d49f17d3b930b322ee1056239084093b4e53",
+        "verification": "tls-download-sha256",
+        "source": {
+          "commit": "65288617a637029573a5c3517abcb95b050ea02b",
+          "cargo_lock_sha256": "86abff4cefcfcfa8c55b163c900030f820f036d2ad092f51a765e81c2ddb25f3",
+          "builder": "rust:1.75.0-bookworm@sha256:87f3b2f93b82995443a1a558c234212dafe79cfdc3af956539610560369ddcd0",
+          "recipe": "git-trim-v0.4.3-rust1.75-bookworm-v1",
+          "source_date_epoch": 1670865239
+        }
+      },
       "gitleaks": {
         "version": "v8.30.1",
         "url": "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz",
@@ -76,6 +107,12 @@
         "sha256": "4d84519b9f619e6d4c3fb45a50157abeabeb724f859c60605f44c23def6e1169",
         "verification": "publisher-sha256"
       },
+      "hyperfine": {
+        "version": "v2.0.0",
+        "url": "https://github.com/sharkdp/hyperfine/releases/download/v2.0.0/hyperfine-v2.0.0-x86_64-unknown-linux-musl.tar.gz",
+        "sha256": "38e59087bd65520930a13cf513d8a493b7043741e8ad62349a8a9929eb61bc5c",
+        "verification": "publisher-sha256"
+      },
       "jj": {
         "version": "v0.46.0",
         "url": "https://github.com/jj-vcs/jj/releases/download/v0.46.0/jj-v0.46.0-x86_64-unknown-linux-musl.tar.gz",
@@ -86,6 +123,18 @@
         "version": "jq-1.8.2",
         "url": "https://github.com/jqlang/jq/releases/download/jq-1.8.2/jq-linux-amd64",
         "sha256": "b1c22172dd303f3be49e935aa56aa48a8b7a46e0bc838b4997d3bb451495870f",
+        "verification": "publisher-sha256"
+      },
+      "just": {
+        "version": "1.58.0",
+        "url": "https://github.com/casey/just/releases/download/1.58.0/just-1.58.0-x86_64-unknown-linux-musl.tar.gz",
+        "sha256": "4a5cc2f53e6f0f8c59092a6cc38291eb729d46a7dd95d3ae582008881b84931d",
+        "verification": "publisher-sha256"
+      },
+      "lazygit": {
+        "version": "v0.66.1",
+        "url": "https://github.com/jesseduffield/lazygit/releases/download/v0.66.1/lazygit_0.66.1_linux_x86_64.tar.gz",
+        "sha256": "7b3f30c2c06a42cf575280f907e58d7ea08411408b6b62bc926bc91cbc6c3f46",
         "verification": "publisher-sha256"
       },
       "leaf": {
@@ -116,6 +165,24 @@
         "version": "15.2.0",
         "url": "https://github.com/BurntSushi/ripgrep/releases/download/15.2.0/ripgrep-15.2.0-x86_64-unknown-linux-musl.tar.gz",
         "sha256": "33e15bcf1624b25cdd2a55813a47a2f95dbe126268203e76aa6a585d1e7b149c",
+        "verification": "publisher-sha256"
+      },
+      "ruff": {
+        "version": "0.17.0",
+        "url": "https://github.com/astral-sh/ruff/releases/download/0.17.0/ruff-x86_64-unknown-linux-musl.tar.gz",
+        "sha256": "0df9421fd0df9aa7a62dab4d1086e085b7c7888b6343fc5a9c5f630771d61aae",
+        "verification": "publisher-sha256"
+      },
+      "shellcheck": {
+        "version": "v0.11.0",
+        "url": "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.x86_64.tar.xz",
+        "sha256": "8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198",
+        "verification": "publisher-sha256"
+      },
+      "shfmt": {
+        "version": "v3.14.1",
+        "url": "https://github.com/mvdan/sh/releases/download/v3.14.1/shfmt_v3.14.1_linux_amd64",
+        "sha256": "76e77641faa025814b77f153b29796b8e6fa2fca03e0c76a691608b86c7ea7bf",
         "verification": "publisher-sha256"
       },
       "starship": {
@@ -154,91 +221,30 @@
         "sha256": "b0828fc4cdc47d65951e94b5f0a15a5364420e8dcd88723f3b21e7a2eb30bbc3",
         "verification": "publisher-sha256"
       },
-      "yq": {
-        "version": "v4.54.1",
-        "url": "https://github.com/mikefarah/yq/releases/download/v4.54.1/yq_linux_amd64",
-        "sha256": "8e34fc298390875de416e6a4afcb8cabeceb25d9aa8506c1a2f9353cf702ea5f",
-        "verification": "publisher-sha256"
-      },
-      "age": {
-        "version": "v1.3.2",
-        "url": "https://github.com/FiloSottile/age/releases/download/v1.3.2/age-v1.3.2-linux-amd64.tar.gz",
-        "sha256": "cbe24006683f8eb669266162894b9a522a1af52f2665fbc63a4bb032ed26ac10",
-        "verification": "publisher-sha256"
-      },
-      "delta": {
-        "version": "0.20.1",
-        "url": "https://github.com/dandavison/delta/releases/download/0.20.1/delta-0.20.1-x86_64-unknown-linux-musl.tar.gz",
-        "sha256": "69dcb4043f55c29118f408c6efd30115e0a4e0a6709253343b8c8fa814ab4a31",
-        "verification": "publisher-sha256"
-      },
-      "hyperfine": {
-        "version": "v2.0.0",
-        "url": "https://github.com/sharkdp/hyperfine/releases/download/v2.0.0/hyperfine-v2.0.0-x86_64-unknown-linux-musl.tar.gz",
-        "sha256": "38e59087bd65520930a13cf513d8a493b7043741e8ad62349a8a9929eb61bc5c",
-        "verification": "publisher-sha256"
-      },
-      "just": {
-        "version": "1.58.0",
-        "url": "https://github.com/casey/just/releases/download/1.58.0/just-1.58.0-x86_64-unknown-linux-musl.tar.gz",
-        "sha256": "4a5cc2f53e6f0f8c59092a6cc38291eb729d46a7dd95d3ae582008881b84931d",
-        "verification": "publisher-sha256"
-      },
-      "ruff": {
-        "version": "0.17.0",
-        "url": "https://github.com/astral-sh/ruff/releases/download/0.17.0/ruff-x86_64-unknown-linux-musl.tar.gz",
-        "sha256": "0df9421fd0df9aa7a62dab4d1086e085b7c7888b6343fc5a9c5f630771d61aae",
-        "verification": "publisher-sha256"
-      },
-      "shellcheck": {
-        "version": "v0.11.0",
-        "url": "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.x86_64.tar.xz",
-        "sha256": "8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198",
-        "verification": "publisher-sha256"
-      },
-      "shfmt": {
-        "version": "v3.14.1",
-        "url": "https://github.com/mvdan/sh/releases/download/v3.14.1/shfmt_v3.14.1_linux_amd64",
-        "sha256": "76e77641faa025814b77f153b29796b8e6fa2fca03e0c76a691608b86c7ea7bf",
-        "verification": "publisher-sha256"
-      },
       "watchexec": {
         "version": "v2.8.0",
         "url": "https://github.com/watchexec/watchexec/releases/download/v2.8.0/watchexec-2.8.0-x86_64-unknown-linux-musl.tar.xz",
         "sha256": "35ea667cbe4bc96c23ba2a1f46c94c46bc385b67165e3bf621c0e7e4959aa99b",
         "verification": "publisher-sha256"
       },
-      "lazygit": {
-        "version": "v0.66.1",
-        "url": "https://github.com/jesseduffield/lazygit/releases/download/v0.66.1/lazygit_0.66.1_linux_x86_64.tar.gz",
-        "sha256": "7b3f30c2c06a42cf575280f907e58d7ea08411408b6b62bc926bc91cbc6c3f46",
+      "yq": {
+        "version": "v4.54.1",
+        "url": "https://github.com/mikefarah/yq/releases/download/v4.54.1/yq_linux_amd64",
+        "sha256": "8e34fc298390875de416e6a4afcb8cabeceb25d9aa8506c1a2f9353cf702ea5f",
         "verification": "publisher-sha256"
-      },
-      "git-lfs": {
-        "version": "v3.8.0",
-        "url": "https://github.com/git-lfs/git-lfs/releases/download/v3.8.0/git-lfs-linux-amd64-v3.8.0.tar.gz",
-        "sha256": "e455e00f15d9b95661b8d53498ffb0c3367962cf1ec73c31ab7369516cd6ab8d",
-        "verification": "publisher-sha256"
-      },
-      "git-trim": {
-        "version": "v0.4.3",
-        "url": "https://codeload.github.com/foriequal0/git-trim/tar.gz/65288617a637029573a5c3517abcb95b050ea02b",
-        "sha256": "dffccf97f3801976a647f5d03629d49f17d3b930b322ee1056239084093b4e53",
-        "verification": "tls-download-sha256",
-        "source": {
-          "commit": "65288617a637029573a5c3517abcb95b050ea02b",
-          "cargo_lock_sha256": "86abff4cefcfcfa8c55b163c900030f820f036d2ad092f51a765e81c2ddb25f3",
-          "builder": "rust:1.75.0-bookworm@sha256:87f3b2f93b82995443a1a558c234212dafe79cfdc3af956539610560369ddcd0",
-          "recipe": "git-trim-v0.4.3-rust1.75-bookworm-v1",
-          "source_date_epoch": 1670865239
-        }
       }
     },
     "arm64": {
+      "age": {
+        "version": "v1.3.2",
+        "url": "https://github.com/FiloSottile/age/releases/download/v1.3.2/age-v1.3.2-linux-arm64.tar.gz",
+        "sha256": "6b8dc4333c53a5a57c9e5834e3a48f92605d7154014cd07269ff3327db5d37f4",
+        "verification": "publisher-sha256"
+      },
       "ast-grep": {
-        "version": "0.45.3",
-        "url": "https://github.com/ast-grep/ast-grep/releases/download/0.45.3/app-aarch64-unknown-linux-gnu.zip",
-        "sha256": "b39cfbc58da4b869a88b8a4bc57bd5deb0d24541e704cf7c257da7b53ec81c8f",
+        "version": "0.50.0",
+        "url": "https://github.com/ast-grep/ast-grep/releases/download/0.50.0/app-aarch64-unknown-linux-gnu.zip",
+        "sha256": "3a4ad22dd1dca7a4900a173de65885578617af57fa13dd93b8d345d6b352770e",
         "verification": "publisher-sha256"
       },
       "bat": {
@@ -257,6 +263,12 @@
         "version": "v1.4.7",
         "url": "https://github.com/aristocratos/btop/releases/download/v1.4.7/btop-aarch64-unknown-linux-musl.tar.gz",
         "sha256": "6270de0ef4c84cf0eea61cb148b3ad9ae91a11e9c3309867ffc6b3751024c252",
+        "verification": "publisher-sha256"
+      },
+      "delta": {
+        "version": "0.20.1",
+        "url": "https://github.com/dandavison/delta/releases/download/0.20.1/delta-0.20.1-aarch64-unknown-linux-gnu.tar.gz",
+        "sha256": "da7f4338f593572ff426ae153e0870e2fdc72729416eff551b40cdeb67940db8",
         "verification": "publisher-sha256"
       },
       "fd": {
@@ -283,6 +295,25 @@
         "sha256": "7862c86c72f43df3a2d93ddde6f473285b4e2af61b494849846827e513ef6484",
         "verification": "publisher-sha256"
       },
+      "git-lfs": {
+        "version": "v3.8.0",
+        "url": "https://github.com/git-lfs/git-lfs/releases/download/v3.8.0/git-lfs-linux-arm64-v3.8.0.tar.gz",
+        "sha256": "ac9c8efac980bb0505ead384d087e2acb6486fd8498691a2165fa174ec6118c2",
+        "verification": "publisher-sha256"
+      },
+      "git-trim": {
+        "version": "v0.4.3",
+        "url": "https://codeload.github.com/foriequal0/git-trim/tar.gz/65288617a637029573a5c3517abcb95b050ea02b",
+        "sha256": "dffccf97f3801976a647f5d03629d49f17d3b930b322ee1056239084093b4e53",
+        "verification": "tls-download-sha256",
+        "source": {
+          "commit": "65288617a637029573a5c3517abcb95b050ea02b",
+          "cargo_lock_sha256": "86abff4cefcfcfa8c55b163c900030f820f036d2ad092f51a765e81c2ddb25f3",
+          "builder": "rust:1.75.0-bookworm@sha256:87f3b2f93b82995443a1a558c234212dafe79cfdc3af956539610560369ddcd0",
+          "recipe": "git-trim-v0.4.3-rust1.75-bookworm-v1",
+          "source_date_epoch": 1670865239
+        }
+      },
       "gitleaks": {
         "version": "v8.30.1",
         "url": "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_arm64.tar.gz",
@@ -307,6 +338,12 @@
         "sha256": "d0dd0d1ed249842525a93413e10ca1ef6f3b63311ee1695b16a0ce488142cec1",
         "verification": "publisher-sha256"
       },
+      "hyperfine": {
+        "version": "v2.0.0",
+        "url": "https://github.com/sharkdp/hyperfine/releases/download/v2.0.0/hyperfine-v2.0.0-aarch64-unknown-linux-musl.tar.gz",
+        "sha256": "f0591c2cb8f66f2d2624d23979cf96dc99a67cb935f9925c82b9a4e3ffe5b2e1",
+        "verification": "publisher-sha256"
+      },
       "jj": {
         "version": "v0.46.0",
         "url": "https://github.com/jj-vcs/jj/releases/download/v0.46.0/jj-v0.46.0-aarch64-unknown-linux-musl.tar.gz",
@@ -317,6 +354,18 @@
         "version": "jq-1.8.2",
         "url": "https://github.com/jqlang/jq/releases/download/jq-1.8.2/jq-linux-arm64",
         "sha256": "8b85c817833814ddca00a144c33705546355afccf0cf39b188f3cdb48b852309",
+        "verification": "publisher-sha256"
+      },
+      "just": {
+        "version": "1.58.0",
+        "url": "https://github.com/casey/just/releases/download/1.58.0/just-1.58.0-aarch64-unknown-linux-musl.tar.gz",
+        "sha256": "748237128c4c40cbdabc65e841d05ceba13cc23a91eaba395495894c1d9764df",
+        "verification": "publisher-sha256"
+      },
+      "lazygit": {
+        "version": "v0.66.1",
+        "url": "https://github.com/jesseduffield/lazygit/releases/download/v0.66.1/lazygit_0.66.1_linux_arm64.tar.gz",
+        "sha256": "add91327af13343f37d2d610512d0982ef5c75da5cc962b5159748adc8a11a86",
         "verification": "publisher-sha256"
       },
       "leaf": {
@@ -347,6 +396,24 @@
         "version": "15.2.0",
         "url": "https://github.com/BurntSushi/ripgrep/releases/download/15.2.0/ripgrep-15.2.0-aarch64-unknown-linux-musl.tar.gz",
         "sha256": "800b1e7206afe799dfb5a6901f23147cfaabe0e52210538100f61e86e1740915",
+        "verification": "publisher-sha256"
+      },
+      "ruff": {
+        "version": "0.17.0",
+        "url": "https://github.com/astral-sh/ruff/releases/download/0.17.0/ruff-aarch64-unknown-linux-musl.tar.gz",
+        "sha256": "cac779097e34bf1ca40175b4bacf8fca7a92fce5030bfc3edf1fd357428a33b0",
+        "verification": "publisher-sha256"
+      },
+      "shellcheck": {
+        "version": "v0.11.0",
+        "url": "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.aarch64.tar.xz",
+        "sha256": "12b331c1d2db6b9eb13cfca64306b1b157a86eb69db83023e261eaa7e7c14588",
+        "verification": "publisher-sha256"
+      },
+      "shfmt": {
+        "version": "v3.14.1",
+        "url": "https://github.com/mvdan/sh/releases/download/v3.14.1/shfmt_v3.14.1_linux_arm64",
+        "sha256": "5f2db09dae91fca848f7adbdd014632e921a383863a2ad7e0450ad3aba0c6489",
         "verification": "publisher-sha256"
       },
       "starship": {
@@ -385,84 +452,17 @@
         "sha256": "281ca6cf43f4e26e35474839ad4861be86de42af2682f74134460f5b2071b96d",
         "verification": "publisher-sha256"
       },
-      "yq": {
-        "version": "v4.54.1",
-        "url": "https://github.com/mikefarah/yq/releases/download/v4.54.1/yq_linux_arm64",
-        "sha256": "189088da0c6429ec5178dfaab1a114805f6cab0b61b165ab236efedf1d57a71b",
-        "verification": "publisher-sha256"
-      },
-      "age": {
-        "version": "v1.3.2",
-        "url": "https://github.com/FiloSottile/age/releases/download/v1.3.2/age-v1.3.2-linux-arm64.tar.gz",
-        "sha256": "6b8dc4333c53a5a57c9e5834e3a48f92605d7154014cd07269ff3327db5d37f4",
-        "verification": "publisher-sha256"
-      },
-      "delta": {
-        "version": "0.20.1",
-        "url": "https://github.com/dandavison/delta/releases/download/0.20.1/delta-0.20.1-aarch64-unknown-linux-gnu.tar.gz",
-        "sha256": "da7f4338f593572ff426ae153e0870e2fdc72729416eff551b40cdeb67940db8",
-        "verification": "publisher-sha256"
-      },
-      "hyperfine": {
-        "version": "v2.0.0",
-        "url": "https://github.com/sharkdp/hyperfine/releases/download/v2.0.0/hyperfine-v2.0.0-aarch64-unknown-linux-musl.tar.gz",
-        "sha256": "f0591c2cb8f66f2d2624d23979cf96dc99a67cb935f9925c82b9a4e3ffe5b2e1",
-        "verification": "publisher-sha256"
-      },
-      "just": {
-        "version": "1.58.0",
-        "url": "https://github.com/casey/just/releases/download/1.58.0/just-1.58.0-aarch64-unknown-linux-musl.tar.gz",
-        "sha256": "748237128c4c40cbdabc65e841d05ceba13cc23a91eaba395495894c1d9764df",
-        "verification": "publisher-sha256"
-      },
-      "ruff": {
-        "version": "0.17.0",
-        "url": "https://github.com/astral-sh/ruff/releases/download/0.17.0/ruff-aarch64-unknown-linux-musl.tar.gz",
-        "sha256": "cac779097e34bf1ca40175b4bacf8fca7a92fce5030bfc3edf1fd357428a33b0",
-        "verification": "publisher-sha256"
-      },
-      "shellcheck": {
-        "version": "v0.11.0",
-        "url": "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.aarch64.tar.xz",
-        "sha256": "12b331c1d2db6b9eb13cfca64306b1b157a86eb69db83023e261eaa7e7c14588",
-        "verification": "publisher-sha256"
-      },
-      "shfmt": {
-        "version": "v3.14.1",
-        "url": "https://github.com/mvdan/sh/releases/download/v3.14.1/shfmt_v3.14.1_linux_arm64",
-        "sha256": "5f2db09dae91fca848f7adbdd014632e921a383863a2ad7e0450ad3aba0c6489",
-        "verification": "publisher-sha256"
-      },
       "watchexec": {
         "version": "v2.8.0",
         "url": "https://github.com/watchexec/watchexec/releases/download/v2.8.0/watchexec-2.8.0-aarch64-unknown-linux-musl.tar.xz",
         "sha256": "3961878b21e3c1729279322f4007dd5bbf0032110fbcb5e7b983946a9ceb3bf6",
         "verification": "publisher-sha256"
       },
-      "lazygit": {
-        "version": "v0.66.1",
-        "url": "https://github.com/jesseduffield/lazygit/releases/download/v0.66.1/lazygit_0.66.1_linux_arm64.tar.gz",
-        "sha256": "add91327af13343f37d2d610512d0982ef5c75da5cc962b5159748adc8a11a86",
+      "yq": {
+        "version": "v4.54.1",
+        "url": "https://github.com/mikefarah/yq/releases/download/v4.54.1/yq_linux_arm64",
+        "sha256": "189088da0c6429ec5178dfaab1a114805f6cab0b61b165ab236efedf1d57a71b",
         "verification": "publisher-sha256"
-      },
-      "git-lfs": {
-        "version": "v3.8.0",
-        "url": "https://github.com/git-lfs/git-lfs/releases/download/v3.8.0/git-lfs-linux-arm64-v3.8.0.tar.gz",
-        "sha256": "ac9c8efac980bb0505ead384d087e2acb6486fd8498691a2165fa174ec6118c2",
-        "verification": "publisher-sha256"
-      },
-      "git-trim": {
-        "version": "v0.4.3",
-        "url": "https://codeload.github.com/foriequal0/git-trim/tar.gz/65288617a637029573a5c3517abcb95b050ea02b",
-        "sha256": "dffccf97f3801976a647f5d03629d49f17d3b930b322ee1056239084093b4e53",
-        "verification": "tls-download-sha256",
-        "source": {
-          "commit": "65288617a637029573a5c3517abcb95b050ea02b",
-          "cargo_lock_sha256": "86abff4cefcfcfa8c55b163c900030f820f036d2ad092f51a765e81c2ddb25f3",
-          "builder": "rust:1.75.0-bookworm@sha256:87f3b2f93b82995443a1a558c234212dafe79cfdc3af956539610560369ddcd0",
-          "recipe": "git-trim-v0.4.3-rust1.75-bookworm-v1",
-          "source_date_epoch": 1670865239
-        }
       }
     }
   }
