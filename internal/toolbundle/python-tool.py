@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import platform
 import shutil
+import stat
 import subprocess
 import sys
 import sysconfig
@@ -29,6 +30,13 @@ def writable(path, bundle, label):
     if not path.is_dir() or not os.access(path, os.W_OK):
         fail(f'{label} must be a writable directory outside the toolbox')
     return path
+
+
+def private_directory(path, label):
+    info = os.lstat(path)
+    if (not stat.S_ISDIR(info.st_mode) or info.st_uid != os.getuid()
+            or info.st_mode & 0o022):
+        fail(f'{label} must be owned by the current user and not group/other writable')
 
 
 def regular(path):
@@ -79,6 +87,7 @@ def main():
     if not data.is_absolute() or not cache_home.is_absolute():
         fail('XDG_DATA_HOME and XDG_CACHE_HOME must be absolute paths')
     state = writable(data / 'bundledock/tools' / tool, bundle, 'Python tool state')
+    private_directory(state, 'Python tool state')
     cache = writable(cache_home / 'bundledock/pip' / tool, bundle, 'Python tool pip cache')
     requirements = bundle / 'share' / tool / f'{tool}.requirements.txt'
     identity = hashlib.sha256(requirements.read_bytes() + Path(__file__).read_bytes()
@@ -97,6 +106,8 @@ def main():
         fcntl.flock(lock, fcntl.LOCK_EX)
         if venv.is_symlink():
             fail('Python tool environment must not be a symbolic link')
+        if venv.exists():
+            private_directory(venv, 'Python tool environment')
         ready = (regular(owned) and owned.read_text() == identity
                  and regular(complete) and regular(executable)
                  and os.access(executable, os.X_OK) and valid_venv(venv, python)
