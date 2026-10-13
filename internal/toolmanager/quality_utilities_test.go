@@ -16,7 +16,7 @@ func TestQualityUtilitiesResolveOfficialStableBothArchitectures(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, name := range []string{"shellcheck", "shfmt", "just", "ruff", "delta", "watchexec", "hyperfine", "age", "leaf", "jj", "lazygit", "git-lfs", "navi"} {
+	for _, name := range []string{"shellcheck", "shfmt", "just", "ruff", "delta", "watchexec", "hyperfine", "age", "leaf", "jj", "lazygit", "git-lfs", "navi", "typst"} {
 		t.Run(name, func(t *testing.T) {
 			p := c.Catalog.Packages[name]
 			payload := []byte("synthetic official artifact")

@@ -36,7 +36,7 @@ func TestRepositoryIdentityAndBothArchitectures(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(c.Catalog.Packages) != 39 {
+	if len(c.Catalog.Packages) != 40 {
 		t.Fatal("catalog incomplete")
 	}
 	if err := c.Validate(); err != nil {

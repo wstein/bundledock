@@ -159,7 +159,7 @@ establish a complete transitive license audit.
 
 The default bundle lives in `bundles/toolbox/`: `packages.txt`,
 `packages.catalog.json`, `packages.lock.json`, its Dockerfile, smoke scripts and licenses.
-Shared Go code remains at the repository root. The source toolbox contains 39
+Shared Go code remains at the repository root. The source toolbox contains 40
 downloaded tools plus the two first-use Python launchers listed below. Codex, Antigravity and Claude are supplied by their separate
 [Codex](codex.md), [Antigravity](agy.md) and [Claude Code](claude.md) bundles.
 The published toolbox recorded above still includes those agents; this source
@@ -212,6 +212,7 @@ upstream metadata and persist when the native lock is refreshed.
 | tmux (`tmux`) | 3.7c (official static builds) | [Homepage](https://github.com/tmux/tmux-builds) | [Source](https://github.com/tmux/tmux-builds) |
 | Trivy (`trivy`) | 0.75.0 | [Homepage](https://trivy.dev) | [Source](https://github.com/aquasecurity/trivy) |
 | typos (`typos`) | 1.51.1 | [Homepage](https://github.com/crate-ci/typos) | [Source](https://github.com/crate-ci/typos) |
+| Typst (`typst`) | 0.15.1 | [Homepage](https://typst.app) | [Source](https://github.com/typst/typst) |
 | uv (`uv`, `uvx`) | 0.13.0 | [Homepage](https://docs.astral.sh/uv) | [Source](https://github.com/astral-sh/uv) |
 | watchexec (`watchexec`) | 2.8.0 | [Homepage](https://watchexec.github.io) | [Source](https://github.com/watchexec/watchexec) |
 <!-- END GENERATED TOOL INVENTORY -->
@@ -636,3 +637,21 @@ inspection cannot establish the original loader/library requirements. ARM64
 consumer compatibility remains unverified until an approved image build and
 native smoke run. The smoke probe checks only `navi --version`, without opening
 the interface or fetching sheets. This source addition has not been published.
+
+## Typst typesetting
+
+The source toolbox includes [Typst 0.15.1](https://github.com/typst/typst/releases/tag/v0.15.1)
+from official Linux AMD64 and ARM64 musl prebuilts, pinned with publisher SHA256
+verification. The unmodified binary includes upstream embedded fonts. Its full
+archive LICENSE and NOTICE and the version-bound `typst-assets` NOTICE are
+retained, including the fonts' separate license terms and exceptions.
+
+Keep HOME, `XDG_CACHE_HOME` and Typst package caches in writable consumer storage
+outside the read-only toolbox. Typst can use system fonts and explicit user
+font directories via `--font-path` or `TYPST_FONT_PATHS`; choose those directories
+in writable consumer storage when adding fonts. BundleDock does not download
+fonts or render documents automatically. User-requested documents may resolve
+Typst packages over the network and cache them under the user's cache directory.
+The smoke probe uses only `typst --version`; compilation, rendering and native
+runtime compatibility remain unverified pending an explicitly approved image
+build and native smoke run. This source addition has not been published.

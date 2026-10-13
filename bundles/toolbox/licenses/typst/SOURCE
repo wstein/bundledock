@@ -1,0 +1,11 @@
+Upstream: https://github.com/typst/typst
+License: Apache-2.0; embedded assets retain their separate upstream terms.
+Pinned release: v0.15.1
+Release: https://github.com/typst/typst/releases/tag/v0.15.1
+Official Linux AMD64 and ARM64 musl archive downloads verified against release API SHA256 digests on 2026-10-13. Full archive LICENSE and NOTICE are retained by extraction without modifying the binary.
+The tagged CLI enables embedded-fonts and pins typst-assets =0.15.1 in Cargo.toml. The archive NOTICE does not include the assets' font terms; retain their complete separate upstream NOTICE as ASSETS-NOTICE.
+Assets source: https://github.com/typst/typst-assets/tree/v0.15.1
+Assets NOTICE: https://raw.githubusercontent.com/typst/typst-assets/v0.15.1/NOTICE
+ASSETS-NOTICE SHA256: 80ac46fb7d70f1c30bf0c14d3408e6a6f0f9cc9997a00b592aa0d2c8a5243a9d
+This complete notice includes Libertinus SIL OFL, NewComputerModern GUST, DejaVu Bitstream/Arev, and NewCM10-Regular GPL3-or-later with Font and Distribution exceptions, alongside upstream data and other asset notices. Fonts embedded in the official binaries are retained unmodified; no font downloads or document rendering were performed.
+These retained notices do not establish a complete transitive license audit or a blanket license determination for user documents or redistributed artifacts. Native runtime compatibility remains unverified pending explicitly approved image builds and smoke runs on both architectures. No upstream binaries were executed or modified.

@@ -1074,6 +1074,35 @@
         "licenses/navi/LICENSE",
         "licenses/navi/SOURCE"
       ]
+    },
+    "typst": {
+      "provider": "github",
+      "repository": "typst/typst",
+      "tag_prefix": "v",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "x86_64-unknown-linux-musl",
+        "arm64": "aarch64-unknown-linux-musl"
+      },
+      "asset": "typst-{arch}.tar.xz",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "tar.xz",
+        "members": {
+          "typst": "bin/typst"
+        },
+        "archive_notices": [
+          "LICENSE",
+          "NOTICE"
+        ]
+      },
+      "notices": [
+        "licenses/typst/ASSETS-NOTICE",
+        "licenses/typst/SOURCE"
+      ]
     }
   }
 }

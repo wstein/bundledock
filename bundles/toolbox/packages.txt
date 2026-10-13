@@ -36,6 +36,7 @@ syft>=1.54.1
 tmux>=3.7.3
 trivy>=0.75.0
 typos>=1.51.1
+typst>=0.15.1
 uv>=0.13.0
 watchexec>=2.8.0
 yq>=4.54.1

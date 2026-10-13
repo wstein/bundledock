@@ -1,7 +1,7 @@
 {
   "schema": 2,
-  "desired_digest": "b6fc39f4a40f7329764a46cbb072c5d3048353975fb9f4e803ac24c94b364b08",
-  "catalog_digest": "551c658be3eb2a1dccc0ca33dfeac0ceb510e5c75b5386aaed6fc9e571cb4567",
+  "desired_digest": "64fb04dd3c312ca139e43eb51a076805bb45397e26336a4576fc604feea213bb",
+  "catalog_digest": "e0ffe08fd138adefa63ad5db2846c52b81add8fec8a686db3da41aecdf19ec67",
   "platforms": {
     "amd64": {
       "age": {
@@ -244,6 +244,12 @@
         "url": "https://github.com/denisidoro/navi/releases/download/v2.24.0/navi-v2.24.0-x86_64-unknown-linux-musl.tar.gz",
         "sha256": "f334047479241f7c8b48d091f4e814dcc798a51a74dfd04ee63cbf67e8c921ba",
         "verification": "tls-download-sha256"
+      },
+      "typst": {
+        "version": "v0.15.1",
+        "url": "https://github.com/typst/typst/releases/download/v0.15.1/typst-x86_64-unknown-linux-musl.tar.xz",
+        "sha256": "a6d077d0a95eed5a2eba715b2dae06be954f624ccbf85758a03f389ded33118c",
+        "verification": "publisher-sha256"
       }
     },
     "arm64": {
@@ -487,6 +493,12 @@
         "url": "https://github.com/denisidoro/navi/releases/download/v2.24.0/navi-v2.24.0-aarch64-unknown-linux-gnu.tar.gz",
         "sha256": "de99e69906a0e06ffd30a329645e15f9e96a6b42c49eaac8baccac9bc314768a",
         "verification": "tls-download-sha256"
+      },
+      "typst": {
+        "version": "v0.15.1",
+        "url": "https://github.com/typst/typst/releases/download/v0.15.1/typst-aarch64-unknown-linux-musl.tar.xz",
+        "sha256": "5aa8d74a3d906e60ea12a66ac2f37f8eef1b14cbad7182a745e393a10c23dcee",
+        "verification": "publisher-sha256"
       }
     }
   }
