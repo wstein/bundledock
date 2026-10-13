@@ -1,4 +1,5 @@
 import copy
+import io
 import importlib.util
 import os
 import sys
@@ -23,6 +24,23 @@ class OwnerMergeTests(unittest.TestCase):
   self.data['/actions/runs/123']=copy.deepcopy(self.run)
   for revision,content in ((A,'bmV3'),(B,'b2xk')):self.data['/contents/'+self.bundle['lock']+'?ref='+revision]={'encoding':'base64','content':content}
  def get(self,path):return copy.deepcopy(self.data[path])
+ def test_transport_pins_api_contract_with_exact_merge_sha(self):
+  import json
+  api=gate.GitHub('fixture-token')
+  requests=[]
+  def open_request(request,timeout):
+   requests.append(request)
+   result=self.get(request.full_url.removeprefix('https://api.github.com/repos/'+REPO['full_name']))
+   # GitHub 2026-03-10 removes merge_commit_sha from every PR response.
+   if request.get_header('X-github-api-version')!='2022-11-28':
+    if isinstance(result,dict):result.pop('merge_commit_sha',None)
+    if isinstance(result,list):
+     for item in result:item.pop('merge_commit_sha',None)
+   return io.BytesIO(json.dumps(result).encode())
+  with patch.object(api.opener,'open',side_effect=open_request),patch('time.sleep'):
+   self.assertEqual(gate.validate(self.event,api.request)[0],A)
+  self.assertTrue(requests)
+  self.assertTrue(all(request.get_header('X-github-api-version')=='2022-11-28' for request in requests))
  def test_owner_merge_without_reviews_authorizes_exact_frozen_source(self):
   self.assertEqual(gate.validate(self.event,self.get),(A,self.pr['html_url']))
  def test_only_actual_human_owner_merge_authorizes(self):
