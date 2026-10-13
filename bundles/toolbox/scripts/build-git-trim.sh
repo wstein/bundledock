@@ -28,6 +28,14 @@ prepare)
 compile)
     cd /src
     test "$(rustc --version)" = 'rustc 1.75.0 (82e1608df 2023-12-21)'
+    # openssl-sys 0.9.78 exits through pkg-config before reading OPENSSL_STATIC
+    # unless both paths are explicit. Use the stock pinned image's prebuilt
+    # Debian multiarch archives; do not build OpenSSL or ship shared libssl.
+    case "$arch" in
+        amd64) OPENSSL_LIB_DIR=/usr/lib/x86_64-linux-gnu ;;
+        arm64) OPENSSL_LIB_DIR=/usr/lib/aarch64-linux-gnu ;;
+    esac
+    export OPENSSL_LIB_DIR OPENSSL_INCLUDE_DIR=/usr/include
     cargo build --frozen --offline --release --bin git-trim
     git diff --exit-code HEAD -- .
     mkdir -p /out/bin
