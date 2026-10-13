@@ -8,6 +8,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 import urllib.request
 from pathlib import Path
 sys.dont_write_bytecode = True
@@ -42,6 +43,10 @@ def safe_files(files, pr, bundle):
 
 
 class OwnerMergeRequired(ValueError):
+    pass
+
+
+class MergeMetadataPending(OSError):
     pass
 
 
@@ -130,18 +135,41 @@ def associated_updaters(revision, get):
         actual = bundle_for_branch(pr['head']['ref'])
         if actual is None:
             continue
+        require(summary.get('merge_commit_sha') in (None, revision), 'Associated PR contradicts merged source; ' + merge_diagnostic(revision, pr, summary))
         def matches(candidate):
             return candidate.get('merged') is True and candidate.get('state') == 'closed' and candidate.get('merge_commit_sha') == revision
         if not matches(pr):
-            diagnostic = merge_diagnostic(revision, pr, summary)
-            # Retry only a demonstrated inconsistency between two reads of the
-            # same exact associated source. A summary is never merge authority.
-            proof = summary.get('state') == 'closed' and summary.get('merge_commit_sha') == revision and (summary.get('head') or {}).get('sha') == pr['head']['sha']
-            if proof:
-                print('Publication provenance read inconsistent; bounded retry: ' + diagnostic, file=sys.stderr)
-                refreshed = get('/pulls/' + str(number))
-                require(refreshed['number'] == number and refreshed['head']['sha'] == pr['head']['sha'] and refreshed['head']['ref'] == pr['head']['ref'], 'PR identity changed during bounded retry; ' + diagnostic)
-                pr = refreshed
+            # Missing merge metadata is not a mismatched source. Reread only
+            # an already owner-merged bot PR with a matching closed association;
+            # no source SHA is inferred from that association or the CI event.
+            def trusted_missing(candidate):
+                return (candidate.get('merged') is True and candidate.get('state') == 'closed'
+                        and candidate.get('merge_commit_sha') is None
+                        and (candidate.get('merged_by') or {}).get('login') == 'wstein'
+                        and candidate['merged_by'].get('type') == 'User'
+                        and (candidate.get('user') or {}).get('login') == 'github-actions[bot]'
+                        and candidate['user'].get('type') == 'Bot'
+                        and candidate['head']['repo']['full_name'] == REPOSITORY
+                        and candidate['base']['repo']['full_name'] == REPOSITORY
+                        and candidate['base']['ref'] == 'main')
+            missing = (summary.get('state') == 'closed' and summary.get('merge_commit_sha') in (None, revision)
+                       and (summary.get('head') or {}).get('sha') == pr['head']['sha'] and trusted_missing(pr))
+            def identity(candidate):
+                return (candidate['number'], candidate['head']['sha'], candidate['head']['ref'],
+                        candidate['head']['repo']['full_name'], candidate['base']['ref'],
+                        candidate['base']['repo']['full_name'], candidate['merged_by']['login'],
+                        candidate['merged_by']['type'], candidate['user']['login'], candidate['user']['type'])
+            if missing:
+                original = identity(pr)
+                for attempt in (2, 3):
+                    print('Publication provenance bounded retry: attempt=' + str(attempt) + '/3 reason=missing_merge_metadata ' + merge_diagnostic(revision, pr, summary), file=sys.stderr)
+                    time.sleep(2)
+                    pr = get('/pulls/' + str(number))
+                    require(identity(pr) == original, 'PR identity changed during bounded retry; ' + merge_diagnostic(revision, pr, summary))
+                    if not trusted_missing(pr):
+                        break
+                if trusted_missing(pr):
+                    raise MergeMetadataPending('Merge metadata unavailable after 3 reads; ' + merge_diagnostic(revision, pr, summary))
             require(matches(pr), 'Claimed updater does not match merged source; ' + merge_diagnostic(revision, pr, summary))
         claimed.append((actual, pr))
     require(len(claimed) <= 1, 'Ambiguous merged updater PRs')
@@ -161,9 +189,10 @@ def validate(event, get, name='toolbox', allow_ineligible=False):
     require(run['path'] == workflow['path'] == '.github/workflows/ci.yml', 'Wrong CI path')
     require(run['head_sha'] == revision and run['head_branch'] == 'main' and run['event'] in ('push', 'workflow_dispatch') and run['status'] == 'completed' and run['conclusion'] == 'success', 'Trusted exact main source CI required')
     require(run['repository']['full_name'] == run['head_repository']['full_name'] == REPOSITORY, 'Wrong CI repository')
+    claimed = associated_updaters(revision, get)
+    # Delayed provenance reads must not retain an older CI-attempt observation.
     current = get('/actions/runs/' + str(source['id']))
     require(current['id'] == source['id'] and current['run_attempt'] == source['run_attempt'] and current['head_sha'] == revision and current['status'] == 'completed' and current['conclusion'] == 'success', 'Source CI attempt is no longer current successful exact source')
-    claimed = associated_updaters(revision, get)
     if not claimed:
         require(allow_ineligible, 'Exactly one merged updater PR required')
         return None
@@ -258,7 +287,7 @@ def run():
         else:
             status, reason = 'rejected', 'Source or approval provenance rejected; no publication authorized'
         emit({'eligible':'false', 'status':status, 'reason':reason})
-        detail = str(error) if isinstance(error, ValueError) else reason
+        detail = str(error) if isinstance(error, (ValueError, MergeMetadataPending)) else reason
         raise SystemExit('Bundle publication ' + status + ': ' + detail)
 
 
