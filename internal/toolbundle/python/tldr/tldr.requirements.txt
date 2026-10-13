@@ -1,0 +1,3 @@
+https://files.pythonhosted.org/packages/a7/d6/f84aa2548de0d6fbf3aa2dd0b750ade13b7ed2aa110907859f624f02b0ac/tldr-3.4.4-py3-none-any.whl#sha256=060e0f11e71b97658b3e6de384a0b28069820a20a4070ffae91c6f9a3167430a
+https://files.pythonhosted.org/packages/b3/3f/8bf03f51e920585e207157cb49c5bf8e65a9229297c9ec347a6014eb3d61/shtab-1.12.1-py3-none-any.whl#sha256=31d07db9c958fbe15edd1d0f3c966a7085766374a11ccc5861b810fcd4ada123
+https://files.pythonhosted.org/packages/33/d1/8bb87d21e9aeb323cc03034f5eaf2c8f69841e40e4853c2627edf8111ed3/termcolor-3.3.0-py3-none-any.whl#sha256=cf642efadaf0a8ebbbf4bc7a31cec2f9b5f21a9f726f4ccbb08192c9c26f43a5
