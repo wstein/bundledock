@@ -17,6 +17,7 @@ class PublicationReconcileTests(unittest.TestCase):
         self.assertEqual(reconcile.job_state([], 'workflow_run', 'success'), 'pending')
 
 import copy
+import base64
 import hashlib
 import io
 import json
@@ -50,14 +51,15 @@ class FakeAPI:
         steps = {reconcile.JOBS[1]: reconcile.SMOKE, reconcile.JOBS[2]: reconcile.SMOKE,
                  reconcile.JOBS[3]: reconcile.PROMOTE, reconcile.JOBS[4]: reconcile.TAG,
                  reconcile.JOBS[5]: reconcile.DOCUMENTATION}
-        self.jobs = [dict(name=name, run_id=123, head_sha=SHA, status='completed', conclusion='success',
+        self.jobs = [dict(id=100 + i, name=name, run_id=123, head_sha=SHA, status='completed', conclusion='success',
                           steps=[dict(name=steps.get(name, 'Resolve'), status='completed', conclusion='success')])
-                     for name in reconcile.JOBS]
+                     for i, name in enumerate(reconcile.JOBS)]
         self.artifacts = [dict(id=55, name='opentofu-publication-2', expired=False,
                                workflow_run={'id': 123, 'head_sha': SHA})]
         self.receipt = dict(bundle='opentofu', image='quay.io/bundledock/opentofu',
                             source=reconcile.tags.SOURCE, commit=SHA, tag='1.13.1-b1', run_id='123',
                             run_attempt='2', created='2026-10-12T01:00:00Z', lock_sha256='c' * 64)
+        self.durable = None
         self.registry_data = {}
         platforms = []
         descriptors = []
@@ -85,6 +87,11 @@ class FakeAPI:
                                     url='https://api.github.com/repos/wstein/bundledock/git/commits/' + SHA))
 
     def get(self, path):
+        if path.startswith('/contents/'):
+            if self.durable is None:
+                raise reconcile.Pending('No tracked receipt')
+            return dict(type='file', path='docs/opentofu-published.json', encoding='base64',
+                        content=base64.b64encode(json.dumps(self.durable).encode()).decode())
         if path.startswith('/compare/'):
             return {'merge_base_commit': {'sha': SHA}}
         if path.startswith('/git/ref/tags/'):
@@ -208,6 +215,144 @@ class EndToEndTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.api.check()
 
+
+
+class DurableEvidenceTests(unittest.TestCase):
+    def setUp(self):
+        self.api = FakeAPI()
+        self.api.durable = dict(bundle='opentofu', **{key: self.api.receipt[key]
+                                for key in ('tag', 'digest', 'commit', 'image', 'run_id')},
+                                publication_evidence=dict(receipt=copy.deepcopy(self.api.receipt),
+                                    attempt={**{key: self.api.run[key] for key in ('id', 'run_attempt', 'run_number', 'head_sha', 'event', 'path')},
+                                             'jobs': copy.deepcopy(self.api.jobs[1:4])}))
+
+    def test_expired_missing_and_unavailable_artifact_use_tracked_receipt(self):
+        for mode in ('expired', 'missing', 'listing-unavailable', 'download-unavailable'):
+            with self.subTest(mode=mode):
+                if mode == 'expired':
+                    self.api.artifacts[0]['expired'] = True
+                elif mode == 'missing':
+                    self.api.artifacts = []
+                elif mode == 'listing-unavailable':
+                    original = self.api.listing
+                    self.api.listing = lambda path, key: original(path, key) if key == 'jobs' else (_ for _ in ()).throw(reconcile.Pending())
+                else:
+                    self.setUp()
+                    self.api.raw = mock.Mock(side_effect=reconcile.Pending())
+                self.assertEqual(self.api.check()['state'], 'published')
+                self.setUp()
+
+    def test_capture_during_docs_job_and_roundtrip_metadata(self):
+        self.api.run.update(status='in_progress', conclusion=None)
+        self.api.jobs[-1].update(status='in_progress', conclusion=None)
+        evidence = reconcile.capture_evidence('opentofu', SHA, '123', '2', self.api.receipt,
+                                              self.api)
+        record = reconcile.docs.validate(self.api.receipt, 'opentofu', self.api.receipt['image'], SHA, '123', '2')
+        self.api.durable = json.loads(reconcile.docs.metadata('opentofu', record, evidence=evidence))
+        self.api.run.update(status='completed', conclusion='success')
+        self.api.jobs[-1].update(status='completed', conclusion='success')
+        self.api.artifacts[0]['expired'] = True
+        self.assertEqual(self.api.check()['state'], 'published')
+
+    def test_capture_requires_successful_native_promote_and_bound_tag(self):
+        for index in (1, 2, 3, 4):
+            with self.subTest(index=index):
+                self.setUp()
+                self.api.jobs[index]['steps'][0]['conclusion'] = 'skipped'
+                with self.assertRaises(ValueError):
+                    reconcile.capture_evidence('opentofu', SHA, '123', '2', self.api.receipt,
+                                               self.api)
+        self.setUp()
+        self.api.tag['message'] = 'wrong'
+        with self.assertRaises(ValueError):
+            reconcile.capture_evidence('opentofu', SHA, '123', '2', self.api.receipt, self.api)
+
+    def test_durable_evidence_never_replaces_unavailable_live_jobs(self):
+        self.api.listing = mock.Mock(side_effect=reconcile.Pending())
+        with self.assertRaises(reconcile.Pending): self.api.check()
+
+    def test_historical_evidence_ref_must_be_full_official_main_ancestor(self):
+        self.api.artifacts[0]['expired'] = True
+        historical = 'e' * 40
+        original = self.api.get
+        paths = []
+        def get(path):
+            paths.append(path)
+            if path == '/compare/' + historical + '...main':
+                return {'merge_base_commit': {'sha': historical}}
+            return original(path)
+        self.api.get = get
+        result = reconcile.reconcile('opentofu', SHA, '123', '2', self.api, self.api.registry,
+                                     evidence_ref=historical)
+        self.assertEqual(result['state'], 'published')
+        self.assertIn('/contents/docs/opentofu-published.json?ref=' + historical, paths)
+        for ref in ('main', 'HEAD', 'e' * 39, CONTROLLER):
+            with self.subTest(ref=ref), self.assertRaises(ValueError):
+                reconcile.reconcile('opentofu', SHA, '123', '2', self.api, self.api.registry, evidence_ref=ref)
+        self.api.durable['run_id'] = '999'
+        with self.assertRaises(reconcile.Pending):
+            reconcile.reconcile('opentofu', SHA, '123', '2', self.api, self.api.registry, evidence_ref=historical)
+
+    def test_tampered_durable_evidence_rejects(self):
+        mutations = [
+            lambda e: e['receipt'].update(commit=CONTROLLER),
+            lambda e: e['receipt']['platforms'][0].update(smoked=False),
+            lambda e: e['receipt']['platforms'][0].update(image_id='sha256:' + 'f' * 64),
+            lambda e: e['attempt'].update(event='workflow_run'),
+            lambda e: e['attempt'].update(head_sha=CONTROLLER),
+            lambda e: e['attempt']['jobs'][0].update(id=999),
+            lambda e: e['attempt']['jobs'][0]['steps'][0].update(conclusion='skipped'),
+        ]
+        for mutate in mutations:
+            with self.subTest(mutation=mutate):
+                self.setUp()
+                self.api.artifacts[0]['expired'] = True
+                mutate(self.api.durable['publication_evidence'])
+                with self.assertRaises(ValueError):
+                    self.api.check()
+
+    def test_durable_proof_cannot_override_live_unknown_skipped_or_failed_jobs(self):
+        self.api.artifacts[0]['expired'] = True
+        self.api.jobs[1]['conclusion'] = 'unknown'
+        self.assertEqual(self.api.check()['state'], 'pending')
+        self.api.jobs[1]['conclusion'] = 'failure'
+        with self.assertRaises(ValueError): self.api.check()
+        self.api.run['event'] = 'workflow_run'
+        for job in self.api.jobs: job['conclusion'] = 'skipped'
+        with self.assertRaises(ValueError): self.api.check()
+
+    def test_missing_artifact_cannot_hide_durable_receipt_on_skipped_attempt(self):
+        self.api.artifacts = []
+        self.api.run['event'] = 'workflow_run'
+        for job in self.api.jobs: job['conclusion'] = 'skipped'
+        with self.assertRaises(ValueError): self.api.check()
+
+    def test_malformed_or_oversized_tracked_metadata_rejects(self):
+        self.api.artifacts[0]['expired'] = True
+        for value in ([], {'publication_evidence': ['invalid'], 'run_id': '123'},
+                      {'publication_evidence': {'attempt': []}, 'run_id': '123'}, 'x' * 65536):
+            with self.subTest(value=type(value).__name__):
+                self.api.durable = value
+                with self.assertRaises(ValueError): self.api.check()
+
+    def test_valid_artifact_contradiction_never_falls_back(self):
+        self.api.receipt['commit'] = CONTROLLER
+        with self.assertRaises(ValueError): self.api.check()
+        self.api.raw = mock.Mock(return_value=zipped(None))
+        with self.assertRaises(ValueError): self.api.check()
+
+    def test_unknown_artifact_expiry_cannot_use_durable_fallback(self):
+        self.api.artifacts[0]['expired'] = None
+        with self.assertRaises(reconcile.Pending): self.api.check()
+
+    def test_stale_metadata_is_pending_and_live_registry_tag_are_still_required(self):
+        self.api.artifacts[0]['expired'] = True
+        self.api.durable['run_id'] = '999'
+        with self.assertRaises(reconcile.Pending): self.api.check()
+        self.setUp()
+        self.api.artifacts[0]['expired'] = True
+        self.api.tag['message'] = 'wrong'
+        with self.assertRaises(ValueError): self.api.check()
 
 class InputBoundaryTests(unittest.TestCase):
     def test_archive_rejects_other_filenames_and_oversized_receipt(self):
