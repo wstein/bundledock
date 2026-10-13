@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TestMergedToolboxApprovalFixtures(t *testing.T) {
+func TestOwnerMergedUpdaterFixtures(t *testing.T) {
 	if _, err := exec.LookPath("python3"); err != nil {
 		t.Skip("requires python3: ", err)
 	}
@@ -18,7 +18,7 @@ func TestMergedToolboxApprovalFixtures(t *testing.T) {
 	}
 }
 
-func TestApprovedBundlesShareFrozenPublication(t *testing.T) {
+func TestOwnerMergedBundlesShareFrozenPublication(t *testing.T) {
 	b, err := os.ReadFile("../../.github/workflows/bundle-publish.yml")
 	if err != nil {
 		t.Fatal(err)
@@ -30,12 +30,12 @@ func TestApprovedBundlesShareFrozenPublication(t *testing.T) {
 		}
 	}
 	if strings.Contains(w, "environment:") {
-		t.Fatal("sole PR approval must require no environment intervention")
+		t.Fatal("owner merge authorization must require no environment intervention")
 	}
 	preflight := w[strings.Index(w, "\n  preflight:"):strings.Index(w, "\n  resolve:")]
 	for _, bad := range []string{"setup-go", "go build", "go run", "docker ", "make check"} {
 		if strings.Contains(preflight, bad) {
-			t.Fatal("artifact compiler before validated approval", bad)
+			t.Fatal("artifact compiler before validated authorization", bad)
 		}
 	}
 	for _, name := range []string{"resolve", "native", "promote"} {
@@ -44,7 +44,7 @@ func TestApprovedBundlesShareFrozenPublication(t *testing.T) {
 			job = job[:keys[1][0]]
 		}
 		if !strings.Contains(job, "run: python3 scripts/bundle-publication.py") {
-			t.Fatal(name + " missing approval provenance recheck")
+			t.Fatal(name + " missing owner merge provenance recheck")
 		}
 	}
 }

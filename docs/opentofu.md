@@ -99,12 +99,12 @@ and preservation of a consumer-owned `.tofurc`.
 ## Updates and publication
 
 `bdock tools upgrade --directory bundles/opentofu` resolves the CLI alone
-within `>=1.13.1,<2.0.0`. The thin upgrade workflow runs at 06:50 UTC and manual
+within `>=1.13.1,<2.0.0`. The **Propose upgrades** workflow runs at 06:50 UTC and manual
 dry runs default to true. It changes only this lock and generated inventory;
 upgrades do not build or dispatch publication.
 
-The [shared publication flow](publication.md) preserves exact-head **wstein**
-approval, source CI, SHA-guarded merge and frozen-lock publication for eligible
+The [shared publication flow](publication.md) verifies an actual human **wstein**
+owner merge, exact merged-main CI and frozen-lock publication for eligible
 bot updater PRs. Manual publication requires the exact approved full main SHA.
 Native AMD64 and ARM64 smoke must pass before promotion. Immutable versions
 use `<upstream-version>-b<packaging-revision>` (initially `1.13.1-b1` when

@@ -8,12 +8,13 @@ weight: 40
 
 [Back to BundleDock](../README.md)
 
-The nine named **Publish toolbox**, **Publish code-server**, **Publish node**, **Publish node-current**,
-**Publish bun**, **Publish codex**, **Publish agy**, **Publish claude** and **Publish opentofu** entrypoints call one shared publication workflow. Their existing
-names, filenames, bundle-specific native smoke checks and manual exact-SHA
-fallback remain. The nine **Propose … upgrades** entrypoints call one shared
-source-only updater, retaining the daily 06:50 UTC schedule and manual dry-run
-default.
+**Publish bundles** (`publish-bundles.yml`) is the publication entrypoint for
+all nine bundles. Successful merged-main CI selects one eligible updater;
+manual runs select one bundle and the explicitly approved full source SHA.
+Bundle-specific native smoke checks, artifacts and source tag namespaces remain.
+**Propose upgrades** (`propose-upgrades.yml`) shares the source-only updater,
+retains the daily 06:50 UTC schedule, and offers manual bundle selection with
+dry runs enabled by default. Scheduled runs keep one independent PR per bundle.
 
 The [Codex](codex.md), [Antigravity](agy.md) and [Claude Code](claude.md)
 guides record their verified initial publications and native AMD64/ARM64 smoke
@@ -26,36 +27,35 @@ manual dispatch for the exact source SHA and build/publication operation, plus
 verified repository visibility and robot access.
 
 For a later automatic upgrade, review the lock and generated inventory in the
-`github-actions[bot]` updater PR and approve its exact head as **wstein**. That
-single approval authorizes the remaining sequence without another intervention:
+`github-actions[bot]` updater PR, run the required source checks, and merge it as
+**wstein** using the repository's protected human merge path. The actual owner
+merge authorizes publication of that exact frozen lock. No submitted APPROVED
+review is required, and no controller merges source PRs.
 
-1. A read-only review validator accepts only the correct same-repository bot
-   branch, its own lock and inventory, and the latest non-dismissed exact-head
-   approval. Workflow code changes, renamed/deleted files and missing provenance
-   are rejected.
-2. A controller running trusted default-main code dispatches **CI** on that exact
-   updater branch. The full `expected_head_sha` must match the CI run before
-   `make check`. The successful required `check` must belong to GitHub Actions
-   and cover the approved head, rather than a synthetic review merge SHA.
-3. The controller revalidates approval, head and current-main ancestry, then
-   requests GitHub's protected rebase merge with an optimistic exact-head SHA.
-   It uses the existing strict required check, administrator enforcement and
-   linear-history protection; it does not bypass them or change settings.
-4. The merged tree must equal the approved head tree. The controller explicitly
-   dispatches source-only **CI** on the merged main SHA, because a merge using
-   `GITHUB_TOKEN` does not start ordinary push CI. Its completion permits only
-   the matching bundle publisher to copy the exact committed lock bytes.
-5. The publisher checks approval, tree equality and current main before artifact
-   compilers, native jobs and final registry promotion. Both native smoke checks
-   and existing baseline, artifact and registry gates must pass.
+1. Successful **CI** on the exact merged `main` revision starts **Publish bundles**.
+   Its read-only planner identifies the associated updater using the full PR API
+   response; the associated-PR list is discovery evidence, not merge authority.
+2. The publisher verifies `merged_by.login` is `wstein` with human account type,
+   the same-repository bot author and updater branch, and changes limited to that
+   bundle's own lock and generated inventory. Renamed/deleted files, missing
+   provenance and ambiguous API results stop publication.
+3. The merged tree must equal the updater head tree, the lock must change from
+   its parent, and the successful required GitHub Actions `check` must cover the
+   exact merged main SHA. Current-main identity is rechecked before artifact
+   compilers, native jobs, tagging and registry promotion.
+4. Both native smoke checks and existing baseline, artifact and registry gates
+   must pass. The automatic path copies the committed lock without resolving
+   newer upstream releases. First publication retains the separate manual gate.
 
-A changed head or main advance stops this sequence and requires a new review;
-the controller does not rewrite an approved branch. The merge API leases the PR
-head, not target main. If target movement races a merge, approved/merged tree
-comparison prevents publication of unreviewed source. API failures, ambiguous
-pagination and missing required provenance fail closed. The existing
-`toolbox-publication` environment is unused by this path and is not changed or
-deleted. Source PRs and documentation PRs cannot enter this updater-only flow.
+A main advance or source inconsistency stops this sequence. If the associated
+PR summary names the exact merged source but a full read disagrees, the helper
+records safe expected/observed source, PR, merge state and head values and makes
+one bounded reread of that same PR. The reread must establish all normal
+provenance; no retry ignores a mismatch. Missing evidence and API failures remain
+pending or rejected and cannot authorize builds. This handles an observable API
+inconsistency; historical publication failures without retained API payloads do
+not prove a particular cause. The existing `toolbox-publication` environment is
+unused and unchanged. Ordinary source and documentation PRs are ineligible.
 
 For manual publication, select **Run workflow** on default branch `main` and
 enter the explicitly approved full 40-character SHA in `approved_sha`. It must
@@ -70,16 +70,18 @@ per-bundle concurrency group. Newer automatic requests supersede a publisher
 only after successful resolution reaches native work; queued or unapproved
 requests do not. Current-main revalidation separately rejects stale sources.
 Manual runs and unavailable API responses retain fail-closed newest-run checks.
-Reruns must revalidate the same approval and current source; use **Re-run all
+Reruns must revalidate the same owner merge and current source; use **Re-run all
 jobs** to produce artifacts for the current attempt.
 
 The shared helper validates provenance; variables such as `PUBLICATION_SHA`
-are not approval evidence. Tests cover exact review/head/attempt/caller identity,
-synthetic merge rejection, required-check application identity, frozen lock
-bytes, stale-review writes and approved/merged tree equality. The automatic
-sequence remains unverified live until an explicitly authorized configured run
-succeeds. No workflow run, image build or publication was performed to author
-this source change.
+are not authorization evidence. Summaries distinguish ineligible source,
+blocked owner merge, pending or rejected provenance, unchanged published assets,
+and published output. A successful no-op workflow does not mean publication.
+Tests cover exact source/head/attempt/caller and check application identity,
+full PR versus list-summary evidence, bounded inconsistent-read recovery, frozen
+lock bytes and merged/updater tree equality. This source change performs no
+workflow run, image build, publication or consumer activation; the automatic
+sequence needs its own approved live evidence.
 
 Set up the destination before the first publication:
 
@@ -109,9 +111,9 @@ to `quay.io/bundledock/toolbox`. Do not include an HTTPS scheme, image name, tag
 or digest in `REPOSITORY_URL`. Other namespaces use the same prefix format and
 a robot username from that namespace.
 
-After setting these values, start **Publish toolbox** manually from
+After setting these values, start **Publish bundles** manually with `bundle=toolbox` from
 `main` with the approved full SHA and watch the resolver, both native jobs, and promotion in
-[Actions](https://github.com/wstein/bundledock/actions/workflows/bundledock-toolbox.yml).
+[Actions](https://github.com/wstein/bundledock/actions/workflows/publish-bundles.yml).
 A successful run publishes a dated run-attempt tag, `stable` and `latest`; inspect its
 summary and artifacts for the immutable digest before choosing a deployment.
 Configuring these values does not authorize or schedule a build or publication.
@@ -239,13 +241,13 @@ local checks and the scope of historical native CI results.
 
 ## Source tags for published bundles
 
-After successful image promotion, each of the toolbox, code-server, node, node-current, bun, codex, agy, claude and opentofu
-workflows creates an annotated Git tag `<bundle>/<immutable-version>` at the
+After successful image promotion, the shared workflow for toolbox, code-server,
+node, node-current, bun, codex, agy, claude and opentofu creates an annotated Git tag `<bundle>/<immutable-version>` at the
 image's exact source commit, for example `node/24.21.0-b1`. Approval of that
-publication includes this source tag. All nine bundles support the exact-head
-review and merged-updater approval path described above; the shared read-only
-source approval gate is revalidated before automatic tagging. The controller
-workflow SHA remains distinct from the approved image source SHA, and both must
+publication includes this source tag. All nine bundles support the owner-merged updater
+path described above; the shared read-only source provenance gate is revalidated
+before automatic tagging. The workflow SHA remains distinct from the authorized
+image source SHA, and both must
 match their own independently verified provenance. The step follows verification of
 the final two-platform index and both `stable` and `latest` image aliases. It
 never creates moving `stable` or `latest` Git tags.

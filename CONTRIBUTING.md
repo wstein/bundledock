@@ -46,7 +46,7 @@ allowed. All artifact, image, CLI release, and documentation builds require
 explicit user approval before execution, including every build-oriented target
 in the table and `make docs-test`/`make release-test`. Report checks deferred for
 approval accurately. Push, merge, schedule, and bot activity supply no build or
-release approval. For the nine bundle updater PRs, one exact-head approval by wstein authorizes the guarded source-CI, merge and frozen-lock publication flow described in [publication](docs/publication.md). Initial agent-carrier, Node Current and OpenTofu publication still requires separate exact-revision operation approval. Other source changes supply no build approval.
+release approval. For eligible bot updater PRs across the nine bundles, an actual human wstein merge authorizes exact frozen-lock publication after current successful merged-main CI, as described in [publication](docs/publication.md). Source merges remain human operations; no submitted APPROVED review or merge controller is required. Initial publication retains separate exact-revision operation approval, and manual publication retains its human full-SHA gate. Other source changes supply no build approval.
 
 `make docs-test` explicitly opts into host Hugo integration checks; generic Go tests skip them. The docs
 wrapper uses a verified official prebuilt Hugo and needs network access for an

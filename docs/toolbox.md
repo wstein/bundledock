@@ -172,15 +172,15 @@ No plugins or user configuration are installed for either alternative.
 
 ## Propose upgrades with GitHub Actions
 
-The **Propose toolbox upgrades** workflow (`.github/workflows/toolbox-upgrade.yml`)
+The **Propose upgrades** workflow with `bundle=toolbox` (`.github/workflows/propose-upgrades.yml`)
 runs daily at **06:50 UTC** from the repository default branch. Scheduled runs
 resolve all desired stable tools within `packages.txt` constraints and open a
 reviewable PR only when the lock or its generated inventory changes. GitHub
 may delay scheduled runs; the cron time is not a delivery guarantee. The
 schedule starts after a human merges this workflow onto the default branch.
 
-For a manual test, open **Actions → Propose toolbox upgrades → Run workflow**,
-select the default branch, keep `dry_run=true`, and optionally set `tool=gh`
+For a manual test, open **Actions → Propose upgrades → Run workflow**,
+select the default branch and `bundle=toolbox`, keep `dry_run=true`, and optionally set `tool=gh`
 for a bounded first run. An empty tool input resolves every desired tool.
 The workflow refuses non-default-branch runs. A new manual workflow must
 exist on the default branch before it can be dispatched.
@@ -215,14 +215,13 @@ reviews. If policy blocks the push or PR, the job fails with these prerequisites
 The workflow does not change settings, install a PAT, or bypass policy.
 
 A PR opened with `GITHUB_TOKEN` does not automatically start ordinary
-`pull_request` workflows. For each bundle, **wstein** approves the exact updater
-PR head once; the trusted controller then runs source CI, performs the guarded
-merge and authorizes publication of that reviewed lock. See the
-[approval and publication flow](publication.md). Changed heads or unrelated
-source changes require new review. A successful resolver or source CI run does
-not establish native image smoke coverage. Manual publication of an exact
-approved `main` SHA remains available. Publication does not activate a consumer
-image.
+`pull_request` workflows. Run the required source checks and merge the eligible
+updater as **wstein** using the protected human merge path. That actual owner
+merge authorizes publication of the exact frozen lock after successful merged
+main CI. See the [owner-merge publication flow](publication.md). Unrelated source
+changes cannot enter this path. Source checks do not establish native image
+smoke coverage. Initial publication retains explicit full-SHA manual approval,
+and publication does not activate a consumer image.
 
 ## Keep the source inventory consistent
 

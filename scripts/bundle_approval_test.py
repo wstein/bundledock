@@ -1,231 +1,163 @@
 import copy
 import importlib.util
+import os
 import sys
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 sys.dont_write_bytecode = True
 spec = importlib.util.spec_from_file_location('gate', Path(__file__).with_name('bundle-publication.py'))
 gate = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(gate)
-A, B, T = 'a'*40, 'b'*40, 'c'*40
+A, B, H, T = 'a'*40, 'b'*40, 'd'*40, 'c'*40
 REPO = {'full_name':'wstein/bundledock','default_branch':'main'}
 
-class ApprovalTests(unittest.TestCase):
+class OwnerMergeTests(unittest.TestCase):
  def setUp(self):
-  self.bundle='toolbox'; self.lock='bundles/toolbox/packages.lock.json'; self.inventory='docs/toolbox.md'
-  self.pr={'number':42,'node_id':'PR42','state':'open','merged':False,'commits':1,'changed_files':2,'head':{'sha':A,'ref':'automation/toolbox-upgrade-123-1','repo':REPO},'base':{'ref':'main','sha':B,'repo':REPO},'user':{'login':'github-actions[bot]','type':'Bot'},'html_url':'https://github.com/wstein/bundledock/pull/42'}
-  self.files=[{'filename':self.lock,'status':'modified','changes':2},{'filename':self.inventory,'status':'modified','changes':2}]
-  self.data={'':REPO,'/git/ref/heads/main':{'object':{'sha':B}},'/pulls/42':self.pr,'/pulls/42/files?per_page=100&page=1':self.files,'/pulls/42/reviews?per_page=100&page=1':[{'id':1,'submitted_at':'2026-10-12T10:00:00Z','state':'APPROVED','commit_id':A,'user':{'login':'wstein','type':'User'}}],'/compare/'+B+'...'+A:{'merge_base_commit':{'sha':B},'files':self.files},'/git/commits/'+A:{'tree':{'sha':T}},'/contents/'+self.lock+'?ref='+A:{'encoding':'base64','content':'bmV3'},'/contents/'+self.lock+'?ref='+B:{'encoding':'base64','content':'b2xk'}}
- def get(self,path):return copy.deepcopy(self.data[path])
- def test_one_exact_approval(self):self.assertEqual(gate.approved_pr(42,self.bundle,self.get)['head']['sha'],A)
- def test_reject_wrong_or_stale_approval(self):
-  for change in ({'state':'DISMISSED'},{'state':'CHANGES_REQUESTED'},{'commit_id':B},{'user':{'login':'other','type':'User'}}):
-   with self.subTest(change=change):
-    original=copy.deepcopy(self.data['/pulls/42/reviews?per_page=100&page=1'])
-    self.data['/pulls/42/reviews?per_page=100&page=1'][0].update(change)
-    with self.assertRaises(ValueError):gate.approved_pr(42,self.bundle,self.get)
-    self.data['/pulls/42/reviews?per_page=100&page=1']=original
- def test_latest_vote_and_head_changes_reject(self):
-  self.data['/pulls/42/reviews?per_page=100&page=1'].append({'id':2,'submitted_at':'2026-10-12T10:01:00Z','state':'CHANGES_REQUESTED','commit_id':A,'user':{'login':'wstein','type':'User'}})
-  with self.assertRaises(ValueError):gate.approved_pr(42,self.bundle,self.get)
- def test_submission_chronology_overrides_creation_id(self):
-  votes=self.data['/pulls/42/reviews?per_page=100&page=1']
-  votes[0]['id']=2
-  votes.append(dict(votes[0],id=1,state='CHANGES_REQUESTED',submitted_at='2026-10-12T10:01:00Z'))
-  with self.assertRaises(ValueError):gate.approved_pr(42,self.bundle,self.get)
- def test_conflicting_latest_timestamp_rejects(self):
-  votes=self.data['/pulls/42/reviews?per_page=100&page=1']
-  votes[0]['id']=2
-  votes.append(dict(votes[0],id=1,state='CHANGES_REQUESTED'))
-  with self.assertRaises(ValueError):gate.approved_pr(42,self.bundle,self.get)
- def test_commented_review_is_nonvoting(self):
-  votes=self.data['/pulls/42/reviews?per_page=100&page=1']
-  votes.append(dict(votes[0],id=2,state='COMMENTED',submitted_at='2026-10-12T10:01:00Z'))
-  self.assertEqual(gate.approved_pr(42,self.bundle,self.get)['head']['sha'],A)
- def test_missing_or_invalid_vote_time_rejects(self):
-  vote=self.data['/pulls/42/reviews?per_page=100&page=1'][0]
-  for timestamp in (None,'invalid','2026-99-12T10:00:00Z'):
-   with self.subTest(timestamp=timestamp):
-    vote['submitted_at']=timestamp
-    with self.assertRaises(ValueError):gate.approved_pr(42,self.bundle,self.get)
- def test_wrong_bundle_rejects(self):
-  for bundle in ('node','node-current','bun','code-server','codex','agy','claude','opentofu','arbitrary'):
-   with self.subTest(bundle=bundle),self.assertRaises(ValueError):gate.approved_pr(42,bundle,self.get)
- def test_unreviewed_main_drift_rejects(self):
-  self.data['/git/ref/heads/main']['object']['sha']=T
-  with self.assertRaises((ValueError,KeyError)):gate.approved_pr(42,self.bundle,self.get)
- def test_paths_and_tree_reject(self):
-  self.files[1]['filename']='.github/workflows/ci.yml'
-  with self.assertRaises(ValueError):gate.approved_pr(42,self.bundle,self.get)
-
-
- def test_agent_approval_scope_and_revocation(self):
-  for name in ('codex','agy','claude','opentofu'):
-   with self.subTest(bundle=name):
-    self.setUp()
-    old=self.lock
-    self.bundle=name; self.lock='bundles/'+name+'/packages.lock.json'; self.inventory='docs/'+name+'.md'
-    self.pr['head']['ref']='automation/'+name+'-upgrade-123-1'
-    self.files[0]['filename']=self.lock; self.files[1]['filename']=self.inventory
-    self.data={key.replace(old,self.lock):value for key,value in self.data.items()}
-    self.assertEqual(gate.approved_pr(42,name,self.get)['head']['sha'],A)
-    self.files[1]['filename']='docs/node.md'
-    with self.assertRaises(ValueError):gate.approved_pr(42,name,self.get)
-    self.files[1]['filename']=self.inventory
-    self.data['/pulls/42/reviews?per_page=100&page=1'][0]['commit_id']=B
-    with self.assertRaises(ValueError):gate.approved_pr(42,name,self.get)
-    self.data['/pulls/42/reviews?per_page=100&page=1'][0].update(commit_id=A,state='DISMISSED')
-    with self.assertRaises(ValueError):gate.approved_pr(42,name,self.get)
-
- def source_fixture(self, workflow='ci.yml', event='workflow_dispatch'):
+  self.bundle=gate.config.select_bundle('toolbox')
+  self.pr={'number':42,'state':'closed','merged':True,'merged_by':{'login':'wstein','type':'User'},'commits':1,'changed_files':2,'merge_commit_sha':A,'head':{'sha':H,'ref':'automation/toolbox-upgrade-123-1','repo':REPO},'base':{'ref':'main','sha':B,'repo':REPO},'user':{'login':'github-actions[bot]','type':'Bot'},'html_url':'https://github.com/wstein/bundledock/pull/42'}
+  self.files=[{'filename':self.bundle['lock'],'status':'modified','changes':2},{'filename':self.bundle['inventory'],'status':'modified','changes':2}]
   self.event={'repository':REPO,'workflow_run':{'id':123,'run_attempt':2,'head_sha':A}}
-  run={'id':123,'run_attempt':2,'workflow_id':7,'path':'.github/workflows/'+workflow,'event':event,'head_sha':A,'head_branch':self.pr['head']['ref'],'status':'completed','conclusion':'success','repository':REPO,'head_repository':REPO,'pull_requests':[{'number':42,'head':{'sha':A}}]}
-  self.data['/actions/workflows/'+workflow]={'id':7,'path':'.github/workflows/'+workflow}
-  self.data['/actions/runs/123/attempts/2']=run
+  self.run={'id':123,'run_attempt':2,'workflow_id':7,'path':'.github/workflows/ci.yml','event':'push','head_sha':A,'head_branch':'main','status':'completed','conclusion':'success','repository':REPO,'head_repository':REPO}
+  self.data={'':REPO,'/git/ref/heads/main':{'object':{'sha':A}},'/pulls/42':self.pr,'/pulls/42/files?per_page=100&page=1':self.files,'/git/commits/'+H:{'tree':{'sha':T}},'/commits/'+A:{'commit':{'tree':{'sha':T}},'parents':[{'sha':B}],'files':self.files},'/actions/workflows/ci.yml':{'id':7,'path':'.github/workflows/ci.yml'},'/actions/runs/123/attempts/2':self.run,'/commits/'+A+'/pulls?per_page=100&page=1':[{'number':42,'state':'closed','merge_commit_sha':A,'head':{'sha':H}}],'/actions/runs/123/attempts/2/jobs?per_page=100&page=1':{'jobs':[{'name':'check','status':'completed','conclusion':'success','head_sha':A,'check_run_url':'https://api.github.com/repos/wstein/bundledock/check-runs/99'}]},'/check-runs/99':{'app':{'id':15368},'name':'check','head_sha':A,'status':'completed','conclusion':'success'}}
+  self.data['/actions/runs/123']=copy.deepcopy(self.run)
+  for revision,content in ((A,'bmV3'),(B,'b2xk')):self.data['/contents/'+self.bundle['lock']+'?ref='+revision]={'encoding':'base64','content':content}
+ def get(self,path):return copy.deepcopy(self.data[path])
+ def test_owner_merge_without_reviews_authorizes_exact_frozen_source(self):
+  self.assertEqual(gate.validate(self.event,self.get),(A,self.pr['html_url']))
+ def test_only_actual_human_owner_merge_authorizes(self):
+  for change in ({'merged_by':None},{'merged_by':{'login':'other','type':'User'}},{'merged_by':{'login':'wstein','type':'Bot'}},{'merged':False},{'state':'open'}):
+   with self.subTest(change=change):
+    self.setUp();self.pr.update(change)
+    with self.assertRaises(ValueError):gate.validate(self.event,self.get)
+ def test_bot_branch_repository_files_and_tree_remain_required(self):
+  for kind in ('author','branch','repository','files','tree','parents','lock','commits'):
+   with self.subTest(kind=kind):
+    self.setUp()
+    if kind=='author':self.pr['user']['login']='other'
+    if kind=='branch':self.pr['head']['ref']='automation/toolbox-upgrade-tampered'
+    if kind=='repository':self.pr['head']['repo']={'full_name':'other/fork'}
+    if kind=='files':self.files[1]['filename']='.github/workflows/ci.yml'
+    if kind=='tree':self.data['/commits/'+A]['commit']['tree']['sha']=B
+    if kind=='parents':self.data['/commits/'+A]['parents'].append({'sha':H})
+    if kind=='lock':self.data['/contents/'+self.bundle['lock']+'?ref='+A]['content']='b2xk'
+    if kind=='commits':self.pr['commits']=2
+    with self.assertRaises(ValueError):gate.validate(self.event,self.get)
+ def test_exact_main_ci_and_check_identity(self):
+  for kind in ('attempt','workflow','event','head','main','app','check','job'):
+   with self.subTest(kind=kind):
+    self.setUp()
+    if kind=='attempt':self.run['run_attempt']=3
+    if kind=='workflow':self.run['workflow_id']=8
+    if kind=='event':self.run['event']='pull_request'
+    if kind=='head':self.run['head_sha']=B
+    if kind=='main':self.data['/git/ref/heads/main']['object']['sha']=B
+    if kind=='app':self.data['/check-runs/99']['app']['id']=42
+    if kind=='check':self.data['/check-runs/99']['head_sha']=B
+    if kind=='job':self.data['/actions/runs/123/attempts/2/jobs?per_page=100&page=1']['jobs'][0]['conclusion']='failure'
+    with self.assertRaises(ValueError):gate.validate(self.event,self.get)
+ def test_old_success_cannot_authorize_after_newer_ci_attempt(self):
+  for change in ({'run_attempt':3,'status':'in_progress','conclusion':None},{'run_attempt':3,'status':'completed','conclusion':'failure'},{'run_attempt':3,'status':'completed','conclusion':'success'},{'head_sha':B},{'status':'in_progress','conclusion':None}):
+   with self.subTest(change=change):
+    self.setUp();self.data['/actions/runs/123'].update(change)
+    with self.assertRaises(ValueError):gate.validate(self.event,self.get)
+ def test_missing_current_ci_attempt_is_pending_and_fail_closed(self):
+  del self.data['/actions/runs/123']
+  with self.assertRaises(KeyError):gate.validate(self.event,self.get)
+ def test_associated_summary_is_not_full_pr_merge_proof(self):
   self.data['/commits/'+A+'/pulls?per_page=100&page=1']=[{'number':42}]
-  self.data['/actions/runs/123/attempts/2/jobs?per_page=100&page=1']={'jobs':[{'name':'check','status':'completed','conclusion':'success','head_sha':A,'check_run_url':'https://api.github.com/repos/wstein/bundledock/check-runs/99'}]}
-  self.data['/check-runs/99']={'app':{'id':15368},'name':'check','head_sha':A,'status':'completed','conclusion':'success'}
-  return run
- def test_exact_source_ci_and_attempt_rejections(self):
-  run=self.source_fixture()
-  self.assertEqual(gate.source_run(self.event,self.get)[0],'toolbox')
-  original=copy.deepcopy(run)
-  for change in ({'workflow_id':8},{'path':'.github/workflows/other.yml'},{'run_attempt':3},{'head_sha':B},{'event':'pull_request_review'},{'conclusion':'failure'},{'head_branch':'main'}):
-   with self.subTest(change=change):
-    run.clear();run.update(original);run.update(change)
-    with self.assertRaises((ValueError,KeyError)):gate.source_run(self.event,self.get)
- def test_review_run_synthetic_merge_identity(self):
-  run=self.source_fixture('bundle-review-source.yml','pull_request_review')
-  self.assertEqual(gate.approval_run(self.event,self.get)[0],'toolbox')
-  synthetic='d'*40
-  run['head_sha']=synthetic
-  self.data['/commits/'+synthetic]={'commit':{'tree':{'sha':T}},'parents':[{'sha':B},{'sha':A}]}
-  self.assertEqual(gate.approval_run(self.event,self.get)[0],'toolbox')
-  self.data['/commits/'+synthetic]['parents'].reverse()
-  with self.assertRaises(ValueError):gate.approval_run(self.event,self.get)
- def test_merged_approved_tree_and_main_ci(self):
-  run=self.source_fixture()
-  self.data['/git/ref/heads/main']['object']['sha']=A
-  run['head_branch']='main'
-  self.pr.update(merged=True,state='closed',merge_commit_sha=A)
-  self.data['/commits/'+A]={'commit':{'tree':{'sha':T}},'parents':[{'sha':B}],'files':self.files}
-  self.assertEqual(gate.validate(self.event,self.get), (A,self.pr['html_url']))
-  self.data['/commits/'+A]['commit']['tree']['sha']=B
-  with self.assertRaises(ValueError):gate.validate(self.event,self.get)
- def merged_fixture(self):
-  self.source_fixture()
-  self.data['/git/ref/heads/main']['object']['sha']=A
-  self.data['/actions/runs/123/attempts/2']['head_branch']='main'
-  self.pr.update(merged=True,state='closed',merge_commit_sha=A)
-  self.data['/commits/'+A]={'commit':{'tree':{'sha':T}},'parents':[{'sha':B}],'files':self.files}
- def test_ordinary_main_ci_is_ineligible_for_all_bundles(self):
-  self.merged_fixture()
-  self.pr['head']['ref']='ci/shared-source-change'
-  self.pr['user']={'login':'wstein','type':'User'}
-  for name in gate.config.BUNDLES:
-   with self.subTest(bundle=name):
-    self.assertIsNone(gate.validate(self.event,self.get,name,allow_ineligible=True))
-    with self.assertRaises(ValueError):gate.validate(self.event,self.get,name)
- def test_unassociated_main_ci_is_ineligible(self):
-  self.merged_fixture()
-  self.data['/commits/'+A+'/pulls?per_page=100&page=1']=[]
+  self.assertEqual(gate.validate(self.event,self.get)[0],A)
+ def test_verified_transient_summary_full_inconsistency_gets_one_retry(self):
+  reads=[]
+  def get(path):
+   result=self.get(path)
+   if path=='/pulls/42':
+    reads.append(path)
+    if len(reads)==1:result.update(merged=False,state='open',merge_commit_sha=B)
+   return result
+  self.assertEqual(gate.validate(self.event,get)[0],A)
+  self.assertEqual(len(reads),2)
+ def test_persistent_mismatch_captures_safe_expected_observed_values(self):
+  self.pr['merge_commit_sha']=B
+  with self.assertRaisesRegex(ValueError,'expected_source='+A+'.*pr=42.*observed_merge='+B):gate.validate(self.event,self.get)
+ def test_unproven_mismatch_does_not_retry(self):
+  self.data['/commits/'+A+'/pulls?per_page=100&page=1']=[{'number':42}]
+  self.pr['merge_commit_sha']=B;reads=[]
+  def get(path):
+   if path=='/pulls/42':reads.append(path)
+   return self.get(path)
+  with self.assertRaises(ValueError):gate.validate(self.event,get)
+  self.assertEqual(len(reads),1)
+ def test_api_failure_and_ambiguity_fail_closed(self):
+  for associated in ([{'number':42}]*100,[{'number':42},{'number':42}]):
+   self.data['/commits/'+A+'/pulls?per_page=100&page=1']=associated
+   with self.assertRaises(ValueError):gate.validate(self.event,self.get,allow_ineligible=True)
+  def unavailable(path):raise OSError('API unavailable')
+  with self.assertRaises(OSError):gate.validate(self.event,unavailable,allow_ineligible=True)
+ def test_ordinary_source_and_other_bundle_are_ineligible(self):
+  self.assertIsNone(gate.validate(self.event,self.get,'node',allow_ineligible=True))
+  self.pr['head']['ref']='ci/ordinary-change'
   self.assertIsNone(gate.validate(self.event,self.get,allow_ineligible=True))
- def test_other_bundle_requires_valid_updater_before_skip(self):
-  self.merged_fixture()
-  for name in ('node','node-current','bun','code-server'):
-   with self.subTest(bundle=name):
-    self.assertIsNone(gate.validate(self.event,self.get,name,allow_ineligible=True))
-  self.data['/pulls/42/reviews?per_page=100&page=1'][0]['state']='DISMISSED'
+ def test_no_review_or_merge_controller_remains(self):
+  for controller in ('bundle-review-source.yml','bundle-approved-merge.yml'):
+   self.assertFalse((Path(__file__).parents[1]/'.github/workflows'/controller).exists())
+  for writer in ('dispatch_source','merge_approved','approval_run','source_run'):
+   self.assertFalse(hasattr(gate,writer))
+ def test_all_bundles_and_caller_identity(self):
   for name in gate.config.BUNDLES:
-   with self.subTest(bundle=name),self.assertRaises(ValueError):
-    gate.validate(self.event,self.get,name,allow_ineligible=True)
- def test_claimed_updater_merge_mismatch_rejects(self):
-  for change in ({'merged':False},{'merge_commit_sha':B}):
-   with self.subTest(change=change):
-    self.setUp();self.merged_fixture();self.pr.update(change)
-    with self.assertRaises(ValueError):gate.validate(self.event,self.get,allow_ineligible=True)
- def test_api_ambiguity_is_not_ineligibility(self):
-  self.merged_fixture()
-  self.data['/commits/'+A+'/pulls?per_page=100&page=1']=[{'number':42}]*100
-  with self.assertRaises(ValueError):gate.validate(self.event,self.get,allow_ineligible=True)
- def test_malformed_claim_is_not_benign(self):
-  self.merged_fixture()
-  self.pr['head']['ref']='automation/toolbox-upgrade-tampered'
-  with self.assertRaises(ValueError):gate.validate(self.event,self.get,allow_ineligible=True)
- def test_controller_ordinary_ci_and_review_have_no_writes(self):
-  self.source_fixture()
-  self.pr['head']['ref']='ci/shared-source-change'
-  self.data['/actions/runs/123/attempts/2']['head_branch']=self.pr['head']['ref']
-  writes=[]
-  def request(path,method='GET',payload=None):
-   if method!='GET':writes.append((path,method));raise AssertionError('unexpected write')
-   return self.get(path)
-  self.assertEqual(gate.merge_approved(self.event,request),{'eligible':'false'})
-  self.source_fixture('bundle-review-source.yml','pull_request_review')
-  self.assertEqual(gate.dispatch_source(self.event,request),{'eligible':'false'})
-  self.assertEqual(writes,[])
- def test_required_check_head_must_match(self):
-  self.source_fixture()
-  self.data['/actions/runs/123/attempts/2/jobs?per_page=100&page=1']['jobs'][0]['head_sha']=B
-  with self.assertRaises(ValueError):gate.source_run(self.event,self.get)
- def test_all_bundle_registry_and_callers(self):
-  import os
-  from unittest.mock import patch
-  for name in ('toolbox','code-server','node','node-current','bun','codex','agy','claude','opentofu'):
+   bundle=gate.config.select_bundle(name);workflow={'id':8,'path':'.github/workflows/'+bundle['workflow']}
+   run=dict(workflow,id=456,workflow_id=8,run_attempt=2,event='workflow_run',head_sha=A,repository=REPO,head_repository=REPO)
+   def get(path):return workflow if path.startswith('/actions/workflows/') else run
+   with patch.dict(os.environ,{'GITHUB_RUN_ID':'456','GITHUB_RUN_ATTEMPT':'2','GITHUB_SHA':A}):
+    gate.validate_caller(get,bundle)
+    run['path']='.github/workflows/wrong.yml'
+    with self.assertRaises(ValueError):gate.validate_caller(get,bundle)
+
+ def test_auto_plan_emits_bundle_contract(self):
+  import tempfile
+  import json
+  with tempfile.TemporaryDirectory() as directory:
+   event=Path(directory)/'event';event.write_text(json.dumps(self.event));output=Path(directory)/'output'
+   env={'GITHUB_REPOSITORY':REPO['full_name'],'GITHUB_EVENT_NAME':'workflow_run','GITHUB_EVENT_PATH':str(event),'GITHUB_TOKEN':'fixture','GITHUB_OUTPUT':str(output)}
+   with patch.dict(os.environ,env),patch.object(sys,'argv',['gate','--mode','plan']),patch.object(gate,'GitHub') as api,patch.object(gate,'validate_caller'),patch.object(gate.subprocess,'check_output',return_value=A):
+    api.return_value.request.side_effect=self.get
+    gate.main()
+   self.assertIn('bundle=toolbox',output.read_text())
+   self.assertIn('eligible=true',output.read_text())
+ def test_all_bundle_owner_merges_use_own_paths(self):
+  for name in gate.config.BUNDLES:
    with self.subTest(name=name):
-    bundle=gate.config.select_bundle(name)
-    workflow={'id':8,'path':'.github/workflows/'+bundle['workflow']}
-    run=dict(workflow,id=456,workflow_id=8,run_attempt=2,event='workflow_run',head_sha=A,repository=REPO,head_repository=REPO)
-    def get(path):
-     return workflow if path.startswith('/actions/workflows/') else run
-    with patch.dict(os.environ,{'GITHUB_RUN_ID':'456','GITHUB_RUN_ATTEMPT':'2','GITHUB_SHA':A}):
-     gate.validate_caller(get,bundle)
-     run['path']='.github/workflows/wrong.yml'
-     with self.assertRaises(ValueError):gate.validate_caller(get,bundle)
-
-
- def test_substituted_check_app_rejects(self):
-  self.source_fixture()
-  self.data['/check-runs/99']['app']['id']=42
-  with self.assertRaises(ValueError):gate.source_run(self.event,self.get)
- def test_no_write_after_vote_revoked_during_revalidation(self):
-  self.source_fixture()
-  writes=[]; reads=0
-  def request(path, method='GET', payload=None):
-   nonlocal reads
-   if method!='GET':writes.append((path,method,payload));raise AssertionError('unexpected write')
-   if path=='/pulls/42/reviews?per_page=100&page=1':
-    reads+=1
-    if reads>=2:self.data[path][0]['state']='DISMISSED'
-   return self.get(path)
-  with self.assertRaises(ValueError):gate.merge_approved(self.event,request)
-  self.assertEqual(writes,[])
- def test_postmerge_tree_drift_never_dispatches_publication_ci(self):
-  self.source_fixture();writes=[]
-  def request(path, method='GET', payload=None):
-   if method=='PUT':
-    writes.append((path,method,payload))
-    self.pr.update(merged=True,state='closed',merge_commit_sha=A)
-    self.data['/commits/'+A]={'commit':{'tree':{'sha':B}},'parents':[{'sha':B}],'files':self.files}
-    return {'merged':True,'sha':A}
-   if method!='GET':writes.append((path,method,payload));return None
-   return self.get(path)
-  with self.assertRaises(ValueError):gate.merge_approved(self.event,request)
-  self.assertEqual(len(writes),1)
-  self.assertEqual(writes[0][2],{'sha':A,'merge_method':'rebase'})
-
+    self.setUp();bundle=gate.config.select_bundle(name)
+    self.pr['head']['ref']='automation/'+name+'-upgrade-123-1'
+    self.files[0]['filename']=bundle['lock'];self.files[1]['filename']=bundle['inventory']
+    for revision,content in ((A,'bmV3'),(B,'b2xk')):self.data['/contents/'+bundle['lock']+'?ref='+revision]={'encoding':'base64','content':content}
+    self.assertEqual(gate.validate(self.event,self.get,name)[0],A)
+ def test_manual_plan_retains_real_approval_gate_and_current_main(self):
+  import tempfile
+  import json
+  import subprocess
+  with tempfile.TemporaryDirectory() as directory:
+   event=Path(directory)/'event';event.write_text(json.dumps({'repository':REPO}));output=Path(directory)/'output'
+   env={'GITHUB_REPOSITORY':REPO['full_name'],'GITHUB_EVENT_NAME':'workflow_dispatch','GITHUB_EVENT_PATH':str(event),'GITHUB_TOKEN':'fixture','GITHUB_OUTPUT':str(output),'BUNDLE':'node','APPROVED_SHA':A,'GITHUB_SHA':A,'DEFAULT_BRANCH':'main','GITHUB_REF':'refs/heads/main','SENDER_TYPE':'User','GITHUB_ACTOR':'wstein','TRIGGERING_ACTOR':'wstein'}
+   with patch.dict(os.environ,env),patch.object(sys,'argv',['gate','--mode','plan']),patch.object(gate,'GitHub') as api,patch.object(gate,'validate_caller'),patch.object(gate.subprocess,'check_output',return_value=A):
+    api.return_value.request.side_effect=self.get
+    gate.main()
+    self.assertIn('bundle=node',output.read_text())
+    os.environ['APPROVED_SHA']=B
+    with self.assertRaises(subprocess.CalledProcessError):gate.main()
+    os.environ['APPROVED_SHA']=A;self.data['/git/ref/heads/main']['object']['sha']=B
+    with self.assertRaises(ValueError):gate.main()
+ def test_rejected_and_pending_execution_emit_explicit_outcomes(self):
+  import tempfile
+  for error,status in ((gate.OwnerMergeRequired('owner missing'),'blocked_owner_merge'),(ValueError('source mismatch'),'rejected'),(OSError('unavailable'),'pending')):
+   with self.subTest(status=status), tempfile.TemporaryDirectory() as directory:
+    output=Path(directory)/'output';summary=Path(directory)/'summary'
+    with patch.dict(os.environ,{'GITHUB_OUTPUT':str(output),'GITHUB_STEP_SUMMARY':str(summary)}),patch.object(gate,'main',side_effect=error),self.assertRaises(SystemExit):gate.run()
+    self.assertIn('eligible=false',output.read_text())
+    self.assertIn('status='+status,output.read_text())
+    self.assertIn(status,summary.read_text())
 
 class WorkflowResultTests(unittest.TestCase):
- def test_controller_ignores_ordinary_ci_events(self):
-  import re
-  from types import SimpleNamespace as NS
-  workflow=(Path(__file__).parents[1]/'.github/workflows/bundle-approved-merge.yml').read_text()
-  body=workflow.split('\n  merge:\n',1)[1]
-  expression=re.search(r'^    if: (.*)$',body,re.M).group(1).replace('&&',' and ')
-  for event in ('push','pull_request','workflow_dispatch'):
-   for branch in ('main','ci/source-change','automation/toolbox-upgrade-123-1'):
-    github=NS(event=NS(workflow_run=NS(name='CI',conclusion='success',head_branch=branch,event=event)))
-    self.assertEqual(eval(expression,{'__builtins__':{}},{'github':github}),event=='workflow_dispatch' and branch!='main')
  def test_shared_job_conditions_fail_closed(self):
   import re
   from types import SimpleNamespace as NS

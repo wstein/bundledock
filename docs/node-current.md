@@ -77,18 +77,19 @@ No user configuration filename or default consumer activation changes.
 ## Updates and publication
 
 `bdock tools upgrade --directory bundles/node-current` updates this
-bundle's lock alone, using canonical tool ID `node`. The thin
-`node-current-upgrade.yml` wrapper calls the shared lock-only updater daily at
+bundle's lock alone, using canonical tool ID `node`. The
+`propose-upgrades.yml` workflow selects `bundle=node-current` through the shared lock-only updater daily at
 06:50 UTC and supports manual dry runs. It never builds or dispatches publication.
 
-`bundledock-node-current.yml` calls the existing shared publication workflow
-with its own workflow, artifacts, volume and source tag identity. Both Node
+`publish-bundles.yml` calls the existing shared publication workflow
+with `bundle=node-current`, sharing caller workflow identity while retaining
+distinct artifacts, volume and source tag identity. Both Node
 channels publish to `quay.io/bundledock/node`. Current promotion updates only
 `:current`; LTS promotion updates `:lts`, `:latest` and the backward compatible
 `:stable`. An unqualified Node pull therefore follows LTS. An absent published baseline stops automatic
 updater publication; only separately authorized exact-SHA manual dispatch can
 bootstrap publication. After an established published baseline, the normal
-[exact-head updater approval flow](publication.md) applies. Version tags use
+[owner-merged updater publication flow](publication.md) applies. Version tags use
 `26.11.1-bN`, with packaging revisions allocated across the complete shared registry tag list
 and both `node/*` and `node-current/*` source tag namespaces, and successful approved
 publication creates `node-current/<immutable-version>`. No image digest, tag or

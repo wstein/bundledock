@@ -153,11 +153,12 @@ case "${1:-}" in
     cat > "$body" <<BODY
 Resolve official stable releases within the selected bundles' existing packages.txt constraints and update only their locks and generated source version inventories. Selected bundles: ${bundles[*]}. Both supported architectures were resolved and verified by the existing BundleDock manager, and transferred locks were revalidated before this proposal.
 
-Review the lock diff. After an established published baseline, an APPROVED review by wstein covering this exact PR head authorizes guarded source CI, protected merge, and frozen-lock publication without further intervention. Approval applies only to this reviewed lock and source inventory. Initial publication of Node Current, Codex, Antigravity and Claude carriers requires separate explicit approval of the exact full source revision and intended build/publication operation; this updater cannot bootstrap an absent baseline. This proposal performs no artifact build; CLI releases, documentation builds, and consumer activation require separate explicit authorization.
+Review the lock diff and run the required source checks. After an established published baseline, the actual human owner wstein merging this eligible updater authorizes frozen-lock publication after successful CI on the exact merged main source. A submitted APPROVED review is not required. Source merges remain human operations; no review controller merges PRs. Authorization covers only this updater lock and generated inventory. First publication requires separate explicit approval of the exact full source revision and intended build/publication operation; this updater cannot bootstrap an absent baseline. This proposal performs no artifact build; CLI releases, documentation builds, and consumer activation require separate explicit authorization.
 
 Run: https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID (attempt $GITHUB_RUN_ATTEMPT).
 
-Pull requests created with GITHUB_TOKEN do not automatically trigger ordinary pull_request workflows. The trusted approval controller dispatches source CI for the exact approved head, verifies required checks and current approval before merging, then dispatches main CI to start frozen-lock publication. Head or main movement stops automation until a fresh applicable approval.
+Pull requests created with GITHUB_TOKEN do not automatically trigger ordinary pull_request workflows. Run source checks through the established protected human merge path. Successful CI on the exact owner-merged main revision starts the read-only publication planner, which verifies actual owner merge identity, exact source/tree and own-file scope before frozen-lock publication. Main movement, unavailable provenance or source inconsistencies stop automatic publication.
+
 BODY
     if ! url=$(gh pr create --repo "$GITHUB_REPOSITORY" --base "$DEFAULT_BRANCH" --head "$branch" --title "$title" --body-file "$body" 2>&1); then
       printf '%s\n' "$url" >&2

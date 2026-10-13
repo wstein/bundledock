@@ -104,18 +104,19 @@ consumer remains unverified.
 ## Updates, publication and evidence
 
 `bdock tools upgrade --directory bundles/bun` updates Bun alone. The
-separate upgrade workflow runs daily at 06:50 UTC alongside the other
+**Propose upgrades** workflow with `bundle=bun` runs daily at 06:50 UTC alongside the other
 bundle proposals, and offers manual dry runs by default. It updates only the
 Bun lock and generated source inventory. The transfer validates base SHA,
 artifact membership and pins before creating a topic. It never builds an
 image or dispatches publication.
 
-`bundledock-bun.yml` supports the shared [automatic updater approval
-flow](publication.md): one exact-head approval by **wstein** authorizes source
-CI, guarded merge and frozen-lock publication. Manual dispatch on default
+`publish-bundles.yml` supports the shared [automatic updater approval
+flow](publication.md): an actual human **wstein** merge authorizes frozen-lock publication after
+successful exact merged-main CI. Manual dispatch on default
 `main` with the full explicitly approved source SHA matching the run remains
 available. It uses the existing
-Quay namespace's separate `bun` repository, artifacts and workflow identity.
+Quay namespace's separate `bun` repository and artifacts under the shared
+publication workflow identity.
 Only an authenticated exact HTTP 404 for this repository's stable manifest
 permits the initial absent baseline. Native AMD64 and ARM64 builds each require
 read-only consumer smoke before staging; promotion waits for the whole matrix

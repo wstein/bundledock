@@ -98,14 +98,14 @@ Runtime compatibility beyond the Debian consumer has not been established.
 ## Updates, publication and evidence
 
 `bdock tools upgrade --directory bundles/node` updates this bundle alone.
-The Node upgrade workflow runs daily at 06:50 UTC and offers manual dry runs
+The **Propose upgrades** workflow with `bundle=node` runs daily at 06:50 UTC and offers manual dry runs
 by default. It proposes only the Node lock and generated source inventory,
 validates transferred lock/base SHA and artifact membership, and never builds
 or dispatches native publication.
 
-`bundledock-node.yml` supports the shared [automatic updater approval
-flow](publication.md): one exact-head approval by **wstein** authorizes source
-CI, guarded merge and frozen-lock publication. Manual dispatch on default
+`publish-bundles.yml` supports the shared [automatic updater approval
+flow](publication.md): an actual human **wstein** merge authorizes frozen-lock publication after
+successful exact merged-main CI. Manual dispatch on default
 `main` with the full approved source SHA matching the run remains available.
 It publishes to the
 existing Quay namespace's separate `node` repository with separate artifacts

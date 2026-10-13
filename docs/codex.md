@@ -82,10 +82,10 @@ require their own approved native build and smoke checks.
 ## Updates and publication
 
 `bdock tools upgrade --directory bundles/codex` resolves Codex alone.
-The daily 06:50 UTC proposal and manual dry-run workflows use the shared
+The daily 06:50 UTC **Propose upgrades** workflow and manual `bundle=codex` dry runs use the shared
 source-only updater. It can change only its own lock and generated inventory.
-A later exact-head **wstein** approval follows the shared guarded source CI,
-merge and frozen-lock [publication flow](publication.md). It cannot authorize
+A later actual human **wstein** merge follows the shared exact merged-main CI
+and frozen-lock [publication flow](publication.md). It cannot authorize
 initial publication. Manual dispatch uses the full approved main SHA; an
 absent baseline is accepted only after authenticated registry HTTP 404 in that
 manual operation. Successful approved publication includes an annotated
