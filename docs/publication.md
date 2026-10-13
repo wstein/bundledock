@@ -47,15 +47,26 @@ review is required, and no controller merges source PRs.
    must pass. The automatic path copies the committed lock without resolving
    newer upstream releases. First publication retains the separate manual gate.
 
-A main advance or source inconsistency stops this sequence. If the associated
-PR summary names the exact merged source but a full read disagrees, the helper
-records safe expected/observed source, PR, merge state and head values and makes
-one bounded reread of that same PR. The reread must establish all normal
-provenance; no retry ignores a mismatch. Missing evidence and API failures remain
-pending or rejected and cannot authorize builds. This handles an observable API
-inconsistency; historical publication failures without retained API payloads do
-not prove a particular cause. The existing `toolbox-publication` environment is
-unused and unchanged. Ordinary source and documentation PRs are ineligible.
+The verifier pins REST API version `2022-11-28` because GitHub's
+[`2026-03-10` breaking changes](https://docs.github.com/en/rest/about-the-rest-api/breaking-changes#version-2026-03-10)
+remove `merge_commit_sha` from full and associated PR responses. Controlled
+read-only requests for PR #66 and its merged source reproduced the omission
+under `2026-03-10` and recovered the exact SHA under `2022-11-28`; retries of a
+removed field cannot restore that contract. This explains the reproduced source
+of missing proof, without establishing the cause of every historical failure.
+
+A main advance or source inconsistency stops this sequence. When a trusted
+owner-merged bot PR is closed but its merge SHA is missing, a matching closed
+association permits at most two further reads of that same full PR, two seconds
+apart. The association may name the exact source or lack its merge SHA; it never
+supplies merge authority. Known wrong SHAs reject immediately. Stable PR, head,
+repository, owner and author identities remain required, and recovery must
+establish the exact full PR merge SHA and every normal provenance gate. The
+latest CI attempt is checked after delayed reads. Exhausted missing metadata is
+pending and cannot authorize builds. Diagnostics record only safe attempt,
+reason and expected/observed identity values. The existing
+`toolbox-publication` environment is unused and unchanged. Ordinary source and
+documentation PRs are ineligible.
 
 For manual publication, select **Run workflow** on default branch `main` and
 enter the explicitly approved full 40-character SHA in `approved_sha`. It must
@@ -78,7 +89,8 @@ are not authorization evidence. Summaries distinguish ineligible source,
 blocked owner merge, pending or rejected provenance, unchanged published assets,
 and published output. A successful no-op workflow does not mean publication.
 Tests cover exact source/head/attempt/caller and check application identity,
-full PR versus list-summary evidence, bounded inconsistent-read recovery, frozen
+the REST transport contract, full PR versus list-summary evidence, bounded
+missing-metadata recovery and pending exhaustion, frozen
 lock bytes and merged/updater tree equality. This source change performs no
 workflow run, image build, publication or consumer activation; the automatic
 sequence needs its own approved live evidence.
