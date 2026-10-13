@@ -15,7 +15,7 @@ func TestQualityUtilitiesSmokeRejectsWrongBehavior(t *testing.T) {
 	stubs := map[string]string{
 		"shellcheck": `case "$*" in --version) echo ShellCheck;; *) cat >/dev/null;; esac`,
 		"shfmt":      `case "$*" in --version) echo v3.14.1;; *) cat >/dev/null; echo 'echo smoke';; esac`,
-		"just":       `case "$*" in --version) echo 'just 1.58.0';; *) echo recipe-smoke;; esac`,
+		"just":       `case "$*" in --version) echo 'just 1.58.0';; *--quiet*) :;; *) echo recipe-smoke;; esac`,
 		"ruff":       `case "$*" in --version) echo 'ruff 0.17.0';; *) cat >/dev/null; echo 'x = 1';; esac`,
 		"delta":      `case "$*" in --version) echo 'delta 0.20.1';; '--no-gitconfig --paging=never') cat;; *) exit 2;; esac`,
 		"watchexec":  `case "$*" in --version) echo 'watchexec 2.8.0';; *) echo watch-smoke;; esac`,
