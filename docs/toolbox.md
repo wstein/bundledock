@@ -76,6 +76,54 @@ Source tests execute stdlib Python and synthetic venv/pip fixtures without
 network access or package installation. Native consumer smoke and real first-use
 resolution remain separate checks requiring an approved image build.
 
+## tldr launcher (source)
+
+The source supplies `tldr` through the [official Python client](https://github.com/tldr-pages/tldr-python-client),
+version 3.4.4. It requires `python3` 3.10+ with `venv` and pip from the
+consumer's stock language image. The launcher uses the same isolated plain-pip
+helper as Spec Kit, with a separate tool directory and download cache:
+
+```sh
+tldr --help
+tldr tar
+tldr --update
+```
+
+Explicit first use installs exactly three reviewed universal wheels: `tldr`
+3.4.4, `shtab` 1.12.1 and `termcolor` 3.3.0. Each wheel's official URL and
+SHA256 are pinned in `share/tldr/tldr.requirements.txt`; pip installs with
+`--no-deps` and `--only-binary=:all:`. The base distribution already provides
+the CLI; its optional `cli` extra contains development tools and is excluded.
+The immutable carrier retains the unchanged MIT/MPL-2.0 notices and source
+record through its license archive. Installed notices remain in the environment.
+
+Environments live under `${XDG_DATA_HOME:-$HOME/.local/share}/bundledock/tools/tldr`
+and pip downloads under `${XDG_CACHE_HOME:-$HOME/.cache}/bundledock/pip/tldr`.
+Keep these paths and `HOME` writable outside the toolbox. First installation
+needs network access to the pinned official PyPI files; a completed environment
+can launch offline. tldr separately fetches example pages and caches them in
+`${XDG_CACHE_HOME:-$HOME/.cache}/tldr`. Use `TLDR_NETWORK_ENABLED=0` with cached
+pages for offline lookups; a missing page is unavailable offline. Package pins
+do not freeze the community page content. Upstream language, color and page
+source configuration remains available.
+
+[PyPI release metadata](https://pypi.org/pypi/tldr/3.4.4/json) and all three
+wheel manifests were inspected and hashes verified without installing or
+executing third-party code. Source fixtures cover first use, reuse, Python
+compatibility, argument/status forwarding and altered requirements. Real package
+installation, first page download and native consumer smoke remain unverified
+until a separately approved image build and runtime check. Older published
+images do not include this launcher.
+
+## Package-installed tool defaults
+
+Python command-line additions use a dedicated per-tool virtual environment and
+plain pip, with reviewed requirements shipped beside the owned launcher.
+Package installation occurs on explicit first use, outside the read-only bundle.
+Stock language images provide Python, `venv` and pip; BundleDock does not install
+an interpreter. See the source-only [package installation policy](package-tools.md)
+for dependency pins, npm defaults and the existing-tool inventory.
+
 ## Retained notices
 
 New bundles store all staged `licenses/<package>/...` files, including full
@@ -111,14 +159,16 @@ establish a complete transitive license audit.
 
 The default bundle lives in `bundles/toolbox/`: `packages.txt`,
 `packages.catalog.json`, `packages.lock.json`, its Dockerfile, smoke scripts and licenses.
-Shared Go code remains at the repository root. The source toolbox contains 36
-common tools. Codex, Antigravity and Claude are supplied by their separate
+Shared Go code remains at the repository root. The source toolbox contains 38
+downloaded tools plus the two first-use Python launchers listed below. Codex, Antigravity and Claude are supplied by their separate
 [Codex](codex.md), [Antigravity](agy.md) and [Claude Code](claude.md) bundles.
 The published toolbox recorded above still includes those agents; this source
 removal has not been built or published.
 
 `packages.lock.json` pins vendor artifact URLs and checksums for Linux `amd64`
-and `arm64`; builds verify every download.
+and `arm64`; builds verify every download. Launcher versions come from their
+separate wheel inputs. Homepage and Source links are generated from reviewed
+upstream metadata and persist when the native lock is refreshed.
 
 <!-- BEGIN GENERATED TOOL INVENTORY -->
 | Tool | Pinned version | Homepage | Source |
