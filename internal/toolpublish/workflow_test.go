@@ -274,3 +274,48 @@ func checkConsolidatedBundleWorkflowSource(t *testing.T, bundle string) {
 		}
 	}
 }
+
+func TestPublicationResolutionFreezesManualAndMergedLocks(t *testing.T) {
+	if _, err := exec.LookPath("sh"); err != nil {
+		t.Skip("host shell unavailable")
+	}
+	data, err := os.ReadFile("../../.github/workflows/bundle-publish.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, step, found := strings.Cut(string(data), "      - name: Resolve all tools once\n")
+	if !found {
+		t.Fatal("missing resolution step")
+	}
+	step, _, _ = strings.Cut(step, "      - name:")
+	for _, setting := range []string{
+		"APPROVED_SHA: ${{ inputs.approved_sha }}",
+		"DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}",
+		"SENDER_TYPE: ${{ github.event.sender.type }}",
+		"TRIGGERING_ACTOR: ${{ github.triggering_actor }}",
+	} {
+		if !strings.Contains(step, setting) {
+			t.Errorf("resolution is missing actual approval metadata: %s", setting)
+		}
+	}
+	_, body, found := strings.Cut(step, "        run: ")
+	if !found {
+		t.Fatal("missing resolution command")
+	}
+	body = strings.TrimPrefix(body, "|\n")
+	for _, event := range []string{"workflow_dispatch", "workflow_run"} {
+		t.Run(event, func(t *testing.T) {
+			dir := t.TempDir()
+			adapter := filepath.Join(dir, "tools-publish")
+			if err := os.WriteFile(adapter, []byte("#!/bin/sh\nprintf '%s\\n' \"$@\"\n"), 0700); err != nil {
+				t.Fatal(err)
+			}
+			cmd := exec.Command("sh", "-ec", body)
+			cmd.Env = append(os.Environ(), "GITHUB_EVENT_NAME="+event, "RUNNER_TEMP="+dir, "BUNDLE=toolbox")
+			out, err := cmd.CombinedOutput()
+			if err != nil || string(out) != "resolve\n--bundle\ntoolbox\n--frozen-lock\n" {
+				t.Fatalf("publication must freeze exact committed lock: %q %v", out, err)
+			}
+		})
+	}
+}

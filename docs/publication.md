@@ -155,16 +155,18 @@ Docker login and all registry writes occur only after each native smoke passes.
 Check [GitHub runner availability and plan limits](https://docs.github.com/en/actions/how-tos/write-workflows/choose-where-workflows-run/choose-the-runner-for-a-job)
 for `ubuntu-24.04` (AMD64) and `ubuntu-24.04-arm` (ARM64).
 
-For manual dispatch, one resolver runs `bdock tools upgrade` for all tools;
-the merged-upgrade path freezes the committed lock. Both upload the exact
-lock bytes and shared source commit, UTC build time, lock SHA256, run tag and full
-GitHub run ID (`run_id`).
-The resolver uses official stable prebuilt releases; it does not rebuild tools
+Manual dispatch and merged-upgrade publication both freeze the committed lock
+without upstream discovery. Manual resolution rechecks the existing human
+full-SHA approval gate. To change tool versions, review and commit an upgraded
+lock before approving publication of that exact source revision. Both paths
+upload the exact lock bytes and shared source commit, UTC build time, lock
+SHA256, run tag and full GitHub run ID (`run_id`).
+The lock pins official stable prebuilt releases; publication does not rebuild tools
 from source or patch embedded dependencies. A successful publication does not
 establish that upstream binaries are free of known vulnerabilities. Review the
 [remaining embedded dependency findings](development.md#embedded-dependency-findings)
 and wait for patched stable releases to remediate them.
-It never commits or pushes the resulting lock. Both native jobs consume that
+Publication never commits or pushes the lock. Both native jobs consume that
 artifact, build `bundles/toolbox/Dockerfile` once, explicitly pull the consumer baseline and
 run `bundles/toolbox/scripts/smoke.sh` against the resulting local image ID. OCI labels include the
 image title, source, revision, build time, run tag, lock hash, tool versions and
