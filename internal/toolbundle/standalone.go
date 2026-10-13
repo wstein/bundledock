@@ -223,14 +223,30 @@ func BundleLinks(root *os.Root, profile string) (map[string]string, error) {
 	}
 	defer f.Close()
 	var m struct {
-		Schema   int               `json:"schema"`
-		Profile  string            `json:"profile"`
-		Links    map[string]string `json:"links"`
-		Platform string            `json:"platform"`
-		Tools    map[string]Spec   `json:"tools"`
+		Schema    int               `json:"schema"`
+		Profile   string            `json:"profile"`
+		Links     map[string]string `json:"links"`
+		Platform  string            `json:"platform"`
+		Tools     map[string]Spec   `json:"tools"`
+		Launchers map[string]string `json:"launchers"`
 	}
 	if err := toolconfig.Decode(f, &m); err != nil {
 		return nil, err
+	}
+	if len(m.Launchers) != 0 {
+		if profile != "" || len(m.Launchers) != 1 || m.Launchers["specify"] != "specify-cli==1.1.3" {
+			return nil, fmt.Errorf("invalid runtime launcher metadata")
+		}
+		if err := CheckPath(root, "bin/specify"); err != nil {
+			return nil, err
+		}
+		info, err := root.Stat("bin/specify")
+		if err != nil {
+			return nil, err
+		}
+		if !info.Mode().IsRegular() || info.Mode().Perm()&0111 == 0 {
+			return nil, fmt.Errorf("invalid specify launcher")
+		}
 	}
 	if profile == "" {
 		if m.Profile != "" || len(m.Links) != 0 {

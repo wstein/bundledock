@@ -403,6 +403,11 @@ func extract(root *os.Root, tool string, p toolconfig.Package, source io.Reader,
 	if p.Install.Profile == "helix-runtime" {
 		return writeHelixLauncher(root)
 	}
+	if tool == "uv" {
+		if err := writeSpecifyLauncher(root); err != nil {
+			return err
+		}
+	}
 	return copyAliases(root, p.Install.Aliases)
 }
 func copyAliases(root *os.Root, aliases map[string]string) error {
@@ -427,13 +432,20 @@ func WriteManifest(root *os.Root, arch string, tools map[string]Spec) error {
 	return writeManifest(root, arch, tools, "", nil)
 }
 func writeManifest(root *os.Root, arch string, tools map[string]Spec, profile string, links map[string]string) error {
+	var launchers map[string]string
+	if _, err := root.Stat("bin/specify"); err == nil {
+		launchers = map[string]string{"specify": "specify-cli==1.1.3"}
+	} else if !os.IsNotExist(err) {
+		return err
+	}
 	manifest := struct {
-		Schema   int               `json:"schema"`
-		Profile  string            `json:"profile,omitempty"`
-		Links    map[string]string `json:"links,omitempty"`
-		Platform string            `json:"platform"`
-		Tools    map[string]Spec   `json:"tools"`
-	}{1, profile, links, "linux/" + arch, tools}
+		Schema    int               `json:"schema"`
+		Profile   string            `json:"profile,omitempty"`
+		Links     map[string]string `json:"links,omitempty"`
+		Platform  string            `json:"platform"`
+		Tools     map[string]Spec   `json:"tools"`
+		Launchers map[string]string `json:"launchers,omitempty"`
+	}{1, profile, links, "linux/" + arch, tools, launchers}
 	data, err := json.MarshalIndent(manifest, "", "  ")
 	if err != nil {
 		return err
