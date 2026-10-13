@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -321,5 +322,65 @@ func TestSpecifyPreservesUnrecognizedState(t *testing.T) {
 				t.Fatalf("protected content changed: %q %v", data, err)
 			}
 		})
+	}
+}
+
+func TestSpecifyRejectsUnsafeOwnedDirectories(t *testing.T) {
+	for _, location := range []string{"state", "venv"} {
+		for _, unsafe := range []string{"writable by others", "foreign owner"} {
+			t.Run(location+" "+unsafe, func(t *testing.T) {
+				dst, home, bin := specifyFixture(t)
+				got, err := specifyCommand(dst, home, bin, "--help").CombinedOutput()
+				if exit, ok := err.(*exec.ExitError); !ok || exit.ExitCode() != 23 {
+					t.Fatalf("err %v got %s", err, got)
+				}
+				state := filepath.Join(home, ".local/share/bundledock/tools/specify")
+				dirs, err := filepath.Glob(filepath.Join(state, "[a-f0-9]*"))
+				if err != nil || len(dirs) != 1 {
+					t.Fatal(err, dirs)
+				}
+				target := state
+				if location == "venv" {
+					target = dirs[0]
+				}
+				sentinel := filepath.Join(target, "user-content")
+				if err := os.WriteFile(sentinel, []byte("preserve me"), 0600); err != nil {
+					t.Fatal(err)
+				}
+				if unsafe == "writable by others" {
+					if err := os.Chmod(target, 0777); err != nil {
+						t.Fatal(err)
+					}
+					t.Cleanup(func() { os.Chmod(target, 0700) })
+				} else {
+					// Simulate a different current UID without needing privileged chown.
+					// stat still observes the real fixture directory owner.
+					code := "original_stat=os.lstat\ntarget=" + strconv.Quote(target) + "\n" +
+						"def foreign_stat(path, *args, **kwargs):\n result=original_stat(path,*args,**kwargs)\n if str(path)==target:\n  fields=list(result);fields[4]=result.st_uid+1;return os.stat_result(fields)\n return result\nos.lstat=foreign_stat\n"
+					if err := os.WriteFile(filepath.Join(home, "preflight"), []byte(code), 0600); err != nil {
+						t.Fatal(err)
+					}
+				}
+				before, err := os.ReadFile(filepath.Join(home, "calls"))
+				if err != nil {
+					t.Fatal(err)
+				}
+				got, err = specifyCommand(dst, home, bin, "--help").CombinedOutput()
+				if err == nil || !strings.Contains(string(got), "must be owned by the current user and not group/other writable") {
+					t.Fatalf("unsafe directory executed: err %v got %s", err, got)
+				}
+				after, err := os.ReadFile(filepath.Join(home, "calls"))
+				if err != nil {
+					t.Fatal(err)
+				}
+				if string(before) != string(after) {
+					t.Fatal("installer ran against unsafe owned state")
+				}
+				data, err := os.ReadFile(sentinel)
+				if err != nil || string(data) != "preserve me" {
+					t.Fatalf("protected content changed: %q %v", data, err)
+				}
+			})
+		}
 	}
 }
