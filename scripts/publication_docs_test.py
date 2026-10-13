@@ -256,7 +256,7 @@ class PublicationDocsTest(unittest.TestCase):
         self.assertNotIn('docker ',docs)
         self.assertNotIn('hugo',docs)
         for bundle in self.module.BUNDLES:
-            caller=(root/'.github/workflows'/('bundledock-'+bundle+'.yml')).read_text()
+            caller=(root/'.github/workflows'/'publish-bundles.yml').read_text()
             default, ceiling=caller.split('\njobs:\n')
             self.assertIn('actions: read',default)
             self.assertNotIn('pull-requests: write',default)

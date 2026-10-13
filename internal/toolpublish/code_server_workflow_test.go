@@ -9,33 +9,8 @@ import (
 )
 
 func TestCodeServerWorkflowSourcesSeparateApprovalAndArtifacts(t *testing.T) {
-	for _, file := range []string{"bundledock-code-server.yml", "code-server-upgrade.yml"} {
-		data, err := os.ReadFile("../../.github/workflows/" + file)
-		if err != nil {
-			t.Fatal(err)
-		}
-		source := string(data)
-		for _, required := range []string{"bundle: code-server", "workflow_dispatch:"} {
-			if !strings.Contains(source, required) {
-				t.Fatal(file + " missing " + required)
-			}
-		}
-		if strings.HasPrefix(file, "bundledock-") {
-			for _, required := range []string{"name: Publish code-server", "uses: ./.github/workflows/bundle-publish.yml", "workflows: [CI]", "approved_sha:"} {
-				if !strings.Contains(source, required) {
-					t.Fatal(file + " missing " + required)
-				}
-			}
-			if strings.Contains(source, "cron:") {
-				t.Fatal("publication must have no schedule")
-			}
-		} else {
-			for _, required := range []string{"name: Propose code-server upgrades", "uses: ./.github/workflows/bundle-upgrade.yml", "- cron: '50 6 * * *'", "default: true"} {
-				if !strings.Contains(source, required) {
-					t.Fatal(file + " missing " + required)
-				}
-			}
-		}
+	for _, bundle := range []string{"code-server"} {
+		checkConsolidatedBundleWorkflowSource(t, bundle)
 	}
 }
 

@@ -221,13 +221,13 @@ func TestResolveAndPublish(t *testing.T) {
 		t.Fatal(title)
 	}
 	body, err := os.ReadFile(filepath.Join(value(env, "UPGRADE_RESULT"), "pr-body.md"))
-	if err == nil && !strings.Contains(string(body), "Initial publication of Node Current, Codex, Antigravity and Claude carriers requires separate explicit approval") {
+	if err == nil && !strings.Contains(string(body), "First publication requires separate explicit approval of the exact full source revision and intended build/publication operation") {
 		t.Fatal("updater PR body omits first-publication approval boundary")
 	}
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, text := range []string{"wstein", "exact PR head", "source CI", "protected merge", "frozen-lock publication", "without further intervention"} {
+	for _, text := range []string{"wstein", "exact merged main source", "successful CI", "human operations", "frozen-lock publication", "no review controller merges PRs"} {
 		if !strings.Contains(string(body), text) {
 			t.Fatalf("approval body missing %q: %s", text, body)
 		}
@@ -312,7 +312,7 @@ func TestWorkflowManualLeastPrivilege(t *testing.T) {
 			}
 		}
 	}
-	resolve := strings.Split(strings.Split(s, "  resolve:\n")[1], "  publish:\n")[0]
+	resolve := strings.Split(strings.Split(s, "  resolve:\n")[1], "  propose-pr:\n")[0]
 	if strings.Contains(resolve, ": write") {
 		t.Fatal("resolver has write permission")
 	}
@@ -692,7 +692,7 @@ func TestBunNoChangeCreatesNoProposal(t *testing.T) {
 }
 
 func upgradeWorkflowSource() ([]byte, error) {
-	wrapper, err := os.ReadFile("../../.github/workflows/toolbox-upgrade.yml")
+	wrapper, err := os.ReadFile("../../.github/workflows/propose-upgrades.yml")
 	if err != nil {
 		return nil, err
 	}

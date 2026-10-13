@@ -46,7 +46,7 @@ class FakeAPI:
         self.run = dict(id=123, run_attempt=2, run_number=7, head_sha=SHA, head_branch='main',
                         repository={'full_name': reconcile.REPOSITORY},
                         head_repository={'full_name': reconcile.REPOSITORY},
-                        path='.github/workflows/bundledock-opentofu.yml',
+                        path='.github/workflows/publish-bundles.yml',
                         event='workflow_dispatch', status='completed', conclusion='success')
         steps = {reconcile.JOBS[1]: reconcile.SMOKE, reconcile.JOBS[2]: reconcile.SMOKE,
                  reconcile.JOBS[3]: reconcile.PROMOTE, reconcile.JOBS[4]: reconcile.TAG,
@@ -495,3 +495,23 @@ class MissingEvidenceTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+class ConsolidatedIdentityTests(unittest.TestCase):
+    def test_current_and_historical_callers_reconcile_read_only(self):
+        for path in ('publish-bundles.yml', 'bundledock-opentofu.yml'):
+            with self.subTest(path=path):
+                api = FakeAPI()
+                api.run['path'] = '.github/workflows/' + path
+                self.assertEqual(api.check()['state'], 'published')
+
+    def test_other_bundle_historical_caller_rejected(self):
+        api = FakeAPI()
+        api.run['path'] = '.github/workflows/bundledock-node.yml'
+        with self.assertRaises(ValueError):
+            api.check()
+
+    def test_new_evidence_capture_rejects_historical_caller(self):
+        api = FakeAPI()
+        api.run['path'] = '.github/workflows/bundledock-opentofu.yml'
+        with self.assertRaises(ValueError):
+            reconcile.capture_evidence('opentofu', SHA, '123', '2', api.receipt, api)

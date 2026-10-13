@@ -166,11 +166,15 @@ def verify_run(r, backfill):
     if os.environ.get('GITHUB_TOKEN'):
         headers['Authorization'] = 'Bearer '+os.environ['GITHUB_TOKEN']
     run = json.loads(request(f"https://api.github.com/repos/wstein/bundledock/actions/runs/{r['run_id']}/attempts/{r['attempt']}", headers))
+    paths = {'.github/workflows/' + _CONFIG.select_bundle(r['bundle'])['workflow']}
+    if backfill:
+        # Explicit historical backfill validates evidence from its exact old caller.
+        paths.add(f".github/workflows/bundledock-{r['bundle']}.yml")
     automatic = not backfill and run.get('event') == 'workflow_run'
     controller_sha = os.environ.get('GITHUB_SHA') if automatic else r['commit']
     if (run.get('head_sha') != controller_sha or run.get('head_branch') != 'main'
             or run.get('repository', {}).get('html_url') != SOURCE
-            or run.get('path') != f".github/workflows/bundledock-{r['bundle']}.yml"
+            or run.get('path') not in paths
             or run.get('run_attempt') != r['attempt']
             or str(run.get('id')) != r['run_id']
             or (r['run_number'] is not None and run.get('run_number') != r['run_number'])):

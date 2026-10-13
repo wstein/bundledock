@@ -139,7 +139,7 @@ func TestWorkflowsUsePatchedBuildToolchain(t *testing.T) {
 	if !strings.Contains(string(dockerfile), "golang:"+strings.TrimSpace(string(version))+"-alpine@sha256:") {
 		t.Fatal("OCI compiler must match the CI toolchain")
 	}
-	for _, name := range []string{"ci.yml", "bundledock-toolbox.yml"} {
+	for _, name := range []string{"ci.yml", "publish-bundles.yml"} {
 		data, err := os.ReadFile("../../.github/workflows/" + name)
 		if err != nil {
 			t.Fatal(err)
@@ -172,7 +172,7 @@ func TestPublicationRequiresManualApprovedRevision(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	wrapper, err := os.ReadFile("../../.github/workflows/bundledock-toolbox.yml")
+	wrapper, err := os.ReadFile("../../.github/workflows/publish-bundles.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -240,5 +240,37 @@ func TestPublicationApprovalFailsClosed(t *testing.T) {
 				t.Fatalf("approval error=%v output=%s", err, out)
 			}
 		})
+	}
+}
+
+func checkConsolidatedBundleWorkflowSource(t *testing.T, bundle string) {
+	t.Helper()
+	for _, file := range []string{"publish-bundles.yml", "propose-upgrades.yml"} {
+		data, err := os.ReadFile("../../.github/workflows/" + file)
+		if err != nil {
+			t.Fatal(err)
+		}
+		source := string(data)
+		for _, required := range []string{"          - " + bundle, "workflow_dispatch:"} {
+			if !strings.Contains(source, required) {
+				t.Fatal(file + " missing " + required)
+			}
+		}
+		if file == "publish-bundles.yml" {
+			for _, required := range []string{"name: Publish bundles", "uses: ./.github/workflows/bundle-publish.yml", "workflows: [CI]", "approved_sha:", "--mode plan"} {
+				if !strings.Contains(source, required) {
+					t.Fatal(file + " missing " + required)
+				}
+			}
+			if strings.Contains(source, "cron:") {
+				t.Fatal("publication must have no schedule")
+			}
+		} else {
+			for _, required := range []string{"name: Propose upgrades", "uses: ./.github/workflows/bundle-upgrade.yml", "- cron: '50 6 * * *'", "default: true", "fail-fast: false", "max-parallel: 3"} {
+				if !strings.Contains(source, required) {
+					t.Fatal(file + " missing " + required)
+				}
+			}
+		}
 	}
 }

@@ -1,0 +1,69 @@
+name: Propose upgrades
+
+on:
+  schedule:
+    - cron: '50 6 * * *'
+  workflow_dispatch:
+    inputs:
+      bundle:
+        description: Bundle to resolve; all keeps one independent proposal per bundle
+        type: choice
+        default: all
+        required: true
+        options:
+          - all
+          - toolbox
+          - code-server
+          - node
+          - node-current
+          - bun
+          - codex
+          - agy
+          - claude
+          - opentofu
+      dry_run:
+        description: Show lock changes without creating branches or pull requests
+        type: boolean
+        default: true
+        required: true
+      tool:
+        description: Optional tool in each selected bundle; leave empty to resolve all tools
+        type: string
+        default: ''
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      bundles: ${{ steps.select.outputs.bundles }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      - id: select
+        env:
+          SELECTION: ${{ inputs.bundle || 'all' }}
+        run: echo "bundles=$(python3 scripts/bundle-config.py --upgrade-selection "$SELECTION")" >> "$GITHUB_OUTPUT"
+
+  proposal:
+    needs: plan
+    permissions:
+      contents: write
+      pull-requests: write
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        bundle: ${{ fromJSON(needs.plan.outputs.bundles) }}
+    uses: ./.github/workflows/bundle-upgrade.yml
+    with:
+      bundle: ${{ matrix.bundle }}
+      dry_run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || false }}
+      tool: ${{ inputs.tool || '' }}

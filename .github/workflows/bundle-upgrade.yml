@@ -57,7 +57,7 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
-  publish:
+  propose-pr:
     if: ${{ needs.resolve.outputs.changed == 'true' && (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && !inputs.dry_run)) }}
     needs: resolve
     runs-on: ubuntu-24.04

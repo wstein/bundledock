@@ -210,7 +210,7 @@ class GitTests(ProvenanceTests):
 class RunTests(ProvenanceTests):
     def run_data(self, r):
         return dict(head_sha=r['commit'], head_branch='main', repository={'html_url':tags.SOURCE},
-                    path='.github/workflows/bundledock-node.yml', run_attempt=1, id=123,
+                    path='.github/workflows/publish-bundles.yml', run_attempt=1, id=123,
                     run_number=1, status='completed', conclusion='success', event='workflow_dispatch')
 
     def test_run_provenance_class_and_backfill_success(self):
@@ -257,7 +257,7 @@ class RunTests(ProvenanceTests):
         for bundle in tags.BUNDLES:
             r = tags.validate_record(self.record(bundle=bundle,image='quay.io/bundledock/'+tags._CONFIG.select_bundle(bundle)['repository']))
             run = self.run_data(r)
-            run.update(head_sha='a'*40,path='.github/workflows/bundledock-'+bundle+'.yml',
+            run.update(head_sha='a'*40,path='.github/workflows/publish-bundles.yml',
                        event='workflow_run',status='in_progress',conclusion=None)
             env = dict(GITHUB_SHA='a'*40,GITHUB_RUN_ID='123',GITHUB_RUN_ATTEMPT='1',
                        GITHUB_EVENT_NAME='workflow_run',PUBLICATION_SHA=r['commit'])
@@ -327,3 +327,15 @@ class SemanticVersionTests(ProvenanceTests):
         tags.verify_labels(r,labels)
         labels['io.bundledock.github.run-attempt']='8'
         with self.assertRaises(ValueError): tags.verify_labels(r,labels)
+
+class CallerMigrationTests(RunTests):
+    def test_legacy_caller_is_historical_evidence_only(self):
+        from unittest.mock import patch
+        r = tags.validate_record(self.record())
+        run = self.run_data(r)
+        run['path'] = '.github/workflows/bundledock-node.yml'
+        env = dict(GITHUB_SHA=r['commit'], GITHUB_RUN_ID='123', GITHUB_RUN_ATTEMPT='1')
+        with patch.object(tags, 'request', return_value=tags.json.dumps(run).encode()):
+            tags.verify_run(r, True)
+            with patch.dict(tags.os.environ, env, clear=True), self.assertRaises(ValueError):
+                tags.verify_run(r, False)

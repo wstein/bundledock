@@ -24,7 +24,7 @@ func SelectBundle(name string) (Bundle, error) {
 		if name == "node-current" {
 			repository, aliases = "node", "current"
 		}
-		return Bundle{name, "bundles/" + name, "bundledock-" + name + ".yml", artifact, repository, aliases}, nil
+		return Bundle{name, "bundles/" + name, "publish-bundles.yml", artifact, repository, aliases}, nil
 	default:
 		return Bundle{}, fmt.Errorf("unknown canonical publication bundle %q", name)
 	}

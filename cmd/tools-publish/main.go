@@ -360,7 +360,7 @@ func execute(args []string) error {
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 		defer cancel()
-		return toolpublish.CheckNewestForWorkflow(ctx, nil, os.Getenv("GITHUB_REPOSITORY"), os.Getenv("DEFAULT_BRANCH"), id, attempt, os.Getenv("GITHUB_SHA"), os.Getenv("GITHUB_TOKEN"), bundle.Workflow)
+		return toolpublish.CheckNewestForBundle(ctx, nil, os.Getenv("GITHUB_REPOSITORY"), os.Getenv("DEFAULT_BRANCH"), id, attempt, os.Getenv("GITHUB_SHA"), os.Getenv("GITHUB_TOKEN"), bundle.Name)
 	case "build":
 		if err := copyFile(lock, bundle.Directory+"/packages.lock.json"); err != nil {
 			return err

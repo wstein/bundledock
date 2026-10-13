@@ -28,17 +28,26 @@ type workflowRun struct {
 // to retry publication, rather than allowing an old source revision to roll back
 // stable. The authenticated client never follows redirects off api.github.com.
 func CheckNewest(ctx context.Context, client *http.Client, repository, branch string, id, attempt int64, commit, token string) error {
-	return checkNewest(ctx, client, repository, branch, id, attempt, commit, token, "")
+	return checkNewest(ctx, client, repository, branch, id, attempt, commit, token, "", "")
 }
 
 // CheckNewestForWorkflow also binds the run to its selected publication workflow.
 func CheckNewestForWorkflow(ctx context.Context, client *http.Client, repository, branch string, id, attempt int64, commit, token, workflow string) error {
-	if workflow != "bundledock-toolbox.yml" && workflow != "bundledock-code-server.yml" && workflow != "bundledock-node.yml" && workflow != "bundledock-node-current.yml" && workflow != "bundledock-bun.yml" && workflow != "bundledock-codex.yml" && workflow != "bundledock-agy.yml" && workflow != "bundledock-claude.yml" && workflow != "bundledock-opentofu.yml" {
+	if workflow != "publish-bundles.yml" {
 		return fmt.Errorf("invalid publication workflow")
 	}
-	return checkNewest(ctx, client, repository, branch, id, attempt, commit, token, workflow)
+	return checkNewest(ctx, client, repository, branch, id, attempt, commit, token, workflow, "")
 }
-func checkNewest(ctx context.Context, client *http.Client, repository, branch string, id, attempt int64, commit, token, workflow string) error {
+
+// CheckNewestForBundle isolates consolidated runs by their output registry.
+func CheckNewestForBundle(ctx context.Context, client *http.Client, repository, branch string, id, attempt int64, commit, token, name string) error {
+	bundle, err := SelectBundle(name)
+	if err != nil {
+		return err
+	}
+	return checkNewest(ctx, client, repository, branch, id, attempt, commit, token, bundle.Workflow, bundle.Name)
+}
+func checkNewest(ctx context.Context, client *http.Client, repository, branch string, id, attempt int64, commit, token, workflow, bundle string) error {
 	if id < 1 || attempt < 1 || branch == "" || !commitPattern.MatchString(commit) || token == "" {
 		return fmt.Errorf("complete GitHub run identity and token required")
 	}
@@ -87,7 +96,7 @@ func checkNewest(ctx context.Context, client *http.Client, repository, branch st
 				continue
 			}
 			if run.Number > current.Number {
-				eligible, err := nativeEligibility(get, run)
+				eligible, err := nativeEligibilityForBundle(get, run, bundle)
 				if err != nil {
 					return err
 				}
@@ -115,10 +124,16 @@ func checkNewest(ctx context.Context, client *http.Client, repository, branch st
 // A skipped native job alone is ambiguous: a failed resolver also skips it.
 // Only successful resolution plus completed skipped native jobs proves a no-op.
 func nativeEligibility(get func(string, any) error, run workflowRun) (bool, error) {
+	return nativeEligibilityForBundle(get, run, "")
+}
+func nativeEligibilityForBundle(get func(string, any) error, run workflowRun, bundle string) (bool, error) {
 	if run.ID < 1 || run.Attempt < 1 {
 		return false, fmt.Errorf("newer run lacks complete attempt identity")
 	}
-	resolved, native, eligible := false, false, false
+	resolved, resolutionSeen, native, eligible := false, false, false, false
+	markers := map[string]bool{}
+	preflightMarkers, plannerMarkers := 0, 0
+	plannerRejected := false
 	for page := 1; page <= 10; page++ {
 		var list struct {
 			Jobs []struct{ Name, Status, Conclusion string }
@@ -128,10 +143,20 @@ func nativeEligibility(get func(string, any) error, run workflowRun) (bool, erro
 			return false, err
 		}
 		for _, job := range list.Jobs {
+			if strings.HasPrefix(job.Name, "publication / preflight (") && strings.HasSuffix(job.Name, ")") {
+				preflightMarkers++
+				markers[strings.TrimSuffix(strings.TrimPrefix(job.Name, "publication / preflight ("), ")")] = true
+			}
+			if run.Event == "workflow_dispatch" && strings.HasPrefix(job.Name, "plan (") && strings.HasSuffix(job.Name, ")") {
+				plannerMarkers++
+				plannerRejected = job.Status == "completed" && (job.Conclusion == "failure" || job.Conclusion == "cancelled")
+				markers[strings.TrimSuffix(strings.TrimPrefix(job.Name, "plan ("), ")")] = true
+			}
 			// Reusable workflow job names retain the real caller's prefix.
 			parts := strings.Split(job.Name, " / ")
 			job.Name = parts[len(parts)-1]
 			if job.Name == "resolve" {
+				resolutionSeen = true
 				resolved = job.Status == "completed" && job.Conclusion == "success"
 			}
 			if job.Name == "native" || strings.HasPrefix(job.Name, "native (") {
@@ -142,6 +167,32 @@ func nativeEligibility(get func(string, any) error, run workflowRun) (bool, erro
 			}
 		}
 		if len(list.Jobs) < 100 {
+			if bundle != "" {
+				if len(markers) == 0 && run.Event == "workflow_run" && !resolutionSeen && !native {
+					return false, nil
+				}
+				if len(markers) != 1 || preflightMarkers > 1 || plannerMarkers > 1 {
+					return false, fmt.Errorf("cannot establish newer run bundle identity")
+				}
+				var marker string
+				for name := range markers {
+					marker = name
+				}
+				selected, err := SelectBundle(marker)
+				if err != nil {
+					return false, err
+				}
+				current, err := SelectBundle(bundle)
+				if err != nil {
+					return false, err
+				}
+				if selected.Repository != current.Repository {
+					return false, nil
+				}
+				if plannerRejected && preflightMarkers == 0 && !native && !resolutionSeen {
+					return false, nil
+				}
+			}
 			// A workflow_run is only a request until human approval and successful
 			// resolution reach native work. Unrelated CI completions can queue behind
 			// this workflow's concurrency group without superseding publication.

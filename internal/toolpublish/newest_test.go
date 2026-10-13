@@ -143,7 +143,7 @@ func TestNewerNoopJobPaginationIsBounded(t *testing.T) {
 
 func TestNewestWorkflowRunBindsEachBundleCaller(t *testing.T) {
 	current := `{"id":123,"run_number":10,"run_attempt":2,"event":"workflow_run","head_branch":"main","head_sha":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","created_at":"2026-10-10T03:17:00Z","workflow_id":77}`
-	for _, workflow := range []string{"bundledock-toolbox.yml", "bundledock-node.yml", "bundledock-bun.yml", "bundledock-code-server.yml", "bundledock-codex.yml", "bundledock-agy.yml", "bundledock-claude.yml", "bundledock-opentofu.yml"} {
+	for _, workflow := range []string{"publish-bundles.yml", "publish-bundles.yml", "publish-bundles.yml", "publish-bundles.yml", "publish-bundles.yml", "publish-bundles.yml", "publish-bundles.yml", "publish-bundles.yml"} {
 		client := &http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
 			body := current
 			if strings.Contains(r.URL.Path, "/workflows/") {
@@ -178,5 +178,83 @@ func TestNewerAutomaticRunSupersedesOnlyAfterApprovalAndResolution(t *testing.T)
 				t.Fatalf("eligible=%v error=%v", eligible, err)
 			}
 		})
+	}
+}
+
+func TestConsolidatedNewerPublicationRespectsRegistryScope(t *testing.T) {
+	for _, tc := range []struct {
+		name, marker string
+		want         bool
+	}{
+		{"same bundle", "toolbox", true},
+		{"other repository", "bun", false},
+		{"shared node repository", "node-current", true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			bundle := "toolbox"
+			if tc.name == "shared node repository" {
+				bundle = "node"
+			}
+			body := `{"jobs":[{"name":"publication / preflight (` + tc.marker + `)","status":"completed","conclusion":"success"},{"name":"publication / resolve","status":"completed","conclusion":"success"},{"name":"publication / native (amd64, ubuntu-24.04)","status":"in_progress"}]}`
+			got, err := nativeEligibilityForBundle(func(_ string, out any) error { return json.Unmarshal([]byte(body), out) }, workflowRun{ID: 124, Attempt: 1, Event: "workflow_run"}, bundle)
+			if err != nil || got != tc.want {
+				t.Fatalf("eligible=%v error=%v", got, err)
+			}
+		})
+	}
+}
+
+func TestConsolidatedBundleIdentityFailsClosed(t *testing.T) {
+	for _, body := range []string{
+		`{"jobs":[]}`,
+		`{"jobs":[{"name":"publication / preflight (unknown)"}]}`,
+		`{"jobs":[{"name":"publication / preflight (node)"},{"name":"publication / preflight (node)"}]}`,
+		`{"jobs":[{"name":"plan (node)"},{"name":"publication / preflight (bun)"}]}`,
+		`{"jobs":[{"name":"publication / preflight (node)"},{"name":"publication / preflight (bun)"}]}`,
+	} {
+		_, err := nativeEligibilityForBundle(func(_ string, out any) error { return json.Unmarshal([]byte(body), out) }, workflowRun{ID: 124, Attempt: 1, Event: "workflow_dispatch"}, "node")
+		if err == nil {
+			t.Fatal("accepted incomplete or ambiguous bundle identity")
+		}
+	}
+	if err := CheckNewestForWorkflow(context.Background(), nil, "example/repo", "main", 123, 1, strings.Repeat("a", 40), "token", "bundledock-node.yml"); err == nil {
+		t.Fatal("accepted retired caller for new publication")
+	}
+}
+
+func TestConsolidatedManualPlannerDoesNotBlockOtherRegistries(t *testing.T) {
+	for _, tc := range []struct {
+		name, jobs string
+		want       bool
+		wantErr    bool
+	}{
+		{"rejected same registry", `{"jobs":[{"name":"plan (node)","status":"completed","conclusion":"failure"}]}`, false, false},
+		{"rejected unrelated request", `{"jobs":[{"name":"plan (bun)","status":"completed","conclusion":"failure"}]}`, false, false},
+		{"pending unrelated request", `{"jobs":[{"name":"plan (bun)","status":"in_progress"}]}`, false, false},
+		{"same registry unresolved", `{"jobs":[{"name":"plan (node-current)","status":"completed","conclusion":"success"}]}`, false, true},
+		{"matching planner and publisher", `{"jobs":[{"name":"plan (node)","status":"completed","conclusion":"success"},{"name":"publication / preflight (node)","status":"completed","conclusion":"success"},{"name":"publication / resolve","status":"completed","conclusion":"success"},{"name":"publication / native (amd64, ubuntu-24.04)","status":"in_progress"}]}`, true, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := nativeEligibilityForBundle(func(_ string, out any) error { return json.Unmarshal([]byte(tc.jobs), out) }, workflowRun{ID: 124, Attempt: 1, Event: "workflow_dispatch"}, "node")
+			if got != tc.want || (err != nil) != tc.wantErr {
+				t.Fatalf("eligible=%v error=%v", got, err)
+			}
+		})
+	}
+}
+
+func TestConsolidatedAutomaticMissingMarkerFailsClosedAfterPublicationStarts(t *testing.T) {
+	for _, tc := range []struct {
+		jobs    string
+		wantErr bool
+	}{
+		{`{"jobs":[{"name":"plan (automatic)","status":"completed","conclusion":"success"}]}`, false},
+		{`{"jobs":[{"name":"publication / resolve","status":"in_progress"}]}`, true},
+		{`{"jobs":[{"name":"publication / resolve","status":"completed","conclusion":"success"},{"name":"publication / native (amd64, ubuntu-24.04)","status":"in_progress"}]}`, true},
+	} {
+		got, err := nativeEligibilityForBundle(func(_ string, out any) error { return json.Unmarshal([]byte(tc.jobs), out) }, workflowRun{ID: 124, Attempt: 1, Event: "workflow_run"}, "node")
+		if got || (err != nil) != tc.wantErr {
+			t.Fatalf("eligible=%v error=%v", got, err)
+		}
 	}
 }

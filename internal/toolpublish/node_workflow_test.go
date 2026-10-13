@@ -10,34 +10,7 @@ import (
 
 func TestNodeWorkflowSourcesSeparateApprovalAndArtifacts(t *testing.T) {
 	for _, bundle := range []string{"node", "node-current"} {
-		for _, file := range []string{"bundledock-" + bundle + ".yml", bundle + "-upgrade.yml"} {
-			data, err := os.ReadFile("../../.github/workflows/" + file)
-			if err != nil {
-				t.Fatal(err)
-			}
-			source := string(data)
-			for _, required := range []string{"bundle: " + bundle, "workflow_dispatch:"} {
-				if !strings.Contains(source, required) {
-					t.Fatal(file + " missing " + required)
-				}
-			}
-			if strings.HasPrefix(file, "bundledock-") {
-				for _, required := range []string{"name: Publish " + bundle, "uses: ./.github/workflows/bundle-publish.yml", "workflows: [CI]", "approved_sha:"} {
-					if !strings.Contains(source, required) {
-						t.Fatal(file + " missing " + required)
-					}
-				}
-				if strings.Contains(source, "cron:") {
-					t.Fatal("publication must have no schedule")
-				}
-			} else {
-				for _, required := range []string{"name: Propose " + bundle + " upgrades", "uses: ./.github/workflows/bundle-upgrade.yml", "- cron: '50 6 * * *'", "default: true"} {
-					if !strings.Contains(source, required) {
-						t.Fatal(file + " missing " + required)
-					}
-				}
-			}
-		}
+		checkConsolidatedBundleWorkflowSource(t, bundle)
 	}
 }
 
