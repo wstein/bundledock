@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       expected_head_sha:
-        description: Optional exact source SHA required by the approved bundle controller
+        description: Optional exact source SHA required by the source CI caller
         required: false
         type: string
 

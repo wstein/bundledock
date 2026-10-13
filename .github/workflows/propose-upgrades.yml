@@ -57,6 +57,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      actions: write
     strategy:
       fail-fast: false
       max-parallel: 3
