@@ -41,6 +41,9 @@ class OwnerMergeTests(unittest.TestCase):
    self.assertEqual(gate.validate(self.event,api.request)[0],A)
   self.assertTrue(requests)
   self.assertTrue(all(request.get_header('X-github-api-version')=='2022-11-28' for request in requests))
+ def test_known_wrong_associated_merge_rejects_even_when_full_pr_matches(self):
+  self.data['/commits/'+A+'/pulls?per_page=100&page=1'][0]['merge_commit_sha']=B
+  with self.assertRaises(ValueError):gate.validate(self.event,self.get)
  def test_owner_merge_without_reviews_authorizes_exact_frozen_source(self):
   self.assertEqual(gate.validate(self.event,self.get),(A,self.pr['html_url']))
  def test_only_actual_human_owner_merge_authorizes(self):
@@ -85,16 +88,124 @@ class OwnerMergeTests(unittest.TestCase):
  def test_associated_summary_is_not_full_pr_merge_proof(self):
   self.data['/commits/'+A+'/pulls?per_page=100&page=1']=[{'number':42}]
   self.assertEqual(gate.validate(self.event,self.get)[0],A)
- def test_verified_transient_summary_full_inconsistency_gets_one_retry(self):
+ def test_missing_full_merge_with_exact_association_gets_delayed_retry(self):
+  get,reads=self.missing_merge_get(recover_at=2)
+  self.data['/commits/'+A+'/pulls?per_page=100&page=1'][0]['merge_commit_sha']=A
+  with patch('time.sleep') as sleep:
+   self.assertEqual(gate.validate(self.event,get)[0],A)
+  self.assertEqual(len(reads),2)
+  sleep.assert_called_once_with(2)
+ def test_known_wrong_merge_never_retries_even_if_association_matches(self):
   reads=[]
   def get(path):
    result=self.get(path)
    if path=='/pulls/42':
     reads.append(path)
-    if len(reads)==1:result.update(merged=False,state='open',merge_commit_sha=B)
+    if len(reads)==1:result['merge_commit_sha']=B
    return result
-  self.assertEqual(gate.validate(self.event,get)[0],A)
-  self.assertEqual(len(reads),2)
+  with patch('time.sleep') as sleep,self.assertRaises(ValueError):gate.validate(self.event,get)
+  self.assertEqual(len(reads),1)
+  sleep.assert_not_called()
+ def test_missing_merge_recovery_ignores_unrelated_profile_metadata(self):
+  def change(result):
+   result['merged_by']['avatar_url']='https://example.invalid/new-avatar'
+   result['head']['repo']['description']='Updated repository description'
+  get,reads=self.missing_merge_get(recover_at=2,changed=change)
+  with patch('time.sleep'):
+   self.assertEqual(gate.validate(self.event,get)[0],A)
+ def missing_merge_get(self, recover_at=None, changed=None, absent=False):
+  reads=[]
+  self.data['/commits/'+A+'/pulls?per_page=100&page=1'][0]['merge_commit_sha']=None
+  def get(path):
+   result=self.get(path)
+   if path=='/pulls/42':
+    reads.append(path)
+    if recover_at is None or len(reads)<recover_at:
+     result.pop('merge_commit_sha',None)
+     if not absent:result['merge_commit_sha']=None
+    elif changed:changed(result)
+   return result
+  return get,reads
+ def test_both_missing_merge_fields_recover_only_with_exact_full_pr(self):
+  for absent in (False,True):
+   with self.subTest(absent=absent):
+    self.setUp()
+    self.pr['merged_by']['id']=123
+    self.pr['user']['id']=456
+    get,reads=self.missing_merge_get(recover_at=3,absent=absent)
+    with patch('time.sleep') as sleep,patch.object(sys,'stderr',new_callable=io.StringIO) as diagnostic:
+     self.assertEqual(gate.validate(self.event,get)[0],A)
+    self.assertEqual(len(reads),3)
+    self.assertEqual(sleep.call_args_list,[((2,),),((2,),)])
+    self.assertIn('attempt=2/3 reason=missing_merge_metadata expected_source='+A,diagnostic.getvalue())
+    self.assertIn('observed_merge=None',diagnostic.getvalue())
+ def test_persistently_missing_merge_metadata_is_bounded_and_pending(self):
+  get,reads=self.missing_merge_get()
+  with patch('time.sleep') as sleep,self.assertRaisesRegex(OSError,'Merge metadata unavailable.*expected_source='+A+'.*observed_merge=None'):
+   gate.validate(self.event,get,allow_ineligible=True)
+  self.assertEqual(len(reads),3)
+  self.assertEqual(sleep.call_count,2)
+ def test_missing_merge_retry_rejects_changed_or_contradictory_full_pr(self):
+  for kind in ('number','head','branch','owner','author','repository','base','merged','state','merge'):
+   with self.subTest(kind=kind):
+    self.setUp()
+    def change(result):
+     if kind=='number':result['number']=43
+     if kind=='head':result['head']['sha']=B
+     if kind=='branch':result['head']['ref']='automation/toolbox-upgrade-456-1'
+     if kind=='owner':result['merged_by']['login']='other'
+     if kind=='author':result['user']['login']='other'
+     if kind=='repository':result['head']['repo']['full_name']='other/fork'
+     if kind=='base':result['base']['ref']='other'
+     if kind=='merged':result['merged']=False
+     if kind=='state':result['state']='open'
+     if kind=='merge':result['merge_commit_sha']=B
+    get,reads=self.missing_merge_get(recover_at=2,changed=change)
+    with patch('time.sleep'),self.assertRaises(ValueError):gate.validate(self.event,get)
+    self.assertEqual(len(reads),2)
+ def test_missing_merge_retry_requires_trusted_closed_matching_association(self):
+  for kind in ('owner','author','repository','association_head','association_state','association_merge','merged','state'):
+   with self.subTest(kind=kind):
+    self.setUp();get,reads=self.missing_merge_get()
+    summary=self.data['/commits/'+A+'/pulls?per_page=100&page=1'][0]
+    if kind=='owner':self.pr['merged_by']=None
+    if kind=='author':self.pr['user']['login']='other'
+    if kind=='repository':self.pr['head']['repo']={'full_name':'other/fork'}
+    if kind=='association_head':summary['head']['sha']=B
+    if kind=='association_state':summary['state']='open'
+    if kind=='association_merge':summary['merge_commit_sha']=B
+    if kind=='merged':self.pr['merged']=False
+    if kind=='state':self.pr['state']='open'
+    with patch('time.sleep') as sleep,self.assertRaises(ValueError):gate.validate(self.event,get)
+    self.assertEqual(len(reads),1)
+    sleep.assert_not_called()
+ def test_missing_merge_recovery_preserves_all_downstream_gates(self):
+  for kind in ('commits','files','tree','lock','main','ci'):
+   with self.subTest(kind=kind):
+    self.setUp();get,reads=self.missing_merge_get(recover_at=2)
+    if kind=='commits':self.pr['commits']=2
+    if kind=='files':self.files[1]['filename']='.github/workflows/ci.yml'
+    if kind=='tree':self.data['/commits/'+A]['commit']['tree']['sha']=B
+    if kind=='lock':self.data['/contents/'+self.bundle['lock']+'?ref='+A]['content']='b2xk'
+    if kind=='main':self.data['/git/ref/heads/main']['object']['sha']=B
+    if kind=='ci':self.data['/check-runs/99']['app']['id']=42
+    with patch('time.sleep'),self.assertRaises(ValueError):gate.validate(self.event,get)
+ def test_missing_merge_recovery_rechecks_current_ci_after_delayed_reads(self):
+  recover,reads=self.missing_merge_get(recover_at=2)
+  def get(path):
+   if path=='/actions/runs/123' and len(reads)>=2:
+    return dict(self.run,run_attempt=3,status='in_progress',conclusion=None)
+   return recover(path)
+  with patch('time.sleep'),self.assertRaisesRegex(ValueError,'Source CI attempt is no longer current'):
+   gate.validate(self.event,get)
+ def test_missing_merge_execution_emits_pending_without_authorization(self):
+  import tempfile
+  get,reads=self.missing_merge_get()
+  with tempfile.TemporaryDirectory() as directory:
+   output=Path(directory)/'output'
+   with patch.dict(os.environ,{'GITHUB_OUTPUT':str(output)}),patch('time.sleep'),patch.object(gate,'main',side_effect=lambda:gate.validate(self.event,get)),self.assertRaisesRegex(SystemExit,'Bundle publication pending:.*expected_source='+A):gate.run()
+   self.assertIn('eligible=false',output.read_text())
+   self.assertIn('status=pending',output.read_text())
  def test_persistent_mismatch_captures_safe_expected_observed_values(self):
   self.pr['merge_commit_sha']=B
   with self.assertRaisesRegex(ValueError,'expected_source='+A+'.*pr=42.*observed_merge='+B):gate.validate(self.event,self.get)
