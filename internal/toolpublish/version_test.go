@@ -2,12 +2,31 @@ package toolpublish
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
+
+func singletonVersionFixture(name, upstream string) []byte {
+	// Freeze parser fixtures independently of the live updater-owned locks.
+	tool, prefix := name, "v"
+	switch name {
+	case "node-current":
+		tool = "node"
+	case "codex":
+		prefix = "rust-v"
+	case "bun":
+		prefix = "bun-v"
+	case "agy", "claude":
+		prefix = ""
+	}
+	pin := fmt.Sprintf(`{"%s":{"version": "%s%s"}}`, tool, prefix, upstream)
+	return []byte(fmt.Sprintf(`{"schema":2,"platforms":{"amd64":%s,"arm64":%s}}`, pin, pin))
+}
 
 func TestSingletonVersionAllocation(t *testing.T) {
 	for _, test := range []struct{ name, upstream string }{
@@ -15,10 +34,7 @@ func TestSingletonVersionAllocation(t *testing.T) {
 		{"node-current", "26.11.1"}, {"node", "24.21.0"}, {"bun", "1.4.3"}, {"code-server", "4.141.0"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			lock, err := os.ReadFile("../../bundles/" + test.name + "/packages.lock.json")
-			if err != nil {
-				t.Fatal(err)
-			}
+			lock := singletonVersionFixture(test.name, test.upstream)
 			version, err := SingletonVersion(lock, test.name)
 			if err != nil || version != test.upstream {
 				t.Fatalf("version %q: %v", version, err)
@@ -46,7 +62,10 @@ func TestSingletonVersionAllocation(t *testing.T) {
 }
 
 func TestSemanticMetadataBindsAttemptAndLock(t *testing.T) {
-	lock := "../../bundles/codex/packages.lock.json"
+	lock := filepath.Join(t.TempDir(), "codex.lock.json")
+	if err := os.WriteFile(lock, singletonVersionFixture("codex", "0.162.1"), 0600); err != nil {
+		t.Fatal(err)
+	}
 	m, err := NewMetadata(lock, "quay.io/example/codex", "0.162.1-b1", strings.Repeat("a", 40), "https://github.com/example/repo", "2026-10-12T00:00:00Z", "123", "2")
 	if err != nil {
 		t.Fatal(err)
@@ -67,10 +86,7 @@ func TestSemanticMetadataBindsAttemptAndLock(t *testing.T) {
 }
 
 func TestRegistryAllocatesAcrossPagesAndSourceReservations(t *testing.T) {
-	lock, err := os.ReadFile("../../bundles/codex/packages.lock.json")
-	if err != nil {
-		t.Fatal(err)
-	}
+	lock := singletonVersionFixture("codex", "0.162.1")
 	for _, mode := range []string{"valid", "unauthorized", "wrong-repository", "invalid-json", "stalled"} {
 		t.Run(mode, func(t *testing.T) {
 			calls := 0

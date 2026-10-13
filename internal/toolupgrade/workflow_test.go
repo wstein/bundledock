@@ -92,7 +92,14 @@ bundle=os.environ['RESOLVED_BUNDLE']
 p=Path('bundles')/bundle/'packages.lock.json'
 lock=json.loads(p.read_text())
 if os.environ.get('NO_CHANGE_'+bundle.upper().replace('-','_'))!='true':
- for arch in ('amd64','arm64'): lock['platforms'][arch]['gh' if bundle=='toolbox' else 'node' if bundle=='node-current' else bundle]['version']={'node-current':'v26.12.0','code-server':'v4.142.0','node':'v24.22.0','toolbox':'v2.103.0','bun':'bun-v1.4.4','codex':'rust-v0.162.2','agy':'1.3.4','claude':'2.1.297','opentofu':'v1.13.2'}[bundle]
+ tool='gh' if bundle=='toolbox' else 'node' if bundle=='node-current' else bundle
+ version={'node-current':'v26.12.0','code-server':'v4.142.0','node':'v24.22.0','toolbox':'v2.103.0','bun':'bun-v1.4.4'}.get(bundle)
+ if version is None:
+  current=lock['platforms']['amd64'][tool]['version']
+  prefix='rust-v' if bundle=='codex' else 'v' if current.startswith('v') else ''
+  major,minor,patch=map(int,current.removeprefix(prefix).split('.'))
+  version=prefix+f'{major}.{minor}.{patch+1}'
+ for arch in ('amd64','arm64'): lock['platforms'][arch][tool]['version']=version
 p.write_text(json.dumps(lock,indent=2)+'\n')
 PYTHON
 fi
