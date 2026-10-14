@@ -12,6 +12,7 @@ func TestToolboxUtilities(t *testing.T) {
 		{"bat", "sharkdp/bat", "tar.gz"},
 		{"regctl", "regclient/regclient", "raw"},
 		{"mise", "jdx/mise", "raw"},
+		{"trufflehog", "trufflesecurity/trufflehog", "tar.gz"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			p, ok := c.Catalog.Packages[tc.name]

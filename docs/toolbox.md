@@ -159,7 +159,7 @@ establish a complete transitive license audit.
 
 The default bundle lives in `bundles/toolbox/`: `packages.txt`,
 `packages.catalog.json`, `packages.lock.json`, its Dockerfile, smoke scripts and licenses.
-Shared Go code remains at the repository root. The source toolbox contains 40
+Shared Go code remains at the repository root. The source toolbox contains 41
 downloaded tools plus the two first-use Python launchers listed below. Codex, Antigravity and Claude are supplied by their separate
 [Codex](codex.md), [Antigravity](agy.md) and [Claude Code](claude.md) bundles.
 The published toolbox recorded above still includes those agents; this source
@@ -169,6 +169,21 @@ removal has not been built or published.
 and `arm64`; builds verify every download. Launcher versions come from their
 separate wheel inputs. Homepage and Source links are generated from reviewed
 upstream metadata and persist when the native lock is refreshed.
+
+TruffleHog is included alongside Gitleaks, using official stable Linux AMD64 and
+ARM64 binaries. Its full AGPL-3.0 license and upstream README are retained under
+`licenses/trufflehog`. For a local scan without update checks or credential
+verification requests:
+
+```sh
+trufflehog filesystem --no-update --no-verification --fail --json /path/to/project
+```
+
+Without `--no-verification`, TruffleHog can contact providers to verify detected
+credentials. Gitleaks configurations and rules do not transfer automatically.
+The consumer smoke uses only a synthetic custom detector and clean control,
+isolated configuration and HOME, with updates/verification disabled and consumer
+networking disabled. Native smoke acceptance remains part of an approved build.
 
 <!-- BEGIN GENERATED TOOL INVENTORY -->
 | Tool | Pinned version | Homepage | Source |
@@ -211,6 +226,7 @@ upstream metadata and persist when the native lock is refreshed.
 | tldr (`tldr`, first-use pip launcher) | 3.4.4 | [Homepage](https://pypi.org/project/tldr/) | [Source](https://github.com/tldr-pages/tldr-python-client) |
 | tmux (`tmux`) | 3.7c (official static builds) | [Homepage](https://github.com/tmux/tmux-builds) | [Source](https://github.com/tmux/tmux-builds) |
 | Trivy (`trivy`) | 0.75.0 | [Homepage](https://trivy.dev) | [Source](https://github.com/aquasecurity/trivy) |
+| TruffleHog (`trufflehog`) | 3.99.2 | [Homepage](https://github.com/trufflesecurity/trufflehog) | [Source](https://github.com/trufflesecurity/trufflehog) |
 | typos (`typos`) | 1.51.1 | [Homepage](https://github.com/crate-ci/typos) | [Source](https://github.com/crate-ci/typos) |
 | Typst (`typst`) | 0.15.1 | [Homepage](https://typst.app) | [Source](https://github.com/typst/typst) |
 | uv (`uv`, `uvx`) | 0.13.0 | [Homepage](https://docs.astral.sh/uv) | [Source](https://github.com/astral-sh/uv) |
