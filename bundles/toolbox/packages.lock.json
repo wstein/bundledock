@@ -1,7 +1,7 @@
 {
   "schema": 2,
-  "desired_digest": "64fb04dd3c312ca139e43eb51a076805bb45397e26336a4576fc604feea213bb",
-  "catalog_digest": "e0ffe08fd138adefa63ad5db2846c52b81add8fec8a686db3da41aecdf19ec67",
+  "desired_digest": "290843e14673f3fb365d7387b01ef34c7bd54de6c5d6841caaa8c96dc0264067",
+  "catalog_digest": "6d31e4dfe8baf16d665dc22e4618c9992c2a236a0566a85361a2759c1764827e",
   "platforms": {
     "amd64": {
       "age": {
@@ -219,6 +219,12 @@
         "version": "v0.75.0",
         "url": "https://github.com/aquasecurity/trivy/releases/download/v0.75.0/trivy_0.75.0_Linux-64bit.tar.gz",
         "sha256": "c6e65abddb348e25f10549df887045629cf28cc72453cd1c63acb717316b3f3f",
+        "verification": "publisher-sha256"
+      },
+      "trufflehog": {
+        "version": "v3.99.2",
+        "url": "https://github.com/trufflesecurity/trufflehog/releases/download/v3.99.2/trufflehog_3.99.2_linux_amd64.tar.gz",
+        "sha256": "3c7b0d1dc4278294269bfdd7594bca8bb28c78da0a4a06ad202ded37b48deca4",
         "verification": "publisher-sha256"
       },
       "typos": {
@@ -468,6 +474,12 @@
         "version": "v0.75.0",
         "url": "https://github.com/aquasecurity/trivy/releases/download/v0.75.0/trivy_0.75.0_Linux-ARM64.tar.gz",
         "sha256": "a1ee9f6ffb7d112b64ff726a2a0717c21175c1114361391f4a132956751a13b3",
+        "verification": "publisher-sha256"
+      },
+      "trufflehog": {
+        "version": "v3.99.2",
+        "url": "https://github.com/trufflesecurity/trufflehog/releases/download/v3.99.2/trufflehog_3.99.2_linux_arm64.tar.gz",
+        "sha256": "929b81efffca752eafd58bf6f17bf725d354f338636a7bbbee65c086d2f9ddf3",
         "verification": "publisher-sha256"
       },
       "typos": {

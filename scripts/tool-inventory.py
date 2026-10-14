@@ -47,6 +47,7 @@ LABELS = (
     ("lychee", "lychee (`lychee`)"),
     ("gitleaks", "Gitleaks (`gitleaks`)"),
     ("trivy", "Trivy (`trivy`)"),
+    ("trufflehog", "TruffleHog (`trufflehog`)"),
     ("syft", "Syft (`syft`)"),
     ("bottom", "bottom (`btm`)"),
     ("btop", "btop (`btop`)"),

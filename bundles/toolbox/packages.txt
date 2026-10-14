@@ -35,6 +35,7 @@ starship>=1.26.0
 syft>=1.54.1
 tmux>=3.7.3
 trivy>=0.75.0
+trufflehog>=3.99.2
 typos>=1.51.1
 typst>=0.15.1
 uv>=0.13.0
