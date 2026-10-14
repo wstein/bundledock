@@ -13,8 +13,6 @@ on:
     secrets:
       REPOSITORY_TOKEN:
         required: true
-      QUAY_CLEANUP_TOKEN:
-        required: false
 
 permissions:
   contents: read
@@ -393,7 +391,8 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       BUNDLE: ${{ inputs.bundle }}
       PUBLICATION_SHA: ${{ needs.preflight.outputs.sha }}
-      QUAY_CLEANUP_TOKEN: ${{ secrets.QUAY_CLEANUP_TOKEN }}
+      REPOSITORY_USERNAME: ${{ vars.REPOSITORY_USERNAME }}
+      REPOSITORY_TOKEN: ${{ secrets.REPOSITORY_TOKEN }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -413,11 +412,11 @@ jobs:
           if-no-files-found: error
           retention-days: 90
       - name: Remove verified staging tags
-        if: env.QUAY_CLEANUP_TOKEN != ''
+        if: env.REPOSITORY_USERNAME != '' && env.REPOSITORY_TOKEN != ''
         run: python3 -B scripts/staging-cleanup.py --publication publication.json --bundle "$BUNDLE" --apply --approved-plan staging-plan.json --output staging-result.json
       - name: Report missing cleanup credential
-        if: env.QUAY_CLEANUP_TOKEN == ''
-        run: echo 'Staging cleanup is dry-run only; configure QUAY_CLEANUP_TOKEN for tag deletion.' >> "$GITHUB_STEP_SUMMARY"
+        if: env.REPOSITORY_USERNAME == '' || env.REPOSITORY_TOKEN == ''
+        run: echo 'Staging cleanup is dry-run only; configure REPOSITORY_USERNAME and REPOSITORY_TOKEN for tag deletion.' >> "$GITHUB_STEP_SUMMARY"
       - name: Save cleanup result
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

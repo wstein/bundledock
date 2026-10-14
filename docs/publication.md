@@ -471,7 +471,10 @@ platform digests in the published index, current aliases, source ancestry and
 annotated tag. It saves a JSON dry-run plan as a 90-day Actions artifact before
 attempting deletion, then rechecks each tag's digest, timestamp and run identity.
 Cleanup failure is reported separately and does not relabel a published bundle
-as a failed build. Manifest and blob deletion endpoints are never used; published
+as a failed build. Deletion uses Quay's registry tag-name route
+`DELETE /v2/bundledock/<repository>/manifests/<staging-tag>`, which removes only
+the specified tag. Digest references and production aliases are rejected before
+authentication; manifest-by-digest and blob deletion are never used. Published
 indexes continue to reference their platform manifests.
 
 The daily `Clean stale staging tags` workflow handles abandoned staging tags.
@@ -482,12 +485,19 @@ both Node channels share one repository lock. Publisher and fallback concurrency
 use `queue: max` so cleanup does not replace pending publication work. See
 [GitHub concurrency queue semantics](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency).
 
-Configure the optional repository secret `QUAY_CLEANUP_TOKEN` with a Quay API OAuth
-access token that can write these repositories. The Docker robot password in
-`REPOSITORY_TOKEN` is not assumed to be an API token. Without the cleanup secret,
-both workflows retain their plans and report dry-run-only operation. The fallback
-workflow's manual dispatch defaults to dry run; `apply: true` explicitly enables
-deletions. Scheduled runs apply the verified plan when the secret is configured.
+Cleanup reuses the repository variable `REPOSITORY_USERNAME` and secret
+`REPOSITORY_TOKEN`, the same Quay robot credentials used by publication. The robot
+needs repository write permission. On apply, the script exchanges these
+credentials at `https://quay.io/v2/auth` for a registry bearer token scoped to
+`pull,push` on the selected official repository, then deletes only the verified
+tag name. It requires no additional secret or OAuth API token. Credentials stay
+in headers sent to fixed Quay HTTPS endpoints; redirects are rejected. Public
+REST inventory reads send no robot credentials and never acquire push tokens.
+
+Without both robot credentials, workflows retain their plans and report
+dry-run-only operation. The fallback workflow's manual dispatch defaults to dry
+run; `apply: true` explicitly enables deletions. Scheduled runs apply the verified
+plan when the existing robot credentials are configured.
 These workflows do not build images, merge source or modify aliases.
 
 For a local inventory (requires authenticated `gh` read access to run evidence):
@@ -497,7 +507,8 @@ python3 -B scripts/staging-cleanup.py --output staging-plan.json
 ```
 
 Review every plan row, including retained tags and reasons. To apply that saved
-fallback plan with `QUAY_CLEANUP_TOKEN` supplied securely in the environment:
+fallback plan with `REPOSITORY_USERNAME` and `REPOSITORY_TOKEN` supplied securely
+in the environment:
 
 ```sh
 python3 -B scripts/staging-cleanup.py --apply \
@@ -508,8 +519,8 @@ For immediate cleanup of an existing verified publication, use `--publication
 <receipt.json> --bundle <bundle>` on both plan and apply commands, with
 `PUBLICATION_SHA`, `GITHUB_RUN_ID` and `GITHUB_RUN_ATTEMPT` set to that publication's
 identity. Save and review the plan first. Keep the publisher serialized while
-applying locally. The Quay API has no conditional digest delete: workflows share
-a repository concurrency lock and the script rechecks immediately before each
+applying locally. The Quay tag-name deletion route has no conditional digest
+check: workflows share a repository concurrency lock and the script rechecks immediately before each
 tag deletion, but an external registry writer can still race that final check.
 Missing tags are idempotent; moved tags stop cleanup. A partially completed pass
 can be planned again. Quay retention/time-machine policy controls later storage
