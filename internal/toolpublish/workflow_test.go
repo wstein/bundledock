@@ -24,8 +24,8 @@ func TestPublicationWorkflowRepositoryConfiguration(t *testing.T) {
 		}
 	}
 	for _, mapping := range []string{"REPOSITORY_USERNAME: ${{ vars.REPOSITORY_USERNAME }}", "REPOSITORY_TOKEN: ${{ secrets.REPOSITORY_TOKEN }}"} {
-		if strings.Count(workflow, mapping) != 7 {
-			t.Fatalf("resolution, baseline, native/promotion gates and tag provenance verification must use %s", mapping)
+		if strings.Count(workflow, mapping) != 8 {
+			t.Fatalf("resolution, baseline, native/promotion gates, tag provenance verification and staging cleanup must use %s", mapping)
 		}
 	}
 
