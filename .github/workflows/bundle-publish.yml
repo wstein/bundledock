@@ -13,6 +13,8 @@ on:
     secrets:
       REPOSITORY_TOKEN:
         required: true
+      QUAY_CLEANUP_TOKEN:
+        required: false
 
 permissions:
   contents: read
@@ -22,6 +24,7 @@ permissions:
 concurrency:
   group: bundledock-${{ (inputs.bundle == 'node' || inputs.bundle == 'node-current') && 'node' || inputs.bundle }}-publish
   cancel-in-progress: false
+  queue: max
 
 jobs:
   preflight:
@@ -376,9 +379,57 @@ jobs:
             --sha "$PUBLICATION_SHA" --run-id "$GITHUB_RUN_ID" \
             --attempt "$GITHUB_RUN_ATTEMPT" --propose
 
+  cleanup:
+    if: >-
+      needs.promote.result == 'success' && needs.tag.result == 'success' &&
+      needs.documentation.result == 'success' && needs.resolve.outputs.publish == 'true'
+    needs: [preflight, resolve, promote, tag, documentation]
+    permissions:
+      contents: read
+      actions: read
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      BUNDLE: ${{ inputs.bundle }}
+      PUBLICATION_SHA: ${{ needs.preflight.outputs.sha }}
+      QUAY_CLEANUP_TOKEN: ${{ secrets.QUAY_CLEANUP_TOKEN }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ needs.preflight.outputs.sha }}
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ${{ inputs.bundle }}-publication-${{ github.run_attempt }}
+          path: .
+      - name: Verify publication and plan exact staging tags
+        run: python3 -B scripts/staging-cleanup.py --publication publication.json --bundle "$BUNDLE" --output staging-plan.json
+      - name: Save cleanup dry run
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ${{ inputs.bundle }}-staging-plan-${{ github.run_attempt }}
+          path: staging-plan.json
+          if-no-files-found: error
+          retention-days: 90
+      - name: Remove verified staging tags
+        if: env.QUAY_CLEANUP_TOKEN != ''
+        run: python3 -B scripts/staging-cleanup.py --publication publication.json --bundle "$BUNDLE" --apply --approved-plan staging-plan.json --output staging-result.json
+      - name: Report missing cleanup credential
+        if: env.QUAY_CLEANUP_TOKEN == ''
+        run: echo 'Staging cleanup is dry-run only; configure QUAY_CLEANUP_TOKEN for tag deletion.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Save cleanup result
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ${{ inputs.bundle }}-staging-result-${{ github.run_attempt }}
+          path: staging-result.json
+          if-no-files-found: ignore
+          retention-days: 90
+
   outcome:
     if: always()
-    needs: [preflight, resolve, native, promote, tag, documentation]
+    needs: [preflight, resolve, native, promote, tag, documentation, cleanup]
     permissions:
       contents: read
     runs-on: ubuntu-24.04
@@ -395,7 +446,7 @@ jobs:
           python3 - <<'PYTHON'
           import json, os
           results = json.loads(os.environ['RESULTS'])
-          failed = any(item['result'] in ('failure', 'cancelled') for item in results.values())
+          failed = any(item['result'] in ('failure', 'cancelled') for name, item in results.items() if name != 'cleanup')
           if os.environ['STATUS'] in ('rejected', 'pending', 'blocked_owner_merge', 'ineligible'):
               outcome = os.environ['STATUS']
           elif failed:
@@ -410,4 +461,6 @@ jobs:
               outcome = 'build-failed'
           with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
               summary.write('Bundle ' + os.environ['BUNDLE'] + ': **' + outcome + '**\n')
+              if 'cleanup' in results:
+                  summary.write('Staging cleanup: **' + results['cleanup']['result'] + '**\n')
           PYTHON
