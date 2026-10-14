@@ -1,0 +1,108 @@
+{
+  "bundle": "toolbox",
+  "commit": "5e86f1741dcbe2c5f3515290645d2ffdb85e590f",
+  "digest": "sha256:83ffe1d41549402bb765d4a98698a15d4196efe437af028b3e8d91a2f5c1e0c6",
+  "image": "quay.io/bundledock/toolbox",
+  "publication_evidence": {
+    "attempt": {
+      "event": "workflow_dispatch",
+      "head_sha": "5e86f1741dcbe2c5f3515290645d2ffdb85e590f",
+      "id": 38543029970,
+      "jobs": [
+        {
+          "conclusion": "success",
+          "head_sha": "5e86f1741dcbe2c5f3515290645d2ffdb85e590f",
+          "id": 115782779661,
+          "name": "publication / native (amd64, ubuntu-24.04)",
+          "run_id": 38543029970,
+          "status": "completed",
+          "steps": [
+            {
+              "conclusion": "success",
+              "name": "Build once and smoke on the native architecture",
+              "status": "completed"
+            }
+          ]
+        },
+        {
+          "conclusion": "success",
+          "head_sha": "5e86f1741dcbe2c5f3515290645d2ffdb85e590f",
+          "id": 115782779820,
+          "name": "publication / native (arm64, ubuntu-24.04-arm)",
+          "run_id": 38543029970,
+          "status": "completed",
+          "steps": [
+            {
+              "conclusion": "success",
+              "name": "Build once and smoke on the native architecture",
+              "status": "completed"
+            }
+          ]
+        },
+        {
+          "conclusion": "success",
+          "head_sha": "5e86f1741dcbe2c5f3515290645d2ffdb85e590f",
+          "id": 115785092581,
+          "name": "publication / promote",
+          "run_id": 38543029970,
+          "status": "completed",
+          "steps": [
+            {
+              "conclusion": "success",
+              "name": "Verify both platform manifests and promote version and canonical channel aliases",
+              "status": "completed"
+            }
+          ]
+        }
+      ],
+      "path": ".github/workflows/publish-bundles.yml",
+      "run_attempt": 1,
+      "run_number": 80
+    },
+    "receipt": {
+      "bundle": "toolbox",
+      "commit": "5e86f1741dcbe2c5f3515290645d2ffdb85e590f",
+      "created": "2026-10-14T09:33:19Z",
+      "digest": "sha256:83ffe1d41549402bb765d4a98698a15d4196efe437af028b3e8d91a2f5c1e0c6",
+      "image": "quay.io/bundledock/toolbox",
+      "lock_sha256": "a4d61e20a0c75a3fd3ed4d63b28315aba5c4d62f2f2a8998a78267acd5bb891e",
+      "platforms": [
+        {
+          "architecture": "amd64",
+          "bundle": "toolbox",
+          "commit": "5e86f1741dcbe2c5f3515290645d2ffdb85e590f",
+          "created": "2026-10-14T09:33:19Z",
+          "digest": "sha256:0d32dfb691085a2a51d480fab54f84a3741aaf74f10a26c82f7cc9e2f284c725",
+          "image": "quay.io/bundledock/toolbox",
+          "image_id": "sha256:86a2f018b46c06ea1790fbb5361e90836a293e3501766cd1fa4f84fcbea99f64",
+          "lock_sha256": "a4d61e20a0c75a3fd3ed4d63b28315aba5c4d62f2f2a8998a78267acd5bb891e",
+          "run_id": "38543029970",
+          "smoked": true,
+          "source": "https://github.com/wstein/bundledock",
+          "tag": "2026.10.14-b80.1"
+        },
+        {
+          "architecture": "arm64",
+          "bundle": "toolbox",
+          "commit": "5e86f1741dcbe2c5f3515290645d2ffdb85e590f",
+          "created": "2026-10-14T09:33:19Z",
+          "digest": "sha256:ed02c01f6c2d78a3a97f19e35fd43fc59960a3686e8cf810c22b16598748a39f",
+          "image": "quay.io/bundledock/toolbox",
+          "image_id": "sha256:bbf4b163e75b6be536035ac46b1f2ab9b2687dc900a3138fa70026ee88b8a755",
+          "lock_sha256": "a4d61e20a0c75a3fd3ed4d63b28315aba5c4d62f2f2a8998a78267acd5bb891e",
+          "run_id": "38543029970",
+          "smoked": true,
+          "source": "https://github.com/wstein/bundledock",
+          "tag": "2026.10.14-b80.1"
+        }
+      ],
+      "reference": "quay.io/bundledock/toolbox@sha256:83ffe1d41549402bb765d4a98698a15d4196efe437af028b3e8d91a2f5c1e0c6",
+      "run_id": "38543029970",
+      "source": "https://github.com/wstein/bundledock",
+      "tag": "2026.10.14-b80.1"
+    }
+  },
+  "run_id": "38543029970",
+  "tag": "2026.10.14-b80.1",
+  "upstream_version": "unknown"
+}
