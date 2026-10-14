@@ -1,0 +1,63 @@
+name: Clean stale staging tags
+
+on:
+  schedule:
+    - cron: '37 4 * * *'
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: Delete only verified staging tags older than seven days
+        type: boolean
+        required: true
+        default: false
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  cleanup:
+    if: github.ref == 'refs/heads/main'
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        repository: [agy, bun, claude, code-server, codex, node, opentofu, toolbox]
+    # Same lock as publication; both Node channels share the node repository.
+    concurrency:
+      group: bundledock-${{ matrix.repository }}-publish
+      cancel-in-progress: false
+      queue: max
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPOSITORY: ${{ matrix.repository }}
+      QUAY_CLEANUP_TOKEN: ${{ secrets.QUAY_CLEANUP_TOKEN }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Plan seven-day fallback without deleting
+        run: python3 -B scripts/staging-cleanup.py --repository "$REPOSITORY" --output staging-plan.json
+      - name: Save cleanup dry run
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: staging-plan-${{ matrix.repository }}-${{ github.run_attempt }}
+          path: staging-plan.json
+          if-no-files-found: error
+          retention-days: 90
+      - name: Remove stale staging tags
+        if: env.QUAY_CLEANUP_TOKEN != '' && (github.event_name == 'schedule' || inputs.apply)
+        run: python3 -B scripts/staging-cleanup.py --repository "$REPOSITORY" --apply --approved-plan staging-plan.json --output staging-result.json
+      - name: Report missing cleanup credential
+        if: env.QUAY_CLEANUP_TOKEN == ''
+        run: echo 'Staging cleanup is dry-run only; configure QUAY_CLEANUP_TOKEN for tag deletion.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Save cleanup result
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: staging-result-${{ matrix.repository }}-${{ github.run_attempt }}
+          path: staging-result.json
+          if-no-files-found: ignore
+          retention-days: 90

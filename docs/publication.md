@@ -461,3 +461,56 @@ requested source/run/attempt and all live checks. A newer or unrelated record
 leaves the older attempt pending. This covers CI artifact retention, not permanent
 archival of live GitHub job history or registry content; deleted/inaccessible live
 proof remains pending.
+
+## Staging tag cleanup
+
+Successful publication removes only its two `staging-<version>-<architecture>`
+tags, after promotion, annotated source tagging and the documentation proposal
+succeed. Cleanup independently verifies the canonical receipt, both smoked
+platform digests in the published index, current aliases, source ancestry and
+annotated tag. It saves a JSON dry-run plan as a 90-day Actions artifact before
+attempting deletion, then rechecks each tag's digest, timestamp and run identity.
+Cleanup failure is reported separately and does not relabel a published bundle
+as a failed build. Manifest and blob deletion endpoints are never used; published
+indexes continue to reference their platform manifests.
+
+The daily `Clean stale staging tags` workflow handles abandoned staging tags.
+Both the tag and its completed workflow run (including the latest rerun) must be
+at least seven days old. Active, recently rerun, immutable, malformed, unrecognized
+or unverifiable tags remain. Only the eight official repositories are in scope;
+both Node channels share one repository lock. Publisher and fallback concurrency
+use `queue: max` so cleanup does not replace pending publication work. See
+[GitHub concurrency queue semantics](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency).
+
+Configure the optional repository secret `QUAY_CLEANUP_TOKEN` with a Quay API OAuth
+access token that can write these repositories. The Docker robot password in
+`REPOSITORY_TOKEN` is not assumed to be an API token. Without the cleanup secret,
+both workflows retain their plans and report dry-run-only operation. The fallback
+workflow's manual dispatch defaults to dry run; `apply: true` explicitly enables
+deletions. Scheduled runs apply the verified plan when the secret is configured.
+These workflows do not build images, merge source or modify aliases.
+
+For a local inventory (requires authenticated `gh` read access to run evidence):
+
+```sh
+python3 -B scripts/staging-cleanup.py --output staging-plan.json
+```
+
+Review every plan row, including retained tags and reasons. To apply that saved
+fallback plan with `QUAY_CLEANUP_TOKEN` supplied securely in the environment:
+
+```sh
+python3 -B scripts/staging-cleanup.py --apply \
+  --approved-plan staging-plan.json --output staging-result.json
+```
+
+For immediate cleanup of an existing verified publication, use `--publication
+<receipt.json> --bundle <bundle>` on both plan and apply commands, with
+`PUBLICATION_SHA`, `GITHUB_RUN_ID` and `GITHUB_RUN_ATTEMPT` set to that publication's
+identity. Save and review the plan first. Keep the publisher serialized while
+applying locally. The Quay API has no conditional digest delete: workflows share
+a repository concurrency lock and the script rechecks immediately before each
+tag deletion, but an external registry writer can still race that final check.
+Missing tags are idempotent; moved tags stop cleanup. A partially completed pass
+can be planned again. Quay retention/time-machine policy controls later storage
+reclamation; removing a tag alone does not promise freed storage.

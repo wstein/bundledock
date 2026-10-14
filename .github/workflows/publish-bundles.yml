@@ -85,3 +85,4 @@ jobs:
       approved_sha: ${{ inputs.approved_sha || '' }}
     secrets:
       REPOSITORY_TOKEN: ${{ secrets.REPOSITORY_TOKEN }}
+      QUAY_CLEANUP_TOKEN: ${{ secrets.QUAY_CLEANUP_TOKEN }}
