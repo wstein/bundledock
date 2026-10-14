@@ -46,6 +46,44 @@ class OwnerMergeTests(unittest.TestCase):
   with self.assertRaises(ValueError):gate.validate(self.event,self.get)
  def test_owner_merge_without_reviews_authorizes_exact_frozen_source(self):
   self.assertEqual(gate.validate(self.event,self.get),(A,self.pr['html_url']))
+ def refreshed_updater(self):
+  original='e'*40
+  self.pr['commits']=2
+  commits=[{'sha':original,'parents':[{'sha':B}]},{'sha':H,'parents':[{'sha':original},{'sha':B}]}]
+  self.data['/pulls/42/commits?per_page=100&page=1']=commits
+  return commits
+ def test_main_refresh_merge_retains_exact_lock_only_authority(self):
+  self.refreshed_updater()
+  self.assertEqual(gate.validate(self.event,self.get),(A,self.pr['html_url']))
+ def test_refresh_from_older_main_ancestor_is_verified(self):
+  commits=self.refreshed_updater()
+  commits[0]['parents'][0]['sha']=T
+  commits[1]['parents'][1]['sha']=T
+  self.data['/compare/'+T+'...'+B]={'status':'ahead','merge_base_commit':{'sha':T}}
+  self.assertEqual(gate.validate(self.event,self.get)[0],A)
+ def test_refresh_history_rejects_extra_source_commits_and_foreign_merges(self):
+  for kind in ('extra-source','foreign-parent','wrong-merge-base','wrong-first-parent','wrong-head','missing','count','duplicate','octopus','scope'):
+   with self.subTest(kind=kind):
+    self.setUp();commits=self.refreshed_updater()
+    if kind=='extra-source':commits[1]['parents'].pop()
+    if kind=='foreign-parent':
+     commits[1]['parents'][1]['sha']=T
+     self.data['/compare/'+T+'...'+B]={'status':'diverged','merge_base_commit':{'sha':'f'*40}}
+    if kind=='wrong-merge-base':
+     commits[1]['parents'][1]['sha']=T
+     self.data['/compare/'+T+'...'+B]={'status':'ahead','merge_base_commit':{'sha':'f'*40}}
+    if kind=='wrong-first-parent':commits[1]['parents'][0]['sha']=T
+    if kind=='wrong-head':commits[1]['sha']=T
+    if kind=='missing':commits.pop()
+    if kind=='count':self.pr['commits']=100
+    if kind=='duplicate':commits[1]['sha']=commits[0]['sha']
+    if kind=='octopus':commits[1]['parents'].append({'sha':T})
+    if kind=='scope':self.files[1]['filename']='cmd/tools-publish/main.go'
+    with self.assertRaises(ValueError):gate.validate(self.event,self.get)
+ def test_missing_refresh_history_api_evidence_fails_closed(self):
+  self.refreshed_updater()
+  del self.data['/pulls/42/commits?per_page=100&page=1']
+  with self.assertRaises(KeyError):gate.validate(self.event,self.get)
  def test_only_actual_human_owner_merge_authorizes(self):
   for change in ({'merged_by':None},{'merged_by':{'login':'other','type':'User'}},{'merged_by':{'login':'wstein','type':'Bot'}},{'merged':False},{'state':'open'}):
    with self.subTest(change=change):
@@ -62,7 +100,7 @@ class OwnerMergeTests(unittest.TestCase):
     if kind=='tree':self.data['/commits/'+A]['commit']['tree']['sha']=B
     if kind=='parents':self.data['/commits/'+A]['parents'].append({'sha':H})
     if kind=='lock':self.data['/contents/'+self.bundle['lock']+'?ref='+A]['content']='b2xk'
-    if kind=='commits':self.pr['commits']=2
+    if kind=='commits':self.pr['commits']=0
     with self.assertRaises(ValueError):gate.validate(self.event,self.get)
  def test_exact_main_ci_and_check_identity(self):
   for kind in ('attempt','workflow','event','head','main','app','check','job'):
@@ -183,7 +221,7 @@ class OwnerMergeTests(unittest.TestCase):
   for kind in ('commits','files','tree','lock','main','ci'):
    with self.subTest(kind=kind):
     self.setUp();get,reads=self.missing_merge_get(recover_at=2)
-    if kind=='commits':self.pr['commits']=2
+    if kind=='commits':self.pr['commits']=0
     if kind=='files':self.files[1]['filename']='.github/workflows/ci.yml'
     if kind=='tree':self.data['/commits/'+A]['commit']['tree']['sha']=B
     if kind=='lock':self.data['/contents/'+self.bundle['lock']+'?ref='+A]['content']='b2xk'
