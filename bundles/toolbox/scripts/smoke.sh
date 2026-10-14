@@ -20,6 +20,7 @@ check() {
         --tmpfs /home/bundledock:exec,uid=1000,gid=1000,mode=0700 \
         --mount "type=volume,src=$volume,dst=/opt/bdock/toolbox,readonly,volume-nocopy" \
         --mount "type=bind,src=$script_dir/quality-security-smoke.sh,dst=/quality-security-smoke.sh,readonly" \
+        --mount "type=bind,src=$script_dir/trufflehog-smoke.sh,dst=/trufflehog-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/quality-utilities-smoke.sh,dst=/quality-utilities-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/typst-smoke.sh,dst=/typst-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/navi-smoke.sh,dst=/navi-smoke.sh,readonly" \
@@ -130,6 +131,8 @@ check() {
             sh /hugo-smoke.sh
             stage "quality and security tools"
             sh /quality-security-smoke.sh
+            stage "TruffleHog offline synthetic detection"
+            sh /trufflehog-smoke.sh
             stage "process monitors"
             sh /process-monitors-smoke.sh
             stage "git-trim isolated dry-run"
