@@ -102,9 +102,9 @@
         "verification": "publisher-sha256"
       },
       "hugo": {
-        "version": "v0.167.0",
-        "url": "https://github.com/gohugoio/hugo/releases/download/v0.167.0/hugo_0.167.0_linux-amd64.tar.gz",
-        "sha256": "4d84519b9f619e6d4c3fb45a50157abeabeb724f859c60605f44c23def6e1169",
+        "version": "v0.168.0",
+        "url": "https://github.com/gohugoio/hugo/releases/download/v0.168.0/hugo_0.168.0_linux-amd64.tar.gz",
+        "sha256": "fada83ad56bb27ed4cb7dd81590303bdac16140f944ac4e66fc248117e2d5594",
         "verification": "publisher-sha256"
       },
       "hyperfine": {
@@ -351,9 +351,9 @@
         "verification": "publisher-sha256"
       },
       "hugo": {
-        "version": "v0.167.0",
-        "url": "https://github.com/gohugoio/hugo/releases/download/v0.167.0/hugo_0.167.0_linux-arm64.tar.gz",
-        "sha256": "d0dd0d1ed249842525a93413e10ca1ef6f3b63311ee1695b16a0ce488142cec1",
+        "version": "v0.168.0",
+        "url": "https://github.com/gohugoio/hugo/releases/download/v0.168.0/hugo_0.168.0_linux-arm64.tar.gz",
+        "sha256": "91ce984e998a955a3dc1b5852eb4e65d0ed0f6d12a5c51690df97a548e1fdeeb",
         "verification": "publisher-sha256"
       },
       "hyperfine": {
