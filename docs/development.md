@@ -389,6 +389,19 @@ confirms the embedded dependency versions, not an independent validation of
 every reported vulnerability or its exploitability. These remain open findings;
 archive checksum verification and smoke success do not resolve them.
 
+Rechecked on 2026-10-14 using each upstream's latest stable release endpoint,
+ten most recent release records, tagged `go.mod`, and publisher asset digests.
+[Gitleaks 8.30.1](https://github.com/gitleaks/gitleaks/releases/tag/v8.30.1),
+[Syft 1.54.1](https://github.com/anchore/syft/releases/tag/v1.54.1), and
+[Trivy 0.75.0](https://github.com/aquasecurity/trivy/releases/tag/v0.75.0)
+remain the latest official stable releases. Their tagged dependency manifests
+still contain the affected versions listed above. All six official AMD64/ARM64
+asset URLs and SHA256 digests match the current toolbox lock; no replacement
+stable archives with patched dependencies were found. The lock remains unchanged
+and these findings remain open. This recheck inspected upstream metadata and
+source manifests; it did not repeat binary inspection, assess exploitability,
+or build/publish an image.
+
 Recheck when an official stable release ships updated dependencies, then resolve
 and verify its official archives on both supported architectures before updating
 the lock. A BundleDock compiler refresh alone cannot remediate these downloaded
