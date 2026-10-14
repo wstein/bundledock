@@ -149,6 +149,8 @@ func TestArtifactRunIdentityRejectsPartialReruns(t *testing.T) {
 }
 
 func TestResolveRejectsInvalidRunCountersBeforeResolving(t *testing.T) {
+	t.Setenv("GITHUB_EVENT_NAME", "")
+	t.Setenv("PUBLICATION_SHA", "")
 	for _, name := range []string{"GITHUB_RUN_NUMBER", "GITHUB_RUN_ATTEMPT"} {
 		for _, value := range []string{"", "0", "-1", "01", "+1", "1.2", "abc", " 1"} {
 			t.Run(name+"="+value, func(t *testing.T) {
@@ -175,7 +177,22 @@ func TestResolveRejectsInvalidRunCountersBeforeResolving(t *testing.T) {
 	}
 }
 
+func TestResolverFixturesIgnorePublicationEnvironment(t *testing.T) {
+	// Publication runs execute make check with these variables in scope. Keep
+	// the resolver fixture tests independent of the job's real authorization.
+	cmd := exec.Command("go", "test", ".", "-run", "^(TestResolveRejectsInvalidRunCountersBeforeResolving|TestResolveUsesRepositoryURL)$", "-count=1")
+	cmd.Env = append(os.Environ(),
+		"GITHUB_EVENT_NAME=workflow_run",
+		"PUBLICATION_SHA="+strings.Repeat("a", 40),
+	)
+	if data, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("resolver fixtures inherited publication authority: %v\n%s", err, data)
+	}
+}
+
 func TestResolveUsesRepositoryURL(t *testing.T) {
+	t.Setenv("GITHUB_EVENT_NAME", "")
+	t.Setenv("PUBLICATION_SHA", "")
 	for _, prefix := range []string{"quay.io/bundledock", "quay.io/bundledock/"} {
 		t.Run(prefix, func(t *testing.T) {
 			dir := t.TempDir()
