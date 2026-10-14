@@ -188,7 +188,7 @@ upstream metadata and persist when the native lock is refreshed.
 | Gitleaks (`gitleaks`) | 8.30.1 | [Homepage](https://gitleaks.io) | [Source](https://github.com/gitleaks/gitleaks) |
 | Helix (`hx`) | 25.07.1 | [Homepage](https://helix-editor.com) | [Source](https://github.com/helix-editor/helix) |
 | Herdr (`herdr`) | 0.9.4 | [Homepage](https://herdr.dev) | [Source](https://github.com/herdrdev/herdr) |
-| Hugo (`hugo`, standard) | 0.167.0 | [Homepage](https://gohugo.io) | [Source](https://github.com/gohugoio/hugo) |
+| Hugo (`hugo`, standard) | 0.168.0 | [Homepage](https://gohugo.io) | [Source](https://github.com/gohugoio/hugo) |
 | hyperfine (`hyperfine`) | 2.0.0 | [Homepage](https://github.com/sharkdp/hyperfine) | [Source](https://github.com/sharkdp/hyperfine) |
 | jq | 1.8.2 | [Homepage](https://jqlang.org) | [Source](https://github.com/jqlang/jq) |
 | Jujutsu (`jj`) | 0.46.0 | [Homepage](https://jj-vcs.dev) | [Source](https://github.com/jj-vcs/jj) |
