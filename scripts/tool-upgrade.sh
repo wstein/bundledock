@@ -158,6 +158,8 @@ Review the lock diff and run the required source checks. After an established pu
 
 Run: https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID (attempt $GITHUB_RUN_ATTEMPT).
 
+Keep source/test fixes in separate PRs. If main advances, rebase this updater or refresh it by merging main, then rerun source checks before human merge. Automatic publication accepts one updater commit followed only by verified main refresh merges (at most 16 commits total), with the final diff limited to this bundle's lock and generated inventory. Additional source commits or foreign merge ancestry reject publication. Recovery after main has advanced requires separately approved exact-SHA manual publication of current main.
+
 GitHub may suppress or hold ordinary pull_request runs for bot-created proposals before jobs start. The proposer explicitly dispatches source-only CI for the exact fresh bot PR head after validating its repository, branch, main ancestry and own-file scope. Wait for the required source checks before human merge. Successful CI on the exact owner-merged main revision starts the read-only publication planner, which verifies actual owner merge identity, exact source/tree and own-file scope before frozen-lock publication. Main movement, unavailable provenance or source inconsistencies stop automatic publication.
 
 BODY

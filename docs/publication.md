@@ -32,6 +32,20 @@ For a later automatic upgrade, review the lock and generated inventory in the
 merge authorizes publication of that exact frozen lock. No submitted APPROVED
 review is required, and no controller merges source PRs.
 
+Keep source/test fixes in separate PRs. An updater may contain its original
+commit followed by merges that refresh it from `main` (at most 16 commits total).
+The verifier checks the complete PR commit list, first-parent continuity, exact
+head identity, and that every merged parent is an ancestor of the final merged
+main parent. Additional ordinary commits, foreign ancestry, incomplete history,
+or any final changes outside the bundle's lock and inventory reject publication.
+Rebasing to a single updater commit remains supported. Rerun source checks after
+refreshing the branch and before the human merge.
+
+An already merged ineligible updater cannot be repaired retroactively; use a
+separately approved exact-SHA manual publication of current `main`. Rerunning an
+old publication does not bypass current-main checks. Once `main` has advanced,
+recovery also requires this manual path even for an otherwise eligible updater.
+
 1. Successful **CI** on the exact merged `main` revision starts **Publish bundles**.
    Its read-only planner identifies the associated updater using the full PR API
    response; the associated-PR list is discovery evidence, not merge authority.
@@ -71,8 +85,9 @@ documentation PRs are ineligible.
 For manual publication, select **Run workflow** on default branch `main` and
 enter the explicitly approved full 40-character SHA in `approved_sha`. It must
 equal the immutable run SHA. Every build job retains the human actor and SHA
-gate. Manual dispatch authorizes fresh upstream resolution, both native builds
-and publication even when pins are unchanged. Automation must not impersonate a
+gate. Manual dispatch uses the committed frozen lock without fresh upstream
+resolution, and authorizes both native builds and publication even when pins
+are unchanged. Automation must not impersonate a
 human to dispatch this path. Consumer image activation needs separate approval.
 
 Automatic publication compares the frozen lock with the existing published

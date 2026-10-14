@@ -50,13 +50,38 @@ class MergeMetadataPending(OSError):
     pass
 
 
+def updater_history(pr, get, base):
+    count = pr['commits']
+    require(type(count) is int and 1 <= count <= 16, 'Bounded updater commit history required')
+    if count == 1:
+        return
+    commits = get('/pulls/' + str(pr['number']) + '/commits?per_page=100&page=1')
+    require(isinstance(commits, list) and len(commits) == count, 'Complete updater commit history required')
+    require(len({sha(commit['sha']) for commit in commits}) == count, 'Unique updater commits required')
+    previous = None
+    for index, commit in enumerate(commits):
+        current = sha(commit['sha'])
+        parents = commit['parents']
+        require(len(parents) == (1 if index == 0 else 2), 'Only one updater commit followed by main refresh merges allowed')
+        first = sha(parents[0]['sha'])
+        if previous is not None:
+            require(first == previous, 'Updater refresh history must be linear')
+            ancestor = sha(parents[1]['sha'])
+        else:
+            ancestor = first
+        if ancestor != base:
+            comparison = get('/compare/' + ancestor + '...' + base)
+            require(comparison['status'] == 'ahead' and sha(comparison['merge_base_commit']['sha']) == ancestor, 'Updater refresh must merge only ancestors of merged main parent')
+        previous = current
+    require(previous == pr['head']['sha'], 'Updater history does not end at exact PR head')
+
+
 def merged_updater(pr, name, get, revision):
     bundle = config.select_bundle(name)
     number = pr['number']
     require(isinstance(number, int) and number > 0, 'Invalid PR number')
     repository = get('')
     require(repository['full_name'] == REPOSITORY and repository['default_branch'] == 'main', 'Wrong repository/default branch')
-    require(pr['commits'] == 1, 'Exactly one updater commit required')
     require(pr['user']['login'] == 'github-actions[bot]' and pr['user']['type'] == 'Bot', 'Wrong updater author')
     require(bundle_for_branch(pr['head']['ref']) == name, 'Wrong updater branch')
     require(pr['head']['repo']['full_name'] == REPOSITORY and pr['base']['repo']['full_name'] == REPOSITORY and pr['base']['ref'] == 'main', 'Wrong PR repository or base')
@@ -74,6 +99,7 @@ def merged_updater(pr, name, get, revision):
     require(safe_files(commit['files'], pr, bundle) == names, 'Merged files differ from updater PR')
     require(len(commit['parents']) == 1, 'Expected linear merge commit')
     base = sha(commit['parents'][0]['sha'])
+    updater_history(pr, get, base)
     require(lock_bytes(get, bundle, revision) != lock_bytes(get, bundle, base), 'Lock is unchanged')
     return pr
 
