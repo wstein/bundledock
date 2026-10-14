@@ -129,7 +129,7 @@ class CleanupTests(unittest.TestCase):
                                    lambda repo, row: self.assess(), self.quay, write=True)
             self.assertEqual(self.quay.deleted, [])
 
-    def test_no_api_token_cannot_delete(self):
+    def test_no_registry_credentials_cannot_delete(self):
         with self.assertRaisesRegex(ValueError, 'TOKEN required'):
             cleanup.Quay().delete('toolbox', self.row['name'])
 
@@ -174,7 +174,7 @@ class CleanupTests(unittest.TestCase):
                 cleanup.publication_proof('receipt.json', 'toolbox', self.github)
 
     def test_quay_transport_only_allows_fixed_tag_paths(self):
-        api = cleanup.Quay('fixture')
+        api = cleanup.Quay('fixture', 'password')
         for repository, name in [('foreign/toolbox', self.row['name']), ('toolbox', 'stable'),
                                  ('toolbox', '../manifest'), ('toolbox', 'staging-x-amd64')]:
             with self.subTest(repository=repository, name=name), self.assertRaises(ValueError):

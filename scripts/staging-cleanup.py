@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Plan and remove verified Quay staging tags. Never delete manifests or blobs."""
+"""Plan and remove verified Quay staging tags. Never delete by digest or delete blobs."""
 import argparse
+import base64
 from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 import importlib.util
@@ -43,27 +44,29 @@ def identity(repository, name):
 
 
 class Quay:
-    def __init__(self, token=''):
-        self.token = token
+    def __init__(self, username='', password=''):
+        self.username, self.password = username, password
         self.opener = urllib.request.build_opener(tags.NoRedirect())
 
-    def request(self, path, method='GET'):
-        headers = {'Accept': 'application/json', 'User-Agent': 'BundleDock-staging-cleanup'}
-        if self.token:
-            headers['Authorization'] = 'Bearer ' + self.token
-        req = urllib.request.Request('https://quay.io/api/v1/repository/bundledock/' + path, headers=headers, method=method)
+    def _send(self, url, headers=None, method='GET', expected_status=200):
+        headers = {'Accept': 'application/json', 'User-Agent': 'BundleDock-staging-cleanup', **(headers or {})}
+        req = urllib.request.Request(url, headers=headers, method=method)
         try:
             with self.opener.open(req, timeout=30) as response:
+                require(response.status == expected_status, 'Unexpected Quay response status')
                 raw = response.read(4 * 1024 * 1024 + 1)
                 require(len(raw) <= 4 * 1024 * 1024, 'Quay response too large')
-                if method == 'DELETE':
-                    require(response.status == 204, 'Unexpected Quay deletion status')
-                    return None
-                return json.loads(raw)
+                return json.loads(raw) if method == 'GET' else None
         except urllib.error.HTTPError as error:
             if method == 'DELETE' and error.code == 404:
                 return None
-            raise ValueError('Quay API HTTP ' + str(error.code)) from None
+            # Never expose credentials, response bodies or authentication tokens.
+            raise ValueError('Quay HTTP ' + str(error.code)) from None
+
+    def request(self, path):
+        # These official repositories are public. Robot passwords are not API
+        # OAuth tokens and must never be sent to the REST inventory endpoint.
+        return self._send('https://quay.io/api/v1/repository/bundledock/' + path)
 
     def list_tags(self, repository, name=None):
         require(repository in REPOSITORIES, 'Unknown repository')
@@ -87,9 +90,18 @@ class Quay:
         raise ValueError('Quay pagination limit exceeded')
 
     def delete(self, repository, name):
+        # Reject digest references and aliases before any authentication request.
         identity(repository, name)
-        require(bool(self.token), 'QUAY_CLEANUP_TOKEN required for deletion')
-        self.request(repository + '/tag/' + name, 'DELETE')
+        require(bool(self.username and self.password), 'REPOSITORY_USERNAME and REPOSITORY_TOKEN required for deletion')
+        auth = base64.b64encode((self.username + ':' + self.password).encode()).decode()
+        query = urllib.parse.urlencode({'service': 'quay.io', 'scope': 'repository:bundledock/' + repository + ':pull,push'})
+        data = self._send('https://quay.io/v2/auth?' + query, {'Authorization': 'Basic ' + auth})
+        token = data.get('token') if isinstance(data, dict) else None
+        require(isinstance(token, str) and re.fullmatch(r'[A-Za-z0-9._~+/-]+=*', token) is not None, 'Invalid registry authentication token')
+        # Quay's tag-name route untags only this name. Never substitute the
+        # manifest digest: digest deletion would remove other matching tags.
+        self._send('https://quay.io/v2/bundledock/' + repository + '/manifests/' + name,
+                   {'Authorization': 'Bearer ' + token}, method='DELETE', expected_status=202)
 
 
 class GitHub:
@@ -224,9 +236,9 @@ def main():
     args = parser.parse_args()
     require(not args.apply or args.approved_plan, '--apply requires a saved dry-run plan')
     require(not args.publication or args.bundle, '--publication requires --bundle')
-    token = os.environ.get('QUAY_CLEANUP_TOKEN', '')
-    require(not args.apply or token, 'QUAY_CLEANUP_TOKEN required for deletion (Quay API OAuth token, not registry password)')
-    quay, github = Quay(token), GitHub()
+    username, password = os.environ.get('REPOSITORY_USERNAME', ''), os.environ.get('REPOSITORY_TOKEN', '')
+    require(not args.apply or (username and password), 'REPOSITORY_USERNAME and REPOSITORY_TOKEN required for deletion')
+    quay, github = Quay(username, password), GitHub()
     publication = publication_proof(args.publication, args.bundle, github) if args.publication else None
     repos = [tags._CONFIG.select_bundle(args.bundle)['repository']] if publication else (REPOSITORIES if args.repository == 'all' else [args.repository])
     registries = {repo: tags.Registry('quay.io/bundledock/' + repo) for repo in repos}
