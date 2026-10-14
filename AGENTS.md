@@ -7,13 +7,25 @@ separate umbrella repository that owns consumer devcontainer integration.
 Run `make check` before handing over Go or build changes. Routine source tests,
 vet and their compiler verification may run automatically. Obtain the user's
 explicit approval before any artifact, CLI release, OCI image, or documentation
-build, including `make build`, `make release`, `make release-test`, `make docs`,
-`make docs-test`, `make docs-serve`, or Docker build/smoke checks. Report deferred
+build outside the Pages automation exception below, including `make build`,
+`make release`, `make release-test`, `make docs`, `make docs-test`, `make docs-serve`, or Docker build/smoke checks. Report deferred
 checks and platform coverage accurately; a passing source check is not image or
 release readiness.
 
-Builds and releases require explicit user approval of the intended operation
-and source revision. The approved automation exception covers toolbox,
+The Pages-specific automation exception authorizes documentation build and
+Pages deployment after successful official `CI` for the exact current `main`
+revision, from a main push or manual main CI run. Independently verify the live
+CI run, exact latest attempt, successful required `check` job, official repository
+and workflow identity, and unchanged current main before building and deploying.
+PR/branch CI, stale sources, missing proof and failed/skipped checks do not
+authorize publication. Check out the verified SHA and bind the Pages artifact to
+that SHA and the publication run attempt. Manual exact-SHA human dispatch remains
+available. This exception does not authorize OCI/CLI publication, source merges,
+workflow dispatches by agents or repository/environment settings changes.
+
+Builds and releases other than the Pages exception require explicit user approval
+of the intended operation and source revision. The approved bundle automation
+exception covers toolbox,
 code-server, Node LTS, Node Current, Bun, Codex, Antigravity, Claude and OpenTofu updater PRs authored by `github-actions[bot]`, changing
 only their own lock and generated inventory. The actual human owner `wstein`
 merging an eligible updater authorizes publication of that exact frozen lock;
@@ -32,7 +44,8 @@ build/publication operation; an updater PR cannot authorize a first publication.
 Verify repository visibility and robot access before that operation. Existing environment settings remain untouched. Manual publication
 retains exact full-SHA human dispatch. OpenTofu initial publication requires
 this manual gate; a bot updater cannot bootstrap an absent stable baseline. Source PRs, documentation PRs, schedules,
-bot activity and local commits alone supply no artifact build approval.
+bot activity and local commits alone supply no artifact build approval outside
+the Pages-specific exception above.
 Tagging and publication must follow the explicitly authorized workflow scope;
 consumer activation remains a separate explicit authorization. Successful approved
 publication includes one annotated `<bundle>/<immutable-version>` source tag,
