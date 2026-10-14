@@ -13,12 +13,12 @@ func TestPagesWorkflowApprovalBoundary(t *testing.T) {
 	if !ok {
 		t.Fatal("missing jobs")
 	}
-	for _, required := range []string{"workflow_dispatch:", "approved_sha:", "required: true", "permissions:\n  contents: read", "cancel-in-progress: false"} {
+	for _, required := range []string{"workflow_dispatch:", "approved_sha:", "required: true", "permissions:\n  contents: read", "cancel-in-progress: false", "workflow_run:", "workflows: [CI]", "types: [completed]", "actions: read"} {
 		if !strings.Contains(header, required) {
-			t.Errorf("missing manual publication contract: %s", required)
+			t.Errorf("missing publication contract: %s", required)
 		}
 	}
-	for _, forbidden := range []string{"push:", "pull_request:", "schedule:", "workflow_run:", "repository_dispatch:", "workflow_call:", "write", "enablement"} {
+	for _, forbidden := range []string{"push:", "pull_request:", "schedule:", "repository_dispatch:", "workflow_call:", "write", "enablement"} {
 		if strings.Contains(header, forbidden) {
 			t.Errorf("unexpected trigger or global authority: %s", forbidden)
 		}
@@ -30,14 +30,11 @@ func TestPagesWorkflowApprovalBoundary(t *testing.T) {
 	for name, job := range map[string]string{"build": build, "deploy": deploy} {
 		t.Run(name, func(t *testing.T) {
 			for _, required := range []string{
-				"github.event_name == 'workflow_dispatch'", "github.event.repository.default_branch == 'main'",
-				"github.ref == 'refs/heads/main'", "github.event.sender.type == 'User'", "inputs.approved_sha == github.sha",
 				"persist-credentials: false", "ref: ${{ github.sha }}",
-				"APPROVED_SHA: ${{ inputs.approved_sha }}", "DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}",
-				"SENDER_TYPE: ${{ github.event.sender.type }}", "TRIGGERING_ACTOR: ${{ github.triggering_actor }}",
+				"run: sh scripts/approve-publication.sh --pages",
 			} {
 				if !strings.Contains(job, required) {
-					t.Errorf("job must independently recheck exact human approval: %s", required)
+					t.Errorf("job must independently recheck Pages approval: %s", required)
 				}
 			}
 			if !pagesGatePrecedesEffects(job) {
@@ -56,9 +53,21 @@ func TestPagesWorkflowApprovalBoundary(t *testing.T) {
 	if strings.Count(w, ": write") != 2 || strings.Contains(w, "contents: write") || strings.Contains(w, "secrets.") {
 		t.Error("only deploy may receive Pages and OIDC write permissions; no separate credentials")
 	}
-	for _, required := range []string{"run: make docs", "HUGO_BASEURL: https://wstein.github.io/bundledock/", "path: public/", "name: github-pages-${{ github.run_attempt }}", "artifact_name: github-pages-${{ github.run_attempt }}"} {
+	for _, required := range []string{"run: make docs", "HUGO_BASEURL: https://wstein.github.io/bundledock/", "path: public/", "name: github-pages-${{ steps.approval.outputs.sha }}-${{ github.run_attempt }}", "artifact_name: github-pages-${{ needs.build.outputs.sha }}-${{ github.run_attempt }}"} {
 		if !strings.Contains(w, required) {
 			t.Errorf("missing pinned Hugo project-subpath or attempt-specific artifact contract: %s", required)
+		}
+	}
+	for _, required := range []string{
+		"github.event.workflow_run.conclusion == 'success'", "github.event.workflow_run.head_branch == 'main'",
+		"github.event.workflow_run.event == 'push'", "github.event.workflow_run.event == 'workflow_dispatch'",
+		"CI_RUN_ID: ${{ github.event.workflow_run.id }}", "CI_RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}",
+		"PUBLICATION_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}",
+		"ref: ${{ steps.approval.outputs.sha }}", "sha: ${{ steps.approval.outputs.sha }}",
+		"PUBLICATION_SHA: ${{ needs.build.outputs.sha }}",
+	} {
+		if !strings.Contains(w, required) {
+			t.Errorf("missing exact CI revision or artifact binding: %s", required)
 		}
 	}
 	for _, line := range strings.Split(w, "\n") {
@@ -77,7 +86,7 @@ func TestPagesGateOrderingRejectsRegressions(t *testing.T) {
 	build, deploy, _ := strings.Cut(jobs, "\n  deploy:\n")
 	for name, job := range map[string]string{"build": build, "deploy": deploy} {
 		t.Run(name, func(t *testing.T) {
-			if pagesGatePrecedesEffects(strings.ReplaceAll(job, "run: sh scripts/approve-publication.sh", "run: true")) {
+			if pagesGatePrecedesEffects(strings.ReplaceAll(job, "run: sh scripts/approve-publication.sh --pages", "run: true")) {
 				t.Error("missing approval gate accepted")
 			}
 			if pagesGatePrecedesEffects(strings.Replace(job, "    steps:\n", "    steps:\n      - run: make docs\n", 1)) {
@@ -100,8 +109,8 @@ func pagesWorkflow(t *testing.T) string {
 }
 
 func pagesGatePrecedesEffects(job string) bool {
-	gate := strings.Index(job, "run: sh scripts/approve-publication.sh")
-	if gate < 0 || strings.Count(job, "run: sh scripts/approve-publication.sh") != 1 {
+	gate := strings.Index(job, "run: sh scripts/approve-publication.sh --pages")
+	if gate < 0 || strings.Count(job, "run: sh scripts/approve-publication.sh --pages") != 1 {
 		return false
 	}
 	// Only immutable checkout may run before the gate; every other action or

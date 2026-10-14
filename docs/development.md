@@ -75,53 +75,50 @@ directory to clear downloaded archives while preserving the `public/` preview.
 To review a project-subpath build, run
 `bash scripts/hugo.sh --baseURL https://example.org/bundledock/`.
 
-### Manual GitHub Pages publication
+### Automatic GitHub Pages publication
 
-The [Publish documentation workflow](../.github/workflows/pages.yml) prepares
-the existing Hugo site for `https://wstein.github.io/bundledock/`. It runs only
-by manual dispatch from default branch `main`, with the full approved commit
-SHA in `approved_sha`. Pushes, pull requests, merges and schedules do not build
-or deploy documentation. Preparing or committing the workflow supplies no
-approval to run it, enable Pages, or change repository settings.
+The [Publish documentation workflow](../.github/workflows/pages.yml) builds and
+deploys the Hugo site at `https://wstein.github.io/bundledock/` after successful
+`CI` for the exact current `main` revision. This includes merged documentation
+PRs. Only main push CI or manually dispatched main CI is eligible. PR and branch
+CI, failed CI, and skipped required checks cannot authorize publication.
 
-Before the first deployment, the repository administrator must separately
-configure [Settings → Pages](https://github.com/wstein/bundledock/settings/pages)
-with **GitHub Actions** as the publishing source. Review the `github-pages`
-environment's deployment branches and any required reviewers in repository
-settings. This workflow names that environment but does not configure its
-protection rules or claim that required reviewers are present. See GitHub's
-[custom workflow requirements](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages).
+The Pages-specific mode of `scripts/approve-publication.sh` reads live GitHub API
+evidence before both build and deployment. It verifies the official repository,
+active `ci.yml` workflow, successful run and exact latest attempt, successful
+required `check` job, and matching full source SHA. Jobs evidence is paginated;
+missing, truncated or contradictory evidence stops publication. The controller
+revision and current main must also equal the verified CI SHA. A main advance or
+CI rerun during validation stops that attempt; successful CI for the newer main
+revision starts a new publication. A second check before deployment prevents an
+older queued publication from replacing a newer site. The concurrency queue
+serializes Pages publications without cancelling an in-progress deployment.
 
-For each publication:
+The gate runs from the immutable controller revision before build effects, then
+the build checks out the verified source SHA explicitly. The build uses `make
+docs` and the checksum-verified official Hugo wrapper with the project subpath.
+Generated files remain ignored in `public/`. Artifacts include the verified SHA
+and publication run attempt in their names; deployment uses only that exact
+artifact from the same workflow run. Deployment-only reruns cannot consume an
+earlier attempt's artifact: choose **Re-run all jobs** while that SHA remains
+current main and its CI evidence remains valid.
 
-1. Review the exact `main` revision and obtain explicit user approval for both
-   the documentation build and the Pages deployment at that full SHA.
-2. Open [Publish documentation in Actions](https://github.com/wstein/bundledock/actions/workflows/pages.yml),
-   choose **Run workflow** on `main`, and enter that SHA as `approved_sha`.
-   If `main` has moved, review and obtain approval for the new revision first.
-3. Inspect the build and deployment results and the environment URL. Treat the
-   site as published only after the deployment succeeds. Obtain fresh explicit
-   approval for reruns of the original SHA and choose **Re-run all jobs** so the
-   build creates the artifact for the new run attempt. A deployment-only rerun
-   cannot reuse an earlier attempt's artifact.
+Manual publication remains available: obtain explicit approval for documentation
+build and deployment at the full current main SHA, select **Run workflow** on
+`main`, and enter that SHA as `approved_sha`. Both jobs recheck the exact SHA and
+human sender/actor identity. Automation must not impersonate a human dispatch.
+This manual path remains independent of the automatic CI authorization path.
+Other publication callers retain their existing approval rules.
 
-Both jobs check out the immutable run SHA and independently run the existing
-publication approval gate before Hugo, artifact upload, or deployment. It
-rejects non-user senders, bot actors and bot reruns, including partial reruns.
-The build uses `make docs` and the checksum-verified official Hugo wrapper;
-`HUGO_BASEURL` supplies the project subpath while the local preview remains
-unchanged. Generated files remain ignored in `public/`. No Node installation,
-third-party theme, or separate deployment secret is required. Only the deploy
-job receives `pages: write` and `id-token: write`; source access stays read-only.
-
-The actor checks cannot distinguish a person's manual dispatch from automation
-using that person's credentials. Automation must never dispatch this workflow,
-including with a human-owned token; restrict dispatch credentials and repository
-writers separately. An optional reviewer gate on `github-pages` protects the
-deployment job only, after the documentation build. The manual dispatch and
-exact-SHA approval remain necessary before any build. Source tests check these
-workflow contracts without rendering or publishing the site; they do not
-establish that repository Pages settings or a live deployment work.
+Repository administrators must configure
+[Settings → Pages](https://github.com/wstein/bundledock/settings/pages) with
+**GitHub Actions** as the publishing source. Existing `github-pages` environment
+protection rules continue to apply; this workflow does not change settings or
+bypass required reviewers. Only deployment receives `pages: write` and
+`id-token: write`; source and Actions evidence access remain read-only. No separate
+deployment secret is required. Treat the site as published only after deployment
+succeeds. Source tests verify these contracts without rendering or deploying the
+site; live deployment is verified separately after merge.
 
 ### Bundled Hugo verification
 
