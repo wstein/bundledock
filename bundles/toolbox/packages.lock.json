@@ -150,9 +150,9 @@
         "verification": "publisher-sha256"
       },
       "mise": {
-        "version": "v2026.10.9",
-        "url": "https://github.com/jdx/mise/releases/download/v2026.10.9/mise-v2026.10.9-linux-x64-musl",
-        "sha256": "77fbb428fff656ec0bbacb99d7ed5b038a0e09a9cc0168909fcf3da56b5d51e0",
+        "version": "v2026.10.10",
+        "url": "https://github.com/jdx/mise/releases/download/v2026.10.10/mise-v2026.10.10-linux-x64-musl",
+        "sha256": "377c726bc34625162b324aa979f798dbc080db8bd67691c59ed0d74703810b35",
         "verification": "publisher-sha256"
       },
       "navi": {
@@ -216,9 +216,9 @@
         "verification": "publisher-sha256"
       },
       "trivy": {
-        "version": "v0.75.0",
-        "url": "https://github.com/aquasecurity/trivy/releases/download/v0.75.0/trivy_0.75.0_Linux-64bit.tar.gz",
-        "sha256": "c6e65abddb348e25f10549df887045629cf28cc72453cd1c63acb717316b3f3f",
+        "version": "v0.76.0",
+        "url": "https://github.com/aquasecurity/trivy/releases/download/v0.76.0/trivy_0.76.0_Linux-64bit.tar.gz",
+        "sha256": "e24b1c51293c1b15e4ba8d45bbc7891ba053f90278ec2698f3562c993e145fe7",
         "verification": "publisher-sha256"
       },
       "trufflehog": {
@@ -240,9 +240,9 @@
         "verification": "publisher-sha256"
       },
       "uv": {
-        "version": "0.13.0",
-        "url": "https://github.com/astral-sh/uv/releases/download/0.13.0/uv-x86_64-unknown-linux-musl.tar.gz",
-        "sha256": "b0828fc4cdc47d65951e94b5f0a15a5364420e8dcd88723f3b21e7a2eb30bbc3",
+        "version": "0.13.1",
+        "url": "https://github.com/astral-sh/uv/releases/download/0.13.1/uv-x86_64-unknown-linux-musl.tar.gz",
+        "sha256": "6c86040a8f045ab9adc9e3ec4cdafa03fd00e9a988ed2bf28971c7fc2d0debd0",
         "verification": "publisher-sha256"
       },
       "watchexec": {
@@ -405,9 +405,9 @@
         "verification": "publisher-sha256"
       },
       "mise": {
-        "version": "v2026.10.9",
-        "url": "https://github.com/jdx/mise/releases/download/v2026.10.9/mise-v2026.10.9-linux-arm64-musl",
-        "sha256": "0c7f27abf12f80949837fe281137b6c68a8af47cd70068559516eb6160e1728d",
+        "version": "v2026.10.10",
+        "url": "https://github.com/jdx/mise/releases/download/v2026.10.10/mise-v2026.10.10-linux-arm64-musl",
+        "sha256": "11fac00f49201d857248e74d4e69ec5cb70033adef71699090f501cb26f0e49c",
         "verification": "publisher-sha256"
       },
       "navi": {
@@ -471,9 +471,9 @@
         "verification": "publisher-sha256"
       },
       "trivy": {
-        "version": "v0.75.0",
-        "url": "https://github.com/aquasecurity/trivy/releases/download/v0.75.0/trivy_0.75.0_Linux-ARM64.tar.gz",
-        "sha256": "a1ee9f6ffb7d112b64ff726a2a0717c21175c1114361391f4a132956751a13b3",
+        "version": "v0.76.0",
+        "url": "https://github.com/aquasecurity/trivy/releases/download/v0.76.0/trivy_0.76.0_Linux-ARM64.tar.gz",
+        "sha256": "aab21e677a7b7071fc79f1711480840754c18a1b9d9cefa7ccd06af63a0e8f4c",
         "verification": "publisher-sha256"
       },
       "trufflehog": {
@@ -495,9 +495,9 @@
         "verification": "publisher-sha256"
       },
       "uv": {
-        "version": "0.13.0",
-        "url": "https://github.com/astral-sh/uv/releases/download/0.13.0/uv-aarch64-unknown-linux-musl.tar.gz",
-        "sha256": "281ca6cf43f4e26e35474839ad4861be86de42af2682f74134460f5b2071b96d",
+        "version": "0.13.1",
+        "url": "https://github.com/astral-sh/uv/releases/download/0.13.1/uv-aarch64-unknown-linux-musl.tar.gz",
+        "sha256": "345a8308e4d1835cdfaadf692836fd3137a6d45864773f05ad7bf59442b1ba16",
         "verification": "publisher-sha256"
       },
       "watchexec": {
