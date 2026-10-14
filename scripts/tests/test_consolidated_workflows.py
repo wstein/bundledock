@@ -9,6 +9,28 @@ spec.loader.exec_module(config)
 
 
 class ConsolidatedWorkflowsTests(unittest.TestCase):
+    def test_publication_planner_skips_unrelated_ci_completions(self):
+        import re
+        from types import SimpleNamespace as NS
+        source = (ROOT / '.github/workflows/publish-bundles.yml').read_text()
+        plan = source.split('\n  plan:\n')[1].split('\n  publication:\n')[0]
+        match = re.search(r'^    if: >-\n((?:      .*\n)+)', plan, re.M)
+        self.assertIsNotNone(match, 'Planner needs a CI completion filter')
+        expression = ' '.join(match.group(1).split()).replace('&&', ' and ').replace('||', ' or ')
+        for event in ('push', 'pull_request', 'workflow_dispatch', 'schedule'):
+            for branch in ('main', 'automation/toolbox-upgrade-123-1'):
+                for conclusion in ('success', 'failure', 'cancelled', 'skipped', None):
+                    with self.subTest(event=event, branch=branch, conclusion=conclusion):
+                        run = NS(event=event, head_branch=branch, conclusion=conclusion)
+                        github = NS(event_name='workflow_run', event=NS(workflow_run=run))
+                        actual = eval(expression, {'__builtins__': {}}, {'github': github})
+                        self.assertEqual(actual, event in ('push', 'workflow_dispatch') and branch == 'main' and conclusion == 'success')
+        # Explicit manual approval must still reach the planner without a CI payload.
+        github = NS(event_name='workflow_dispatch', event=NS())
+        self.assertTrue(eval(expression, {'__builtins__': {}}, {'github': github}))
+        github.event_name = 'pull_request'
+        self.assertFalse(eval(expression, {'__builtins__': {}}, {'github': github}))
+
     def test_all_bundles_share_one_current_publication_caller(self):
         for name in config.BUNDLES:
             self.assertEqual(config.select_bundle(name)['workflow'], 'publish-bundles.yml')

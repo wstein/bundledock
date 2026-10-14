@@ -33,6 +33,14 @@ permissions:
 jobs:
   plan:
     name: plan (${{ inputs.bundle || 'automatic' }})
+    # PR/branch CI completions are not publication candidates. The planner
+    # independently verifies API provenance for every admitted main completion.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main' &&
+       (github.event.workflow_run.event == 'push' || github.event.workflow_run.event == 'workflow_dispatch'))
     permissions:
       contents: read
       actions: read
