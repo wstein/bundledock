@@ -33,6 +33,18 @@ class WorkflowTests(unittest.TestCase):
         self.assertNotIn('docker ', source)
         self.assertNotIn('contents: write', source)
 
+    def test_cleanup_reuses_registry_credentials_without_extra_secret(self):
+        publisher = (ROOT / '.github/workflows/bundle-publish.yml').read_text()
+        fallback = (ROOT / '.github/workflows/staging-cleanup.yml').read_text()
+        caller = (ROOT / '.github/workflows/publish-bundles.yml').read_text()
+        cleanup_job = publisher.split('\n  cleanup:\n')[1].split('\n  outcome:\n')[0]
+        for source in (cleanup_job, fallback):
+            self.assertIn('REPOSITORY_USERNAME: ${{ vars.REPOSITORY_USERNAME }}', source)
+            self.assertIn('REPOSITORY_TOKEN: ${{ secrets.REPOSITORY_TOKEN }}', source)
+            self.assertIn("env.REPOSITORY_USERNAME != '' && env.REPOSITORY_TOKEN != ''", source)
+        for source in (publisher, fallback, caller):
+            self.assertNotIn('QUAY_CLEANUP_TOKEN', source)
+
     def test_cleanup_failure_preserves_published_outcome(self):
         source = (ROOT / '.github/workflows/bundle-publish.yml').read_text()
         program = textwrap.dedent(re.search("python3 - <<'PYTHON'\\n(.*?)\\n          PYTHON", source, re.S).group(1))
