@@ -1,7 +1,13 @@
 #!/bin/sh
-# A user must manually dispatch the approved default-main revision. This gate
-# rejects bots; human credentials must never be used to dispatch automatically.
+# Pages has a separate exact-main CI automation exception. Other publication
+# callers retain the human exact-SHA dispatch gate below.
 set -eu
+
+if [ "${1:-}" = --pages ]; then
+    [ "$#" -eq 1 ] || exit 1
+    exec python3 -B "$(dirname "$0")/pages-approval.py"
+fi
+[ "$#" -eq 0 ] || exit 1
 
 reject() {
     echo "Publication requires explicit user approval of this exact main SHA." >&2
