@@ -216,14 +216,14 @@ func TestResolveUsesRepositoryURL(t *testing.T) {
 			t.Setenv("GITHUB_SHA", strings.Repeat("a", 40))
 			t.Setenv("GITHUB_SERVER_URL", "https://github.com")
 			t.Setenv("GITHUB_REPOSITORY", "wstein/bundledock")
-			if err := execute([]string{"resolve"}); err != nil {
+			if err := executeWithAllocator([]string{"resolve"}, fixtureToolboxAllocation); err != nil {
 				t.Fatal(err)
 			}
 			var meta toolpublish.Metadata
 			if err := readJSON("resolved/provenance.json", &meta); err != nil {
 				t.Fatal(err)
 			}
-			if meta.Tag != time.Now().UTC().Format("2006.01.02")+"-b12.1" || meta.RunID != "38069722044" {
+			if meta.Tag != time.Now().UTC().Format("2006.01.02")+"-b1" || meta.RunID != "38069722044" {
 				t.Fatalf("wrong run provenance: %+v", meta)
 			}
 			if meta.Image != "quay.io/bundledock/toolbox" {
@@ -501,7 +501,7 @@ func TestResolveSingletonNamesTheResolvedLockOnce(t *testing.T) {
 		}
 		return "0.163.0-b1", nil
 	}
-	if err := resolveSingleton("resolved", meta, false, "7", runner, allocate); err != nil {
+	if err := resolveVersion("resolved", meta, false, "7", runner, allocate); err != nil {
 		t.Fatal(err)
 	}
 	if calls != 1 {
@@ -525,7 +525,7 @@ func TestResolveSingletonNamesTheResolvedLockOnce(t *testing.T) {
 		t.Fatal("artifact lock changed")
 	}
 	calls = 0
-	if err := resolveSingleton("frozen", got, true, "8", runner, allocate); err != nil {
+	if err := resolveVersion("frozen", got, true, "8", runner, allocate); err != nil {
 		t.Fatal(err)
 	}
 	if calls != 0 {
@@ -605,7 +605,7 @@ func TestExecuteFrozenPublication(t *testing.T) {
 			if tc.key != "" {
 				t.Setenv(tc.key, tc.value)
 			}
-			err := execute([]string{"resolve", "--frozen-lock"})
+			err := executeWithAllocator([]string{"resolve", "--frozen-lock"}, fixtureToolboxAllocation)
 			if (err != nil) != tc.wantErr {
 				t.Fatalf("resolve error=%v, wantErr=%t", err, tc.wantErr)
 			}
@@ -650,5 +650,23 @@ func TestExecuteFrozenModeRemainsResolveOnlyAndRequiredForMerged(t *testing.T) {
 	}
 	if _, err := os.Stat("resolved"); !os.IsNotExist(err) {
 		t.Fatalf("invalid mode wrote artifact: %v", err)
+	}
+}
+
+func fixtureToolboxAllocation(b toolpublish.Bundle, image, date string, data []byte) (string, error) {
+	return date + "-b1", nil
+}
+
+func TestToolboxDailyArtifactIdentityUsesIndependentAttempt(t *testing.T) {
+	meta := toolpublish.Metadata{Image: "quay.io/example/toolbox", Tag: "2026.10.15-b1", RunID: "123", RunAttempt: "7", Commit: strings.Repeat("a", 40)}
+	if err := artifactIdentity(meta, "123", "98", "7", meta.Commit); err != nil {
+		t.Fatal(err)
+	}
+	for _, run := range []struct{ id, attempt, commit string }{
+		{"124", "7", meta.Commit}, {"123", "8", meta.Commit}, {"123", "7", strings.Repeat("b", 40)},
+	} {
+		if err := artifactIdentity(meta, run.id, "98", run.attempt, run.commit); err == nil {
+			t.Fatalf("accepted foreign identity: %+v", run)
+		}
 	}
 }

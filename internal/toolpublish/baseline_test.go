@@ -62,6 +62,9 @@ func registryBaseline(t *testing.T, semantic string, legacy bool, corrupt bool, 
 		m.Tag = "0.162.1-b2"
 		m.RunAttempt = singletonAttempt[0]
 	}
+	if len(singletonAttempt) > 1 && singletonAttempt[1] == "daily" {
+		m.Image, m.Tag = "quay.io/example/toolbox", "2026.10.10-b1"
+	}
 	objects := map[string]string{}
 	object := func(v any) string {
 		b, _ := json.Marshal(v)
@@ -178,6 +181,21 @@ func TestSingletonBaselineRequiresIndependentAttempt(t *testing.T) {
 			}
 		} else if err == nil {
 			t.Fatal("accepted singleton baseline without valid attempt")
+		}
+	}
+}
+
+func TestToolboxDailyBaselineRequiresIndependentAttempt(t *testing.T) {
+	want, _ := ToolDigest(testLock(t))
+	for _, attempt := range []string{"7", "", "0"} {
+		client, meta := registryBaseline(t, want, false, false, attempt, "daily")
+		got, err := PublishedToolDigest(context.Background(), client, meta.Image, "robot", "secret", nil)
+		if attempt == "7" {
+			if err != nil || got != want {
+				t.Fatalf("daily baseline %q: %v", got, err)
+			}
+		} else if err == nil {
+			t.Fatal("accepted daily baseline without valid attempt")
 		}
 	}
 }

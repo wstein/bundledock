@@ -47,7 +47,7 @@ type Adapter struct {
 }
 
 var imagePattern = regexp.MustCompile(`^quay\.io/[a-z0-9]+(?:[._-][a-z0-9]+)*/(toolbox|code-server|node|bun|codex|agy|claude|opentofu)$`)
-var tagPattern = regexp.MustCompile(`^(?:\d{4}\.\d{2}\.\d{2}-b[1-9]\d*\.[1-9]\d*|(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)-b[1-9]\d*)$`)
+var tagPattern = regexp.MustCompile(`^(?:\d{4}\.\d{2}\.\d{2}-b[1-9]\d*(?:\.[1-9]\d*)?|(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)-b[1-9]\d*)$`)
 var runIDPattern = regexp.MustCompile(`^[1-9]\d*$`)
 var commitPattern = regexp.MustCompile(`^[a-f0-9]{40}$`)
 var digestPattern = regexp.MustCompile(`^sha256:[a-f0-9]{64}$`)
@@ -90,7 +90,16 @@ func newMetadata(bundle, lock, image, tag, commit, source, created, runID string
 	if !tagPattern.MatchString(tag) || !commitPattern.MatchString(commit) || !runIDPattern.MatchString(runID) {
 		return m, fmt.Errorf("invalid date/run/attempt tag, source commit or run ID")
 	}
-	if singletonTagPattern.MatchString(tag) {
+	if b.Name == "toolbox" && toolboxDatePattern.MatchString(tag) {
+		if len(attempt) != 1 || !runIDPattern.MatchString(attempt[0]) {
+			return m, fmt.Errorf("daily toolbox tag requires workflow attempt")
+		}
+		date := strings.Split(tag, "-b")[0]
+		if _, err := time.Parse("2006.01.02", date); err != nil || strings.ReplaceAll(date, ".", "-") != strings.Split(created, "T")[0] {
+			return m, fmt.Errorf("toolbox tag date differs from creation date")
+		}
+		m.RunAttempt = attempt[0]
+	} else if singletonTagPattern.MatchString(tag) {
 		if b.Repository == "node" && bundle == "" {
 			return m, fmt.Errorf("Node channel source identity required for new semantic publications")
 		}

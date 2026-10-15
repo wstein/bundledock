@@ -12,7 +12,7 @@ import (
 )
 
 func TestLegacyArtifactUsesExactAttemptAndCredentialFreeDownload(t *testing.T) {
-	for _, scenario := range []string{"legacy tag", "current tag", "package filename", "mixed filenames", "expired", "wrong revision", "download gone", "unsafe download", "duplicate lock"} {
+	for _, scenario := range []string{"legacy tag", "current tag", "daily tag", "package filename", "mixed filenames", "expired", "wrong revision", "download gone", "unsafe download", "duplicate lock"} {
 		t.Run(scenario, func(t *testing.T) {
 			lock := testLock(t)
 			var archive bytes.Buffer
@@ -35,6 +35,9 @@ func TestLegacyArtifactUsesExactAttemptAndCredentialFreeDownload(t *testing.T) {
 			m := Metadata{Image: "quay.io/example/toolbox", RunID: "38072919085", Tag: "2026.10.10-38072919085-4", Commit: strings.Repeat("a", 40), Source: "https://github.com/example/repo"}
 			if scenario == "current tag" {
 				m.Tag = "2026.10.10-b12.4"
+			}
+			if scenario == "daily tag" {
+				m.Tag, m.RunAttempt = "2026.10.10-b1", "4"
 			}
 			downloads := 0
 			client := &http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
@@ -75,7 +78,7 @@ func TestLegacyArtifactUsesExactAttemptAndCredentialFreeDownload(t *testing.T) {
 				return &http.Response{StatusCode: status, Body: io.NopCloser(strings.NewReader(body)), Header: headers}, nil
 			})}
 			got, err := PublishedLockArtifact(context.Background(), client, "example/repo", "main", "private-token", m)
-			wantErr := scenario != "legacy tag" && scenario != "current tag" && scenario != "package filename"
+			wantErr := scenario != "legacy tag" && scenario != "current tag" && scenario != "package filename" && scenario != "daily tag"
 			if (err != nil) != wantErr || (!wantErr && (!bytes.Equal(got, lock) || downloads != 1)) {
 				t.Fatalf("got %v downloads=%d", err, downloads)
 			}
