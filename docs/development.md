@@ -120,6 +120,40 @@ deployment secret is required. Treat the site as published only after deployment
 succeeds. Source tests verify these contracts without rendering or deploying the
 site; live deployment is verified separately after merge.
 
+### Stable updater compatibility
+
+Stable prebuilt versions permitted by `packages.txt` should pass source checks
+without editing tests or licensing metadata for each release. Production-lock
+tests check stable ranges, matching AMD64/ARM64 versions, official recipes/URLs,
+checksum syntax and publisher provenance. Fixed parser examples and reviewed
+license snapshots live under `internal/toolconfig/testdata/`; they do not assert
+that a historical fixture is the currently installed release. The deliberately
+authorized git-trim source recipe and separate documentation-tool pin retain
+their exact identity checks.
+
+`scripts/tests/test_rolling_locks.py` copies only source-test inputs into a temporary
+workspace, advances every rolling prebuilt lock on both architectures, and runs
+the complete configuration test package. It covers all nine bundles without
+changing checked-in locks, recipes, desired inputs or notices. Checksums and URLs
+in this simulation are synthetic; it performs no tool downloads, executions,
+image builds or upstream verification. It also confirms that corrupt checksums,
+disallowed versions, downgraded checksum provenance, wrong-architecture URLs and
+changed license bytes remain failures. The test runs offline as part of
+`make check`.
+
+Leaf and GitHub CLI SOURCE notices describe the exact release from which their
+retained full license was reviewed, including immutable source evidence and a
+license-byte checksum. That historical snapshot is independent of the binary
+version recorded in the lock and generated bundle manifest. Advancing a binary
+pin must not relabel old license evidence as newly verified. The snapshot checks
+protect retained bytes; they do not prove that every future upstream release has
+unchanged licensing. Actual license changes require review and updated evidence.
+
+Keep source/test fixes in their own PR. After human merge, refresh an existing
+bot updater by merging current main into that branch. Its final diff must stay
+limited to its own lock and generated inventory to preserve automatic publication
+eligibility; do not add source/test commits to the updater branch.
+
 ### Bundled Hugo verification
 
 The toolbox installs the official stable **standard** Hugo 0.167.0 prebuilt
