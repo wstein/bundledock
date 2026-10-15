@@ -2,6 +2,7 @@ package toolinventory
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -54,6 +55,33 @@ func save(t *testing.T, name, data string) {
 		t.Fatal(err)
 	}
 }
+func pinnedVersion(t *testing.T, root, tool string) string {
+	t.Helper()
+	var lock struct {
+		Platforms map[string]map[string]struct {
+			Version string `json:"version"`
+		} `json:"platforms"`
+	}
+	if err := json.Unmarshal([]byte(read(t, filepath.Join(root, "bundles/toolbox/packages.lock.json"))), &lock); err != nil {
+		t.Fatal(err)
+	}
+	version := lock.Platforms["amd64"][tool].Version
+	if version == "" {
+		t.Fatalf("missing fixture version for %s", tool)
+	}
+	return version
+}
+
+func nextGitHubVersion(t *testing.T, root string) string {
+	t.Helper()
+	var major, minor, patch int
+	version := pinnedVersion(t, root, "gh")
+	if n, err := fmt.Sscanf(version, "v%d.%d.%d", &major, &minor, &patch); err != nil || n != 3 {
+		t.Fatalf("unexpected stable GitHub CLI version %q", version)
+	}
+	return fmt.Sprintf("v%d.%d.%d", major, minor, patch+1)
+}
+
 func changeVersion(t *testing.T, root, arch, version string) {
 	t.Helper()
 	name := filepath.Join(root, "bundles/toolbox/packages.lock.json")
@@ -72,8 +100,11 @@ func TestVersionChangeRequiresInventoryUpdate(t *testing.T) {
 	root, script := fixture(t)
 	name := filepath.Join(root, "docs/toolbox.md")
 	before := read(t, name)
-	changeVersion(t, root, "amd64", "v2.103.0")
-	changeVersion(t, root, "arm64", "v2.103.0")
+	oldVersion := strings.TrimPrefix(pinnedVersion(t, root, "gh"), "v")
+	newPin := nextGitHubVersion(t, root)
+	newVersion := strings.TrimPrefix(newPin, "v")
+	changeVersion(t, root, "amd64", newPin)
+	changeVersion(t, root, "arm64", newPin)
 	out, err := invoke(t, root, script, "--check")
 	if err == nil || !strings.Contains(out, "inventory is stale") {
 		t.Fatalf("expected drift failure, err=%v output=%s", err, out)
@@ -85,10 +116,10 @@ func TestVersionChangeRequiresInventoryUpdate(t *testing.T) {
 		t.Fatalf("generate: %v %s", err, out)
 	}
 	after := read(t, name)
-	if !strings.Contains(after, "| GitHub CLI | 2.103.0 |") {
+	if !strings.Contains(after, "| GitHub CLI | "+newVersion+" |") {
 		t.Fatal("version missing")
 	}
-	if strings.Replace(after, "| GitHub CLI | 2.103.0 |", "| GitHub CLI | 2.102.0 |", 1) != before {
+	if strings.Replace(after, "| GitHub CLI | "+newVersion+" |", "| GitHub CLI | "+oldVersion+" |", 1) != before {
 		t.Fatal("generator changed more than the managed version")
 	}
 	if out, err := invoke(t, root, script, "--check"); err != nil {
@@ -110,7 +141,7 @@ func TestCheckedInInventoryMatchesLock(t *testing.T) {
 func TestRefuseArchitectureMismatchAndMissingMarkers(t *testing.T) {
 	t.Run("architecture mismatch", func(t *testing.T) {
 		root, script := fixture(t)
-		changeVersion(t, root, "amd64", "v2.103.0")
+		changeVersion(t, root, "amd64", nextGitHubVersion(t, root))
 		out, err := invoke(t, root, script)
 		if err == nil || !strings.Contains(out, "architecture versions differ") {
 			t.Fatalf("%v %s", err, out)
@@ -166,7 +197,7 @@ func TestInventoryUsesDisplayedLabelAlphabeticalOrder(t *testing.T) {
 			t.Fatalf("display labels not alphabetical: %q before %q", labels[i-1], labels[i])
 		}
 	}
-	if !strings.Contains(region, "| Mike Farah yq (`yq`) |") || !strings.Contains(region, "| tmux (`tmux`) | 3.7c (official static builds) |") {
+	if !strings.Contains(region, "| Mike Farah yq (`yq`) |") || !strings.Contains(region, "| tmux (`tmux`) | "+strings.TrimPrefix(pinnedVersion(t, root, "tmux"), "v")+" (official static builds) |") {
 		t.Fatal("display labels or versions changed")
 	}
 }

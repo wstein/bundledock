@@ -2,6 +2,7 @@ package toolpublish
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -56,6 +57,87 @@ func TestSingletonVersionAllocation(t *testing.T) {
 			changed := strings.Replace(string(lock), `"version": "`, `"version": "9`, 1)
 			if _, err := SingletonVersion([]byte(changed), test.name); err == nil {
 				t.Fatal("accepted differing architecture versions")
+			}
+		})
+	}
+}
+
+// Real rolling locks must remain usable without embedding a historic release in
+// the fake registry. Exact normalization examples above remain independent.
+func TestSingletonAllocationTracksRollingLocks(t *testing.T) {
+	for _, name := range []string{"node", "node-current", "bun", "code-server", "codex", "agy", "claude", "opentofu"} {
+		t.Run(name, func(t *testing.T) {
+			lock, err := os.ReadFile("../../bundles/" + name + "/packages.lock.json")
+			if err != nil {
+				t.Fatal(err)
+			}
+			var pins struct {
+				Platforms map[string]map[string]struct {
+					Version string `json:"version"`
+				} `json:"platforms"`
+			}
+			if err := json.Unmarshal(lock, &pins); err != nil {
+				t.Fatal(err)
+			}
+			tool := name
+			if name == "node-current" {
+				tool = "node"
+			}
+			version := pins.Platforms["amd64"][tool].Version
+			for _, prefix := range []string{"rust-v", "bun-v", "v"} {
+				version = strings.TrimPrefix(version, prefix)
+			}
+			if version == "" || version == "0.0.1" {
+				t.Fatalf("unexpected production version %q", version)
+			}
+			bundle, err := SelectBundle(name)
+			if err != nil {
+				t.Fatal(err)
+			}
+			image, err := RepositoryImageForBundle("quay.io/example", name)
+			if err != nil {
+				t.Fatal(err)
+			}
+			repository := strings.TrimPrefix(image, "quay.io/")
+			for _, sameVersion := range []bool{true, false} {
+				t.Run(fmt.Sprintf("matching-upstream=%t", sameVersion), func(t *testing.T) {
+					published, want := version, version+"-b8"
+					if !sameVersion {
+						published, want = "0.0.1", version+"-b1"
+					}
+					var refs strings.Builder
+					for _, namespace := range bundle.SourceTagNamespaces() {
+						fmt.Fprintf(&refs, "a refs/tags/%s/%s-b3\nb refs/tags/%s/%s-b7\n", namespace, published, namespace, published)
+					}
+					reserved, err := SourceTagReservations(bundle, []byte(refs.String()))
+					if err != nil {
+						t.Fatal(err)
+					}
+					calls := 0
+					client := &http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+						calls++
+						body := `{"token":"read-only"}`
+						if r.URL.Path == "/v2/auth" {
+							if r.URL.Query().Get("scope") != "repository:"+repository+":pull" {
+								t.Fatal("wrong repository scope")
+							}
+						} else {
+							if r.URL.Path != "/v2/"+repository+"/tags/list" || r.Header.Get("Authorization") != "Bearer read-only" {
+								t.Fatal("wrong authenticated repository listing")
+							}
+							b, err := json.Marshal(map[string]any{"name": repository, "tags": []string{published + "-b5", "0.0.0-b99", "stable", "latest", "current", "lts"}})
+							if err != nil {
+								t.Fatal(err)
+							}
+							body = string(b)
+						}
+						return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(body)), Header: http.Header{}}, nil
+					})}
+					got, err := AllocateSingletonTag(context.Background(), client, image, lock, "robot", "secret", reserved...)
+					if err != nil || got != want || calls != 2 {
+						t.Fatalf("allocation=%s want=%s calls=%d: %v", got, want, calls, err)
+					}
+				})
 			}
 		})
 	}
