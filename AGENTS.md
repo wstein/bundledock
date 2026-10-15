@@ -114,6 +114,7 @@ still pins an older image, so do not assume these commands exist in a running se
 | Use an alternative terminal multiplexer | `tmux`. |
 | Monitor processes and system resources | `btm` (bottom) and `btop`. |
 | Customize a shell prompt | `starship`. |
+| Share Git/jj shortcuts and the prompt across bash, zsh, fish and nu | `share/shell` and the XDG vendor files; see the shared shell layer in docs/toolbox.md. |
 | Preview Markdown in the terminal | `leaf`. |
 | Edit text in the terminal | `hx` (Helix). |
 | Build static sites | `hugo` (standard). |
