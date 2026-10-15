@@ -96,9 +96,9 @@
         "verification": "publisher-sha256"
       },
       "herdr": {
-        "version": "v0.9.4",
-        "url": "https://github.com/herdrdev/herdr/releases/download/v0.9.4/herdr-linux-x86_64",
-        "sha256": "493304fbefb0ed0ea0455f373b47f48d24e8774bc7974f4c916ad2e937675b23",
+        "version": "v0.9.5",
+        "url": "https://github.com/herdrdev/herdr/releases/download/v0.9.5/herdr-linux-x86_64",
+        "sha256": "14d9e8bc8b4a9e0118d77c32266f76d461f09b40342eb23752960bd89f59929d",
         "verification": "publisher-sha256"
       },
       "hugo": {
@@ -126,9 +126,9 @@
         "verification": "publisher-sha256"
       },
       "just": {
-        "version": "1.58.0",
-        "url": "https://github.com/casey/just/releases/download/1.58.0/just-1.58.0-x86_64-unknown-linux-musl.tar.gz",
-        "sha256": "4a5cc2f53e6f0f8c59092a6cc38291eb729d46a7dd95d3ae582008881b84931d",
+        "version": "1.59.0",
+        "url": "https://github.com/casey/just/releases/download/1.59.0/just-1.59.0-x86_64-unknown-linux-musl.tar.gz",
+        "sha256": "409044617b6f06517c1035e55ca38c8c856ff8b650e41bc2aa1ef82d5903a23e",
         "verification": "publisher-sha256"
       },
       "lazygit": {
@@ -138,9 +138,9 @@
         "verification": "publisher-sha256"
       },
       "leaf": {
-        "version": "1.29.0",
-        "url": "https://github.com/RivoLink/leaf/releases/download/1.29.0/leaf-linux-x86_64",
-        "sha256": "5a68ffc77c8d604cfe854cd685e36ee98e47f0a507234011cdc0619f9aabb40c",
+        "version": "1.29.1",
+        "url": "https://github.com/RivoLink/leaf/releases/download/1.29.1/leaf-linux-x86_64",
+        "sha256": "04e9716562cdf89ce240181e287e8b79ee0a2c096b02151d4f69247d86d3f186",
         "verification": "publisher-sha256"
       },
       "lychee": {
@@ -150,9 +150,9 @@
         "verification": "publisher-sha256"
       },
       "mise": {
-        "version": "v2026.10.10",
-        "url": "https://github.com/jdx/mise/releases/download/v2026.10.10/mise-v2026.10.10-linux-x64-musl",
-        "sha256": "377c726bc34625162b324aa979f798dbc080db8bd67691c59ed0d74703810b35",
+        "version": "v2026.10.11",
+        "url": "https://github.com/jdx/mise/releases/download/v2026.10.11/mise-v2026.10.11-linux-x64-musl",
+        "sha256": "2b010104bfedca93b0dd69a8276a4f364bd9236a41d1faceae367d39b5e53f8a",
         "verification": "publisher-sha256"
       },
       "navi": {
@@ -351,9 +351,9 @@
         "verification": "publisher-sha256"
       },
       "herdr": {
-        "version": "v0.9.4",
-        "url": "https://github.com/herdrdev/herdr/releases/download/v0.9.4/herdr-linux-aarch64",
-        "sha256": "9511cb70982c1ef115f232058e7ed7cf9640aa5a2c0ca78934cefda3aeb093fd",
+        "version": "v0.9.5",
+        "url": "https://github.com/herdrdev/herdr/releases/download/v0.9.5/herdr-linux-aarch64",
+        "sha256": "17d7536f2da50859523680ef279dffcac8e4a235f4e46fe8da6c2ec44141897c",
         "verification": "publisher-sha256"
       },
       "hugo": {
@@ -381,9 +381,9 @@
         "verification": "publisher-sha256"
       },
       "just": {
-        "version": "1.58.0",
-        "url": "https://github.com/casey/just/releases/download/1.58.0/just-1.58.0-aarch64-unknown-linux-musl.tar.gz",
-        "sha256": "748237128c4c40cbdabc65e841d05ceba13cc23a91eaba395495894c1d9764df",
+        "version": "1.59.0",
+        "url": "https://github.com/casey/just/releases/download/1.59.0/just-1.59.0-aarch64-unknown-linux-musl.tar.gz",
+        "sha256": "23871b1702bfd550fb5f901778fd4290ecf2ee034a45a889fbe96d89b188086d",
         "verification": "publisher-sha256"
       },
       "lazygit": {
@@ -393,9 +393,9 @@
         "verification": "publisher-sha256"
       },
       "leaf": {
-        "version": "1.29.0",
-        "url": "https://github.com/RivoLink/leaf/releases/download/1.29.0/leaf-linux-arm64",
-        "sha256": "b3c383620f1cff8a64ff041f389bea4ff2385b69810c1f44d4ea90054a561c6f",
+        "version": "1.29.1",
+        "url": "https://github.com/RivoLink/leaf/releases/download/1.29.1/leaf-linux-arm64",
+        "sha256": "f65fe24b5b5abfb83a69f7d5482f7ca2fefde2028899ef2a10a77731ad6ecf84",
         "verification": "publisher-sha256"
       },
       "lychee": {
@@ -405,9 +405,9 @@
         "verification": "publisher-sha256"
       },
       "mise": {
-        "version": "v2026.10.10",
-        "url": "https://github.com/jdx/mise/releases/download/v2026.10.10/mise-v2026.10.10-linux-arm64-musl",
-        "sha256": "11fac00f49201d857248e74d4e69ec5cb70033adef71699090f501cb26f0e49c",
+        "version": "v2026.10.11",
+        "url": "https://github.com/jdx/mise/releases/download/v2026.10.11/mise-v2026.10.11-linux-arm64-musl",
+        "sha256": "b8994b622e2065e6bb083322bd011fd4111102bfec4883c4ce0336c1e3cb9e0d",
         "verification": "publisher-sha256"
       },
       "navi": {
