@@ -207,21 +207,29 @@ func TestQualitySecurityCatalogPins(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, tc := range []struct{ name, version string }{
-		{"typos", "v1.51.1"}, {"lychee", "lychee-v0.24.2"}, {"gitleaks", "v8.30.1"}, {"trivy", "v0.75.0"}, {"syft", "v1.54.1"},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			p := c.Catalog.Packages[tc.name]
-			if p.Install.Kind != "tar.gz" || p.Install.Members[tc.name] != "bin/"+tc.name {
+	// Stable versions roll forward through lock-only updater PRs. The desired
+	// constraints own the version floor; this test owns recipe and pin integrity.
+	for _, name := range []string{"typos", "lychee", "gitleaks", "trivy", "syft"} {
+		t.Run(name, func(t *testing.T) {
+			p := c.Catalog.Packages[name]
+			if p.Install.Kind != "tar.gz" || p.Install.Members[name] != "bin/"+name {
 				t.Fatal("missing executable recipe")
 			}
 			if len(p.Notices)+len(p.Install.ArchiveNotices) == 0 {
 				t.Fatal("missing license notices")
 			}
 			for _, arch := range []string{"amd64", "arm64"} {
-				pin := c.Lock.Platforms[arch][tc.name]
-				if pin.Version != tc.version || len(pin.SHA256) != 64 {
-					t.Fatalf("missing verified %s pin", arch)
+				pin := c.Lock.Platforms[arch][name]
+				version, err := p.Version(pin.Version)
+				if err != nil || !c.Desired[name].Contains(version) {
+					t.Fatalf("%s pin %q is not a stable version within desired constraints", arch, pin.Version)
+				}
+				if len(pin.SHA256) != 64 || pin.Verification != "publisher-sha256" {
+					t.Fatalf("missing publisher-verified %s SHA256 pin", arch)
+				}
+				prefix := "https://github.com/" + p.Repository + "/releases/download/" + pin.Version + "/"
+				if !strings.HasPrefix(pin.URL, prefix) {
+					t.Fatalf("%s pin does not use its official versioned release URL", arch)
 				}
 			}
 		})
