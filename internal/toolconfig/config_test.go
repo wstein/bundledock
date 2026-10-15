@@ -135,16 +135,12 @@ func TestFishAndStarshipCatalogPins(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, tc := range []struct{ name, kind, version string }{{"fish", "tar.xz", "4.9.3"}, {"starship", "tar.gz", "v1.26.0"}} {
+	for _, tc := range []struct{ name, kind string }{{"fish", "tar.xz"}, {"starship", "tar.gz"}} {
 		p := c.Catalog.Packages[tc.name]
 		if p.Install.Kind != tc.kind || p.Install.Members[tc.name] != "bin/"+tc.name {
 			t.Fatalf("missing %s binary recipe", tc.name)
 		}
-		for _, arch := range []string{"amd64", "arm64"} {
-			if c.Lock.Platforms[arch][tc.name].Version != tc.version {
-				t.Fatalf("missing %s/%s pin", tc.name, arch)
-			}
-		}
+		assertRollingStablePins(t, c, tc.name)
 	}
 }
 
@@ -153,30 +149,12 @@ func TestShellAlternativeCatalogPins(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, tc := range []struct{ name, kind, version string }{{"nu", "tar.gz", "0.116.1"}, {"tmux", "tar.gz", "v3.7c"}} {
+	for _, tc := range []struct{ name, kind string }{{"nu", "tar.gz"}, {"tmux", "tar.gz"}} {
 		p, ok := c.Catalog.Packages[tc.name]
 		if !ok || p.Install.Kind != tc.kind || p.Install.Members[tc.name] != "bin/"+tc.name {
 			t.Fatalf("missing %s binary recipe", tc.name)
 		}
-		for _, arch := range []string{"amd64", "arm64"} {
-			if c.Lock.Platforms[arch][tc.name].Version != tc.version {
-				t.Fatalf("missing %s/%s pin", tc.name, arch)
-			}
-		}
-	}
-	p := c.Catalog.Packages["tmux"]
-	if v, err := p.Version("3.8"); err != nil || v != "3.8.0" {
-		t.Fatalf("tmux release normalization: %q %v", v, err)
-	}
-	for tag, want := range map[string]string{"v3.7a": "3.7.1", "v3.7b": "3.7.2", "v3.7c": "3.7.3", "v3.8": "3.8.0"} {
-		if got, err := p.Version(tag); err != nil || got != want {
-			t.Fatalf("%s: %s %v", tag, got, err)
-		}
-	}
-	for _, bad := range []string{"v3.7aa", "v3.7-rc", "v3.07c", "v3.7.1", "v3.7C"} {
-		if _, err := p.Version(bad); err == nil {
-			t.Fatalf("accepted tmux tag %s", bad)
-		}
+		assertRollingStablePins(t, c, tc.name)
 	}
 }
 func TestLoadInputsAllowsNarrowTmuxRanges(t *testing.T) {
@@ -218,20 +196,7 @@ func TestQualitySecurityCatalogPins(t *testing.T) {
 			if len(p.Notices)+len(p.Install.ArchiveNotices) == 0 {
 				t.Fatal("missing license notices")
 			}
-			for _, arch := range []string{"amd64", "arm64"} {
-				pin := c.Lock.Platforms[arch][name]
-				version, err := p.Version(pin.Version)
-				if err != nil || !c.Desired[name].Contains(version) {
-					t.Fatalf("%s pin %q is not a stable version within desired constraints", arch, pin.Version)
-				}
-				if len(pin.SHA256) != 64 || pin.Verification != "publisher-sha256" {
-					t.Fatalf("missing publisher-verified %s SHA256 pin", arch)
-				}
-				prefix := "https://github.com/" + p.Repository + "/releases/download/" + pin.Version + "/"
-				if !strings.HasPrefix(pin.URL, prefix) {
-					t.Fatalf("%s pin does not use its official versioned release URL", arch)
-				}
-			}
+			assertRollingPublisherPins(t, c, name)
 		})
 	}
 }

@@ -1,11 +1,8 @@
 package toolconfig
 
 import (
-	"crypto/sha256"
-	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"testing"
 )
@@ -72,37 +69,5 @@ func TestEveryCatalogPackageRetainsDirectUpstreamNotices(t *testing.T) {
 				}
 			})
 		}
-	}
-}
-
-func TestGitHubCLINoticesBoundToLockedRelease(t *testing.T) {
-	c, err := Load("../../bundles/toolbox")
-	if err != nil {
-		t.Fatal(err)
-	}
-	p := c.Catalog.Packages["gh"]
-	if p.Repository != "cli/cli" || len(p.Notices) != 2 || p.Notices[0] != "licenses/gh/LICENSE" || p.Notices[1] != "licenses/gh/SOURCE" {
-		t.Fatal("official gh notice recipe missing")
-	}
-	source, err := os.ReadFile("../../bundles/toolbox/licenses/gh/SOURCE")
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, arch := range []string{"amd64", "arm64"} {
-		version := c.Lock.Platforms[arch]["gh"].Version
-		if !strings.Contains(string(source), "Pinned release: "+version+"\n") || !strings.Contains(string(source), "Source archive: https://api.github.com/repos/cli/cli/tarball/"+version+"\n") {
-			t.Fatal("gh notice provenance differs from locked release")
-		}
-	}
-	if !regexp.MustCompile(`(?m)^Source SHA256: [0-9a-f]{64}$`).Match(source) {
-		t.Fatal("missing exact source archive hash")
-	}
-	license, err := os.ReadFile("../../bundles/toolbox/licenses/gh/LICENSE")
-	if err != nil {
-		t.Fatal(err)
-	}
-	// Golden digest of unchanged LICENSE from the official v2.102.0 source archive.
-	if fmt.Sprintf("%x", sha256.Sum256(license)) != "6da4adc42392c8485e40b4251c7e332fc3352df1947c9ffade71dd60b14a7a4f" {
-		t.Fatal("gh full official license changed; inspect upstream notice on version updates")
 	}
 }

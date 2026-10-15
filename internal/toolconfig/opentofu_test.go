@@ -14,12 +14,7 @@ func TestOptionalOpenTofuOfficialPins(t *testing.T) {
 	if p.Repository != "opentofu/opentofu" || p.Install.Members["tofu"] != "bin/tofu" {
 		t.Fatal("official CLI recipe required")
 	}
-	for _, arch := range []string{"amd64", "arm64"} {
-		s := c.Lock.Platforms[arch]["opentofu"]
-		if s.Version != "v1.13.1" || s.Verification != "publisher-sha256" {
-			t.Fatal("stable publisher checksum pins required")
-		}
-	}
+	assertRollingPublisherPins(t, c, "opentofu")
 }
 
 func TestOpenTofuRejectsUnofficialRecipeAndPins(t *testing.T) {

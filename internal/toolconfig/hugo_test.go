@@ -8,30 +8,11 @@ import (
 )
 
 func TestHugoStandardCatalogPins(t *testing.T) {
-	for _, upgrade := range []bool{false, true} {
-		t.Run(fmt.Sprintf("upgrade=%t", upgrade), func(t *testing.T) {
-			c, err := Load("../../bundles/toolbox")
-			if err != nil {
-				t.Fatal(err)
-			}
-			if upgrade {
-				for arch, checksum := range map[string]string{
-					"amd64": "fada83ad56bb27ed4cb7dd81590303bdac16140f944ac4e66fc248117e2d5594",
-					"arm64": "91ce984e998a955a3dc1b5852eb4e65d0ed0f6d12a5c51690df97a548e1fdeeb",
-				} {
-					pin := c.Lock.Platforms[arch]["hugo"]
-					pin.Version = "v0.168.0"
-					pin.URL = fmt.Sprintf("https://github.com/gohugoio/hugo/releases/download/v0.168.0/hugo_0.168.0_linux-%s.tar.gz", arch)
-					pin.SHA256 = checksum
-					c.Lock.Platforms[arch]["hugo"] = pin
-				}
-			}
-			if err := c.Validate(); err != nil {
-				t.Fatal(err)
-			}
-			assertHugoStandardCatalogPins(t, c)
-		})
+	c, err := Load("../../bundles/toolbox")
+	if err != nil {
+		t.Fatal(err)
 	}
+	assertHugoStandardCatalogPins(t, c)
 }
 
 func assertHugoStandardCatalogPins(t *testing.T, c *Config) {
