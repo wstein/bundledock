@@ -542,6 +542,60 @@ JSON export and age encryption/decryption with a temporary key. Native AMD64 and
 ARM64 execution, OCI builds/smoke and vulnerability scans remain unverified and
 require separately approved builds before release or consumer activation.
 
+## Shared shell layer
+
+The toolbox carries one set of Git and Jujutsu shortcuts and a starship prompt
+for bash, zsh, fish and Nushell. Every shell gets the same names, and each name
+runs the same command with the same arguments: `gst` is `git status`, `gpsup`
+pushes the current branch with an upstream, `jst` is `jj status`, in all four.
+The table is `internal/shelllayer/shortcuts.tsv`; Git names follow
+[jhillyerd/plugin-git](https://github.com/jhillyerd/plugin-git) (MIT, notice
+retained under `licenses/shell-layer`). The set is curated: no `--no-verify`,
+git-svn, git-flow or forge-specific entries and no irreversible clean or reset
+shortcuts. Names use `[a-z0-9]` only, so `gc!`-style names are not offered.
+
+| Shell | File in the toolbox | How it loads | Shortcuts |
+| --- | --- | --- | --- |
+| fish | `share/fish/vendor_conf.d/bdock-shell.fish` | `XDG_DATA_DIRS` | abbreviations, expanded in place |
+| Nushell | `share/nushell/vendor/autoload/bdock-shell.nu` | `XDG_DATA_DIRS` | aliases and wrapped commands |
+| zsh | `share/shell/init.zsh` | one line in the system zshrc | aliases, expanded in place on space |
+| bash | `share/shell/init.bash` | one line in the system bashrc | aliases |
+
+Nothing is enabled automatically. A consumer opts in by putting the toolbox's
+`share` first in `XDG_DATA_DIRS` (fish and Nushell) and sourcing the bash or zsh
+file from the image's system rc file, guarded so a missing toolbox is harmless:
+
+```sh
+XDG_DATA_DIRS=/opt/bundledock/toolbox/share:/usr/local/share:/usr/share
+[ -r /opt/bundledock/toolbox/share/shell/init.zsh ] && . /opt/bundledock/toolbox/share/shell/init.zsh
+```
+
+Shortcuts that need a branch (`gpsup`, `grbm`, `gswm`) are functions in every
+shell: they resolve the branch first and stop with `bdock: not on a branch
+(detached HEAD)` before running Git, which matters in jj-colocated repositories.
+The default branch is `origin/HEAD`, else `main`, else `master`. All files load
+only in interactive shells. `BDOCK_SHORTCUTS=0` skips the shortcuts,
+`BDOCK_STARSHIP=0` the prompt and `BDOCK_ZSH_EXPAND=0` zsh's expansion on space
+(Ctrl+Space inserts a plain space). A prompt already initialized by the user's
+own configuration (`STARSHIP_SHELL` set) is left alone. Nushell definitions
+cannot be conditional, so there the shortcuts are opted out by leaving the
+toolbox out of `XDG_DATA_DIRS`. Nushell's prompt setup is a static copy of what
+`starship init nu` produces, because autoload files cannot evaluate generated
+code.
+
+The generator renders the four files from the table; they are committed and
+embedded, and the toolbox build copies them without running any shell. After
+editing the table, run
+`go test ./internal/shelllayer -run TestGeneratedFilesAreCurrent -update`.
+`TestShortcutsBehaveTheSameInEveryShell` runs every shortcut in each installed
+shell against stub `git` and `jj` commands and requires identical arguments;
+`TestBranchShortcutsRefuseDetachedHead` checks the detached-HEAD refusal.
+Verified on 2026-10-15 with bash 5.2.21, zsh 5.9 and the pinned fish 4.9.3,
+Nushell 0.116.1 and starship 1.26.0, including starship initialization in all
+four shells, Nushell vendor autoload through `XDG_DATA_DIRS` and zsh's
+expansion in a pseudo-terminal. zsh is not part of the toolbox: no official
+upstream prebuilt release exists, so it comes from the consumer image.
+
 ## Optional browser editor
 
 The [code-server bundle](code-server.md) provides a separate optional OCI
