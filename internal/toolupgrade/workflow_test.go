@@ -93,12 +93,10 @@ p=Path('bundles')/bundle/'packages.lock.json'
 lock=json.loads(p.read_text())
 if os.environ.get('NO_CHANGE_'+bundle.upper().replace('-','_'))!='true':
  tool='gh' if bundle=='toolbox' else 'node' if bundle=='node-current' else bundle
- version={'node-current':'v26.12.0','code-server':'v4.142.0','node':'v24.22.0','toolbox':'v2.103.0','bun':'bun-v1.4.4'}.get(bundle)
- if version is None:
-  current=lock['platforms']['amd64'][tool]['version']
-  prefix='rust-v' if bundle=='codex' else 'v' if current.startswith('v') else ''
-  major,minor,patch=map(int,current.removeprefix(prefix).split('.'))
-  version=prefix+f'{major}.{minor}.{patch+1}'
+ current=lock['platforms']['amd64'][tool]['version']
+ prefix=next((p for p in ('rust-v','bun-v','v') if current.startswith(p)), '')
+ major,minor,patch=map(int,current.removeprefix(prefix).split('.'))
+ version=prefix+f'{major}.{minor}.{patch+1}'
  for arch in ('amd64','arm64'): lock['platforms'][arch][tool]['version']=version
 p.write_text(json.dumps(lock,indent=2)+'\n')
 PYTHON
@@ -166,6 +164,45 @@ func TestFixtureIgnoresParentBundle(t *testing.T) {
 	}
 }
 
+// These fixed examples reproduce the release versions that previously made the
+// fake resolver a no-op. They are regression inputs, not production lock pins.
+func TestFixtureResolverAdvancesPastFormerTargets(t *testing.T) {
+	for bundle, version := range map[string]string{
+		"toolbox": "v2.103.0", "code-server": "v4.142.0", "node": "v24.22.0",
+		"node-current": "v26.12.0", "bun": "bun-v1.4.4",
+	} {
+		t.Run(bundle, func(t *testing.T) {
+			dir, env := fixture(t)
+			tool := bundle
+			if bundle == "toolbox" {
+				tool = "gh"
+			}
+			if bundle == "node-current" {
+				tool = "node"
+			}
+			env = append(env, "BUNDLE="+bundle, "TOOL="+tool)
+			must(t, dir, nil, "python3", "-c", `import json,sys
+from pathlib import Path
+bundle,tool,version=sys.argv[1:]
+p=Path('bundles')/bundle/'packages.lock.json'
+lock=json.loads(p.read_text())
+for arch in ('amd64','arm64'): lock['platforms'][arch][tool]['version']=version
+p.write_text(json.dumps(lock,indent=2)+'\n')`, bundle, tool, version)
+			must(t, dir, nil, "python3", "scripts/tool-inventory.py", "--bundle", bundle)
+			must(t, dir, nil, "git", "add", ".")
+			must(t, dir, nil, "git", "commit", "--allow-empty", "-m", "former resolver target")
+			if out, err := adapter(t, dir, env, "resolve"); err != nil {
+				t.Fatalf("resolve: %v\n%s", err, out)
+			}
+			label := tool
+			if tool == "gh" {
+				label = "GitHub CLI"
+			}
+			assertFixtureProposal(t, env, bundle, tool, label, version)
+		})
+	}
+}
+
 func TestFixtureDisablesAutomaticGitMaintenance(t *testing.T) {
 	trace := filepath.Join(t.TempDir(), "git-trace.json")
 	t.Setenv("GIT_TRACE2_EVENT", trace)
@@ -212,8 +249,81 @@ func TestFixtureDisablesAutomaticGitMaintenance(t *testing.T) {
 	}
 }
 
+// fixtureVersion reads a named architecture so artifact assertions cannot pass
+// merely because another package or architecture contains the expected text.
+func fixtureVersion(t *testing.T, data []byte, arch, tool string) string {
+	t.Helper()
+	var lock struct {
+		Platforms map[string]map[string]struct {
+			Version string `json:"version"`
+		} `json:"platforms"`
+	}
+	if err := json.Unmarshal(data, &lock); err != nil {
+		t.Fatal(err)
+	}
+	version := lock.Platforms[arch][tool].Version
+	if version == "" {
+		t.Fatalf("missing %s/%s version", arch, tool)
+	}
+	return version
+}
+
+func fixtureBaseline(t *testing.T, dir, bundle, tool string) string {
+	t.Helper()
+	b, err := os.ReadFile(filepath.Join(dir, "bundles", bundle, "packages.lock.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return fixtureVersion(t, b, "amd64", tool)
+}
+
+func assertFixtureProposal(t *testing.T, env []string, bundle, tool, label, before string) string {
+	t.Helper()
+	result := value(env, "UPGRADE_RESULT")
+	b, err := os.ReadFile(filepath.Join(result, bundle+".lock.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	after := fixtureVersion(t, b, "amd64", tool)
+	if after == before {
+		t.Fatalf("resolver did not advance %s from %s", bundle, before)
+	}
+	if arm := fixtureVersion(t, b, "arm64", tool); arm != after {
+		t.Fatalf("architecture disagreement: %s != %s", after, arm)
+	}
+	inventory, err := os.ReadFile(filepath.Join(result, bundle+".md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	normalized := strings.TrimPrefix(strings.TrimPrefix(strings.TrimPrefix(after, "rust-"), "bun-"), "v")
+	if !strings.Contains(string(inventory), "| "+label+" | "+normalized+" |") {
+		t.Fatalf("inventory missing resolved %s version %s", label, normalized)
+	}
+	return after
+}
+
+func corruptFixtureArchitecture(t *testing.T, path, tool string) {
+	t.Helper()
+	b, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var lock map[string]any
+	if err := json.Unmarshal(b, &lock); err != nil {
+		t.Fatal(err)
+	}
+	pin := lock["platforms"].(map[string]any)["amd64"].(map[string]any)[tool].(map[string]any)
+	pin["version"] = "v99.0.0"
+	b, err = json.MarshalIndent(lock, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	write(t, path, string(b)+"\n")
+}
+
 func TestResolveAndPublish(t *testing.T) {
 	dir, env := fixture(t)
+	before := fixtureBaseline(t, dir, "toolbox", "gh")
 	out, err := adapter(t, dir, env, "resolve")
 	if err != nil {
 		t.Fatalf("resolve: %v\n%s", err, out)
@@ -225,13 +335,7 @@ func TestResolveAndPublish(t *testing.T) {
 	if !strings.Contains(string(b), "changed=true") {
 		t.Fatalf("outputs: %s", b)
 	}
-	result, err := os.ReadFile(filepath.Join(value(env, "UPGRADE_RESULT"), "toolbox.lock.json"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !strings.Contains(string(result), `"version": "v2.103.0"`) {
-		t.Fatalf("result %s", result)
-	}
+	after := assertFixtureProposal(t, env, "toolbox", "gh", "GitHub CLI", before)
 	must(t, dir, nil, "git", "restore", "bundles/toolbox/packages.lock.json", "docs/toolbox.md")
 	remote := filepath.Join(t.TempDir(), "remote.git")
 	must(t, dir, nil, "git", "init", "--bare", remote)
@@ -241,11 +345,11 @@ func TestResolveAndPublish(t *testing.T) {
 		t.Fatalf("publish: %v\n%s", err, out)
 	}
 	got := must(t, dir, nil, "git", "show", "HEAD:bundles/toolbox/packages.lock.json")
-	if !strings.Contains(got, `"version": "v2.103.0"`) {
+	if fixtureVersion(t, []byte(got), "amd64", "gh") != after {
 		t.Fatal(got)
 	}
 	inventory := must(t, dir, nil, "git", "show", "HEAD:docs/toolbox.md")
-	if !strings.Contains(inventory, "| GitHub CLI | 2.103.0 |") {
+	if !strings.Contains(inventory, "| GitHub CLI | "+strings.TrimPrefix(after, "v")+" |") {
 		t.Fatal("PR inventory missing updated version")
 	}
 	if branch := must(t, dir, nil, "git", "branch", "--show-current"); branch != "automation/toolbox-upgrade-123-1\n" {
@@ -368,7 +472,7 @@ func TestDocsOnlyDriftRepair(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	write(t, path, strings.Replace(string(b), "| GitHub CLI | 2.102.0 |", "| GitHub CLI | 0.0.0 |", 1))
+	write(t, path, strings.Replace(string(b), "| GitHub CLI | "+strings.TrimPrefix(fixtureBaseline(t, dir, "toolbox", "gh"), "v")+" |", "| GitHub CLI | 0.0.0 |", 1))
 	must(t, dir, nil, "git", "add", "docs/toolbox.md")
 	must(t, dir, nil, "git", "commit", "-m", "stale inventory fixture")
 	out, err := adapter(t, dir, append(env, "NO_CHANGE=true"), "resolve")
@@ -462,6 +566,7 @@ func TestPublisherNoChangeCreatesNothing(t *testing.T) {
 
 func TestCodeServerResolveUsesIndependentInputsAndInventory(t *testing.T) {
 	dir, env := fixture(t)
+	baseline := fixtureBaseline(t, dir, "code-server", "code-server")
 	env = append(env, "BUNDLE=code-server", "TOOL=code-server")
 	before := must(t, dir, nil, "git", "show", "HEAD:bundles/toolbox/packages.lock.json")
 	out, err := adapter(t, dir, env, "resolve")
@@ -474,12 +579,7 @@ func TestCodeServerResolveUsesIndependentInputsAndInventory(t *testing.T) {
 	if got := must(t, dir, nil, "git", "show", "HEAD:bundles/toolbox/packages.lock.json"); got != before {
 		t.Fatal("changed baseline")
 	}
-	for name, want := range map[string]string{"code-server.lock.json": "v4.142.0", "code-server.md": "| code-server | 4.142.0 |"} {
-		b, err := os.ReadFile(filepath.Join(value(env, "UPGRADE_RESULT"), name))
-		if err != nil || !strings.Contains(string(b), want) {
-			t.Fatalf("artifact %s: %v %s", name, err, b)
-		}
-	}
+	assertFixtureProposal(t, env, "code-server", "code-server", "code-server", baseline)
 }
 
 func TestCodeServerArtifactFailuresStopBeforeTopicCreation(t *testing.T) {
@@ -512,12 +612,7 @@ func TestCodeServerArtifactFailuresStopBeforeTopicCreation(t *testing.T) {
 				}
 				write(t, p, string(b)+"unrelated prose\n")
 			case "wrong architecture":
-				p := filepath.Join(result, "code-server.lock.json")
-				b, err := os.ReadFile(p)
-				if err != nil {
-					t.Fatal(err)
-				}
-				write(t, p, strings.Replace(string(b), "v4.142.0", "v4.143.0", 1))
+				corruptFixtureArchitecture(t, filepath.Join(result, "code-server.lock.json"), "code-server")
 			}
 			must(t, dir, nil, "git", "restore", "bundles/code-server/packages.lock.json", "docs/code-server.md")
 			if out, err := adapter(t, dir, env, "publish"); err == nil {
@@ -546,6 +641,7 @@ func TestCodeServerNoChangeCreatesNoProposal(t *testing.T) {
 
 func TestNodeResolveUsesIndependentInputsAndInventory(t *testing.T) {
 	dir, env := fixture(t)
+	baseline := fixtureBaseline(t, dir, "node", "node")
 	env = append(env, "BUNDLE=node", "TOOL=node")
 	before := must(t, dir, nil, "git", "show", "HEAD:bundles/toolbox/packages.lock.json")
 	out, err := adapter(t, dir, env, "resolve")
@@ -558,16 +654,12 @@ func TestNodeResolveUsesIndependentInputsAndInventory(t *testing.T) {
 	if got := must(t, dir, nil, "git", "show", "HEAD:bundles/toolbox/packages.lock.json"); got != before {
 		t.Fatal("changed baseline")
 	}
-	for name, want := range map[string]string{"node.lock.json": "v24.22.0", "node.md": "| node | 24.22.0 |"} {
-		b, err := os.ReadFile(filepath.Join(value(env, "UPGRADE_RESULT"), name))
-		if err != nil || !strings.Contains(string(b), want) {
-			t.Fatalf("artifact %s: %v %s", name, err, b)
-		}
-	}
+	assertFixtureProposal(t, env, "node", "node", "node", baseline)
 }
 
 func TestNodeCurrentResolveUsesIndependentInputsAndInventory(t *testing.T) {
 	dir, env := fixture(t)
+	baseline := fixtureBaseline(t, dir, "node-current", "node")
 	env = append(env, "BUNDLE=node-current", "TOOL=node")
 	before := must(t, dir, nil, "git", "show", "HEAD:bundles/toolbox/packages.lock.json")
 	out, err := adapter(t, dir, env, "resolve")
@@ -580,61 +672,58 @@ func TestNodeCurrentResolveUsesIndependentInputsAndInventory(t *testing.T) {
 	if got := must(t, dir, nil, "git", "show", "HEAD:bundles/toolbox/packages.lock.json"); got != before {
 		t.Fatal("changed baseline")
 	}
-	for name, want := range map[string]string{"node-current.lock.json": "v26.12.0", "node-current.md": "| node | 26.12.0 |"} {
-		b, err := os.ReadFile(filepath.Join(value(env, "UPGRADE_RESULT"), name))
-		if err != nil || !strings.Contains(string(b), want) {
-			t.Fatalf("artifact %s: %v %s", name, err, b)
-		}
-	}
+	assertFixtureProposal(t, env, "node-current", "node", "node", baseline)
 }
 
 func TestNodeArtifactFailuresStopBeforeTopicCreation(t *testing.T) {
-	for _, kind := range []string{"stale base", "extra artifact", "linked artifact", "prose edit", "wrong architecture"} {
-		t.Run(kind, func(t *testing.T) {
-			dir, env := fixture(t)
-			env = append(env, "BUNDLE=node", "TOOL=node")
-			if out, err := adapter(t, dir, env, "resolve"); err != nil {
-				t.Fatalf("%v %s", err, out)
-			}
-			result := value(env, "UPGRADE_RESULT")
-			switch kind {
-			case "stale base":
-				write(t, filepath.Join(result, "base.sha"), strings.Repeat("a", 40)+"\n")
-			case "extra artifact":
-				write(t, filepath.Join(result, "other.lock.json"), "unexpected")
-			case "linked artifact":
-				p := filepath.Join(result, "node.lock.json")
-				if err := os.Rename(p, p+".saved"); err != nil {
-					t.Fatal(err)
-				}
-				if err := os.Symlink(p+".saved", p); err != nil {
-					t.Fatal(err)
-				}
-			case "prose edit":
-				p := filepath.Join(result, "node.md")
-				b, err := os.ReadFile(p)
-				if err != nil {
-					t.Fatal(err)
-				}
-				write(t, p, string(b)+"unrelated prose\n")
-			case "wrong architecture":
-				p := filepath.Join(result, "node.lock.json")
-				b, err := os.ReadFile(p)
-				if err != nil {
-					t.Fatal(err)
-				}
-				write(t, p, strings.Replace(string(b), "v24.22.0", "v24.23.0", 1))
-			}
-			must(t, dir, nil, "git", "restore", "bundles/node/packages.lock.json", "docs/node.md")
-			if out, err := adapter(t, dir, env, "publish"); err == nil {
-				t.Fatalf("accepted %s: %s", kind, out)
-			}
-			if branch := must(t, dir, nil, "git", "branch", "--show-current"); branch != "main\n" {
-				t.Fatal("created topic before rejection")
+	for _, bundle := range []string{"node", "node-current"} {
+		t.Run(bundle, func(t *testing.T) {
+			for _, kind := range []string{"stale base", "extra artifact", "linked artifact", "prose edit", "wrong architecture"} {
+				t.Run(kind, func(t *testing.T) {
+					dir, env := fixture(t)
+					env = append(env, "BUNDLE="+bundle, "TOOL=node")
+					baseline := fixtureBaseline(t, dir, bundle, "node")
+					if out, err := adapter(t, dir, env, "resolve"); err != nil {
+						t.Fatalf("%v %s", err, out)
+					}
+					assertFixtureProposal(t, env, bundle, "node", "node", baseline)
+					result := value(env, "UPGRADE_RESULT")
+					switch kind {
+					case "stale base":
+						write(t, filepath.Join(result, "base.sha"), strings.Repeat("a", 40)+"\n")
+					case "extra artifact":
+						write(t, filepath.Join(result, "other.lock.json"), "unexpected")
+					case "linked artifact":
+						p := filepath.Join(result, bundle+".lock.json")
+						if err := os.Rename(p, p+".saved"); err != nil {
+							t.Fatal(err)
+						}
+						if err := os.Symlink(p+".saved", p); err != nil {
+							t.Fatal(err)
+						}
+					case "prose edit":
+						p := filepath.Join(result, bundle+".md")
+						b, err := os.ReadFile(p)
+						if err != nil {
+							t.Fatal(err)
+						}
+						write(t, p, string(b)+"unrelated prose\n")
+					case "wrong architecture":
+						corruptFixtureArchitecture(t, filepath.Join(result, bundle+".lock.json"), "node")
+					}
+					must(t, dir, nil, "git", "restore", "bundles/"+bundle+"/packages.lock.json", "docs/"+bundle+".md")
+					if out, err := adapter(t, dir, env, "publish"); err == nil {
+						t.Fatalf("accepted %s: %s", kind, out)
+					}
+					if branch := must(t, dir, nil, "git", "branch", "--show-current"); branch != "main\n" {
+						t.Fatal("created topic before rejection")
+					}
+				})
 			}
 		})
 	}
 }
+
 func TestNodeNoChangeCreatesNoProposal(t *testing.T) {
 	dir, env := fixture(t)
 	env = append(env, "BUNDLE=node", "TOOL=", "NO_CHANGE=true")
@@ -652,6 +741,7 @@ func TestNodeNoChangeCreatesNoProposal(t *testing.T) {
 
 func TestBunResolveUsesIndependentInputsAndInventory(t *testing.T) {
 	dir, env := fixture(t)
+	baseline := fixtureBaseline(t, dir, "bun", "bun")
 	env = append(env, "BUNDLE=bun", "TOOL=bun")
 	before := must(t, dir, nil, "git", "show", "HEAD:bundles/toolbox/packages.lock.json")
 	out, err := adapter(t, dir, env, "resolve")
@@ -664,12 +754,7 @@ func TestBunResolveUsesIndependentInputsAndInventory(t *testing.T) {
 	if got := must(t, dir, nil, "git", "show", "HEAD:bundles/toolbox/packages.lock.json"); got != before {
 		t.Fatal("changed baseline")
 	}
-	for name, want := range map[string]string{"bun.lock.json": "bun-v1.4.4", "bun.md": "| bun | 1.4.4 |"} {
-		b, err := os.ReadFile(filepath.Join(value(env, "UPGRADE_RESULT"), name))
-		if err != nil || !strings.Contains(string(b), want) {
-			t.Fatalf("artifact %s: %v %s", name, err, b)
-		}
-	}
+	assertFixtureProposal(t, env, "bun", "bun", "bun", baseline)
 }
 
 func TestBunArtifactFailuresStopBeforeTopicCreation(t *testing.T) {
@@ -702,12 +787,7 @@ func TestBunArtifactFailuresStopBeforeTopicCreation(t *testing.T) {
 				}
 				write(t, p, string(b)+"unrelated prose\n")
 			case "wrong architecture":
-				p := filepath.Join(result, "bun.lock.json")
-				b, err := os.ReadFile(p)
-				if err != nil {
-					t.Fatal(err)
-				}
-				write(t, p, strings.Replace(string(b), "bun-v1.4.4", "bun-v1.4.5", 1))
+				corruptFixtureArchitecture(t, filepath.Join(result, "bun.lock.json"), "bun")
 			}
 			must(t, dir, nil, "git", "restore", "bundles/bun/packages.lock.json", "docs/bun.md")
 			if out, err := adapter(t, dir, env, "publish"); err == nil {
