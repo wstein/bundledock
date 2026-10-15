@@ -10,11 +10,7 @@ func TestOptionalBunOfficialPinsAndRecipe(t *testing.T) {
 	if len(c.Catalog.Packages) != 1 || c.Catalog.Packages["bun"].Install.Profile != "bun-runtime" {
 		t.Fatal("separate Bun profile required")
 	}
-	for arch, sum := range map[string]string{"amd64": "1fc2edac843102909e3a1be1d8d9802cc6071cf074e67e88231f4ffe0f8b397b", "arm64": "efa9813da5ed72423bf847f916e8d2c47c0d776add972354026a75e10da9aa21"} {
-		if c.Lock.Platforms[arch]["bun"].SHA256 != sum {
-			t.Fatal("wrong official checksum")
-		}
-	}
+	assertRollingPublisherPins(t, c, "bun")
 	for _, kind := range []string{"provider", "repository", "architecture", "profile", "root", "version", "url", "checksum provenance"} {
 		t.Run(kind, func(t *testing.T) {
 			c, err := Load("../../bundles/bun")

@@ -17,9 +17,10 @@ func TestJujutsuOfficialMuslPins(t *testing.T) {
 	if len(p.Install.ArchiveNotices) != 1 || p.Install.ArchiveNotices[0] != "LICENSE" || len(p.Notices) != 1 || p.Notices[0] != "licenses/jj/SOURCE" {
 		t.Fatal("missing full upstream Jujutsu license and provenance")
 	}
+	assertRollingPublisherPins(t, c, "jj")
 	for arch, target := range map[string]string{"amd64": "x86_64", "arm64": "aarch64"} {
 		pin := c.Lock.Platforms[arch]["jj"]
-		if p.Architectures[arch] != target || pin.Version != "v0.46.0" || !strings.HasSuffix(pin.URL, "/v0.46.0/jj-v0.46.0-"+target+"-unknown-linux-musl.tar.gz") || pin.Verification != "publisher-sha256" || len(pin.SHA256) != 64 {
+		if p.Architectures[arch] != target || !strings.HasSuffix(pin.URL, "/"+pin.Version+"/jj-"+pin.Version+"-"+target+"-unknown-linux-musl.tar.gz") || pin.Verification != "publisher-sha256" || len(pin.SHA256) != 64 {
 			t.Fatalf("bad %s official pin: %+v", arch, pin)
 		}
 	}

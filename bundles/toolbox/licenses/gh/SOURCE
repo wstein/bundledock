@@ -1,5 +1,8 @@
 Upstream: https://github.com/cli/cli
-Pinned release: v2.102.0
-Source archive: https://api.github.com/repos/cli/cli/tarball/v2.102.0
-Source SHA256: 38f988355fc4bb786bdd02b9ad033b492886efa419417476fd1af52edefadfa8
-LICENSE copied unchanged from the exact pinned official source archive. This records direct upstream licensing, not a complete inventory of transitive binary dependencies.
+License snapshot release: v2.102.0
+License snapshot source: https://api.github.com/repos/cli/cli/tarball/v2.102.0
+Source archive SHA256: 38f988355fc4bb786bdd02b9ad033b492886efa419417476fd1af52edefadfa8
+LICENSE copied unchanged from the exact reviewed official source archive. This records direct upstream licensing, not a complete inventory of transitive binary dependencies.
+LICENSE SHA256: 6da4adc42392c8485e40b4251c7e332fc3352df1947c9ffade71dd60b14a7a4f
+
+This SOURCE records the reviewed license snapshot, not the current installed binary version. The bundle manifest and packages.lock.json record each installed release, official artifact URL and checksum. Keep this historical evidence and the full LICENSE bytes intact when binary pins advance; inspect any upstream license changes separately.
