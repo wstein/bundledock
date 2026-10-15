@@ -106,10 +106,9 @@ func TestNodeSharedSourceReservations(t *testing.T) {
 func TestNodeAllocationSharesAuthenticatedRepository(t *testing.T) {
 	for _, name := range []string{"node-current", "node"} {
 		t.Run(name, func(t *testing.T) {
-			lock, err := os.ReadFile("../../bundles/node-current/packages.lock.json")
-			if err != nil {
-				t.Fatal(err)
-			}
+			// This exact reservation example has its own immutable input. Rolling
+			// production locks are exercised by TestSingletonAllocationTracksRollingLocks.
+			lock := singletonVersionFixture(name, "26.11.1")
 			b, _ := SelectBundle(name)
 			reserved, err := SourceTagReservations(b, []byte("a refs/tags/node/26.11.1-b3\nb refs/tags/node-current/26.11.1-b7\n"))
 			if err != nil {
