@@ -3,6 +3,7 @@ package toolbundle
 import (
 	"archive/tar"
 	"archive/zip"
+	"bundledock/internal/shelllayer"
 	"bundledock/internal/toolconfig"
 	"bytes"
 	"compress/gzip"
@@ -236,6 +237,16 @@ func TestVendorBuildBothArchitectures(t *testing.T) {
 					mode os.FileMode
 				}{string(content), 0644}
 			}
+			layer, err := shelllayer.Files()
+			if err != nil {
+				t.Fatal(err)
+			}
+			for file, content := range layer {
+				want[file] = struct {
+					data string
+					mode os.FileMode
+				}{string(content), 0644}
+			}
 			for name, w := range want {
 				p := filepath.Join(first, name)
 				b, err := readInstalledFile(t, first, name)
@@ -249,6 +260,13 @@ func TestVendorBuildBothArchitectures(t *testing.T) {
 				if err != nil || info.Mode().Perm() != w.mode {
 					t.Fatalf("%s mode=%v err=%v", name, info, err)
 				}
+			}
+			index, err := os.ReadFile(filepath.Join(first, "licenses.index.json"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got := strings.Count(string(index), `"package": "shell-layer"`) + strings.Count(string(index), `"package":"shell-layer"`); got != 2 {
+				t.Fatalf("license index lists %d shell-layer notices, want 2", got)
 			}
 			if _, err := os.Stat(filepath.Join(first, "codex-resources/voice")); !os.IsNotExist(err) {
 				t.Fatalf("optional Codex voice resources installed: %v", err)

@@ -110,6 +110,11 @@ func BuildWithGitTrimStage(ctx context.Context, client *http.Client, tools map[s
 			return fmt.Errorf("install %s: %w", name, err)
 		}
 	}
+	if hasShellLayer(packages) {
+		if err := writeShellLayer(root); err != nil {
+			return fmt.Errorf("shell layer: %w", err)
+		}
+	}
 	for name, p := range packages {
 		for _, notice := range p.Notices {
 			f, err := notices.Open(notice)
