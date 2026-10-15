@@ -21,6 +21,25 @@ class PublicationDocsTest(unittest.TestCase):
                 'architecture':arch, 'image_id':'sha256:'+'d'*64, 'smoked':True, 'digest':'sha256:'+'e'*64})
     def validate(self):
         return self.module.validate(self.receipt, 'toolbox', 'quay.io/bundledock/toolbox', 'a'*40, '123', '1')
+    def test_daily_revision_preserves_explicit_attempt_and_historical_order(self):
+        self.receipt.update(tag='2026.10.12-b1', run_attempt='1')
+        for platform in self.receipt['platforms']:
+            platform.update(tag=self.receipt['tag'], run_attempt='1')
+        record = self.validate()
+        self.assertEqual(record['attempt'], '1')
+        self.assertGreater(self.module.version_key('2026.10.12-b1'), self.module.version_key('2026.10.12-b98.1'))
+        self.assertLess(self.module.version_key('2026.10.12-b9'), self.module.version_key('2026.10.13-b1'))
+        original = self.receipt['created']
+        self.receipt['created'] = '2026-10-13T00:00:00Z'
+        for platform in self.receipt['platforms']:
+            platform['created'] = self.receipt['created']
+        with self.assertRaises(ValueError): self.validate()
+        self.receipt['created'] = original
+        for platform in self.receipt['platforms']:
+            platform['created'] = original
+        self.receipt['platforms'][0]['run_attempt'] = '2'
+        with self.assertRaises(ValueError): self.validate()
+
     def test_valid_and_invalid_receipts(self):
         self.validate()
         for key, value in [('image','quay.io/evil/toolbox'), ('source','https://evil.test'), ('commit','a'*39), ('digest','sha256:bad'), ('reference','quay.io/bundledock/toolbox@sha256:'+'f'*64), ('run_id','124'), ('created','bad')]:

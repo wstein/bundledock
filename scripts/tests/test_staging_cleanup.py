@@ -61,6 +61,23 @@ class CleanupTests(unittest.TestCase):
         cleanup.apply_plan(plan, lambda repo, row: self.assess(), self.quay, write=False)
         self.assertEqual(self.quay.deleted, [])
 
+    def test_daily_revision_uses_attempt_labels_not_workflow_number(self):
+        self.row['name'] = 'staging-2026.10.01-b1-amd64'
+        self.labels['org.opencontainers.image.version'] = '2026.10.01-b1'
+        raw = json.dumps({'os': 'linux', 'architecture': 'amd64', 'config': {'Labels': self.labels}}).encode()
+        digest = 'sha256:' + hashlib.sha256(raw).hexdigest()
+        self.documents['blobs', digest] = raw
+        raw = json.dumps({'config': {'digest': digest}}).encode()
+        self.row['manifest_digest'] = 'sha256:' + hashlib.sha256(raw).hexdigest()
+        self.documents['manifests', self.row['manifest_digest']] = raw
+        self.run['run_number'] = 98
+        self.assertTrue(self.assess()['eligible'])
+        # The registry bytes remain bound to attempt 1; a different live attempt
+        # is retained until the age and exact provenance checks permit cleanup.
+        self.run['run_attempt'] = 2
+        self.run['updated_at'] = '2026-10-14T00:00:00Z'
+        self.assertFalse(self.assess()['eligible'])
+
     def test_seven_day_boundary_and_active_or_recent_reruns(self):
         for field, value in [('status', 'in_progress'), ('status', 'queued'),
                              ('updated_at', '2026-10-13T00:00:00Z'), ('run_attempt', 0),

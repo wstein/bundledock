@@ -39,7 +39,7 @@ def identity(repository, name):
     match = STAGING.fullmatch(name)
     require(match is not None, 'Not an architecture staging tag')
     version, arch = match.groups()
-    require(any(p.fullmatch(version) for p in (tags.VERSION, tags.SINGLETON, tags.LEGACY)), 'Unknown staging version')
+    require(any(p.fullmatch(version) for p in (tags.DAILY, tags.VERSION, tags.SINGLETON, tags.LEGACY)), 'Unknown staging version')
     return version, arch
 
 

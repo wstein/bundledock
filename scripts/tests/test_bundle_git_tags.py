@@ -29,6 +29,15 @@ class ProvenanceTests(unittest.TestCase):
             with self.subTest(change=change), self.assertRaises(ValueError):
                 tags.validate_record(self.record(**change))
 
+    def test_daily_toolbox_attempt_is_independent_of_revision(self):
+        record = self.record(bundle='toolbox', image='quay.io/bundledock/toolbox', tag='2026.10.15-b1', run_attempt='7')
+        result = tags.validate_record(record)
+        self.assertEqual(result['attempt'], 7)
+        self.assertIsNone(result['run_number'])
+        for change in [dict(run_attempt=None), dict(run_attempt='0'), dict(tag='2026.02.30-b1')]:
+            with self.subTest(change=change), self.assertRaises(ValueError):
+                tags.validate_record(dict(record, **change))
+
     def test_legacy_is_explicit(self):
         record = self.record(bundle='toolbox', image='quay.io/bundledock/toolbox',
                              tag='2026.10.10-123-4')
