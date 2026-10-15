@@ -35,15 +35,17 @@ def next_release(tag, package):
 
 
 def copy_repository(root):
-    for name in ('bundles', 'scripts', '.config', 'internal/toolconfig'):
+    for name in ('bundles', 'scripts', '.config', '.github', 'docs', 'internal/toolconfig',
+                 'internal/toolupgrade', 'internal/toolbundle/python'):
         shutil.copytree(ROOT / name, root / name, ignore=shutil.ignore_patterns('__pycache__'))
     for name in ('go.mod', 'go.sum'):
         shutil.copyfile(ROOT / name, root / name)
 
 
-def run_config_tests(root, pattern=None):
+def run_config_tests(root, pattern=None, packages=None):
     env = dict(os.environ, GOPROXY='off', GOSUMDB='off', GOTOOLCHAIN='local')
-    command = [os.environ.get('GO', 'go'), 'test', '-count=1', './internal/toolconfig']
+    command = [os.environ.get('GO', 'go'), 'test', '-count=1']
+    command.extend(packages or ['./internal/toolconfig'])
     if pattern:
         command.extend(['-run', pattern])
     return subprocess.run(command, cwd=root, env=env, capture_output=True, text=True, timeout=120)
@@ -81,12 +83,16 @@ class RollingLockTests(unittest.TestCase):
                             pin['sha256'] = hashlib.sha256((name + arch + new).encode()).hexdigest()
                     changed.append(catalog_path.parent.name + '/' + name)
                 path.write_text(json.dumps(lock, indent=2) + '\n')
+                # Workflow no-op cases require a consistent baseline inventory,
+                # just like a real bot lock-and-inventory updater PR.
+                subprocess.run(['python3', 'scripts/tool-inventory.py', '--bundle', catalog_path.parent.name],
+                               cwd=root, check=True, capture_output=True, text=True, timeout=30)
             self.assertEqual(frozen, ['git-trim'])
             self.assertGreaterEqual(len(changed), 48)
             self.assertEqual({name.split('/')[0] for name in changed},
                              {'toolbox', 'bun', 'code-server', 'node', 'node-current', 'codex', 'agy', 'claude', 'opentofu'})
-            result = run_config_tests(root)
-            self.assertEqual(result.returncode, 0, 'Future stable lock-only updates must pass config tests:\n' + result.stdout + result.stderr)
+            result = run_config_tests(root, packages=['./internal/toolconfig', './internal/toolupgrade'])
+            self.assertEqual(result.returncode, 0, 'Future stable lock-and-inventory updates must pass config and workflow tests:\n' + result.stdout + result.stderr)
 
     def test_integrity_errors_still_block_publication_inputs(self):
         with tempfile.TemporaryDirectory(prefix='bundledock-invalid-locks-') as directory:
