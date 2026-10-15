@@ -11,8 +11,6 @@
 !internal/toolconfig/**
 !internal/toolbundle
 !internal/toolbundle/**
-!internal/shelllayer
-!internal/shelllayer/**
 !internal/toolvolume
 !internal/toolvolume/**
 !bundles

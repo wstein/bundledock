@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -82,5 +83,24 @@ func TestSingleToolBuildHasNoShellLayer(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(dst, "share/shell")); !os.IsNotExist(err) {
 		t.Fatalf("single-tool build carries the shell layer: %v", err)
+	}
+}
+
+// A layer source offered to any other bundle is refused, so the layer cannot
+// leak into a single-tool carrier by a misplaced flag.
+func TestSingleToolBuildRefusesShellLayer(t *testing.T) {
+	c, err := toolconfig.Load("../../bundles/toolbox")
+	if err != nil {
+		t.Fatal(err)
+	}
+	payload := archive(t, member{"./LICENSE", "license", 0644, 0}, member{"./jj", "synthetic jj", 0755, 0})
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.Write(payload) }))
+	defer server.Close()
+	spec := c.Lock.Platforms["amd64"]["jj"]
+	spec.URL = server.URL
+	spec.SHA256 = fmt.Sprintf("%x", sha256.Sum256(payload))
+	err = Build(context.Background(), server.Client(), map[string]Spec{"jj": spec}, map[string]toolconfig.Package{"jj": c.Catalog.Packages["jj"]}, os.DirFS("../../bundles/toolbox"), "amd64", t.TempDir(), io.Discard, WithShellLayer(os.DirFS("../shelllayer")))
+	if err == nil || !strings.Contains(err.Error(), "toolbox only") {
+		t.Fatalf("single-tool build accepted the shell layer: %v", err)
 	}
 }
