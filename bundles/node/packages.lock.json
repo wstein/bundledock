@@ -5,17 +5,17 @@
   "platforms": {
     "amd64": {
       "node": {
-        "version": "v24.21.0",
-        "url": "https://nodejs.org/dist/v24.21.0/node-v24.21.0-linux-x64.tar.gz",
-        "sha256": "6e1db87ef58b8819e5d5402eff1536491b18edd8eb7bee5ef7897876e88dc5ff",
+        "version": "v24.22.0",
+        "url": "https://nodejs.org/dist/v24.22.0/node-v24.22.0-linux-x64.tar.gz",
+        "sha256": "28ea0a438de9a13bd7891fd758eee6c7819ee8af5442dfd8d45bd65e56d4228c",
         "verification": "publisher-sha256"
       }
     },
     "arm64": {
       "node": {
-        "version": "v24.21.0",
-        "url": "https://nodejs.org/dist/v24.21.0/node-v24.21.0-linux-arm64.tar.gz",
-        "sha256": "724282c3b43aec998aa9527380465b45d229e021b58035f5f4f63095eabfe5d5",
+        "version": "v24.22.0",
+        "url": "https://nodejs.org/dist/v24.22.0/node-v24.22.0-linux-arm64.tar.gz",
+        "sha256": "b7e7991d5407815adfa74a2a9cd4db683552c8ce32ff4a295c22e972849c3f5d",
         "verification": "publisher-sha256"
       }
     }
