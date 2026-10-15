@@ -221,11 +221,21 @@ and digest references remain available. Alias updates are sequential, so a later
 failure can leave an earlier tag updated. Success is reported only after both
 aliases have been verified against the version digest.
 
-Toolbox keeps its UTC version format
-`YYYY.MM.DD-b<github.run_number>.<github.run_attempt>`, such as
-`2026.10.10-b12.4`. Its run number distinguishes normal runs and its attempt
-counter distinguishes reruns. Missing, malformed or nonpositive counters are
-rejected before resolving tools.
+Toolbox uses `YYYY.MM.DD-b<packaging-revision>`, such as `2026.10.15-b1`.
+The date is UTC, frozen when resolution starts. The first packaging revision
+for each date is `b1`; further publications on that date advance to `b2`, `b3`,
+and so on. The workflow run number does not supply the revision, and the attempt
+remains a separate receipt field and OCI label.
+
+Allocation requires a complete authenticated registry tag listing and the source
+Git tags. Existing new-format version tags, source tags and architecture staging
+tags reserve revisions, including partially uploaded failed runs. Gaps are allowed;
+a rerun allocates the next unreserved revision rather than overwriting one.
+Historical `YYYY.MM.DD-b<run-number>.<attempt>` and date/run-ID tags remain
+unchanged and readable, and do not contribute to the new daily counter. Thus the
+first new-format tag can be `2026.10.15-b1` even if `2026.10.15-b98.1` exists.
+Missing, malformed or nonpositive workflow counters still fail provenance
+validation before resolving tools.
 
 The eight single-package bundles use `<upstream-version>-b<packaging-revision>`.
 The version comes from the resolved official lock and must match on AMD64 and

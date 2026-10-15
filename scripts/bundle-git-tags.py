@@ -23,6 +23,7 @@ _CONFIG=importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(_CONFIG)
 BUNDLES=tuple(_CONFIG.BUNDLES)
 DIGEST = re.compile(r'sha256:[0-9a-f]{64}\Z')
+DAILY = re.compile(r'(\d{4}\.\d{2}\.\d{2})-b([1-9]\d*)\Z')
 VERSION = re.compile(r'(\d{4}\.\d{2}\.\d{2})-b([1-9]\d*)\.([1-9]\d*)\Z')
 SINGLETON = re.compile(r'(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)-b[1-9]\d*\Z')
 LEGACY = re.compile(r'(\d{4}\.\d{2}\.\d{2})-([1-9]\d*)-([1-9]\d*)\Z')
@@ -37,8 +38,8 @@ def validate_record(record, legacy=False):
     if not DIGEST.fullmatch(r.get('digest', '')) or not re.fullmatch('[1-9][0-9]*', r.get('run_id', '')):
         raise ValueError('invalid index digest or workflow run')
     r.update(validate_version(r.get('tag', ''), r['run_id'], legacy))
-    if SINGLETON.fullmatch(r['tag']):
-        if r['bundle'] == 'toolbox' or not isinstance(r.get('run_attempt'), str) or not re.fullmatch('[1-9][0-9]*', r['run_attempt']):
+    if DAILY.fullmatch(r['tag']) or SINGLETON.fullmatch(r['tag']):
+        if (r['bundle'] == 'toolbox' and not DAILY.fullmatch(r['tag'])) or not isinstance(r.get('run_attempt'), str) or not re.fullmatch('[1-9][0-9]*', r['run_attempt']):
             raise ValueError('singleton version requires explicit workflow attempt')
         r['attempt'] = int(r['run_attempt'])
     return r
@@ -46,6 +47,10 @@ def validate_record(record, legacy=False):
 
 def validate_version(tag, run_id, legacy=False):
     """Validate immutable version identity independently of deployment namespace."""
+    if DAILY.fullmatch(tag):
+        import datetime
+        datetime.datetime.strptime(tag[:10], '%Y.%m.%d')
+        return {'legacy': False, 'daily': True, 'attempt': None, 'run_number': None}
     if SINGLETON.fullmatch(tag):
         return {'legacy': False, 'attempt': None, 'run_number': None}
     match = VERSION.fullmatch(tag)
@@ -118,7 +123,7 @@ class Registry:
         self.token = json.loads(request(url, headers))['token']
 
     def get(self, kind, ref):
-        if kind not in ('manifests', 'blobs') or not (DIGEST.fullmatch(ref) or VERSION.fullmatch(ref) or SINGLETON.fullmatch(ref) or LEGACY.fullmatch(ref) or ref in ('stable', 'latest', 'lts', 'current')):
+        if kind not in ('manifests', 'blobs') or not (DIGEST.fullmatch(ref) or DAILY.fullmatch(ref) or VERSION.fullmatch(ref) or SINGLETON.fullmatch(ref) or LEGACY.fullmatch(ref) or ref in ('stable', 'latest', 'lts', 'current')):
             raise ValueError('invalid registry metadata request')
         headers = {'Authorization':'Bearer '+self.token, 'Accept':'application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.oci.image.manifest.v1+json, application/vnd.docker.distribution.manifest.v2+json'}
         return request(f'https://quay.io/v2/{self.path}/{kind}/{ref}', headers, signed_blob=kind=='blobs')
@@ -128,7 +133,7 @@ def verify_labels(r, labels):
     identity=labels.get('io.bundledock.bundle')
     if (identity is not None and identity != r['bundle']) or (identity is None and (r['bundle']=='node-current' or (r['bundle']=='node' and SINGLETON.fullmatch(r['tag'])))):
         raise ValueError('OCI source bundle mismatch')
-    if SINGLETON.fullmatch(r['tag']) and labels.get('io.bundledock.github.run-attempt') != str(r['attempt']):
+    if (DAILY.fullmatch(r['tag']) or SINGLETON.fullmatch(r['tag'])) and labels.get('io.bundledock.github.run-attempt') != str(r['attempt']):
         raise ValueError('OCI workflow attempt mismatch')
     for key, field in [('source','source'), ('revision','commit'), ('version','tag')]:
         if labels.get('org.opencontainers.image.'+key) != r[field]:
