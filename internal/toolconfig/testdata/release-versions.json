@@ -1,0 +1,4 @@
+[
+  {"name":"helix","normalization":"helix-calendar","tag_prefix":"","valid":{"25.07.1":"25.7.1","25.07":"25.7.0","25.7.1":"25.7.1","26.01.1":"26.1.1"},"invalid":["25.07.1-rc1","25.13.1","25.00.1","25.07.01"]},
+  {"name":"tmux","normalization":"tmux-release","tag_prefix":"v","valid":{"3.8":"3.8.0","v3.7a":"3.7.1","v3.7b":"3.7.2","v3.7c":"3.7.3","v3.8":"3.8.0"},"invalid":["v3.7aa","v3.7-rc","v3.07c","v3.7.1","v3.7C"]}
+]

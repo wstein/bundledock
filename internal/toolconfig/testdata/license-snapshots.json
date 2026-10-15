@@ -1,0 +1,4 @@
+[
+  {"name":"leaf","bundle":"toolbox","repository":"RivoLink/leaf","version":"1.29.0","source_url":"https://raw.githubusercontent.com/RivoLink/leaf/1.29.0/LICENSE","license_sha256":"98c9cd0ac4bcc0b30d8cbb7c09a311196dea27b158c65d6caadfb073c090af71"},
+  {"name":"gh","bundle":"toolbox","repository":"cli/cli","version":"v2.102.0","source_url":"https://api.github.com/repos/cli/cli/tarball/v2.102.0","source_sha256":"38f988355fc4bb786bdd02b9ad033b492886efa419417476fd1af52edefadfa8","license_sha256":"6da4adc42392c8485e40b4251c7e332fc3352df1947c9ffade71dd60b14a7a4f"}
+]

@@ -75,6 +75,16 @@ Keep the local TODO list untracked.
 Make multiple atomic, focused commits using Conventional Commits.
 Keep each commit limited to one logical change.
 
+Rolling prebuilt releases within packages.txt constraints are a normal success
+path. Tests reading production locks must assert allowed stable versions,
+architecture agreement, official recipes and checksum provenance rather than
+historical version/checksum constants. Keep exact release/normalization examples
+in fixed fixtures. Run the offline synthetic lock-upgrade regression across all
+bundles when changing these contracts. Historical license snapshots retain their
+reviewed source identity and exact license bytes independently of current binary
+pins; manifests and locks describe the installed artifacts. The explicitly
+frozen git-trim source recipe and separate docs-tool pins remain exceptions.
+
 Use test-driven development (TDD): write a failing test before implementing behavior changes, make it pass, then refactor.
 
 ## Common CLI tools
