@@ -14,21 +14,21 @@ pins and consumer configuration are unchanged. No Ruby or generic language
 bundle mechanism is included.
 
 <!-- BEGIN PUBLISHED BUNDLE -->
-<!-- publication-record: {"attempt":"1","commit":"9f25e0065885dce912658986bf26c178dddbaf36","digest":"sha256:295cce35e9f580db41dfdc97bd30243d9f0cf388556a8a8d87a6c59ee51e6a8c","image":"quay.io/bundledock/node","reference":"quay.io/bundledock/node@sha256:295cce35e9f580db41dfdc97bd30243d9f0cf388556a8a8d87a6c59ee51e6a8c","run_id":"38192775173","source":"https://github.com/wstein/bundledock","tag":"2026.10.12-b1.1"} -->
+<!-- publication-record: {"attempt":"1","bundle":"node","commit":"24b3ec6df824ad23791d9337f1fdcab5cc5d5c66","created":"2026-10-15T17:39:03Z","digest":"sha256:f595f1139e97300d755a9f78b39df5337a02496cbd9c74d7c5d3ae23f6f90ac9","image":"quay.io/bundledock/node","lock_sha256":"4ee9ed4ceaae100b310c03766af2c1bf72bad293353f7177e376565fd2be233a","reference":"quay.io/bundledock/node@sha256:f595f1139e97300d755a9f78b39df5337a02496cbd9c74d7c5d3ae23f6f90ac9","run_attempt":"1","run_id":"38778848767","source":"https://github.com/wstein/bundledock","tag":"24.22.0-b1"} -->
 ## Published bundle
 
-Version: `2026.10.12-b1.1`
+Version: `24.22.0-b1`
 
-Index digest: `sha256:295cce35e9f580db41dfdc97bd30243d9f0cf388556a8a8d87a6c59ee51e6a8c`
+Index digest: `sha256:f595f1139e97300d755a9f78b39df5337a02496cbd9c74d7c5d3ae23f6f90ac9`
 
-Source: [`9f25e0065885dce912658986bf26c178dddbaf36`](https://github.com/wstein/bundledock/commit/9f25e0065885dce912658986bf26c178dddbaf36)
+Source: [`24b3ec6df824ad23791d9337f1fdcab5cc5d5c66`](https://github.com/wstein/bundledock/commit/24b3ec6df824ad23791d9337f1fdcab5cc5d5c66)
 
-Publication: [run 38192775173, attempt 1](https://github.com/wstein/bundledock/actions/runs/38192775173/attempts/1)
+Publication: [run 38778848767, attempt 1](https://github.com/wstein/bundledock/actions/runs/38778848767/attempts/1)
 
 Pull this published carrier by its immutable index digest:
 
 ```sh
-docker pull quay.io/bundledock/node@sha256:295cce35e9f580db41dfdc97bd30243d9f0cf388556a8a8d87a6c59ee51e6a8c
+docker pull quay.io/bundledock/node@sha256:f595f1139e97300d755a9f78b39df5337a02496cbd9c74d7c5d3ae23f6f90ac9
 ```
 
 The source inventory below describes the current lock; this publication retains its exact source revision.
