@@ -82,6 +82,12 @@ check() {
             printf "%s\n" "add_newline = false" "format = \"\$character\"" "[character]" "success_symbol = \">\"" > "$STARSHIP_CONFIG"
             test "$(starship prompt --path "$HOME" --status 0)" = "> "
             fish --no-config -c "starship init fish | source; functions -q fish_prompt"
+            stage "shared shell layer"
+            layer=/opt/bdock/toolbox/share
+            test "$(XDG_DATA_DIRS=$layer BDOCK_STARSHIP=0 fish --no-config --interactive -c "source $layer/fish/vendor_conf.d/bdock-shell.fish; abbr --show" | grep -c -- "-- gst ")" = 1
+            test "$(nu --no-config-file --no-history -c "source $layer/nushell/vendor/autoload/bdock-shell.nu; scope aliases | where name == gst | get expansion | first")" = "^git status"
+            BDOCK_STARSHIP=0 bash --norc --noprofile -i -c ". $layer/shell/init.bash; alias gst" 2>/dev/null | grep -q "git status"
+            jq -e "[.files[] | select(.package == \"shell-layer\")] | length == 2" /opt/bdock/toolbox/licenses.index.json
             stage "jq JSON"
             jq --version
             printf "%s\n" "{\"answer\":42}" | jq -e ".answer == 42"
