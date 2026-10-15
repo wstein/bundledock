@@ -85,3 +85,49 @@ func TestBundleDockerfilesCopyEveryInternalDependency(t *testing.T) {
 		}
 	}
 }
+
+// TestShellLayerIsToolboxOnly keeps the shared shell layer in the toolbox
+// bundle alone: neither the shared builder nor the volume initializer (which
+// every bundle image ships) may import it, only the toolbox Dockerfile copies
+// its source into the build and hands it to the builder, and no other bundle
+// mentions it.
+func TestShellLayerIsToolboxOnly(t *testing.T) {
+	root := filepath.Join("..", "..")
+	for _, dep := range internalDeps(t, root, "cmd/tools-bundle", "cmd/tools-init") {
+		if dep == "internal/shelllayer" {
+			t.Fatal("a bundle builder or initializer imports internal/shelllayer; every bundle image would carry it")
+		}
+	}
+	dockerfiles, err := filepath.Glob(filepath.Join(root, "bundles", "*", "Dockerfile"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, file := range dockerfiles {
+		bundle := filepath.Base(filepath.Dir(file))
+		data, err := os.ReadFile(file)
+		if err != nil {
+			t.Fatal(err)
+		}
+		ignore, _ := os.ReadFile(file + ".dockerignore")
+		text := string(data)
+		if bundle != "toolbox" {
+			if strings.Contains(text, "shelllayer") || strings.Contains(text, "--shell-layer") || strings.Contains(string(ignore), "shelllayer") {
+				t.Errorf("%s: only the toolbox may take the shared shell layer", bundle)
+			}
+			continue
+		}
+		for _, want := range []string{
+			"COPY internal/shelllayer/generated /build/shell-layer/generated\n",
+			"COPY internal/shelllayer/notices /build/shell-layer/notices\n",
+			"COPY internal/shelllayer/shortcuts.tsv /build/shell-layer/shortcuts.tsv\n",
+			"--shell-layer /build/shell-layer",
+		} {
+			if !strings.Contains(text, want) {
+				t.Errorf("toolbox: Dockerfile lacks %q", strings.TrimSpace(want))
+			}
+		}
+		if !strings.Contains(string(ignore), "!internal/shelllayer/**\n") {
+			t.Error("toolbox: Dockerfile.dockerignore does not allow the shell layer source")
+		}
+	}
+}

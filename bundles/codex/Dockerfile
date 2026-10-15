@@ -9,7 +9,6 @@ COPY cmd/tools-bundle ./cmd/tools-bundle
 COPY cmd/tools-init ./cmd/tools-init
 COPY internal/toolconfig ./internal/toolconfig
 COPY internal/toolbundle ./internal/toolbundle
-COPY internal/shelllayer ./internal/shelllayer
 COPY internal/toolvolume ./internal/toolvolume
 RUN CGO_ENABLED=0 go build -trimpath -o /out/tools-bundle ./cmd/tools-bundle \
     && CGO_ENABLED=0 GOOS=linux GOARCH=$TARGETARCH go build -trimpath -o /out/init-volume ./cmd/tools-init

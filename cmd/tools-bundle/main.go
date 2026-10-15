@@ -17,16 +17,17 @@ func main() {
 	gitTrimStage := flag.String("git-trim-stage", "", "sealed output of the fixed git-trim Docker recipe")
 	gitTrimSource := flag.String("git-trim-source", "", "source directory for the fixed git-trim recipe")
 	gitTrimMode := flag.String("git-trim-mode", "", "fixed git-trim recipe operation: prepare or seal")
+	shellLayer := flag.String("shell-layer", "", "toolbox only: source directory of the shared shell layer (internal/shelllayer)")
 	flag.Parse()
-	if err := runWithGitTrim(*arch, *directory, *destination, *gitTrimSource, *gitTrimStage, *gitTrimMode); err != nil {
+	if err := runWithGitTrim(*arch, *directory, *destination, *gitTrimSource, *gitTrimStage, *gitTrimMode, *shellLayer); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
 func run(arch, directory, destination string) error {
-	return runWithGitTrim(arch, directory, destination, "", "", "")
+	return runWithGitTrim(arch, directory, destination, "", "", "", "")
 }
-func runWithGitTrim(arch, directory, destination, source, stage, mode string) error {
+func runWithGitTrim(arch, directory, destination, source, stage, mode, shellLayer string) error {
 	if arch != "amd64" && arch != "arm64" {
 		return fmt.Errorf("unsupported architecture %q", arch)
 	}
@@ -44,5 +45,9 @@ func runWithGitTrim(arch, directory, destination, source, stage, mode string) er
 	default:
 		return fmt.Errorf("unsupported git-trim operation %q", mode)
 	}
-	return toolbundle.BuildWithGitTrimStage(context.Background(), nil, tools, c.Catalog.Packages, os.DirFS(directory), arch, destination, stage, os.Stdout)
+	var opts []toolbundle.BuildOption
+	if shellLayer != "" {
+		opts = append(opts, toolbundle.WithShellLayer(os.DirFS(shellLayer)))
+	}
+	return toolbundle.BuildWithGitTrimStage(context.Background(), nil, tools, c.Catalog.Packages, os.DirFS(directory), arch, destination, stage, os.Stdout, opts...)
 }

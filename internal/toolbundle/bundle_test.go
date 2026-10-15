@@ -168,7 +168,7 @@ func TestVendorBuildBothArchitectures(t *testing.T) {
 					t.Fatal(err)
 				}
 				root.Close()
-				if err := BuildWithGitTrimStage(context.Background(), server.Client(), specs, testPackages(t), os.DirFS("../../bundles/toolbox"), arch, dst, stage, io.Discard); err != nil {
+				if err := BuildWithGitTrimStage(context.Background(), server.Client(), specs, testPackages(t), os.DirFS("../../bundles/toolbox"), arch, dst, stage, io.Discard, WithShellLayer(os.DirFS("../shelllayer"))); err != nil {
 					t.Fatal(err)
 				}
 			}
