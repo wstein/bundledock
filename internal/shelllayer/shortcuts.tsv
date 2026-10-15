@@ -1,0 +1,98 @@
+# BundleDock shared shell shortcuts: one table for bash, zsh, fish and Nushell.
+#
+# Format: name<TAB>command. Names use [a-z0-9] only so every shell accepts them.
+# Commands are plain words; {branch} is the current Git branch (fails on a
+# detached HEAD) and {default} is the default branch (origin/HEAD, else main,
+# else master). Extra arguments typed after a shortcut are appended.
+#
+# Git names follow jhillyerd/plugin-git (MIT, see licenses/shell-layer). The set
+# is curated: no --no-verify, git-svn, git-flow or forge-specific entries and no
+# irreversible clean/reset shortcuts.
+
+# Git: core
+g	git
+ga	git add
+gaa	git add --all
+gapa	git add --patch
+gau	git add --update
+gb	git branch -vv
+gba	git branch -a -v
+gbd	git branch -d
+gbl	git blame -w
+gbs	git bisect
+gc	git commit -v
+gca	git commit -v -a
+gcam	git commit -a -m
+gcm	git commit -m
+gcn	git commit --no-edit --amend
+gcf	git config --list
+gcl	git clone --recurse-submodules
+gcp	git cherry-pick
+gcpa	git cherry-pick --abort
+gcpc	git cherry-pick --continue
+gd	git diff
+gdca	git diff --cached
+gds	git diff --stat
+gdw	git diff --word-diff
+gsh	git show
+gss	git status -s
+gsb	git status -sb
+gst	git status
+
+# Git: remotes
+gf	git fetch
+gfa	git fetch --all --prune
+gfo	git fetch origin
+gl	git pull
+glr	git pull --rebase
+gp	git push
+gpf	git push --force-with-lease
+gpsup	git push --set-upstream origin {branch}
+gr	git remote -v
+
+# Git: history and integration
+glg	git log --stat
+glo	git log --oneline --decorate
+glog	git log --oneline --decorate --graph
+gloga	git log --oneline --decorate --graph --all
+gm	git merge
+gma	git merge --abort
+grb	git rebase
+grba	git rebase --abort
+grbc	git rebase --continue
+grbi	git rebase --interactive
+grbm	git rebase {default}
+grs	git restore
+grst	git restore --staged
+gsta	git stash push
+gstl	git stash list
+gstp	git stash pop
+gsw	git switch
+gswc	git switch --create
+gswm	git switch {default}
+
+# Git: worktrees
+gwt	git worktree
+gwta	git worktree add
+gwtls	git worktree list
+gwtrm	git worktree remove
+
+# Jujutsu
+j	jj
+jab	jj abandon
+jbl	jj bookmark list
+jbs	jj bookmark set
+jc	jj commit
+jd	jj diff
+jdesc	jj describe
+je	jj edit
+jgf	jj git fetch
+jgp	jj git push
+jl	jj log
+jn	jj new
+jop	jj op log
+jrb	jj rebase
+jsp	jj split
+jsq	jj squash
+jst	jj status
+jun	jj undo
