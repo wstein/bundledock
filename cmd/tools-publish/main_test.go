@@ -474,10 +474,9 @@ func TestAgentInitialPublicationRequiresManualDispatch(t *testing.T) {
 }
 
 func TestResolveSingletonNamesTheResolvedLockOnce(t *testing.T) {
-	original, err := os.ReadFile("../../bundles/codex/packages.lock.json")
-	if err != nil {
-		t.Fatal(err)
-	}
+	// Exact before/after versions belong to this metadata fixture, independently
+	// of the rolling production release. Other tests cover real frozen locks.
+	original := []byte(`{"schema":2,"platforms":{"amd64":{"codex":{"version":"rust-v0.162.1"}},"arm64":{"codex":{"version":"rust-v0.162.1"}}}}`)
 	t.Chdir(t.TempDir())
 	if err := os.MkdirAll("bundles/codex", 0700); err != nil {
 		t.Fatal(err)

@@ -36,7 +36,7 @@ def next_release(tag, package):
 
 def copy_repository(root):
     for name in ('bundles', 'scripts', '.config', '.github', 'docs', 'internal/toolconfig',
-                 'internal/toolupgrade', 'internal/toolpublish', 'internal/toolbundle/python'):
+                 'internal/toolupgrade', 'internal/toolinventory', 'internal/toolmanager', 'cmd/tools-publish', 'internal/toolpublish', 'internal/toolbundle/python'):
         shutil.copytree(ROOT / name, root / name, ignore=shutil.ignore_patterns('__pycache__'))
     for name in ('go.mod', 'go.sum'):
         shutil.copyfile(ROOT / name, root / name)
@@ -91,8 +91,8 @@ class RollingLockTests(unittest.TestCase):
             self.assertGreaterEqual(len(changed), 48)
             self.assertEqual({name.split('/')[0] for name in changed},
                              {'toolbox', 'bun', 'code-server', 'node', 'node-current', 'codex', 'agy', 'claude', 'opentofu'})
-            result = run_config_tests(root, packages=['./internal/toolconfig', './internal/toolupgrade'])
-            self.assertEqual(result.returncode, 0, 'Future stable lock-and-inventory updates must pass config and workflow tests:\n' + result.stdout + result.stderr)
+            result = run_config_tests(root, packages=['./internal/toolconfig', './internal/toolupgrade', './internal/toolinventory', './internal/toolmanager'])
+            self.assertEqual(result.returncode, 0, 'Future stable lock-and-inventory updates must pass config, workflow, inventory and manager tests:\n' + result.stdout + result.stderr)
             # Allocation is a platform-neutral source contract. Native OCI gate
             # tests require Linux and are covered separately by official CI.
             allocations = ('^Test(SingletonVersionAllocation|SingletonAllocationTracksRollingLocks|NodeSharedSourceReservations|'
@@ -102,6 +102,15 @@ class RollingLockTests(unittest.TestCase):
                            'SemanticVersionCollisionStopsPublication|DailyTagCollision)$')
             result = run_config_tests(root, allocations, packages=['./internal/toolpublish'])
             self.assertEqual(result.returncode, 0, 'Future stable locks must pass publisher allocation contracts:\n' + result.stdout + result.stderr)
+            cli_contracts = ('^Test(PublicationDecisionAgainstPublishedTools|'
+                             'Validate(CodeServer|Node|Bun)LockWithoutPublicationEnvironment|'
+                             '(CodeServer|Node|Bun)BootstrapOnlyOnAuthenticatedMissingStable|'
+                             'FrozenToolboxLockNeverResolves|MergedBundlePlanUsesBaseline|'
+                             'FrozenPublicationUsesExactLockForEveryBundle|'
+                             'AgentInitialPublicationRequiresManualDispatch|'
+                             'ResolveSingletonNamesTheResolvedLockOnce)$')
+            result = run_config_tests(root, cli_contracts, packages=['./cmd/tools-publish'])
+            self.assertEqual(result.returncode, 0, 'Future stable locks must pass publisher CLI contracts:\n' + result.stdout + result.stderr)
 
     def test_integrity_errors_still_block_publication_inputs(self):
         with tempfile.TemporaryDirectory(prefix='bundledock-invalid-locks-') as directory:
