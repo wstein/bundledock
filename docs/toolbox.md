@@ -583,8 +583,12 @@ toolbox out of `XDG_DATA_DIRS`. Nushell's prompt setup is a static copy of what
 `starship init nu` produces, because autoload files cannot evaluate generated
 code.
 
-The generator renders the four files from the table; they are committed and
-embedded, and the toolbox build copies them without running any shell. After
+The generator renders the four files from the table and they are committed.
+The layer belongs to the toolbox alone: only the toolbox Dockerfile copies
+`internal/shelllayer` into its build and passes it to `tools-bundle --shell-layer`,
+which copies the files without running any shell. A toolbox build without the
+layer fails, any other bundle refuses it, and neither the builder nor the
+volume initializer that every bundle image ships imports the layer. After
 editing the table, run
 `go test ./internal/shelllayer -run TestGeneratedFilesAreCurrent -update`.
 `TestShortcutsBehaveTheSameInEveryShell` runs every shortcut in each installed
