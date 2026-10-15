@@ -62,3 +62,25 @@ func TestJujutsuArchiveInstallsBinaryAndExactLicense(t *testing.T) {
 		}
 	}
 }
+
+// The shared shell layer belongs to the toolbox only, never to a single-tool
+// build such as this jj-only one.
+func TestSingleToolBuildHasNoShellLayer(t *testing.T) {
+	c, err := toolconfig.Load("../../bundles/toolbox")
+	if err != nil {
+		t.Fatal(err)
+	}
+	payload := archive(t, member{"./LICENSE", "license", 0644, 0}, member{"./jj", "synthetic jj", 0755, 0})
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.Write(payload) }))
+	defer server.Close()
+	spec := c.Lock.Platforms["amd64"]["jj"]
+	spec.URL = server.URL
+	spec.SHA256 = fmt.Sprintf("%x", sha256.Sum256(payload))
+	dst := t.TempDir()
+	if err := Build(context.Background(), server.Client(), map[string]Spec{"jj": spec}, map[string]toolconfig.Package{"jj": c.Catalog.Packages["jj"]}, os.DirFS("../../bundles/toolbox"), "amd64", dst, io.Discard); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(dst, "share/shell")); !os.IsNotExist(err) {
+		t.Fatalf("single-tool build carries the shell layer: %v", err)
+	}
+}
