@@ -14,7 +14,7 @@ func run(t *testing.T, dir string, env []string, name string, args ...string) (s
 	c := exec.Command(name, args...)
 	c.Dir = dir
 	config := filepath.Join(t.TempDir(), "gitconfig")
-	if err := os.WriteFile(config, []byte("[maintenance]\n\tauto = false\n[gc]\n\tauto = 0\n"), 0600); err != nil {
+	if err := os.WriteFile(config, []byte("[maintenance]\n\tauto = false\n[gc]\n\tauto = 0\n[receive]\n\tautoGC = false\n"), 0600); err != nil {
 		t.Fatal(err)
 	}
 	c.Env = append(os.Environ(), "HOME="+t.TempDir(), "XDG_CONFIG_HOME="+t.TempDir(), "GIT_CONFIG_NOSYSTEM=1", "GIT_CONFIG_GLOBAL="+config)
@@ -23,9 +23,12 @@ func run(t *testing.T, dir string, env []string, name string, args ...string) (s
 	// command and racing TempDir cleanup. Apply this to descendant Git commands
 	// too. The private global file also covers receive-pack, which clears
 	// command-scope configuration inherited from push. Host config is untouched.
-	c.Env = append(c.Env, "GIT_CONFIG_COUNT=2",
+	// Older Git (2.43 observed) has receive-pack start "gc --auto" itself,
+	// governed only by receive.autoGC, so maintenance.auto alone does not stop it.
+	c.Env = append(c.Env, "GIT_CONFIG_COUNT=3",
 		"GIT_CONFIG_KEY_0=maintenance.auto", "GIT_CONFIG_VALUE_0=false",
-		"GIT_CONFIG_KEY_1=gc.auto", "GIT_CONFIG_VALUE_1=0")
+		"GIT_CONFIG_KEY_1=gc.auto", "GIT_CONFIG_VALUE_1=0",
+		"GIT_CONFIG_KEY_2=receive.autoGC", "GIT_CONFIG_VALUE_2=false")
 	b, err := c.CombinedOutput()
 	return string(b), err
 }
