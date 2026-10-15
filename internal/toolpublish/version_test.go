@@ -156,3 +156,116 @@ func TestSemanticVersionCollisionStopsPublication(t *testing.T) {
 		}
 	}
 }
+
+func TestToolboxDateRevisionAllocation(t *testing.T) {
+	for _, test := range []struct {
+		date string
+		tags []string
+		want string
+	}{
+		{"2026.10.15", nil, "2026.10.15-b1"},
+		{"2026.10.16", []string{"2026.10.15-b99"}, "2026.10.16-b1"},
+		{"2026.10.15", []string{"2026.10.15-b98.1", "2026.10.15-123-1", "2026.10.14-b99"}, "2026.10.15-b1"},
+		{"2026.10.15", []string{"2026.10.15-b2", "2026.10.15-b9", "staging-2026.10.15-b12-arm64"}, "2026.10.15-b13"},
+	} {
+		got, err := NextToolboxTag(test.date, test.tags)
+		if err != nil || got != test.want {
+			t.Fatalf("%s: %s, %v; want %s", test.date, got, err, test.want)
+		}
+	}
+	for _, date := range []string{"2026.02.30", "2026.1.1", "", "2026.10.15/evil"} {
+		if _, err := NextToolboxTag(date, nil); err == nil {
+			t.Fatalf("accepted date %s", date)
+		}
+	}
+	if _, err := NextToolboxTag("2026.10.15", []string{"2026.10.15-b18446744073709551615"}); err == nil {
+		t.Fatal("revision overflow accepted")
+	}
+}
+
+func TestToolboxDailyMetadataRequiresExplicitAttempt(t *testing.T) {
+	lock := filepath.Join(t.TempDir(), "lock.json")
+	if err := os.WriteFile(lock, []byte("{}"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	args := []string{"quay.io/example/toolbox", "2026.10.15-b1", strings.Repeat("a", 40), "https://github.com/example/repo", "2026-10-15T00:00:00Z", "123"}
+	if _, err := NewMetadata(lock, args[0], args[1], args[2], args[3], args[4], args[5]); err == nil {
+		t.Fatal("missing attempt accepted")
+	}
+	m, err := NewMetadata(lock, args[0], args[1], args[2], args[3], args[4], args[5], "2")
+	if err != nil || m.RunAttempt != "2" {
+		t.Fatalf("daily metadata: %+v %v", m, err)
+	}
+	if err := validate(m, lock); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestToolboxRegistryAndSourceReservations(t *testing.T) {
+	for _, mode := range []string{"valid", "unauthorized", "wrong-repository", "invalid-json", "missing-tags", "stalled"} {
+		t.Run(mode, func(t *testing.T) {
+			calls := 0
+			client := &http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+				calls++
+				status, body := 200, `{"token":"token"}`
+				headers := http.Header{}
+				if calls > 1 {
+					if r.URL.Path != "/v2/example/toolbox/tags/list" || r.Header.Get("Authorization") != "Bearer token" {
+						t.Fatal("wrong registry scope")
+					}
+					body = `{"name":"example/toolbox","tags":["2026.10.15-b2","2026.10.15-b98.1"]}`
+					if calls == 2 {
+						headers.Set("Link", "next")
+					} else {
+						if r.URL.Query().Get("last") != "2026.10.15-b98.1" {
+							t.Fatal("pagination skipped")
+						}
+						body = `{"name":"example/toolbox","tags":["staging-2026.10.15-b8-amd64"]}`
+					}
+					switch mode {
+					case "unauthorized":
+						status = 401
+					case "wrong-repository":
+						body = `{"name":"other/toolbox","tags":[]}`
+					case "invalid-json":
+						body = `bad`
+					case "missing-tags":
+						body = `{"name":"example/toolbox"}`
+					case "stalled":
+						body = `{"name":"example/toolbox","tags":[]}`
+						headers.Set("Link", "next")
+					}
+				}
+				return &http.Response{StatusCode: status, Body: io.NopCloser(strings.NewReader(body)), Header: headers}, nil
+			})}
+			got, err := AllocateToolboxTag(context.Background(), client, "quay.io/example/toolbox", "2026.10.15", "robot", "secret", "2026.10.15-b12")
+			if mode == "valid" {
+				if err != nil || got != "2026.10.15-b13" {
+					t.Fatalf("%s %v", got, err)
+				}
+			} else if err == nil {
+				t.Fatal("incomplete registry proof accepted")
+			}
+		})
+	}
+}
+
+func TestDailyTagCollision(t *testing.T) {
+	for _, status := range []int{200, 404, 403} {
+		client := &http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+			code, body := 200, `{"token":"token"}`
+			if r.Method == http.MethodHead {
+				code = status
+				body = ""
+				if !strings.HasSuffix(r.URL.Path, "/2026.03.01-b1") {
+					t.Fatal("wrong version checked")
+				}
+			}
+			return &http.Response{StatusCode: code, Body: io.NopCloser(strings.NewReader(body)), Header: http.Header{}}, nil
+		})}
+		err := CheckTagAbsent(context.Background(), client, "quay.io/example/toolbox", "2026.03.01-b1", "robot", "secret")
+		if (err == nil) != (status == 404) {
+			t.Fatalf("HTTP%d: %v", status, err)
+		}
+	}
+}

@@ -192,8 +192,8 @@ func PublishedToolDigestForBundle(ctx context.Context, client *http.Client, name
 		if !runIDPattern.MatchString(m.RunID) || (!tagPattern.MatchString(m.Tag) && old == nil) || !commitPattern.MatchString(m.Commit) || !hashPattern.MatchString(m.LockSHA256) {
 			return "", fmt.Errorf("published baseline lacks valid provenance")
 		}
-		if singletonTagPattern.MatchString(m.Tag) && (!runIDPattern.MatchString(m.RunAttempt) || bundleForImage(image).Name == "toolbox") {
-			return "", fmt.Errorf("published singleton attempt missing")
+		if (singletonTagPattern.MatchString(m.Tag) || toolboxDatePattern.MatchString(m.Tag)) && (!runIDPattern.MatchString(m.RunAttempt) || (bundleForImage(image).Name == "toolbox" && !toolboxDatePattern.MatchString(m.Tag))) {
+			return "", fmt.Errorf("published packaging tag or workflow attempt invalid")
 		}
 		digest := l[platformsLabel]
 		if digest != "" && !hashPattern.MatchString(digest) {

@@ -11,7 +11,10 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
+
+var toolboxDatePattern = regexp.MustCompile(`^(\d{4}\.\d{2}\.\d{2})-b([1-9]\d*)$`)
 
 var upstreamPattern = regexp.MustCompile(`^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$`)
 var singletonTagPattern = regexp.MustCompile(`^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)-b([1-9]\d*)$`)
@@ -90,6 +93,51 @@ func AllocateSingletonTag(ctx context.Context, client *http.Client, image string
 	if err != nil {
 		return "", err
 	}
+	return allocateRegistryTag(ctx, client, image, username, password, reserved, func(tags []string) (string, error) { return NextSingletonTag(version, tags) })
+}
+
+// NextToolboxTag reserves only the new date/revision namespace. Historical
+// run/attempt tags remain untouched and do not inflate the new daily counter.
+func NextToolboxTag(date string, tags []string) (string, error) {
+	parsed, err := time.Parse("2006.01.02", date)
+	if err != nil || parsed.Format("2006.01.02") != date {
+		return "", fmt.Errorf("canonical UTC date required")
+	}
+	var revision uint64
+	for _, tag := range tags {
+		if strings.HasPrefix(tag, "staging-") {
+			if !strings.HasSuffix(tag, "-amd64") && !strings.HasSuffix(tag, "-arm64") {
+				continue
+			}
+			tag = strings.TrimPrefix(tag, "staging-")
+			tag = strings.TrimSuffix(strings.TrimSuffix(tag, "-amd64"), "-arm64")
+		}
+		match := toolboxDatePattern.FindStringSubmatch(tag)
+		if match == nil || match[1] != date {
+			continue
+		}
+		n, err := strconv.ParseUint(match[2], 10, 64)
+		if err != nil || n == ^uint64(0) {
+			return "", fmt.Errorf("daily packaging revision exhausted")
+		}
+		if n > revision {
+			revision = n
+		}
+	}
+	return fmt.Sprintf("%s-b%d", date, revision+1), nil
+}
+
+func AllocateToolboxTag(ctx context.Context, client *http.Client, image, date, username, password string, reserved ...string) (string, error) {
+	if !strings.HasSuffix(image, "/toolbox") {
+		return "", fmt.Errorf("toolbox repository required")
+	}
+	if _, err := NextToolboxTag(date, nil); err != nil {
+		return "", err
+	}
+	return allocateRegistryTag(ctx, client, image, username, password, reserved, func(tags []string) (string, error) { return NextToolboxTag(date, tags) })
+}
+
+func allocateRegistryTag(ctx context.Context, client *http.Client, image, username, password string, reserved []string, next func([]string) (string, error)) (string, error) {
 	registry, err := newQuayReader(ctx, client, image, username, password)
 	if err != nil {
 		return "", err
@@ -107,20 +155,24 @@ func AllocateSingletonTag(ctx context.Context, client *http.Client, image string
 			return "", fmt.Errorf("complete registry version listing required (HTTP %d)", response.StatusCode)
 		}
 		var listing struct {
-			Name string   `json:"name"`
-			Tags []string `json:"tags"`
+			Name string          `json:"name"`
+			Tags json.RawMessage `json:"tags"`
 		}
 		if err := json.Unmarshal(data, &listing); err != nil || listing.Name != registry.repository {
 			return "", fmt.Errorf("invalid registry version listing")
 		}
-		tags = append(tags, listing.Tags...)
-		if len(listing.Tags) < 1000 && response.Header.Get("Link") == "" {
-			return NextSingletonTag(version, tags)
+		var listed []string
+		if len(listing.Tags) == 0 || json.Unmarshal(listing.Tags, &listed) != nil {
+			return "", fmt.Errorf("invalid registry tag list")
 		}
-		if len(listing.Tags) == 0 || listing.Tags[len(listing.Tags)-1] <= last {
+		tags = append(tags, listed...)
+		if len(listed) < 1000 && response.Header.Get("Link") == "" {
+			return next(tags)
+		}
+		if len(listed) == 0 || listed[len(listed)-1] <= last {
 			return "", fmt.Errorf("registry version pagination did not advance")
 		}
-		last = listing.Tags[len(listing.Tags)-1]
+		last = listed[len(listed)-1]
 	}
 	return "", fmt.Errorf("registry version listing exceeds page limit")
 }

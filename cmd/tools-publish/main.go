@@ -136,11 +136,15 @@ func resolve(directory string, meta toolpublish.Metadata, runner func(...string)
 	return resolveFrozen(directory, meta)
 }
 
-// resolveSingleton names the artifact only after upstream discovery has ended.
-func resolveSingleton(directory string, meta toolpublish.Metadata, frozen bool, attempt string, runner func(...string) ([]byte, error), allocate func(string, []byte) (string, error)) error {
+// resolveVersion names the artifact only after approved lock discovery has ended.
+func resolveVersion(directory string, meta toolpublish.Metadata, frozen bool, attempt string, runner func(...string) ([]byte, error), allocate func(string, []byte) (string, error)) error {
 	bundle := toolpublish.BundleForMetadata(meta)
 	if !frozen {
-		if _, err := runner("go", "run", "./cmd/bdock", "tools", "upgrade", "--directory", bundle.Directory); err != nil {
+		args := []string{"go", "run", "./cmd/bdock", "tools", "upgrade"}
+		if bundle.Name != "toolbox" {
+			args = append(args, "--directory", bundle.Directory)
+		}
+		if _, err := runner(args...); err != nil {
 			return err
 		}
 	}
@@ -232,7 +236,9 @@ func publicationDecisionForBundle(lock, event, bundle string, baseline func() (s
 	return publish, err
 }
 
-func execute(args []string) error {
+func execute(args []string) error { return executeWithAllocator(args, nil) }
+
+func executeWithAllocator(args []string, allocator func(toolpublish.Bundle, string, string, []byte) (string, error)) error {
 	if len(args) == 0 {
 		return fmt.Errorf("expected resolve, plan, build, push, newest or promote")
 	}
@@ -287,36 +293,39 @@ func execute(args []string) error {
 			return err
 		}
 		now := time.Now().UTC()
+		// Validate the workflow identity before resolving or allocating. This
+		// temporary historical-format tag is never written to an artifact;
+		// resolveVersion replaces it with the allocated packaging revision.
 		tag := now.Format("2006.01.02") + "-b" + os.Getenv("GITHUB_RUN_NUMBER") + "." + os.Getenv("GITHUB_RUN_ATTEMPT")
 		meta, err := toolpublish.NewMetadataForBundle(bundle.Name, bundle.Directory+"/packages.lock.json", image, tag, commit, os.Getenv("GITHUB_SERVER_URL")+"/"+os.Getenv("GITHUB_REPOSITORY"), now.Format("2006-01-02T15:04:05Z"), os.Getenv("GITHUB_RUN_ID"))
 		if err != nil {
 			return err
 		}
-		if bundle.Name != "toolbox" {
-			return resolveSingleton(*directory, meta, *frozen, os.Getenv("GITHUB_RUN_ATTEMPT"), run, func(image string, data []byte) (string, error) {
-				// Source tags reserve packaging revisions even if an OCI tag is removed.
-				args := []string{"git", "ls-remote", "--tags", "origin"}
-				for _, name := range bundle.SourceTagNamespaces() {
-					args = append(args, "refs/tags/"+name+"/*")
-				}
-				refs, err := run(args...)
-				if err != nil {
-					return "", err
-				}
-				reserved, err := toolpublish.SourceTagReservations(bundle, refs)
-				if err != nil {
-					return "", err
-				}
+		return resolveVersion(*directory, meta, *frozen, os.Getenv("GITHUB_RUN_ATTEMPT"), run, func(image string, data []byte) (string, error) {
+			if allocator != nil {
+				return allocator(bundle, image, now.Format("2006.01.02"), data)
+			}
+			// Source tags reserve packaging revisions even if an OCI tag is removed.
+			args := []string{"git", "ls-remote", "--tags", "origin"}
+			for _, name := range bundle.SourceTagNamespaces() {
+				args = append(args, "refs/tags/"+name+"/*")
+			}
+			refs, err := run(args...)
+			if err != nil {
+				return "", err
+			}
+			reserved, err := toolpublish.SourceTagReservations(bundle, refs)
+			if err != nil {
+				return "", err
+			}
 
-				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
-				defer cancel()
-				return toolpublish.AllocateSingletonTag(ctx, nil, image, data, os.Getenv("REPOSITORY_USERNAME"), os.Getenv("REPOSITORY_TOKEN"), reserved...)
-			})
-		}
-		if *frozen {
-			return resolveFrozen(*directory, meta)
-		}
-		return resolve(*directory, meta, run)
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+			defer cancel()
+			if bundle.Name == "toolbox" {
+				return toolpublish.AllocateToolboxTag(ctx, nil, image, now.Format("2006.01.02"), os.Getenv("REPOSITORY_USERNAME"), os.Getenv("REPOSITORY_TOKEN"), reserved...)
+			}
+			return toolpublish.AllocateSingletonTag(ctx, nil, image, data, os.Getenv("REPOSITORY_USERNAME"), os.Getenv("REPOSITORY_TOKEN"), reserved...)
+		})
 	}
 	var meta toolpublish.Metadata
 	if err := readJSON(provenance, &meta); err != nil {
