@@ -47,7 +47,9 @@ var navigation = []Shortcut{
 // Nushell 0.116.1 (TestNavigationShortcutsChangeDirectoryInEveryShell re-checks
 // it, and docs/toolbox.md carries the same table):
 //
-//   - bash, zsh: none of the names is native; aliases work (`alias -- -=...`).
+//   - bash: none of the names is native; aliases work (`alias -- -=...`).
+//   - zsh: `..`, `...` and `....` are aliases; `-` is a built-in precommand
+//     modifier (`- cmd`), and an alias would replace it, so it is left alone.
 //   - fish: `..` is native; `...`, `....` and `-` work as abbreviations.
 //   - Nushell: `..`, `...` and `....` are native implicit cd (only for a bare
 //     path typed alone in the REPL); `-` cannot be supported: `alias - = ...`
@@ -55,7 +57,7 @@ var navigation = []Shortcut{
 //     lone `-` as a string.
 var navigationSupport = map[string]map[string]NavState{
 	"bash": {"..": NavLayer, "...": NavLayer, "....": NavLayer, "-": NavLayer},
-	"zsh":  {"..": NavLayer, "...": NavLayer, "....": NavLayer, "-": NavLayer},
+	"zsh":  {"..": NavLayer, "...": NavLayer, "....": NavLayer, "-": NavUnsupported},
 	"fish": {"..": NavNative, "...": NavLayer, "....": NavLayer, "-": NavLayer},
 	"nu":   {"..": NavNative, "...": NavNative, "....": NavNative, "-": NavUnsupported},
 }

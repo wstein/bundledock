@@ -585,7 +585,7 @@ Everyday shortcuts cover search, disk and memory reports, and directories:
 `rgi` (`rg -i`), `rgl` (`rg -l`), `rgf` (`rg --files`), `fdh` (`fd --hidden`),
 `dfh` (`df -h`), `duh` (`du -h -d 1`), `fr` (`free -h`), `md` (`mkdir -p`) and
 `rd` (`rmdir`). `rg` and `fd` are toolbox tools, covered by the `packages.txt`
-test. `df`, `du`, `free`, `mkdir` and `rmdir` come from the base image and are on
+test. `df`, `du`, `free`, `mkdir` and `rmdir` come from the base image (`free` from procps, which slim images may omit, so `fr` needs it) and are on
 that test's explicit allowlist with a reason each: `df`, `du` and `free` only
 report, `mkdir -p` only creates and never overwrites, and `rmdir` removes only an
 empty directory. None of the names is an executable on `PATH` or in the
@@ -606,11 +606,11 @@ tree in each installed shell and asserts `pwd`:
 | Shell (version) | `..` | `...` | `....` | `-` |
 | --- | --- | --- | --- | --- |
 | bash 5.2.37 | defined by the layer | defined by the layer | defined by the layer | defined by the layer |
-| zsh 5.9 | defined by the layer | defined by the layer | defined by the layer | defined by the layer |
+| zsh 5.9 | defined by the layer | defined by the layer | defined by the layer | unsupported |
 | fish 4.9.3 | native | defined by the layer | defined by the layer | defined by the layer |
 | Nushell 0.116.1 | native | native | native | unsupported |
 
-bash and zsh define aliases (`alias -- -='cd -'`); `autocd` and `auto_cd` would
+bash and zsh define aliases for the dotted names, and bash also for `-` (`alias -- -='cd -'`). In zsh `-` is a built-in precommand modifier (`- cmd` runs `cmd` with a leading dash in its name), and an alias would replace it, so the layer leaves it alone; `autocd` and `auto_cd` would
 only cover `..`, so they are not used. fish defines abbreviations. Nushell's
 implicit `cd` works only for a bare path typed alone in the interactive REPL, not
 under `nu -c`, `-e` or after `;`. In Nushell `-` is unsupported: `alias - = cd -`
@@ -659,7 +659,7 @@ editing the table, run
 `TestShortcutsBehaveTheSameInEveryShell` runs every shortcut in each installed
 shell against stub commands and requires identical arguments;
 `TestBranchShortcutsRefuseDetachedHead` checks the detached-HEAD refusal.
-Verified on 2026-10-15 with bash 5.2.21, zsh 5.9 and the pinned fish 4.9.3,
+Verified on 2026-10-15 with bash 5.2.37, zsh 5.9 and the pinned fish 4.9.3,
 Nushell 0.116.1 and starship 1.26.0, including starship initialization in all
 four shells, Nushell vendor autoload through `XDG_DATA_DIRS` and zsh's
 expansion in a pseudo-terminal. zsh is not part of the toolbox: no official
