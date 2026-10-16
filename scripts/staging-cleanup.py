@@ -108,16 +108,75 @@ class GitHub:
     def __init__(self):
         self.cache = {}
 
+    def _get(self, path, fresh=False):
+        if fresh or path not in self.cache:
+            result = subprocess.run(['gh', 'api', 'repos/wstein/bundledock/' + path], capture_output=True, text=True, timeout=30)
+            require(result.returncode == 0, 'GitHub evidence unavailable')
+            require(len(result.stdout.encode()) <= 4 * 1024 * 1024, 'GitHub response too large')
+            self.cache[path] = json.loads(result.stdout)
+        return self.cache[path]
+
     def run(self, run_id, fresh=False):
         require(re.fullmatch('[1-9][0-9]*', str(run_id)) is not None, 'Invalid run ID')
-        if fresh or run_id not in self.cache:
-            result = subprocess.run(['gh', 'api', 'repos/wstein/bundledock/actions/runs/' + str(run_id)], capture_output=True, text=True, timeout=30)
-            require(result.returncode == 0, 'GitHub run evidence unavailable')
-            self.cache[run_id] = json.loads(result.stdout)
-        return self.cache[run_id]
+        return self._get('actions/runs/' + str(run_id), fresh)
+
+    def attempt(self, run_id, attempt, fresh=False):
+        require(re.fullmatch('[1-9][0-9]*', str(run_id)) is not None and type(attempt) is int and attempt > 0, 'Invalid run attempt')
+        return self._get('actions/runs/' + str(run_id) + '/attempts/' + str(attempt), fresh)
+
+    def workflow(self, fresh=False):
+        return self._get('actions/workflows/publish-bundles.yml', fresh)
+
+    def jobs(self, run_id, attempt, fresh=False):
+        require(re.fullmatch('[1-9][0-9]*', str(run_id)) is not None and type(attempt) is int and attempt > 0, 'Invalid jobs attempt')
+        jobs, seen, total = [], set(), None
+        for page in range(1, 21):
+            data = self._get('actions/runs/' + str(run_id) + '/attempts/' + str(attempt) + '/jobs?per_page=100&page=' + str(page), fresh)
+            count = data.get('total_count')
+            require(type(count) is int and 0 <= count <= 2000 and isinstance(data.get('jobs'), list), 'Malformed jobs pagination')
+            require(total is None or count == total, 'Jobs changed during pagination')
+            total = count
+            for job in data['jobs']:
+                require(isinstance(job, dict) and type(job.get('id')) is int and job['id'] not in seen, 'Duplicate or invalid job')
+                seen.add(job['id'])
+                jobs.append(job)
+            require(len(jobs) <= total, 'Jobs exceed reported total')
+            if len(jobs) == total:
+                return jobs
+            require(bool(data['jobs']), 'Missing jobs page')
+        raise ValueError('Jobs pagination limit exceeded')
 
 
-def assess(repository, row, registry, github, now, publication=None, fresh=False):
+FAILED_CONCLUSIONS = ('failure', 'cancelled', 'timed_out')
+
+
+def failed_run_proof(github, run_id, attempt, fresh=False, run=None):
+    require(re.fullmatch('[1-9][0-9]*', str(run_id)) is not None and type(attempt) is int and attempt > 0, 'Invalid failed run selection')
+    run = github.run(run_id, fresh=fresh) if run is None else run
+    require(str(run['id']) == str(run_id) and type(run['run_attempt']) is int and run['run_attempt'] == attempt, 'Failed run was rerun or its attempt changed')
+    require(run['status'] == 'completed' and run.get('conclusion') in FAILED_CONCLUSIONS, 'Selected run is not a completed failed or cancelled publication')
+    require(run['repository']['full_name'] == run['head_repository']['full_name'] == 'wstein/bundledock', 'Foreign run repository')
+    require(run['head_branch'] == 'main' and run['event'] in ('workflow_dispatch', 'workflow_run'), 'Not an official main publication event')
+    require(run['path'] == '.github/workflows/publish-bundles.yml' and re.fullmatch('[0-9a-f]{40}', run['head_sha']) is not None, 'Not the official publication workflow')
+    workflow = github.workflow(fresh=fresh)
+    require(workflow['id'] == run['workflow_id'] and workflow['path'] == run['path'] and workflow['state'] == 'active', 'Publication workflow identity unavailable or changed')
+    exact = github.attempt(run_id, attempt, fresh=fresh)
+    fields = ('id', 'run_attempt', 'status', 'conclusion', 'path', 'event', 'head_branch', 'head_sha', 'workflow_id')
+    require(all(exact[k] == run[k] for k in fields), 'Exact attempt evidence differs from latest run')
+    jobs = github.jobs(run_id, attempt, fresh=fresh)
+    require(isinstance(jobs, list) and 0 < len(jobs) <= 2000, 'Complete job evidence unavailable')
+    seen = set()
+    for job in jobs:
+        require(type(job.get('id')) is int and job['id'] not in seen and str(job.get('run_id')) == str(run_id) and type(job.get('run_attempt')) is int and job['run_attempt'] == attempt, 'Job belongs to another run or attempt')
+        require(job.get('status') == 'completed' and isinstance(job.get('conclusion'), str) and bool(job['conclusion']), 'Publication job still active or unverifiable')
+        seen.add(job['id'])
+    # Resample after the attempt/jobs reads; queued or active reruns invalidate proof.
+    latest = github.run(run_id, fresh=fresh)
+    require(all(latest[k] == run[k] for k in fields), 'Publication changed while checking completed jobs')
+    return run
+
+
+def assess(repository, row, registry, github, now, publication=None, fresh=False, failed_run=None):
     result = {key: row.get(key) for key in ('name', 'manifest_digest', 'last_modified')}
     result.update(repository=repository, eligible=False)
     try:
@@ -145,6 +204,9 @@ def assess(repository, row, registry, github, now, publication=None, fresh=False
         attempt = record['attempt']
         if labels.get('io.bundledock.github.run-attempt') is not None:
             require(labels['io.bundledock.github.run-attempt'] == str(attempt), 'Attempt mismatch')
+        if failed_run is not None:
+            require(publication is None, 'Conflicting cleanup modes')
+            require(run_id == failed_run[0] and attempt == failed_run[1], 'Tag belongs to another run or attempt')
         run = github.run(run_id, fresh=fresh)
         require(str(run['id']) == run_id and run['repository']['full_name'] == 'wstein/bundledock' and run['head_branch'] == 'main', 'Wrong run provenance')
         require(run['path'] in ('.github/workflows/publish-bundles.yml', '.github/workflows/bundledock-' + bundle + '.yml'), 'Not a publication workflow')
@@ -164,13 +226,18 @@ def assess(repository, row, registry, github, now, publication=None, fresh=False
             expected = {p['architecture']: p['digest'] for p in publication['platforms']}
             require(expected.get(arch) == digest and int(run['run_attempt']) == attempt, 'Receipt platform or current attempt mismatch')
             require(modified <= now, 'Future staging timestamp')
+        elif failed_run is not None:
+            failed_run_proof(github, *failed_run, fresh=fresh, run=run)
+            require(modified <= now, 'Future staging timestamp')
+            updated = datetime.fromisoformat(run['updated_at'].replace('Z', '+00:00'))
+            require(updated.tzinfo is not None and updated <= now, 'Future or invalid completed-run timestamp')
         else:
             cutoff = now - timedelta(days=7)
             require(modified <= cutoff, 'Staging tag younger than seven days')
             require(run['status'] == 'completed' and run.get('conclusion') is not None, 'Publication run still active')
             updated = datetime.fromisoformat(run['updated_at'].replace('Z', '+00:00'))
             require(updated <= cutoff, 'Run or rerun younger than seven days')
-        result.update(eligible=True, reason='Verified publication staging tag' if publication else 'Verified completed run and tag older than seven days')
+        result.update(eligible=True, reason='Verified publication staging tag' if publication else ('Verified exact completed failed publication attempt' if failed_run else 'Verified completed run and tag older than seven days'))
     except (ValueError, KeyError, TypeError, OSError, subprocess.SubprocessError, urllib.error.URLError) as error:
         # Never include response bodies, tokens or signed URLs in audit output.
         result['reason'] = str(error) if isinstance(error, ValueError) else 'Required provenance evidence unavailable'
@@ -178,12 +245,17 @@ def assess(repository, row, registry, github, now, publication=None, fresh=False
 
 
 def apply_plan(plan, recheck, quay, write=False, report=None):
-    require(plan.get('schema') == 1 and plan.get('mode') in ('fallback', 'publication') and isinstance(plan.get('rows'), list), 'Invalid cleanup plan')
+    require(plan.get('schema') == 1 and plan.get('mode') in ('fallback', 'publication', 'failed-run') and isinstance(plan.get('rows'), list), 'Invalid cleanup plan')
+    target = plan.get('target')
+    if plan['mode'] == 'failed-run':
+        require(isinstance(target, dict) and re.fullmatch('[1-9][0-9]*', str(target.get('run_id'))) is not None and isinstance(target.get('run_id'), str) and type(target.get('attempt')) is int and target['attempt'] > 0, 'Invalid failed-run plan target')
     approved, seen = [], set()
     for row in plan['rows']:
         if row.get('eligible') is not True:
             continue
         identity(row['repository'], row['name'])
+        if plan['mode'] == 'failed-run':
+            require(row.get('run_id') == target['run_id'] and type(row.get('attempt')) is int and row['attempt'] == target['attempt'], 'Plan row outside exact failed attempt')
         require(tags.DIGEST.fullmatch(row['manifest_digest']) is not None, 'Invalid approved digest')
         key = row['repository'], row['name']
         require(key not in seen, 'Duplicate approved tag')
@@ -229,6 +301,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--repository', choices=('all',) + REPOSITORIES, default='all')
     parser.add_argument('--publication')
+    parser.add_argument('--failed-run', help='Exact completed failed publication run ID')
+    parser.add_argument('--failed-attempt', help='Exact latest run attempt (requires --failed-run)')
     parser.add_argument('--bundle', choices=tuple(tags.BUNDLES))
     parser.add_argument('--output', required=True)
     parser.add_argument('--apply', action='store_true')
@@ -236,21 +310,33 @@ def main():
     args = parser.parse_args()
     require(not args.apply or args.approved_plan, '--apply requires a saved dry-run plan')
     require(not args.publication or args.bundle, '--publication requires --bundle')
+    failed_run = None
+    if args.failed_run is not None or args.failed_attempt is not None:
+        require(not args.publication, 'Conflicting cleanup modes')
+        require(re.fullmatch('[1-9][0-9]*', args.failed_run or '') is not None and re.fullmatch('[1-9][0-9]*', args.failed_attempt or '') is not None, 'Both failed run and attempt must be positive integers')
+        failed_run = (args.failed_run, int(args.failed_attempt))
     username, password = os.environ.get('REPOSITORY_USERNAME', ''), os.environ.get('REPOSITORY_TOKEN', '')
     require(not args.apply or (username and password), 'REPOSITORY_USERNAME and REPOSITORY_TOKEN required for deletion')
     quay, github = Quay(username, password), GitHub()
+    if failed_run is not None:
+        failed_run_proof(github, *failed_run, fresh=True)
+    target = dict(run_id=failed_run[0], attempt=failed_run[1]) if failed_run else None
     publication = publication_proof(args.publication, args.bundle, github) if args.publication else None
     repos = [tags._CONFIG.select_bundle(args.bundle)['repository']] if publication else (REPOSITORIES if args.repository == 'all' else [args.repository])
     registries = {repo: tags.Registry('quay.io/bundledock/' + repo) for repo in repos}
     now = datetime.now(timezone.utc)
     def check(repo, row):
         require(repo in repos, 'Plan repository outside selected scope')
-        return assess(repo, row, registries[repo], github, datetime.now(timezone.utc), publication, fresh=True)
-    mode = 'publication' if publication else 'fallback'
+        return assess(repo, row, registries[repo], github, datetime.now(timezone.utc), publication, fresh=True, failed_run=failed_run)
+    mode = 'publication' if publication else ('failed-run' if failed_run else 'fallback')
     if args.apply:
         plan = json.loads(Path(args.approved_plan).read_text())
         require(plan.get('mode') == mode, 'Plan mode differs from request')
+        require(plan.get('target') == target, 'Plan target differs from request')
+        require(all(row.get('repository') in repos for row in plan['rows'] if row.get('eligible') is True), 'Plan repository outside selected scope')
         result = dict(schema=1, mode=mode, generated_at=now.isoformat(), actions=[])
+        if target is not None:
+            result['target'] = target
         def report(actions):
             result['actions'] = actions
             Path(args.output).write_text(json.dumps(result, indent=2, sort_keys=True) + '\n')
@@ -264,9 +350,15 @@ def main():
                     continue
                 if publication and row['name'] not in ['staging-' + publication['tag'] + '-' + a for a in ('amd64', 'arm64')]:
                     continue
-                rows.append(assess(repo, row, registries[repo], github, now, publication))
+                rows.append(assess(repo, row, registries[repo], github, now, publication, failed_run=failed_run))
         result = dict(schema=1, mode=mode, generated_at=now.isoformat(), rows=sorted(rows, key=lambda r: (r['repository'], r['name'])))
+    if target is not None:
+        result['target'] = target
     Path(args.output).write_text(json.dumps(result, indent=2, sort_keys=True) + '\n')
+    if os.environ.get('GITHUB_STEP_SUMMARY'):
+        count = sum(row['eligible'] for row in result['rows']) if 'rows' in result else len(result['actions'])
+        with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
+            summary.write(f'\nStaging cleanup ({mode}): {count} eligible tags or completed actions. Full evidence is in the saved JSON artifact.\n')
     print(json.dumps({k: v for k, v in result.items() if k not in ('rows', 'actions')}))
     if 'rows' in result:
         print(f"Staging tags: {len(result['rows'])}; eligible: {sum(r['eligible'] for r in result['rows'])}; dry run saved to {args.output}")

@@ -5,6 +5,8 @@ import importlib.util
 import json
 from pathlib import Path
 import unittest
+import tempfile
+import os
 from unittest.mock import patch
 
 PATH = Path(__file__).resolve().parents[1] / 'staging-cleanup.py'
@@ -39,11 +41,19 @@ class CleanupTests(unittest.TestCase):
                         head_branch='main', head_sha='a' * 40,
                         repository={'full_name': 'wstein/bundledock'},
                         path='.github/workflows/publish-bundles.yml')
+        self.run['head_repository'] = {'full_name': 'wstein/bundledock'}
+        self.run['workflow_id'] = 456
+        self.attempt_record = copy.deepcopy(self.run)
+        self.workflow = dict(id=456, path='.github/workflows/publish-bundles.yml', state='active')
+        self.jobs = [dict(id=789, run_id=123, run_attempt=1, status='completed', conclusion='failure')]
         outer = self
         class Registry:
             def get(self, kind, ref): return outer.documents[kind, ref]
         class GitHub:
             def run(self, run_id, fresh=False): return copy.deepcopy(outer.run)
+            def attempt(self, run_id, attempt, fresh=False): return copy.deepcopy(outer.attempt_record)
+            def workflow(self, fresh=False): return copy.deepcopy(outer.workflow)
+            def jobs(self, run_id, attempt, fresh=False): return copy.deepcopy(outer.jobs)
         class Quay:
             def __init__(self): self.deleted = []; self.rows = [outer.row]
             def list_tags(self, repository, name=None):
@@ -145,6 +155,127 @@ class CleanupTests(unittest.TestCase):
                 cleanup.apply_plan({'schema': 1, 'mode': 'fallback', 'rows': [good, bad]},
                                    lambda repo, row: self.assess(), self.quay, write=True)
             self.assertEqual(self.quay.deleted, [])
+
+    def failed_assess(self):
+        return cleanup.assess('toolbox', self.row, self.registry, self.github, NOW,
+                              failed_run=('123', 1), fresh=True)
+
+    def test_failed_run_recent_tags_are_eligible_only_for_exact_completed_attempt(self):
+        self.row['last_modified'] = 'Wed, 14 Oct 2026 00:00:00 -0000'
+        self.assertFalse(self.assess()['eligible'])
+        for conclusion in ('failure', 'cancelled', 'timed_out'):
+            with self.subTest(conclusion=conclusion):
+                self.run['conclusion'] = self.attempt_record['conclusion'] = conclusion
+                self.assertTrue(self.failed_assess()['eligible'])
+        approved = dict(schema=1, mode='failed-run', target=dict(run_id='123', attempt=1),
+                        rows=[self.failed_assess()])
+        cleanup.apply_plan(approved, lambda repo, row: self.failed_assess(), self.quay)
+        self.assertEqual(self.quay.deleted, [])
+        cleanup.apply_plan(approved, lambda repo, row: self.failed_assess(), self.quay, write=True)
+        self.assertEqual(self.quay.deleted, [('toolbox', self.row['name'])])
+
+    def test_failed_run_unavailable_active_successful_foreign_or_rerun_is_retained(self):
+        for field, value in [('id', 124), ('run_attempt', 2), ('status', 'in_progress'),
+                             ('conclusion', 'success'), ('conclusion', None),
+                             ('event', 'pull_request'), ('head_branch', 'topic'),
+                             ('path', '.github/workflows/ci.yml'), ('workflow_id', 999),
+                             ('repository', {'full_name': 'foreign/repo'}),
+                             ('head_repository', {'full_name': 'foreign/repo'})]:
+            with self.subTest(field=field):
+                original = copy.deepcopy(self.run)
+                self.run[field] = value
+                self.assertFalse(self.failed_assess()['eligible'])
+                self.run = original
+        for field, value in [('run_attempt', 2), ('status', 'queued'), ('head_sha', 'b' * 40)]:
+            original = copy.deepcopy(self.attempt_record)
+            self.attempt_record[field] = value
+            self.assertFalse(self.failed_assess()['eligible'])
+            self.attempt_record = original
+        self.workflow['id'] = 999
+        self.assertFalse(self.failed_assess()['eligible'])
+
+    def test_failed_run_all_jobs_must_be_completed_exact_unique_and_nonempty(self):
+        original = copy.deepcopy(self.jobs)
+        for jobs in ([], [dict(original[0], status='in_progress')],
+                     [dict(original[0], conclusion=None)],
+                     [dict(original[0], run_attempt=2)], [dict(original[0], run_id=124)],
+                     [original[0], original[0]]):
+            with self.subTest(jobs=jobs):
+                self.jobs = jobs
+                self.assertFalse(self.failed_assess()['eligible'])
+        self.jobs = original
+
+    def test_failed_run_plan_scope_and_rerun_rechecked_before_deletion(self):
+        approved = dict(schema=1, mode='failed-run', target=dict(run_id='123', attempt=1),
+                        rows=[self.failed_assess()])
+        self.run['run_attempt'] = 2
+        with self.assertRaises(ValueError):
+            cleanup.apply_plan(approved, lambda repo, row: self.failed_assess(), self.quay, write=True)
+        self.assertEqual(self.quay.deleted, [])
+        self.run['run_attempt'] = 1
+        for bad in (dict(approved, target=dict(run_id='124', attempt=1)),
+                    dict(approved, target=dict(run_id='123', attempt=True)),
+                    dict(approved, rows=[approved['rows'][0], dict(approved['rows'][0], name='staging-2026.10.01-b5.1-amd64', run_id='124')])):
+            with self.subTest(bad=bad), self.assertRaises(ValueError):
+                cleanup.apply_plan(bad, lambda repo, row: self.failed_assess(), self.quay, write=True)
+            self.assertEqual(self.quay.deleted, [])
+
+    def test_failed_run_cli_saves_targeted_dry_run_and_rejects_other_plan_scope(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / 'plan.json'
+            summary = Path(directory) / 'summary.md'
+            args = ['cleanup', '--repository', 'toolbox', '--failed-run', '123',
+                    '--failed-attempt', '1', '--output', str(output)]
+            with patch.object(cleanup.sys, 'argv', args), patch.object(cleanup, 'Quay', return_value=self.quay), \
+                 patch.object(cleanup, 'GitHub', return_value=self.github), \
+                 patch.object(cleanup.tags, 'Registry', return_value=self.registry), \
+                 patch.dict(os.environ, {'GITHUB_STEP_SUMMARY': str(summary)}):
+                cleanup.main()
+            plan = json.loads(output.read_text())
+            self.assertEqual(plan['mode'], 'failed-run')
+            self.assertEqual(plan['target'], {'run_id': '123', 'attempt': 1})
+            self.assertTrue(plan['rows'][0]['eligible'])
+            self.assertEqual(self.quay.deleted, [])
+            self.assertIn('failed-run', summary.read_text())
+            plan['target']['run_id'] = '124'
+            output.write_text(json.dumps(plan))
+            with patch.object(cleanup.sys, 'argv', args + ['--apply', '--approved-plan', str(output)]), \
+                 patch.object(cleanup, 'Quay', return_value=self.quay), \
+                 patch.object(cleanup, 'GitHub', return_value=self.github), \
+                 patch.object(cleanup.tags, 'Registry', return_value=self.registry), \
+                 patch.dict(os.environ, {'REPOSITORY_USERNAME': 'fixture', 'REPOSITORY_TOKEN': 'fixture'}), \
+                 self.assertRaisesRegex(ValueError, 'Plan target'):
+                cleanup.main()
+            self.assertEqual(self.quay.deleted, [])
+
+    def test_failed_run_proof_rechecks_latest_attempt_after_jobs(self):
+        rerun = dict(self.run, run_attempt=2, status='queued', conclusion=None)
+        with patch.object(self.github, 'run', side_effect=[self.run, rerun]), self.assertRaisesRegex(ValueError, 'changed while'):
+            cleanup.failed_run_proof(self.github, '123', 1, fresh=True)
+        self.assertEqual(self.quay.deleted, [])
+
+    def test_failed_run_cli_rejects_incomplete_and_conflicting_selectors(self):
+        for selectors in (['--failed-run', '123'], ['--failed-attempt', '1'],
+                          ['--failed-run', '123', '--failed-attempt', '0'],
+                          ['--failed-run', '../123', '--failed-attempt', '1'],
+                          ['--failed-run', '123', '--failed-attempt', '1', '--publication', 'receipt', '--bundle', 'toolbox']):
+            with self.subTest(selectors=selectors), patch.object(cleanup.sys, 'argv', ['cleanup', '--output', 'unused'] + selectors), \
+                 patch.object(cleanup, 'Quay') as quay, self.assertRaises(ValueError):
+                cleanup.main()
+            quay.assert_not_called()
+
+    def test_failed_jobs_pagination_requires_every_exact_unique_job(self):
+        github = cleanup.GitHub()
+        rows = [dict(id=1), dict(id=2)]
+        with patch.object(github, '_get', side_effect=[dict(total_count=2, jobs=rows[:1]),
+                                                       dict(total_count=2, jobs=rows[1:])]):
+            self.assertEqual(github.jobs('123', 1), rows)
+        for responses in ([dict(total_count=2, jobs=[])],
+                          [dict(total_count=2, jobs=rows[:1]), dict(total_count=2, jobs=rows[:1])],
+                          [dict(total_count=2, jobs=rows[:1]), dict(total_count=3, jobs=rows[1:])],
+                          [dict(total_count=2001, jobs=[])]):
+            with self.subTest(responses=responses), patch.object(github, '_get', side_effect=responses), self.assertRaises(ValueError):
+                github.jobs('123', 1)
 
     def test_no_registry_credentials_cannot_delete(self):
         with self.assertRaisesRegex(ValueError, 'TOKEN required'):
