@@ -9,8 +9,7 @@
 [![Supported platforms: Linux AMD64 and ARM64](https://img.shields.io/badge/platforms-Linux%20AMD64%20%7C%20ARM64-blue)](docs/architecture.md#consumer-compatibility-and-build-layout)
 [![Container: ready](https://img.shields.io/badge/container-ready-5eead4)](https://quay.io/organization/bundledock)
 
-BundleDock packages official stable prebuilt tools and runtimes, plus the
-reviewed [git-trim source exception](docs/toolbox.md#git-trim-source-exception), as OCI volume
+BundleDock packages official stable prebuilt tools and runtimes as OCI volume
 carriers for shared, read-only use in Linux development containers. Each bundle
 has its own catalog, lock, image and volume. Stock language images supply the
 consumer environment; the toolbox supplies common utilities alongside them.
@@ -123,7 +122,6 @@ describes the desired source inventory; published images retain their own pins:
 
 | Use | Tools |
 | --- | --- |
-| Git branch cleanup plans | [git-trim (`git trim --dry-run --no-update`)](https://github.com/foriequal0/git-trim) |
 | GitHub workflows | [GitHub CLI (`gh`)](https://github.com/cli/cli) |
 | Search and structured data | [ripgrep (`rg`)](https://github.com/BurntSushi/ripgrep), [fd (`fd`, `fdfind`)](https://github.com/sharkdp/fd), [ast-grep](https://github.com/ast-grep/ast-grep), [jq](https://github.com/jqlang/jq), [yq](https://github.com/mikefarah/yq) |
 | Interactive filtering and file viewing | [fzf](https://github.com/junegunn/fzf), [bat](https://github.com/sharkdp/bat) |
