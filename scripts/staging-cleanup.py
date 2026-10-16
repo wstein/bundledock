@@ -171,7 +171,7 @@ def failed_run_proof(github, run_id, attempt, fresh=False, run=None):
         require(job.get('status') == 'completed' and isinstance(job.get('conclusion'), str) and bool(job['conclusion']), 'Publication job still active or unverifiable')
         seen.add(job['id'])
     # Resample after the attempt/jobs reads; queued or active reruns invalidate proof.
-    latest = github.run(run_id, fresh=fresh)
+    latest = github.run(run_id, fresh=True)
     require(all(latest[k] == run[k] for k in fields), 'Publication changed while checking completed jobs')
     return run
 

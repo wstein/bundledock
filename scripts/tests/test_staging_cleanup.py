@@ -254,6 +254,13 @@ class CleanupTests(unittest.TestCase):
             cleanup.failed_run_proof(self.github, '123', 1, fresh=True)
         self.assertEqual(self.quay.deleted, [])
 
+    def test_failed_run_dry_run_resamples_without_cached_latest_evidence(self):
+        rerun = dict(self.run, run_attempt=2, status='queued', conclusion=None)
+        def read(run_id, fresh=False):
+            return copy.deepcopy(rerun if fresh else self.run)
+        with patch.object(self.github, 'run', side_effect=read), self.assertRaisesRegex(ValueError, 'changed while'):
+            cleanup.failed_run_proof(self.github, '123', 1)
+
     def test_failed_run_cli_rejects_incomplete_and_conflicting_selectors(self):
         for selectors in (['--failed-run', '123'], ['--failed-attempt', '1'],
                           ['--failed-run', '123', '--failed-attempt', '0'],
