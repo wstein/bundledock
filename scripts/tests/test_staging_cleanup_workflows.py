@@ -6,6 +6,7 @@ import subprocess
 import tempfile
 import textwrap
 import unittest
+from types import SimpleNamespace
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -32,6 +33,41 @@ class WorkflowTests(unittest.TestCase):
         self.assertLess(source.index('name: Save cleanup dry run'), source.index('name: Remove stale staging tags'))
         self.assertNotIn('docker ', source)
         self.assertNotIn('contents: write', source)
+
+    def test_failed_completion_cleanup_uses_trusted_code_saved_plan_and_same_lock(self):
+        source = (ROOT / '.github/workflows/staging-cleanup.yml').read_text()
+        self.assertIn('workflows: [Publish bundles]', source)
+        self.assertIn('types: [completed]', source)
+        self.assertIn("github.event.workflow_run.conclusion == 'failure'", source)
+        self.assertIn("github.event.workflow_run.conclusion == 'cancelled'", source)
+        self.assertIn("github.event.workflow_run.head_branch == 'main'", source)
+        self.assertIn('ref: ${{ github.sha }}', source)
+        self.assertNotIn('ref: ${{ github.event.workflow_run.head_sha }}', source)
+        self.assertIn('github.event.workflow_run.run_attempt', source)
+        self.assertEqual(source.count('--failed-run "$FAILED_RUN" --failed-attempt "$FAILED_ATTEMPT"'), 2)
+        self.assertIn("github.event_name == 'workflow_run'", source)
+        self.assertIn('group: bundledock-${{ matrix.repository }}-publish', source)
+        self.assertLess(source.index('name: Save cleanup dry run'), source.index('name: Remove stale staging tags'))
+        self.assertNotIn('actions/download-artifact', source)
+
+    def test_completion_gate_rejects_success_foreign_and_non_main_runs(self):
+        source = (ROOT / '.github/workflows/staging-cleanup.yml').read_text()
+        expression = source.split('    if: >-\n', 1)[1].split('    strategy:', 1)[0]
+        expression = expression.replace('&&', ' and ').replace('||', ' or ')
+        expression = ' '.join(expression.split())
+        run = dict(status='completed', conclusion='failure', head_branch='main',
+                   head_repository=SimpleNamespace(full_name='wstein/bundledock'))
+        def allowed(**changes):
+            candidate = SimpleNamespace(**dict(run, **changes))
+            github = SimpleNamespace(repository='wstein/bundledock', ref='refs/heads/main',
+                                     event_name='workflow_run', event=SimpleNamespace(workflow_run=candidate))
+            return eval(expression, {'__builtins__': {}}, {'github': github})
+        for conclusion in ('failure', 'cancelled', 'timed_out'):
+            self.assertTrue(allowed(conclusion=conclusion))
+        for changes in (dict(conclusion='success'), dict(conclusion='skipped'),
+                        dict(status='in_progress'), dict(head_branch='topic'),
+                        dict(head_repository=SimpleNamespace(full_name='other/bundledock'))):
+            self.assertFalse(allowed(**changes))
 
     def test_cleanup_reuses_registry_credentials_without_extra_secret(self):
         publisher = (ROOT / '.github/workflows/bundle-publish.yml').read_text()
