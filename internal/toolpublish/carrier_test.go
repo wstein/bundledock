@@ -1,7 +1,6 @@
 package toolpublish
 
 import (
-	"bundledock/internal/toolconfig"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -16,15 +15,12 @@ func TestBuildStagesUseMinimalAlpineBases(t *testing.T) {
 	}
 	dockerfile := string(data)
 	stages := strings.Split(dockerfile[strings.Index(dockerfile, "FROM "):], "\nFROM ")
-	if len(stages) != 5 {
-		t.Fatalf("expected compiler, git-trim, downloads, builder and carrier stages, got %d", len(stages))
+	if len(stages) != 4 {
+		t.Fatalf("expected compiler, downloads, builder and carrier stages, got %d", len(stages))
 	}
-	compiler, gitTrim, downloads, builder := stages[0], stages[1], stages[2], stages[3]
-	if !strings.HasPrefix(gitTrim, "--platform=$TARGETPLATFORM "+toolconfig.GitTrimBuilder+" AS git-trim-source\n") {
-		t.Fatal("source exception must use the fixed stock native Rust image")
-	}
-	if !strings.Contains(gitTrim, "RUN --network=none sh /build/build-git-trim.sh compile") {
-		t.Fatal("source compilation must be offline")
+	compiler, downloads, builder := stages[0], stages[1], stages[2]
+	if strings.Contains(dockerfile, "rust:") || strings.Contains(dockerfile, "git-trim") {
+		t.Fatal("the toolbox builds no source recipe: every tool is an official prebuilt release")
 	}
 	for _, stage := range []struct{ name, body, base string }{
 		{"compiler", compiler, "FROM --platform=$BUILDPLATFORM golang:1.27.2-alpine@sha256:"},

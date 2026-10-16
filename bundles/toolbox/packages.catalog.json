@@ -998,32 +998,6 @@
         "licenses/git-lfs/SOURCE"
       ]
     },
-    "git-trim": {
-      "provider": "github",
-      "repository": "foriequal0/git-trim",
-      "tag_prefix": "v",
-      "normalization": "semver",
-      "architectures": {
-        "amd64": "x86_64-unknown-linux-gnu",
-        "arm64": "aarch64-unknown-linux-gnu"
-      },
-      "asset": "source.tar.gz",
-      "allowed_hosts": [
-        "codeload.github.com"
-      ],
-      "verification": "official-or-download",
-      "install": {
-        "kind": "tar.gz",
-        "profile": "git-trim-source",
-        "members": {
-          "git-trim": "bin/git-trim"
-        }
-      },
-      "notices": [
-        "licenses/git-trim/LICENSE",
-        "licenses/git-trim/SOURCE"
-      ]
-    },
     "mise": {
       "provider": "github",
       "repository": "jdx/mise",

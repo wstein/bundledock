@@ -32,7 +32,6 @@ check() {
         --mount "type=bind,src=$script_dir/jujutsu-smoke.sh,dst=/jujutsu-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/hugo-smoke.sh,dst=/hugo-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/process-monitors-smoke.sh,dst=/process-monitors-smoke.sh,readonly" \
-        --mount "type=bind,src=$script_dir/git-trim-smoke.sh,dst=/git-trim-smoke.sh,readonly" \
         --env HOME=/home/bundledock --env DISABLE_UPDATES=1 --env DISABLE_AUTOUPDATER=1 \
         --entrypoint /bin/sh "$consumer" -ec '
             stage() { printf "Toolbox consumer smoke stage: %s\n" "$1" >&2; }
@@ -141,8 +140,6 @@ check() {
             sh /trufflehog-smoke.sh
             stage "process monitors"
             sh /process-monitors-smoke.sh
-            stage "git-trim isolated dry-run"
-            sh /git-trim-smoke.sh
             stage "read-only toolbox volume"
             if touch /opt/bdock/toolbox/write-test 2>/dev/null; then
                 echo "Unexpected write to tool volume" >&2

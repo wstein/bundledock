@@ -23,4 +23,3 @@
 !bundles/toolbox/licenses
 !bundles/toolbox/licenses/**
 !bundles/toolbox/scripts
-!bundles/toolbox/scripts/build-git-trim.sh

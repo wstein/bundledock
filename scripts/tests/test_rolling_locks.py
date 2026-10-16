@@ -56,17 +56,12 @@ class RollingLockTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix='bundledock-future-locks-') as directory:
             root = Path(directory)
             copy_repository(root)
-            changed, frozen = [], []
+            changed = []
             for catalog_path in sorted((root / 'bundles').glob('*/packages.catalog.json')):
                 catalog = json.loads(catalog_path.read_text())
                 path = catalog_path.with_name('packages.lock.json')
                 lock = json.loads(path.read_text())
                 for name, package in catalog['packages'].items():
-                    # This deliberately authorized exact source recipe is not a
-                    # rolling prebuilt tool. Keep its full immutable pin intact.
-                    if package['install'].get('profile') == 'git-trim-source':
-                        frozen.append(name)
-                        continue
                     old = lock['platforms']['amd64'][name]['version']
                     new, old_version, new_version = next_release(old, package)
                     for arch in ('amd64', 'arm64'):
@@ -87,7 +82,6 @@ class RollingLockTests(unittest.TestCase):
                 # just like a real bot lock-and-inventory updater PR.
                 subprocess.run(['python3', 'scripts/tool-inventory.py', '--bundle', catalog_path.parent.name],
                                cwd=root, check=True, capture_output=True, text=True, timeout=30)
-            self.assertEqual(frozen, ['git-trim'])
             self.assertGreaterEqual(len(changed), 48)
             self.assertEqual({name.split('/')[0] for name in changed},
                              {'toolbox', 'bun', 'code-server', 'node', 'node-current', 'codex', 'agy', 'claude', 'opentofu'})

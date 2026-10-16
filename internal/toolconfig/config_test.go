@@ -36,8 +36,24 @@ func TestRepositoryIdentityAndBothArchitectures(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(c.Catalog.Packages) != 41 {
+	if len(c.Catalog.Packages) != 40 {
 		t.Fatal("catalog incomplete")
+	}
+	// Every tool is an official prebuilt release: no source recipe is allowed.
+	if _, ok := c.Catalog.Packages["git-trim"]; ok {
+		t.Fatal("catalog still lists git-trim")
+	}
+	for name, p := range c.Catalog.Packages {
+		if p.Install.Profile == "git-trim-source" {
+			t.Fatalf("%s uses the removed git-trim source profile", name)
+		}
+	}
+	for arch, tools := range c.Lock.Platforms {
+		for name, s := range tools {
+			if s.Source != nil {
+				t.Fatalf("%s %s pins a source build; only prebuilt releases are allowed", arch, name)
+			}
+		}
 	}
 	if err := c.Validate(); err != nil {
 		t.Fatal(err)

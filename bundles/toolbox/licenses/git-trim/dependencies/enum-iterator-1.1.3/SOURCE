@@ -1,4 +1,0 @@
-Full upstream notices missing from the published crate archive.
-Crate checksum and source commit are bound by git-trim v0.4.3 Cargo.lock and the verified crate .cargo_vcs_info.json.
-Upstream commit: https://github.com/stephaneyfx/enum-iterator/tree/70fadf252c68ad114f94a56f837a6391613b8157
-https://raw.githubusercontent.com/stephaneyfx/enum-iterator/70fadf252c68ad114f94a56f837a6391613b8157/LICENSE SHA256 709d025ff41be9db6dc6dea101d1900bcf711c9d106068c95e83bc5b0f56cc7d
