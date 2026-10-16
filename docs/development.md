@@ -127,9 +127,7 @@ without editing tests or licensing metadata for each release. Production-lock
 tests check stable ranges, matching AMD64/ARM64 versions, official recipes/URLs,
 checksum syntax and publisher provenance. Fixed parser examples and reviewed
 license snapshots live under `internal/toolconfig/testdata/`; they do not assert
-that a historical fixture is the currently installed release. The deliberately
-authorized git-trim source recipe and separate documentation-tool pin retain
-their exact identity checks.
+that a historical fixture is the currently installed release. The separate documentation-tool pin retains its exact identity checks.
 
 `scripts/tests/test_rolling_locks.py` copies only source-test inputs into a temporary
 workspace, advances every rolling prebuilt lock on both architectures, and runs
@@ -400,9 +398,8 @@ go test ./internal/toolbundle -run 'TestQualitySecurity' -count=1
 ### Embedded dependency findings
 
 Third-party tools use official stable prebuilt releases under the
-[repository policy](../AGENTS.md), with the single reviewed
-[git-trim v0.4.3 exception](toolbox.md#git-trim-source-exception). Wait for a patched
-stable upstream release for other tools; do not rebuild them from source or patch
+[repository policy](../AGENTS.md). Wait for a patched
+stable upstream release; do not rebuild tools from source or patch
 any tool binary or dependency.
 
 The 2026-10-10 inspection of Go build information in both official AMD64 and

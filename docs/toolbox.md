@@ -256,9 +256,7 @@ exist on the default branch before it can be dispatched.
 
 Dry runs use a read-only token, run the existing `tools upgrade` resolver, and
 show the proposed lock and inventory diff in the run summary. Resolution downloads official
-prebuilt archives for both AMD64 and ARM64 to verify their checksums. The
-git-trim exception only verifies its pinned source archive and Cargo.lock; a
-newer stable tag stops with a source-review-required error. Resolution never
+prebuilt archives for both AMD64 and ARM64 to verify their checksums. Resolution never
 executes upstream code or build images, CLI releases, or documentation. An
 upstream error fails the run without creating a PR. No changes produce a
 successful no-op. Stale inventory alone is a deliberate repair: it counts as
@@ -605,50 +603,6 @@ The [code-server bundle](code-server.md) provides a separate optional OCI
 carrier with its own lock and read-only volume. It does not change the toolbox
 or start a service automatically.
 
-
-## git-trim source exception
-
-The user authorized this one source-build exception because git-trim v0.4.3 has
-no official Linux ARM64 prebuilt. Both architectures use unchanged upstream commit
-`65288617a637029573a5c3517abcb95b050ea02b`. The source archive SHA256, Cargo.lock
-SHA256, commit time, fixed recipe identity and official Rust 1.75.0 Bookworm
-multiarchitecture image digest are locked. All other packages retain their
-existing official stable prebuilt contracts. A newer git-trim release, retagged
-commit, changed lock or builder recipe requires source review and fails closed.
-
-The fixed native Docker stage verifies the source archive, fetches the exact Git
-commit, compares the source tree and supplies fixed shallow Git metadata for
-upstream vergen without patching build.rs. It vendors the 117 checksum-locked
-registry dependencies into versioned directories, then compiles with frozen,
-offline Cargo and Docker networking disabled. Native headers and static
-OpenSSL/zlib libraries come from the immutable stock compiler image. No mutable
-system-package or Rust-toolchain installation occurs. The installer allows only
-the package-specific git-trim source profile and a payload from this trusted build
-stage; the catalog cannot supply compiler commands.
-
-The staged receipt records the source pins and measured compiled-file hashes.
-It checks local stage integrity; it does not independently authenticate that a
-binary was compiled from those sources. The trusted fixed Docker stage supplies
-that relationship, and publication binds its BundleDock source revision and lock.
-The manifest preserves source provenance, the receipt is retained under
-`licenses/git-trim/BUILD-PROVENANCE.json`, and SHA256SUMS covers installed output.
-
-Full vendored Rust and bundled native-library notices are retained, alongside
-Rust runtime and static OpenSSL/zlib notices from the compiler image. Several
-crates omit full notices: retained upstream source-commit notices cover enum-iterator
-and Windows targets. paw macro/raw notices come from the same project's
-checksum-verified paw 1.0.0 release; their historical GitHub commits are unavailable,
-as recorded in each SOURCE file. The locked 2022 dependency graph is unchanged;
-these checksum and license checks do not establish vulnerability freedom.
-
-Start branch planning with `git trim --dry-run --no-update`. The smoke fixture
-creates only disposable local Git repositories, disables remote updates, runs
-only dry-run planning, and checks that local and remote refs remain unchanged.
-It never cleans an existing user repository. The GNU binary requires a compatible
-glibc consumer; native Linux AMD64 and ARM64 builds, linkage inspection, the
-read-only consumer smoke and repeated-build comparisons remain deferred until
-explicit approval of the exact source revision and intended operation. Source
-checks alone establish neither runtime compatibility nor bit-for-bit reproducibility.
 
 ## Leaf Markdown preview
 
