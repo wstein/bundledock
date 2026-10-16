@@ -397,6 +397,31 @@ func TestParseRejectsShadowingNushellBuiltins(t *testing.T) {
 	}
 }
 
+// TestNushellProtectedListCoversInstalledNu requires every command name of the
+// Nushell on this machine (built-in, keyword and the custom commands nu ships
+// itself, such as pwd and banner) to be in the hand-written protected list, so
+// a shortcut cannot take any of them. It skips where nu is not installed.
+func TestNushellProtectedListCoversInstalledNu(t *testing.T) {
+	nu, err := exec.LookPath("nu")
+	if err != nil {
+		t.Skip("nu not installed")
+	}
+	out, err := exec.Command(nu, "--no-config-file", "-c",
+		`scope commands | where type in [built-in keyword custom] | get name | where {|n| $n !~ "[^a-z0-9]"} | str join "\n"`).Output()
+	if err != nil {
+		t.Fatal(err)
+	}
+	names := strings.Fields(string(out))
+	if len(names) < 100 {
+		t.Fatalf("unexpected nu command list (%d names)", len(names))
+	}
+	for _, n := range names {
+		if !nushellBuiltins[n] {
+			t.Errorf("nu command %q is not in nushellBuiltins", n)
+		}
+	}
+}
+
 // TestTableNamesAvoidInstalledNushellBuiltins checks the table against the
 // built-ins of the Nushell on this machine, which the catalog pins.
 func TestTableNamesAvoidInstalledNushellBuiltins(t *testing.T) {
