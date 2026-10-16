@@ -487,6 +487,18 @@ the specified tag. Digest references and production aliases are rejected before
 authentication; manifest-by-digest and blob deletion are never used. Published
 indexes continue to reference their platform manifests.
 
+The `Clean stale staging tags` workflow also runs after `Publish bundles`
+completes with `failure`, `cancelled` or `timed_out`. This includes superseded runs
+whose promotion was refused. It checks out trusted default-branch cleanup code,
+not code or artifacts from the failed run. Before bypassing the seven-day age
+limit, it independently verifies the official main workflow identity, exact latest
+run attempt, matching attempt evidence, and completion of every paginated job.
+Only staging tags labelled for that exact run and attempt qualify. Successful,
+active, rerun, foreign or unverifiable attempts remain untouched. Each repository
+uses the publisher's lock, saves a dry-run artifact before applying, and rechecks
+live run evidence and tag identity before each tag-name deletion. Completion
+cleanup applies automatically when the existing robot credentials are configured.
+
 The daily `Clean stale staging tags` workflow handles abandoned staging tags.
 Both the tag and its completed workflow run (including the latest rerun) must be
 at least seven days old. Active, recently rerun, immutable, malformed, unrecognized
@@ -507,7 +519,25 @@ REST inventory reads send no robot credentials and never acquire push tokens.
 Without both robot credentials, workflows retain their plans and report
 dry-run-only operation. The fallback workflow's manual dispatch defaults to dry
 run; `apply: true` explicitly enables deletions. Scheduled runs apply the verified
-plan when the existing robot credentials are configured.
+plan when the existing robot credentials are configured. To inspect a specific
+failed attempt manually, supply both `failed_run` and `failed_attempt`; leave
+`apply` false to save its dry-run plan. Empty target fields use the seven-day
+fallback. A saved plan cannot be applied under a different mode, run, attempt or
+repository scope.
+
+For a local read-only preview, for example:
+
+```sh
+python3 -B scripts/staging-cleanup.py --repository toolbox \
+  --failed-run 38805010929 --failed-attempt 1 --output staging-plan.json
+```
+
+Tag-name deletion has no registry compare-and-swap operation. The shared lock
+serializes BundleDock publication and cleanup, and each deletion revalidates the
+tag digest, timestamp and provenance. Writers outside these workflows must honor
+the same coordination; they can otherwise race the final check. No live cleanup
+is performed by authoring this change; existing-tag deletion remains pending.
+
 These workflows do not build images, merge source or modify aliases.
 
 For a local inventory (requires authenticated `gh` read access to run evidence):
