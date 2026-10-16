@@ -136,3 +136,6 @@ alias duh = ^du -h -d 1
 alias fr = ^free -h
 alias md = ^mkdir -p
 alias rd = ^rmdir
+
+# Navigation: .., ... and .... are native implicit cd in Nushell; - cannot be
+# supported (the parser treats a lone - as a string), so none is defined here.

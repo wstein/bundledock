@@ -122,3 +122,9 @@ alias duh='du -h -d 1'
 alias fr='free -h'
 alias md='mkdir -p'
 alias rd='rmdir'
+
+# Navigation names this shell does not run natively.
+alias -- ..='cd ..'
+alias -- ...='cd ../..'
+alias -- ....='cd ../../..'
+alias -- -='cd -'

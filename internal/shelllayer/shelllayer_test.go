@@ -4,12 +4,15 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 )
 
 var update = flag.Bool("update", false, "rewrite generated/ from shortcuts.tsv")
@@ -604,6 +607,294 @@ func TestShortcutNamesDoNotShadowExecutables(t *testing.T) {
 	for _, s := range shortcuts {
 		if _, ok := shadowExemptions[s.Name]; !ok && shipped[s.Name] {
 			t.Errorf("shortcut %s shadows toolbox binary bin/%s", s.Name, s.Name)
+		}
+	}
+}
+
+// navCases are the navigation names with the directory each must reach from
+// $T/a/b/c; "-" runs after cd $T/a/b, cd $T/a/b/c, so it returns to a/b.
+var navCases = []struct{ name, want string }{
+	{"..", "a/b"},
+	{"...", "a"},
+	{"....", "."},
+	{"-", "a/b"},
+}
+
+// navScript returns the command line that loads the layer, enters the temp
+// tree as described above, runs name and prints "P=<pwd>".
+func navScript(sh shell, layer, root, name string, layerSupported bool) []string {
+	pre := []string{"cd " + root + "/a/b", "cd " + root + "/a/b/c"}
+	switch sh.name {
+	case "bash", "zsh":
+		// Aliases expand at parse time, so the calls live in a second file.
+		calls := layer + ".nav"
+		body := strings.Join(append(pre, name, `printf 'P=%s\n' "$PWD"`), "\n") + "\n"
+		if err := os.WriteFile(calls, []byte(body), 0o644); err != nil {
+			panic(err)
+		}
+		if sh.name == "bash" {
+			return []string{"bash", "--norc", "--noprofile", "-i", "-c", "source " + layer + "; source " + calls}
+		}
+		return []string{"zsh", "-f", "-i", "-c", "source " + layer + "; source " + calls}
+	case "fish":
+		lines := []string{"source " + layer}
+		lines = append(lines, pre...)
+		if layerSupported {
+			// Abbreviations expand at the prompt: run the expansion text.
+			lines = append(lines,
+				"set -l exp (abbr --show | string match -r -- '^abbr .*-- "+regexp.QuoteMeta(name)+" (.*)$')[2]",
+				"eval set -l exp $exp", `eval "$exp"`)
+		} else {
+			lines = append(lines, name)
+		}
+		lines = append(lines, "echo P=$PWD")
+		return []string{"fish", "--no-config", "--interactive", "-c", strings.Join(lines, "\n")}
+	}
+	panic("nu navigation runs in a pseudo-terminal: see nuREPL")
+}
+
+// nuREPL types lines into an interactive Nushell on a pseudo-terminal
+// provided by script(1), from the directory dir, and returns what it printed.
+// Nushell's implicit cd (typing `..` alone) exists only in the interactive
+// REPL, never under `nu -c`, so measuring it needs a terminal. Each line is
+// sent after the previous command finished, which the terminal integration
+// marks with an OSC 133;D sequence. The REPL asks the terminal for the cursor
+// position and discards typed input until it hears back, so the helper answers
+// like a terminal does.
+func nuREPL(t *testing.T, dir string, lines []string) string {
+	t.Helper()
+	home := t.TempDir()
+	cmd := exec.Command("script", "-qec", "stty cols 500 rows 50; exec nu --no-config-file --no-history", "/dev/null")
+	cmd.Dir = dir
+	cmd.Env = []string{
+		"PATH=" + os.Getenv("PATH"), "HOME=" + home, "XDG_CONFIG_HOME=" + home,
+		"XDG_DATA_HOME=" + home, "TERM=xterm", "BDOCK_STARSHIP=0",
+	}
+	in, err := cmd.StdinPipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	pipe, err := cmd.StdoutPipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	cmd.Stderr = cmd.Stdout
+	if err := cmd.Start(); err != nil {
+		t.Fatal(err)
+	}
+	var mu sync.Mutex
+	var out bytes.Buffer
+	go func() {
+		buf := make([]byte, 4096)
+		for {
+			n, err := pipe.Read(buf)
+			if bytes.Contains(buf[:n], []byte("\x1b[6n")) {
+				io.WriteString(in, "\x1b[1;1R")
+			}
+			mu.Lock()
+			out.Write(buf[:n])
+			mu.Unlock()
+			if err != nil {
+				return
+			}
+		}
+	}()
+	count := func(marker string) int {
+		mu.Lock()
+		defer mu.Unlock()
+		return strings.Count(out.String(), marker)
+	}
+	waitFor := func(marker string, n int) {
+		deadline := time.Now().Add(20 * time.Second)
+		for time.Now().Before(deadline) && count(marker) < n {
+			time.Sleep(20 * time.Millisecond)
+		}
+	}
+	waitFor("\x1b]133;B", 1) // first prompt is up
+	done := 0
+	for _, l := range lines {
+		io.WriteString(in, l+"\r")
+		done++
+		waitFor("\x1b]133;D", done)
+	}
+	io.WriteString(in, "exit\r")
+	in.Close()
+	finished := make(chan struct{})
+	go func() { cmd.Wait(); close(finished) }()
+	select {
+	case <-finished:
+	case <-time.After(10 * time.Second):
+		cmd.Process.Kill()
+		<-finished
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	return regexp.MustCompile("\\x1b\\[[0-9;?]*[a-zA-Z]|\\x1b\\][^\\x1b\\x07]*(\\x07|\\x1b\\\\)|\\x1b[=>78]").ReplaceAllString(strings.ReplaceAll(out.String(), "\r", "\n"), "")
+}
+
+// navTree makes the temporary a/b/c tree and returns its real path.
+func navTree(t *testing.T) string {
+	t.Helper()
+	root, err := filepath.EvalSymlinks(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(root, "a", "b", "c"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	return root
+}
+
+// navPWD returns the directory a P=<pwd> line reports for the given tag.
+func navPWD(out, tag string) string {
+	got := ""
+	for _, line := range strings.Split(out, "\n") {
+		if line = strings.TrimSpace(line); strings.HasPrefix(line, tag+"=") {
+			got = strings.TrimPrefix(line, tag+"=")
+		}
+	}
+	return got
+}
+
+// TestNavigationShortcutsChangeDirectoryInEveryShell runs the real cd through
+// every navigation name in each installed shell, in a temporary a/b/c tree,
+// and asserts the resulting pwd. Per-shell expectations come from
+// NavigationSupport, which is the table in docs/toolbox.md: native and
+// layer-defined names must reach the directory; unsupported names must leave
+// it unchanged (the layer does not fake them). A shell that is not installed
+// is skipped with a message, which is not a pass.
+func TestNavigationShortcutsChangeDirectoryInEveryShell(t *testing.T) {
+	dir := layerDir(t)
+	bin := t.TempDir()
+	for _, sh := range shells {
+		if _, err := exec.LookPath(sh.name); err != nil {
+			t.Run(sh.name, func(t *testing.T) { t.Skipf("%s not installed: navigation NOT verified", sh.name) })
+			continue
+		}
+		var nuOut string
+		var nuRoot string
+		if sh.name == "nu" {
+			if _, err := exec.LookPath("script"); err != nil {
+				t.Run(sh.name, func(t *testing.T) { t.Skip("script(1) not installed: nu navigation NOT verified") })
+				continue
+			}
+			nuRoot = navTree(t)
+			lines := []string{"source " + filepath.Join("share", "nushell", "vendor", "autoload", "bdock-shell.nu")}
+			for _, c := range navCases {
+				lines = append(lines, "cd "+nuRoot+"/a/b", "cd "+nuRoot+"/a/b/c", c.name, `print $"P`+c.name+`=($env.PWD)"`)
+			}
+			nuOut = nuREPL(t, dir, lines)
+		}
+		for _, c := range navCases {
+			t.Run(sh.name+"/"+c.name, func(t *testing.T) {
+				state := NavigationSupport(sh.name, c.name)
+				root, got := nuRoot, ""
+				if sh.name == "nu" {
+					got = navPWD(nuOut, "P"+c.name)
+				} else {
+					root = navTree(t)
+					got = navPWD(runLenient(t, navScript(sh, filepath.Join(dir, sh.file), root, c.name, state == "layer"), bin), "P")
+				}
+				want := filepath.Join(root, c.want)
+				switch state {
+				case "native", "layer":
+				case "unsupported":
+					want = filepath.Join(root, "a", "b", "c")
+				default:
+					t.Fatalf("no support state for %s %s: %q", sh.name, c.name, state)
+				}
+				if got != want {
+					t.Errorf("%s %s (%s): pwd %q, want %q", sh.name, c.name, state, got, want)
+				}
+			})
+		}
+	}
+}
+
+// runLenient is run without failing on a non-zero exit: an unsupported name
+// is a command-not-found error in some shells.
+func runLenient(t *testing.T, argv []string, bin string) string {
+	t.Helper()
+	home := t.TempDir()
+	cmd := exec.Command(argv[0], argv[1:]...)
+	cmd.Env = []string{
+		"PATH=" + bin + string(os.PathListSeparator) + os.Getenv("PATH"),
+		"HOME=" + home, "XDG_CONFIG_HOME=" + home, "XDG_DATA_HOME=" + home,
+		"TERM=dumb", "BDOCK_STARSHIP=0",
+	}
+	cmd.Stdin = strings.NewReader("")
+	out, _ := cmd.CombinedOutput()
+	return string(out)
+}
+
+// TestNavigationTableIsPinned records the measured capability table.
+func TestNavigationTableIsPinned(t *testing.T) {
+	want := map[string]map[string]NavState{
+		"bash": {"..": "layer", "...": "layer", "....": "layer", "-": "layer"},
+		"zsh":  {"..": "layer", "...": "layer", "....": "layer", "-": "layer"},
+		"fish": {"..": "native", "...": "layer", "....": "layer", "-": "layer"},
+		"nu":   {"..": "native", "...": "native", "....": "native", "-": "unsupported"},
+	}
+	for sh, names := range want {
+		for name, state := range names {
+			if got := NavigationSupport(sh, name); got != state {
+				t.Errorf("%s %s: %q, want %q", sh, name, got, state)
+			}
+		}
+	}
+	nav := Navigation()
+	if len(nav) != 4 {
+		t.Fatalf("want 4 navigation shortcuts, got %v", nav)
+	}
+	for i, c := range navCases {
+		if nav[i].Name != c.name {
+			t.Errorf("navigation[%d] is %q, want %q", i, nav[i].Name, c.name)
+		}
+	}
+}
+
+// TestNavigationLeavesOrdinaryValidationStrict proves that adding navigation
+// names did not loosen what an ordinary shortcut row may contain.
+func TestNavigationLeavesOrdinaryValidationStrict(t *testing.T) {
+	for name, row := range map[string]string{
+		"dotdot name":      "..\tgit status\n",
+		"dots name":        "...\tgit status\n",
+		"dash name":        "-\tgit status\n",
+		"cd command":       "up\tcd ..\n",
+		"parent word":      "gx\tgit -C ..\n",
+		"parent path word": "gx\tgit show ../../x\n",
+		"bare dash word":   "gx\tgit checkout -\n",
+		"dot word":         "gx\tgit add .\n",
+	} {
+		if _, err := Parse([]byte(row)); err == nil {
+			t.Errorf("%s: expected rejection of %q", name, row)
+		}
+	}
+	for _, s := range Navigation() {
+		if validName.MatchString(s.Name) {
+			t.Errorf("navigation name %q must not be an ordinary valid name", s.Name)
+		}
+	}
+}
+
+func TestNavigationDefinitionsMatchTheSupportTable(t *testing.T) {
+	gen := Generate(nil)
+	for _, c := range []struct{ file, shell string }{{BashPath, "bash"}, {ZshPath, "zsh"}, {FishPath, "fish"}, {NuPath, "nu"}} {
+		text := string(gen[c.file])
+		for _, c2 := range navCases {
+			state := NavigationSupport(c.shell, c2.name)
+			var line string
+			switch c.shell {
+			case "bash", "zsh":
+				line = "alias -- " + c2.name + "='cd "
+			case "fish":
+				line = "abbr --add --global -- " + c2.name + " 'cd "
+			case "nu":
+				line = "alias " + c2.name + " ="
+			}
+			if has := strings.Contains(text, line); has != (state == "layer") {
+				t.Errorf("%s %s: state %s but definition present=%v", c.shell, c2.name, state, has)
+			}
 		}
 	}
 }

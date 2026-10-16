@@ -129,3 +129,8 @@ abbr --add --global -- duh 'du -h -d 1'
 abbr --add --global -- fr 'free -h'
 abbr --add --global -- md 'mkdir -p'
 abbr --add --global -- rd 'rmdir'
+
+# Navigation names this shell does not run natively.
+abbr --add --global -- ... 'cd ../..'
+abbr --add --global -- .... 'cd ../../..'
+abbr --add --global -- - 'cd -'
