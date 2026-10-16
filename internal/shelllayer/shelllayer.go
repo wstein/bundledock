@@ -283,6 +283,7 @@ fi
 	b.WriteString(posixHelpers)
 	b.WriteString("\n")
 	posixShortcuts(&b, shortcuts)
+	renderNavigation(&b, "bash")
 	return b.String()
 }
 
@@ -311,6 +312,7 @@ fi
 	}
 	b.WriteString(")\n")
 	posixShortcuts(&b, shortcuts)
+	renderNavigation(&b, "zsh")
 	b.WriteString(`
 # Like fish abbreviations: a static shortcut typed in command position expands
 # in place when space is pressed, so the real command is visible and in
@@ -385,6 +387,7 @@ end
 		body := strings.NewReplacer(branchToken, "$__bdock_b", defaultToken, "$__bdock_d").Replace(s.Command)
 		fmt.Fprintf(&b, "    command %s $argv\nend\n", body)
 	}
+	renderNavigation(&b, "fish")
 	return b.String()
 }
 
@@ -442,5 +445,6 @@ def bdock-git-default-branch []: nothing -> string {
 		r := strings.NewReplacer(branchToken, "(bdock-git-branch)", defaultToken, "(bdock-git-default-branch)")
 		fmt.Fprintf(&b, "def --wrapped %s [...rest] { ^%s ...$rest }\n", s.Name, r.Replace(s.Command))
 	}
+	b.WriteString("\n# Navigation: .., ... and .... are native implicit cd in Nushell; - cannot be\n# supported (the parser treats a lone - as a string), so none is defined here.\n")
 	return b.String()
 }
