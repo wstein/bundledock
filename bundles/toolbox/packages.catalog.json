@@ -1106,6 +1106,34 @@
       "notices": [
         "licenses/trufflehog/SOURCE"
       ]
+    },
+    "lsd": {
+      "provider": "github",
+      "repository": "lsd-rs/lsd",
+      "tag_prefix": "v",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "x86_64",
+        "arm64": "aarch64"
+      },
+      "asset": "lsd-v{version}-{arch}-unknown-linux-musl.tar.gz",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "tar.gz",
+        "members": {
+          "lsd": "bin/lsd"
+        },
+        "archive_notices": [
+          "LICENSE",
+          "README.md"
+        ]
+      },
+      "notices": [
+        "licenses/lsd/SOURCE"
+      ]
     }
   }
 }

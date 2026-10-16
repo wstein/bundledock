@@ -10,6 +10,7 @@ func TestToolboxUtilities(t *testing.T) {
 	for _, tc := range []struct{ name, repo, kind string }{
 		{"fzf", "junegunn/fzf", "tar.gz"},
 		{"bat", "sharkdp/bat", "tar.gz"},
+		{"lsd", "lsd-rs/lsd", "tar.gz"},
 		{"regctl", "regclient/regclient", "raw"},
 		{"mise", "jdx/mise", "raw"},
 		{"trufflehog", "trufflesecurity/trufflehog", "tar.gz"},
