@@ -48,12 +48,12 @@ func TestRepositoryIdentityAndBothArchitectures(t *testing.T) {
 			t.Fatalf("%s uses the removed git-trim source profile", name)
 		}
 	}
-	for arch, tools := range c.Lock.Platforms {
-		for name, s := range tools {
-			if s.Source != nil {
-				t.Fatalf("%s %s pins a source build; only prebuilt releases are allowed", arch, name)
-			}
-		}
+	raw, err := os.ReadFile("../../bundles/toolbox/packages.lock.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(raw), `"source"`) {
+		t.Fatal("lock pins a source build; only prebuilt releases are allowed")
 	}
 	if err := c.Validate(); err != nil {
 		t.Fatal(err)
@@ -335,5 +335,25 @@ func TestPackageListsHaveMaintenanceHeaderAndAlphabeticKeys(t *testing.T) {
 		if !sort.StringsAreSorted(names) {
 			t.Errorf("%s: package keys are not alphabetic: %v", path, names)
 		}
+	}
+}
+
+func TestLockRejectsSourceBuildPins(t *testing.T) {
+	dir := t.TempDir()
+	for _, name := range []string{"packages.txt", "packages.catalog.json", "packages.lock.json"} {
+		data, err := os.ReadFile(filepath.Join("../../bundles/toolbox", name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if name == "packages.lock.json" {
+			// A pin carrying a source-build block, as the removed git-trim recipe had.
+			data = []byte(strings.Replace(string(data), `"verification": "publisher-sha256"`, `"verification": "publisher-sha256", "source": {"commit": "x"}`, 1))
+		}
+		if err := os.WriteFile(filepath.Join(dir, name), data, 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := Load(dir); err == nil {
+		t.Fatal("accepted a lock with a source-build pin")
 	}
 }

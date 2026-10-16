@@ -160,15 +160,13 @@ func TestVendorBuildBothArchitectures(t *testing.T) {
 			specs := tools
 			first := t.TempDir()
 			second := t.TempDir()
-			stage := gitTrimStageFixture(t, arch)
-			specs["git-trim"] = toolconfig.GitTrimSpec()
 			for _, dst := range []string{first, second} {
 				root, err := os.OpenRoot(dst)
 				if err != nil {
 					t.Fatal(err)
 				}
 				root.Close()
-				if err := BuildWithGitTrimStage(context.Background(), server.Client(), specs, testPackages(t), os.DirFS("../../bundles/toolbox"), arch, dst, stage, io.Discard, WithShellLayer(os.DirFS("../shelllayer"))); err != nil {
+				if err := Build(context.Background(), server.Client(), specs, testPackages(t), os.DirFS("../../bundles/toolbox"), arch, dst, io.Discard, WithShellLayer(os.DirFS("../shelllayer"))); err != nil {
 					t.Fatal(err)
 				}
 			}
