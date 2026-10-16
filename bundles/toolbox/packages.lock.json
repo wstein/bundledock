@@ -11,9 +11,9 @@
         "verification": "publisher-sha256"
       },
       "ast-grep": {
-        "version": "0.50.0",
-        "url": "https://github.com/ast-grep/ast-grep/releases/download/0.50.0/app-x86_64-unknown-linux-gnu.zip",
-        "sha256": "0fd3f489639abb8465a914b74b8779171577582318d8a940d00399f59dba81c5",
+        "version": "0.51.0",
+        "url": "https://github.com/ast-grep/ast-grep/releases/download/0.51.0/app-x86_64-unknown-linux-gnu.zip",
+        "sha256": "a7eead5552d3a8daad70f5d50d935da44bd0c138e946b5b0a96b1d38169fa639",
         "verification": "publisher-sha256"
       },
       "bat": {
@@ -119,9 +119,9 @@
         "verification": "publisher-sha256"
       },
       "lazygit": {
-        "version": "v0.66.1",
-        "url": "https://github.com/jesseduffield/lazygit/releases/download/v0.66.1/lazygit_0.66.1_linux_x86_64.tar.gz",
-        "sha256": "7b3f30c2c06a42cf575280f907e58d7ea08411408b6b62bc926bc91cbc6c3f46",
+        "version": "v0.66.2",
+        "url": "https://github.com/jesseduffield/lazygit/releases/download/v0.66.2/lazygit_0.66.2_linux_x86_64.tar.gz",
+        "sha256": "158efc9ddfa1241fab5fb3526bb442c8dc6c4b1904d73213b9e4e93e03c52034",
         "verification": "publisher-sha256"
       },
       "leaf": {
@@ -167,9 +167,9 @@
         "verification": "publisher-sha256"
       },
       "ruff": {
-        "version": "0.17.0",
-        "url": "https://github.com/astral-sh/ruff/releases/download/0.17.0/ruff-x86_64-unknown-linux-musl.tar.gz",
-        "sha256": "0df9421fd0df9aa7a62dab4d1086e085b7c7888b6343fc5a9c5f630771d61aae",
+        "version": "0.17.1",
+        "url": "https://github.com/astral-sh/ruff/releases/download/0.17.1/ruff-x86_64-unknown-linux-musl.tar.gz",
+        "sha256": "2d9878b5e6a3d0dedadbfc01a64bfe54e72f560adbfd235937cd29e1fc9238e3",
         "verification": "publisher-sha256"
       },
       "shellcheck": {
@@ -253,9 +253,9 @@
         "verification": "publisher-sha256"
       },
       "ast-grep": {
-        "version": "0.50.0",
-        "url": "https://github.com/ast-grep/ast-grep/releases/download/0.50.0/app-aarch64-unknown-linux-gnu.zip",
-        "sha256": "3a4ad22dd1dca7a4900a173de65885578617af57fa13dd93b8d345d6b352770e",
+        "version": "0.51.0",
+        "url": "https://github.com/ast-grep/ast-grep/releases/download/0.51.0/app-aarch64-unknown-linux-gnu.zip",
+        "sha256": "73af0ebe5958acee012754a5b2826a186580ef83333092408a7a01096fc30b8b",
         "verification": "publisher-sha256"
       },
       "bat": {
@@ -361,9 +361,9 @@
         "verification": "publisher-sha256"
       },
       "lazygit": {
-        "version": "v0.66.1",
-        "url": "https://github.com/jesseduffield/lazygit/releases/download/v0.66.1/lazygit_0.66.1_linux_arm64.tar.gz",
-        "sha256": "add91327af13343f37d2d610512d0982ef5c75da5cc962b5159748adc8a11a86",
+        "version": "v0.66.2",
+        "url": "https://github.com/jesseduffield/lazygit/releases/download/v0.66.2/lazygit_0.66.2_linux_arm64.tar.gz",
+        "sha256": "79a3161eeb642f0473e23db6341f7baabd4a5933e921a9c1167c5d5c765c41a4",
         "verification": "publisher-sha256"
       },
       "leaf": {
@@ -409,9 +409,9 @@
         "verification": "publisher-sha256"
       },
       "ruff": {
-        "version": "0.17.0",
-        "url": "https://github.com/astral-sh/ruff/releases/download/0.17.0/ruff-aarch64-unknown-linux-musl.tar.gz",
-        "sha256": "cac779097e34bf1ca40175b4bacf8fca7a92fce5030bfc3edf1fd357428a33b0",
+        "version": "0.17.1",
+        "url": "https://github.com/astral-sh/ruff/releases/download/0.17.1/ruff-aarch64-unknown-linux-musl.tar.gz",
+        "sha256": "255404ccf2f7950ff6aad8858321a6f416fe2a840ae4e37dfb4c21cb8774f325",
         "verification": "publisher-sha256"
       },
       "shellcheck": {
