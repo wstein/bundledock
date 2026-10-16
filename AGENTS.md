@@ -91,6 +91,7 @@ still pins an older image, so do not assume these commands exist in a running se
 | Search text | Reach first for `rg`; use `rg --files` to list files. |
 | Filter lists interactively | `fzf`. |
 | View highlighted file content | `bat` (optional pager). |
+| List directory contents | `lsd`. |
 | Inspect OCI registries | `regctl`. |
 | Find files by name | `fd` or its `fdfind` alias. |
 | Query code structure | `ast-grep`; use the full binary name, never `sg`. |

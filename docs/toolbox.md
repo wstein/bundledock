@@ -209,6 +209,7 @@ networking disabled. Native smoke acceptance remains part of an approved build.
 | just (`just`) | 1.59.0 | [Homepage](https://just.systems) | [Source](https://github.com/casey/just) |
 | lazygit (`lazygit`) | 0.66.2 | [Homepage](https://github.com/jesseduffield/lazygit) | [Source](https://github.com/jesseduffield/lazygit) |
 | Leaf (`leaf`) | 1.29.1 | [Homepage](https://leaf.rivolink.mg) | [Source](https://github.com/RivoLink/leaf) |
+| lsd (`lsd`) | 1.2.0 | [Homepage](https://github.com/lsd-rs/lsd) | [Source](https://github.com/lsd-rs/lsd) |
 | lychee (`lychee`) | 0.24.2 | [Homepage](https://lychee.cli.rs) | [Source](https://github.com/lycheeverse/lychee) |
 | Mike Farah yq (`yq`) | 4.54.1 | [Homepage](https://mikefarah.gitbook.io/yq/) | [Source](https://github.com/mikefarah/yq) |
 | mise (`mise`) | 2026.10.11 | [Homepage](https://mise.jdx.dev) | [Source](https://github.com/jdx/mise) |
@@ -435,6 +436,16 @@ Upstream completion scripts, manual, README and changelog are retained under
 `licenses/bat/` for optional use, alongside the decoded upstream syntax/theme
 notices and their inventory. Custom configuration and caches belong in writable
 HOME, outside the read-only toolbox.
+
+`lsd` lists directory contents with optional colors, icons and tree views. Use
+`lsd --ignore-config --color never --icon never --oneline` for predictable
+noninteractive output without user configuration or icon font requirements.
+No `ls` shell alias is installed automatically; user configuration belongs in
+writable `$XDG_CONFIG_HOME/lsd` or `$HOME/.config/lsd`, outside the read-only
+toolbox. Full upstream Apache-2.0 `LICENSE` and `README.md` are retained under
+`licenses/lsd/` from each official Linux AMD64 and ARM64 musl release archive,
+which were downloaded and SHA256 verified against the official release API
+digests on 2026-10-16.
 
 `regctl` is the official registry client only; regbot and regsync are excluded.
 Credentials and state belong in writable HOME (`~/.regctl/`), with optional

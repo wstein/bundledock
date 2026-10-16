@@ -1,7 +1,7 @@
 {
   "schema": 2,
-  "desired_digest": "f49661f74a2744cf3379ee38336d066166d7cfc3663730170e4ce52b4a7ffb4c",
-  "catalog_digest": "6c35b88185b771733eec17d3637eb3f615cf62f3ca1bc5b4f3203a7f255be945",
+  "desired_digest": "42172710fd1086d8f65f7cc542d9937d65ff9b5493b29119826adce80322021b",
+  "catalog_digest": "7263ab350faecdd3cd83aea6e4f78bddf18ad259dc6f8596b28a3743ed9a9a78",
   "platforms": {
     "amd64": {
       "age": {
@@ -128,6 +128,12 @@
         "version": "1.29.1",
         "url": "https://github.com/RivoLink/leaf/releases/download/1.29.1/leaf-linux-x86_64",
         "sha256": "04e9716562cdf89ce240181e287e8b79ee0a2c096b02151d4f69247d86d3f186",
+        "verification": "publisher-sha256"
+      },
+      "lsd": {
+        "version": "v1.2.0",
+        "url": "https://github.com/lsd-rs/lsd/releases/download/v1.2.0/lsd-v1.2.0-x86_64-unknown-linux-musl.tar.gz",
+        "sha256": "77849da1210336534258551a581401ba19ae6b8d7b66a2a1feff148ad41e3814",
         "verification": "publisher-sha256"
       },
       "lychee": {
@@ -370,6 +376,12 @@
         "version": "1.29.1",
         "url": "https://github.com/RivoLink/leaf/releases/download/1.29.1/leaf-linux-arm64",
         "sha256": "f65fe24b5b5abfb83a69f7d5482f7ca2fefde2028899ef2a10a77731ad6ecf84",
+        "verification": "publisher-sha256"
+      },
+      "lsd": {
+        "version": "v1.2.0",
+        "url": "https://github.com/lsd-rs/lsd/releases/download/v1.2.0/lsd-v1.2.0-aarch64-unknown-linux-musl.tar.gz",
+        "sha256": "642ecb1a763b9f790a99c83a1445c117a6813ed4edb5d498d4420423c6353eb8",
         "verification": "publisher-sha256"
       },
       "lychee": {

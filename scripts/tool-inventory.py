@@ -29,6 +29,7 @@ LABELS = (
     ("rg", "ripgrep (`rg`)"),
     ("fzf", "fzf (`fzf`)"),
     ("bat", "bat (`bat`)"),
+    ("lsd", "lsd (`lsd`)"),
     ("regctl", "regctl (`regctl`)"),
     ("fd", "fd (`fd`, `fdfind`)"),
     ("ast-grep", "ast-grep (`ast-grep`)"),

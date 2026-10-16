@@ -1,0 +1,6 @@
+Upstream: https://github.com/lsd-rs/lsd
+Initial reviewed release: v1.2.0
+License: Apache-2.0 (full LICENSE retained from each official release archive)
+Source for corresponding release: https://github.com/lsd-rs/lsd/releases
+Linux AMD64/ARM64: official stable musl prebuilt archives, unchanged executable.
+Release archives retain LICENSE and README.md under licenses/lsd.
