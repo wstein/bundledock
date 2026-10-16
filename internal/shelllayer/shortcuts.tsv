@@ -21,6 +21,20 @@
 # --group-dirs <first>. They come from documentation and were not measured here.
 # `ltree` is the tree view (lt already means "long, sorted by modification time"; the direction of lsd's -t is from its documentation and has not been run here); `llg` is the
 # long listing with directories grouped first.
+#
+# Search (rgi, rgl, rgf, fdh) only reads files: rg and fd print matches or
+# paths and never modify anything. Disk and memory (dfh, duh, fr) only report
+# usage. Directories: md (mkdir -p) only creates and never overwrites or
+# removes, and rd (rmdir) removes only an empty directory and refuses a
+# non-empty one, so neither can destroy data. None of these names is an
+# executable on PATH or in the toolbox's bin (a test checks), so no real
+# command is shadowed. `du -d 1` and `mkdir -p` are accepted by GNU coreutils
+# and busybox alike. rg and fd are shipped tools (packages.txt); df, du, free,
+# mkdir and rmdir come from the base image and are allowlisted in a test.
+#
+# Deliberately excluded: cp -i, mv -i and every rm variant. The -i prompts wait
+# for a keypress and hang agent terminals that cannot answer them, and rm
+# cannot be undone, so a short alias for it is a hazard rather than a shortcut.
 
 # Git: core
 g	git
@@ -119,3 +133,18 @@ ltr	lsd -ltr --color auto
 l1	lsd -1 --color auto
 ltree	lsd --tree --color auto
 llg	lsd -l --group-dirs first --color auto
+
+# Search (read-only)
+rgi	rg -i
+rgl	rg -l
+rgf	rg --files
+fdh	fd --hidden
+
+# Disk and memory (read-only reports)
+dfh	df -h
+duh	du -h -d 1
+fr	free -h
+
+# Directories (non-destructive)
+md	mkdir -p
+rd	rmdir
