@@ -97,9 +97,14 @@ var nushellBuiltins = func() map[string]bool {
 	return m
 }()
 
-// allowedCommands are the first words a shortcut may run: Git, Jujutsu and the
-// lsd listing family; stock ls is never a shortcut command.
-var allowedCommands = map[string]bool{"git": true, "jj": true, "lsd": true}
+// allowedCommands are the first words a shortcut may run: Git, Jujutsu, the
+// lsd listing family, rg and fd searches, read-only df, du and free reports,
+// and the non-destructive mkdir -p and rmdir (empty directories only). Stock
+// ls is never a shortcut command.
+var allowedCommands = map[string]bool{
+	"git": true, "jj": true, "lsd": true, "rg": true, "fd": true,
+	"df": true, "du": true, "free": true, "mkdir": true, "rmdir": true,
+}
 
 // Parse reads name<TAB>command rows, skipping blank lines and # comments.
 // Names must be valid in every shell, unique and lowercase; command words are
@@ -132,7 +137,7 @@ func Parse(data []byte) ([]Shortcut, error) {
 			return nil, fmt.Errorf("line %d: %s: command must be single-spaced words", line, name)
 		}
 		if !allowedCommands[words[0]] {
-			return nil, fmt.Errorf("line %d: %s: command must start with git, jj or lsd", line, name)
+			return nil, fmt.Errorf("line %d: %s: command must start with an allowed command", line, name)
 		}
 		for _, w := range words {
 			if !validWord.MatchString(w) {

@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -465,8 +466,16 @@ func TestTableNamesAvoidInstalledNushellBuiltins(t *testing.T) {
 }
 
 // baseCommands are first words the toolbox does not list in packages.txt
-// because the base image provides them.
-var baseCommands = map[string]bool{"git": true}
+// because the base image provides them. Every entry says why the shortcut that
+// runs it is safe; a new entry needs the same justification.
+var baseCommands = map[string]string{
+	"git":   "version control; the curated table omits irreversible clean and reset shortcuts",
+	"df":    "df -h only reports disk usage and writes nothing",
+	"du":    "du -h -d 1 only reports directory sizes and writes nothing",
+	"free":  "free -h only reports memory usage and writes nothing",
+	"mkdir": "mkdir -p only creates directories, never overwrites or removes anything",
+	"rmdir": "rmdir removes only an empty directory and refuses a non-empty one",
+}
 
 // TestShortcutCommandsAreShippedTools requires every first word of every table
 // command to be a base command or a tool named in the toolbox package list, so
@@ -487,7 +496,7 @@ func TestShortcutCommandsAreShippedTools(t *testing.T) {
 		}
 		shipped[line] = true
 	}
-	if !shipped["lsd"] || !shipped["jj"] {
+	if !shipped["lsd"] || !shipped["jj"] || !shipped["rg"] || !shipped["fd"] {
 		t.Fatalf("packages.txt not read correctly: %v", shipped)
 	}
 	shortcuts, err := Shortcuts()
@@ -495,8 +504,106 @@ func TestShortcutCommandsAreShippedTools(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, s := range shortcuts {
-		if first := s.Words()[0]; !baseCommands[first] && !shipped[first] {
+		if first := s.Words()[0]; baseCommands[first] == "" && !shipped[first] {
 			t.Errorf("%s runs %q, which is neither a base command nor in packages.txt", s.Name, first)
+		}
+	}
+}
+
+// everydayShortcuts pins the curated everyday families: search, disk and
+// memory, and directories. All are read-only or non-destructive and use only
+// flags GNU coreutils and busybox both accept.
+var everydayShortcuts = map[string]string{
+	"rgi": "rg -i",
+	"rgl": "rg -l",
+	"rgf": "rg --files",
+	"fdh": "fd --hidden",
+	"dfh": "df -h",
+	"duh": "du -h -d 1",
+	"fr":  "free -h",
+	"md":  "mkdir -p",
+	"rd":  "rmdir",
+}
+
+// TestEverydayShortcutsBehaveTheSameInEveryShell requires the everyday
+// families in the table and the exact same argv from each installed shell.
+func TestEverydayShortcutsBehaveTheSameInEveryShell(t *testing.T) {
+	all, err := Shortcuts()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var picked []Shortcut
+	for name, command := range everydayShortcuts {
+		found := false
+		for _, s := range all {
+			if s.Name == name {
+				found = true
+				if s.Command != command {
+					t.Errorf("%s is %q, want %q", name, s.Command, command)
+				}
+				picked = append(picked, s)
+			}
+		}
+		if !found {
+			t.Errorf("shortcut %s is missing from the table", name)
+		}
+	}
+	if len(picked) != len(everydayShortcuts) {
+		t.FailNow()
+	}
+	dir := layerDir(t)
+	bin := stubs(t, false)
+	for _, sh := range shells {
+		t.Run(sh.name, func(t *testing.T) {
+			if _, err := exec.LookPath(sh.name); err != nil {
+				t.Skipf("%s not installed", sh.name)
+			}
+			got := runShell(t, sh, dir, bin, picked)
+			for _, s := range picked {
+				w := strings.Fields(s.Command)
+				want := "ARGV " + w[0] + "|" + strings.Join(append(w[1:], "EXTRA"), "|")
+				if got[s.Name] != want {
+					t.Errorf("%s: %s ran %q, want %q", sh.name, s.Name, got[s.Name], want)
+				}
+			}
+		})
+	}
+}
+
+// shadowExemptions are shortcut names that deliberately match an executable
+// on some machines. Each entry needs a reason; keep it empty unless a name is
+// a well-known Git or Jujutsu abbreviation.
+var shadowExemptions = map[string]string{}
+
+// TestShortcutNamesDoNotShadowExecutables fails when a shortcut name is also
+// an executable on PATH during the test or a binary the toolbox catalog ships.
+func TestShortcutNamesDoNotShadowExecutables(t *testing.T) {
+	shortcuts, err := Shortcuts()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, s := range shortcuts {
+		if _, ok := shadowExemptions[s.Name]; ok {
+			continue
+		}
+		if p, err := exec.LookPath(s.Name); err == nil {
+			t.Errorf("shortcut %s shadows the executable %s", s.Name, p)
+		}
+	}
+	catalog, err := os.ReadFile(filepath.Join("..", "..", "bundles", "toolbox", "packages.catalog.json"))
+	if err != nil {
+		t.Skipf("toolbox catalog not readable: %v", err)
+	}
+	shipped := map[string]bool{}
+	for _, m := range regexp.MustCompile(`"bin/([A-Za-z0-9._-]+)"`).FindAllStringSubmatch(string(catalog), -1) {
+		shipped[m[1]] = true
+	}
+	if !shipped["rg"] || !shipped["fd"] {
+		t.Fatalf("catalog bin list looks wrong: %v", shipped)
+	}
+	for _, s := range shortcuts {
+		if _, ok := shadowExemptions[s.Name]; !ok && shipped[s.Name] {
+			t.Errorf("shortcut %s shadows toolbox binary bin/%s", s.Name, s.Name)
 		}
 	}
 }
