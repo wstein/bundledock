@@ -223,7 +223,6 @@ alias rd='rmdir'
 alias -- ..='cd ..'
 alias -- ...='cd ../..'
 alias -- ....='cd ../../..'
-alias -- -='cd -'
 
 # Like fish abbreviations: a static shortcut typed in command position expands
 # in place when space is pressed, so the real command is visible and in

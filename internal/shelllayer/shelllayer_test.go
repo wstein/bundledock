@@ -612,18 +612,18 @@ func TestShortcutNamesDoNotShadowExecutables(t *testing.T) {
 }
 
 // navCases are the navigation names with the directory each must reach from
-// $T/a/b/c; "-" runs after cd $T/a/b, cd $T/a/b/c, so it returns to a/b.
+// $T/a/b/c; "-" runs after cd $T/x, cd $T/a/b/c, so it returns to x (not the parent).
 var navCases = []struct{ name, want string }{
 	{"..", "a/b"},
 	{"...", "a"},
 	{"....", "."},
-	{"-", "a/b"},
+	{"-", "x"},
 }
 
 // navScript returns the command line that loads the layer, enters the temp
 // tree as described above, runs name and prints "P=<pwd>".
 func navScript(sh shell, layer, root, name string, layerSupported bool) []string {
-	pre := []string{"cd " + root + "/a/b", "cd " + root + "/a/b/c"}
+	pre := []string{"cd " + root + "/x", "cd " + root + "/a/b/c"}
 	switch sh.name {
 	case "bash", "zsh":
 		// Aliases expand at parse time, so the calls live in a second file.
@@ -739,8 +739,10 @@ func navTree(t *testing.T) string {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := os.MkdirAll(filepath.Join(root, "a", "b", "c"), 0o755); err != nil {
-		t.Fatal(err)
+	for _, d := range []string{"a/b/c", "x"} {
+		if err := os.MkdirAll(filepath.Join(root, d), 0o755); err != nil {
+			t.Fatal(err)
+		}
 	}
 	return root
 }
@@ -781,7 +783,7 @@ func TestNavigationShortcutsChangeDirectoryInEveryShell(t *testing.T) {
 			nuRoot = navTree(t)
 			lines := []string{"source " + filepath.Join("share", "nushell", "vendor", "autoload", "bdock-shell.nu")}
 			for _, c := range navCases {
-				lines = append(lines, "cd "+nuRoot+"/a/b", "cd "+nuRoot+"/a/b/c", c.name, `print $"P`+c.name+`=($env.PWD)"`)
+				lines = append(lines, "cd "+nuRoot+"/x", "cd "+nuRoot+"/a/b/c", c.name, `print $"P`+c.name+`=($env.PWD)"`)
 			}
 			nuOut = nuREPL(t, dir, lines)
 		}
@@ -831,7 +833,7 @@ func runLenient(t *testing.T, argv []string, bin string) string {
 func TestNavigationTableIsPinned(t *testing.T) {
 	want := map[string]map[string]NavState{
 		"bash": {"..": "layer", "...": "layer", "....": "layer", "-": "layer"},
-		"zsh":  {"..": "layer", "...": "layer", "....": "layer", "-": "layer"},
+		"zsh":  {"..": "layer", "...": "layer", "....": "layer", "-": "unsupported"},
 		"fish": {"..": "native", "...": "layer", "....": "layer", "-": "layer"},
 		"nu":   {"..": "native", "...": "native", "....": "native", "-": "unsupported"},
 	}
