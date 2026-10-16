@@ -1,15 +1,26 @@
 name: Clean stale staging tags
 
 on:
+  workflow_run:
+    workflows: [Publish bundles]
+    types: [completed]
   schedule:
     - cron: '37 4 * * *'
   workflow_dispatch:
     inputs:
       apply:
-        description: Delete only verified staging tags older than seven days
+        description: Apply the saved, independently verified cleanup plan
         type: boolean
         required: true
         default: false
+      failed_run:
+        description: Optional completed failed publication run ID (empty uses seven-day fallback)
+        type: string
+        default: ''
+      failed_attempt:
+        description: Exact latest attempt for failed_run (both fields required together)
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -17,7 +28,15 @@ permissions:
 
 jobs:
   cleanup:
-    if: github.ref == 'refs/heads/main'
+    if: >-
+      github.repository == 'wstein/bundledock' && github.ref == 'refs/heads/main' &&
+      (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' ||
+       (github.event_name == 'workflow_run' && github.event.workflow_run.status == 'completed' &&
+        github.event.workflow_run.head_branch == 'main' &&
+        github.event.workflow_run.head_repository.full_name == 'wstein/bundledock' &&
+        (github.event.workflow_run.conclusion == 'failure' ||
+         github.event.workflow_run.conclusion == 'cancelled' ||
+         github.event.workflow_run.conclusion == 'timed_out')))
     strategy:
       fail-fast: false
       max-parallel: 2
@@ -31,6 +50,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
+      FAILED_RUN: ${{ github.event.workflow_run.id || inputs.failed_run || '' }}
+      FAILED_ATTEMPT: ${{ github.event.workflow_run.run_attempt || inputs.failed_attempt || '' }}
       GH_TOKEN: ${{ github.token }}
       REPOSITORY: ${{ matrix.repository }}
       REPOSITORY_USERNAME: ${{ vars.REPOSITORY_USERNAME }}
@@ -38,9 +59,15 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.sha }}
           persist-credentials: false
-      - name: Plan seven-day fallback without deleting
-        run: python3 -B scripts/staging-cleanup.py --repository "$REPOSITORY" --output staging-plan.json
+      - name: Plan guarded cleanup without deleting
+        run: |
+          args=(--repository "$REPOSITORY" --output staging-plan.json)
+          if [[ -n "$FAILED_RUN" || -n "$FAILED_ATTEMPT" ]]; then
+            args+=(--failed-run "$FAILED_RUN" --failed-attempt "$FAILED_ATTEMPT")
+          fi
+          python3 -B scripts/staging-cleanup.py "${args[@]}"
       - name: Save cleanup dry run
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -49,8 +76,13 @@ jobs:
           if-no-files-found: error
           retention-days: 90
       - name: Remove stale staging tags
-        if: env.REPOSITORY_USERNAME != '' && env.REPOSITORY_TOKEN != '' && (github.event_name == 'schedule' || inputs.apply)
-        run: python3 -B scripts/staging-cleanup.py --repository "$REPOSITORY" --apply --approved-plan staging-plan.json --output staging-result.json
+        if: env.REPOSITORY_USERNAME != '' && env.REPOSITORY_TOKEN != '' && (github.event_name == 'schedule' || github.event_name == 'workflow_run' || inputs.apply)
+        run: |
+          args=(--repository "$REPOSITORY" --apply --approved-plan staging-plan.json --output staging-result.json)
+          if [[ -n "$FAILED_RUN" || -n "$FAILED_ATTEMPT" ]]; then
+            args+=(--failed-run "$FAILED_RUN" --failed-attempt "$FAILED_ATTEMPT")
+          fi
+          python3 -B scripts/staging-cleanup.py "${args[@]}"
       - name: Report missing cleanup credential
         if: env.REPOSITORY_USERNAME == '' || env.REPOSITORY_TOKEN == ''
         run: echo 'Staging cleanup is dry-run only; configure REPOSITORY_USERNAME and REPOSITORY_TOKEN for tag deletion.' >> "$GITHUB_STEP_SUMMARY"
