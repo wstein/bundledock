@@ -120,7 +120,7 @@ check() {
             sh /navi-smoke.sh
             stage "mise version"
             sh /mise-smoke.sh
-            stage "fzf bat and registry utilities"
+            stage "fzf bat lsd and registry utilities"
             sh /utilities-smoke.sh
             stage "shell formatting recipes Python diffs watching benchmarks and encryption"
             sh /quality-utilities-smoke.sh
