@@ -12,13 +12,14 @@ func TestUtilitiesSmokeRejectsWrongOutput(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, broken := range []string{"", "fzf", "bat", "regctl"} {
+	for _, broken := range []string{"", "fzf", "bat", "lsd", "regctl"} {
 		t.Run("broken-"+broken, func(t *testing.T) {
 			home := t.TempDir()
 			bin := t.TempDir()
 			stubs := map[string]string{
 				"fzf":    "case \"$*\" in --version) echo 0.74.5;; '--filter beta') cat >/dev/null; echo beta;; *) exit 2;; esac",
 				"bat":    "case \"$*\" in --version) echo 'bat 0.26.1';; '--paging=never --color=never --style=plain --language=go -') cat;; *) exit 2;; esac",
+				"lsd":    "case \"$*\" in --version) echo 'lsd 1.2.0';; '--ignore-config --color never --icon never --oneline '*) test \"$#\" = 7 && test -f \"$7/entry.txt\" && echo entry.txt;; *) exit 2;; esac",
 				"regctl": "case \"$*\" in version) echo 'VCSTag: v0.11.6';; --help) echo help;; 'image digest --help') echo help;; 'ref --format {{.Repository}} example.invalid/team/image:v1') echo team/image;; *) exit 2;; esac",
 			}
 			for name, body := range stubs {
