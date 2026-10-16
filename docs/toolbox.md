@@ -552,8 +552,8 @@ require separately approved builds before release or consumer activation.
 
 ## Shared shell layer
 
-The toolbox carries one set of Git and Jujutsu shortcuts and a starship prompt
-for bash, zsh, fish and Nushell. Every shell gets the same names, and each name
+The toolbox carries one set of Git, Jujutsu and `lsd` listing shortcuts (86 in all) and a
+starship prompt for bash, zsh, fish and Nushell. Every shell gets the same names, and each name
 runs the same command with the same arguments: `gst` is `git status`, `gpsup`
 pushes the current branch with an upstream, `jst` is `jj status`, in all four.
 The table is `internal/shelllayer/shortcuts.tsv`; Git names follow
@@ -561,6 +561,23 @@ The table is `internal/shelllayer/shortcuts.tsv`; Git names follow
 retained under `licenses/shell-layer`). The set is curated: no `--no-verify`,
 git-svn, git-flow or forge-specific entries and no irreversible clean or reset
 shortcuts. Names use `[a-z0-9]` only, so `gc!`-style names are not offered.
+
+The listing family is read-only and runs [lsd](https://github.com/lsd-rs/lsd),
+which the toolbox ships (`lsd` in `packages.txt`; a source test requires every
+shortcut command to be `git` or a shipped tool): `ll` (`lsd -l`), `la` (`-A`),
+`lla` (`-lA`), `lt` (`-lt`, long, sorted by modification time), `ltr` (`-ltr`,
+reversed), `l1` (`-1`, one entry per line), `ltree` (`--tree`) and `llg` (`-l
+--group-dirs first`), each with `--color auto` and any extra arguments
+appended. `ltree` is the tree view because `lt` already means the time-sorted
+long listing. Stock `ls` is left untouched and is never aliased: in Nushell it
+is a built-in that returns a table, an alias would replace it for the whole
+session, and scripts expect the real `ls`; the table parser rejects any
+shortcut named like a Nushell built-in. The flags come from the lsd 1.2.0
+documentation (`doc/lsd.md`) and were not verified against a running lsd here,
+including the sort direction of `-t`. The family is opted out with the rest of
+the shortcuts (`BDOCK_SHORTCUTS=0`; in Nushell, which cannot define aliases
+conditionally, by leaving the toolbox out of `XDG_DATA_DIRS`, where the aliases
+call the external `^lsd`).
 
 | Shell | File in the toolbox | How it loads | Shortcuts |
 | --- | --- | --- | --- |

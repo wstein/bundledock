@@ -8,6 +8,19 @@
 # Git names follow jhillyerd/plugin-git (MIT, see licenses/shell-layer). The set
 # is curated: no --no-verify, git-svn, git-flow or forge-specific entries and no
 # irreversible clean/reset shortcuts.
+#
+# The listing family (ll, la, lla, lt, ltr, l1, ltree, llg) runs lsd, which the
+# toolbox ships (bundles/toolbox/packages.txt); a test keeps every command's
+# first word a base command or a shipped tool. It is read-only: it only reads
+# directories and never writes, deletes or changes anything. Stock `ls` is left
+# untouched and never aliased: in Nushell `ls` is a built-in that returns a
+# table pipelines depend on, an alias would replace it for the whole session,
+# and scripts and muscle memory expect the real ls everywhere. Parse rejects any
+# shortcut named like a Nushell built-in. Flags are the ones documented for
+# lsd 1.2.0 (doc/lsd.md): -l, -A, -t, -r, -1, --tree, --color <auto> and
+# --group-dirs <first>. They come from documentation and were not measured here.
+# `ltree` is the tree view (lt already means "long, newest first"); `llg` is the
+# long listing with directories grouped first.
 
 # Git: core
 g	git
@@ -96,3 +109,13 @@ jsp	jj split
 jsq	jj squash
 jst	jj status
 jun	jj undo
+
+# Listing with lsd (read-only; stock ls is never aliased)
+ll	lsd -l --color auto
+la	lsd -A --color auto
+lla	lsd -lA --color auto
+lt	lsd -lt --color auto
+ltr	lsd -ltr --color auto
+l1	lsd -1 --color auto
+ltree	lsd --tree --color auto
+llg	lsd -l --group-dirs first --color auto

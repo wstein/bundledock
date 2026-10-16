@@ -56,6 +56,49 @@ var (
 // Shortcuts parses and validates the embedded table.
 func Shortcuts() ([]Shortcut, error) { return Parse(table) }
 
+// nushellBuiltins are the built-in and keyword commands of the Nushell release
+// pinned in the catalog (0.116.1) whose names a shortcut could take. An alias
+// with one of these names would replace the built-in for the whole Nushell
+// session; `ls` in particular returns a table that pipelines rely on. Names
+// with a dash cannot be shortcut names and are left out. A test compares the
+// list with the installed nu, so a Nushell bump fails until it is refreshed.
+var nushellBuiltins = func() map[string]bool {
+	m := map[string]bool{}
+	for _, n := range []string{
+		"abbr", "alias", "all", "ansi", "any", "append", "ast", "attr",
+		"bits", "break", "bytes", "cal", "cd", "char", "chunks", "clear",
+		"collect", "columns", "combinations", "commandline", "compact",
+		"complete", "config", "const", "continue", "cp", "date", "debug",
+		"decode", "def", "default", "describe", "detect", "difference", "do",
+		"drop", "du", "each", "echo", "encode", "enumerate", "error", "every",
+		"exec", "exit", "explain", "explore", "export", "extern", "fill",
+		"filter", "find", "first", "flatten", "for", "format", "from",
+		"generate", "get", "glob", "grid", "hash", "headers", "help", "hide",
+		"histogram", "history", "http", "idx", "if", "ignore", "input",
+		"insert", "inspect", "interleave", "intersect", "into", "items",
+		"job", "join", "keybindings", "kill", "last", "length", "let",
+		"lines", "loop", "ls", "match", "math", "matrix", "merge", "metadata",
+		"mkdir", "mktemp", "module", "move", "mut", "mv", "open", "overlay",
+		"panic", "parse", "path", "peek", "permutations", "plugin", "port",
+		"prepend", "print", "ps", "query", "random", "reduce", "reject",
+		"rename", "return", "reverse", "rm", "roll", "rotate", "run", "save",
+		"schema", "scope", "select", "semver", "seq", "shuffle", "skip",
+		"sleep", "slice", "sort", "source", "split", "start", "stor", "str",
+		"sys", "table", "take", "tee", "term", "timeit", "to", "touch",
+		"transpose", "try", "tui", "tutor", "ulimit", "umask", "uname",
+		"union", "uniq", "unlet", "update", "upsert", "url", "use", "values",
+		"version", "view", "watch", "where", "which", "while", "whoami",
+		"window", "wrap", "zip",
+	} {
+		m[n] = true
+	}
+	return m
+}()
+
+// allowedCommands are the first words a shortcut may run: Git, Jujutsu and the
+// lsd listing family; stock ls is never a shortcut command.
+var allowedCommands = map[string]bool{"git": true, "jj": true, "lsd": true}
+
 // Parse reads name<TAB>command rows, skipping blank lines and # comments.
 // Names must be valid in every shell, unique and lowercase; command words are
 // restricted to characters that need no quoting in any of the four shells.
@@ -75,6 +118,9 @@ func Parse(data []byte) ([]Shortcut, error) {
 		if !validName.MatchString(name) {
 			return nil, fmt.Errorf("line %d: invalid shortcut name %q", line, name)
 		}
+		if nushellBuiltins[name] {
+			return nil, fmt.Errorf("line %d: %q is a Nushell built-in; a shortcut must not shadow it", line, name)
+		}
 		if seen[name] {
 			return nil, fmt.Errorf("line %d: duplicate shortcut %q", line, name)
 		}
@@ -83,8 +129,8 @@ func Parse(data []byte) ([]Shortcut, error) {
 		if len(words) == 0 || strings.Join(words, " ") != command {
 			return nil, fmt.Errorf("line %d: %s: command must be single-spaced words", line, name)
 		}
-		if words[0] != "git" && words[0] != "jj" {
-			return nil, fmt.Errorf("line %d: %s: command must start with git or jj", line, name)
+		if !allowedCommands[words[0]] {
+			return nil, fmt.Errorf("line %d: %s: command must start with git, jj or lsd", line, name)
 		}
 		for _, w := range words {
 			if !validWord.MatchString(w) {

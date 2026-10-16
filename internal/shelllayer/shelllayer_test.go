@@ -29,6 +29,7 @@ func TestParseRejectsUnsafeRows(t *testing.T) {
 		"uppercase name": "gC\tgit commit\n",
 		"duplicate":      "gst\tgit status\ngst\tgit status -s\n",
 		"other command":  "x\trm -rf /\n",
+		"stock ls":       "gx\tls -l\n",
 		"quote":          "gcm\tgit commit -m 'x'\n",
 		"substitution":   "gx\tgit $(id)\n",
 		"chain":          "gx\tgit fetch ; git merge\n",
@@ -80,8 +81,9 @@ func TestFilesCoverLayerAndNotices(t *testing.T) {
 	}
 }
 
-// stubs puts fake git and jj executables first on PATH. They print the argv
-// they received, and answer the two branch lookups the layer performs.
+// stubs puts a fake executable for the first word of every table command
+// (git, jj, lsd, ...) first on PATH. Each prints the argv it received, and the
+// git stub also answers the two branch lookups the layer performs.
 func stubs(t *testing.T, detached bool) string {
 	t.Helper()
 	dir := t.TempDir()
@@ -96,8 +98,18 @@ case "$*" in
 *) printf 'ARGV git'; printf '|%s' "$@"; printf '\n' ;;
 esac
 `
-	jj := "#!/bin/sh\nprintf 'ARGV jj'; printf '|%s' \"$@\"; printf '\\n'\n"
-	for name, body := range map[string]string{"git": git, "jj": jj} {
+	bodies := map[string]string{"git": git}
+	shortcuts, err := Shortcuts()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, s := range shortcuts {
+		name := s.Words()[0]
+		if _, ok := bodies[name]; !ok {
+			bodies[name] = "#!/bin/sh\nprintf 'ARGV " + name + "'; printf '|%s' \"$@\"; printf '\\n'\n"
+		}
+	}
+	for name, body := range bodies {
 		if err := os.WriteFile(filepath.Join(dir, name), []byte(body), 0o755); err != nil {
 			t.Fatal(err)
 		}
@@ -206,6 +218,26 @@ func run(t *testing.T, argv []string, bin string) string {
 	return string(out)
 }
 
+// runShell runs every shortcut once with the argument EXTRA and returns the
+// ARGV line each one printed, keyed by shortcut name.
+func runShell(t *testing.T, sh shell, dir, bin string, shortcuts []Shortcut) map[string]string {
+	t.Helper()
+	out := run(t, sh.script(filepath.Join(dir, sh.file), shortcuts), bin)
+	got := map[string]string{}
+	current := ""
+	for _, line := range strings.Split(out, "\n") {
+		line = strings.TrimSpace(line)
+		switch {
+		case strings.HasPrefix(line, "@@"):
+			current = strings.TrimPrefix(line, "@@")
+		case strings.HasPrefix(line, "ARGV ") && current != "":
+			got[current] = line
+			current = ""
+		}
+	}
+	return got
+}
+
 // TestShortcutsBehaveTheSameInEveryShell runs every shortcut in every shell
 // present on this machine and requires the exact same argv from each. Shells
 // that are not installed are skipped; the toolbox smoke test runs fish and nu.
@@ -221,19 +253,7 @@ func TestShortcutsBehaveTheSameInEveryShell(t *testing.T) {
 			if _, err := exec.LookPath(sh.name); err != nil {
 				t.Skipf("%s not installed", sh.name)
 			}
-			out := run(t, sh.script(filepath.Join(dir, sh.file), shortcuts), bin)
-			got := map[string]string{}
-			current := ""
-			for _, line := range strings.Split(out, "\n") {
-				line = strings.TrimSpace(line)
-				switch {
-				case strings.HasPrefix(line, "@@"):
-					current = strings.TrimPrefix(line, "@@")
-				case strings.HasPrefix(line, "ARGV ") && current != "":
-					got[current] = line
-					current = ""
-				}
-			}
+			got := runShell(t, sh, dir, bin, shortcuts)
 			for _, s := range shortcuts {
 				if got[s.Name] != expected(s) {
 					t.Errorf("%s: %s ran %q, want %q", sh.name, s.Name, got[s.Name], expected(s))
@@ -294,5 +314,164 @@ func TestBranchShortcutsRefuseDetachedHead(t *testing.T) {
 				t.Errorf("%s: ran git push without a branch:\n%s", sh.name, out)
 			}
 		})
+	}
+}
+
+// lsdShortcuts pins the curated listing family. Every command runs lsd, which
+// the toolbox ships; stock ls is never aliased. Flags come from the lsd 1.2.0
+// documentation (doc/lsd.md), not from a measured run.
+var lsdShortcuts = map[string]string{
+	"ll":    "lsd -l --color auto",
+	"la":    "lsd -A --color auto",
+	"lla":   "lsd -lA --color auto",
+	"lt":    "lsd -lt --color auto",
+	"ltr":   "lsd -ltr --color auto",
+	"l1":    "lsd -1 --color auto",
+	"ltree": "lsd --tree --color auto",
+	"llg":   "lsd -l --group-dirs first --color auto",
+}
+
+// TestLsdShortcutsBehaveTheSameInEveryShell requires the lsd family in the table
+// and the exact same argv, extra arguments appended, from each installed shell.
+func TestLsdShortcutsBehaveTheSameInEveryShell(t *testing.T) {
+	all, err := Shortcuts()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var ls []Shortcut
+	for name, command := range lsdShortcuts {
+		found := false
+		for _, s := range all {
+			if s.Name == name {
+				found = true
+				if s.Command != command {
+					t.Errorf("%s is %q, want %q", name, s.Command, command)
+				}
+				ls = append(ls, s)
+			}
+		}
+		if !found {
+			t.Errorf("shortcut %s is missing from the table", name)
+		}
+	}
+	if len(ls) != len(lsdShortcuts) {
+		t.FailNow()
+	}
+	dir := layerDir(t)
+	bin := stubs(t, false)
+	for _, sh := range shells {
+		t.Run(sh.name, func(t *testing.T) {
+			if _, err := exec.LookPath(sh.name); err != nil {
+				t.Skipf("%s not installed", sh.name)
+			}
+			got := runShell(t, sh, dir, bin, ls)
+			for _, s := range ls {
+				want := "ARGV lsd|" + strings.Join(append(strings.Fields(s.Command)[1:], "EXTRA"), "|")
+				if got[s.Name] != want {
+					t.Errorf("%s: %s ran %q, want %q", sh.name, s.Name, got[s.Name], want)
+				}
+			}
+		})
+	}
+}
+
+// Names that are Nushell built-in or keyword commands. An alias with one of
+// these names would replace the built-in for the whole session; Nushell's ls,
+// for instance, returns a table that pipelines depend on. cat is not a Nushell
+// built-in and stays available as a name.
+var nushellProtected = []string{
+	"ls", "cd", "cp", "mv", "rm", "mkdir", "open", "save", "echo", "touch",
+	"du", "ps", "kill", "which", "start", "sleep", "glob", "find", "sort",
+	"uniq", "first", "last", "get", "select", "date", "help", "exit",
+	"alias", "def", "use", "source", "if", "for", "let", "mut", "try",
+}
+
+func TestParseRejectsShadowingNushellBuiltins(t *testing.T) {
+	for _, name := range nushellProtected {
+		if _, err := Parse([]byte(name + "\tgit status\n")); err == nil {
+			t.Errorf("expected rejection of shortcut named %q", name)
+		}
+	}
+	if _, err := Parse([]byte("cat\tgit status\n")); err != nil {
+		t.Errorf("cat is not a Nushell built-in, got %v", err)
+	}
+}
+
+// TestTableNamesAvoidInstalledNushellBuiltins checks the table against the
+// built-ins of the Nushell on this machine, which the catalog pins.
+func TestTableNamesAvoidInstalledNushellBuiltins(t *testing.T) {
+	nu, err := exec.LookPath("nu")
+	if err != nil {
+		t.Skip("nu not installed")
+	}
+	out, err := exec.Command(nu, "--no-config-file", "-c",
+		`scope commands | where type in [built-in keyword] | get name | where {|n| $n !~ " "} | str join "\n"`).Output()
+	if err != nil {
+		t.Fatal(err)
+	}
+	builtin := map[string]bool{}
+	for _, n := range strings.Fields(string(out)) {
+		builtin[n] = true
+	}
+	if !builtin["ls"] || !builtin["cd"] {
+		t.Fatalf("unexpected nu command list: %q", out)
+	}
+	shortcuts, err := Shortcuts()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, s := range shortcuts {
+		if builtin[s.Name] {
+			t.Errorf("shortcut %s shadows a Nushell built-in", s.Name)
+		}
+	}
+	for _, name := range nushellProtected {
+		if !builtin[name] {
+			t.Errorf("%s is listed as protected but is not a Nushell built-in", name)
+		}
+	}
+	// The pinned Nushell must not have grown built-ins the parser does not
+	// know; update nushellBuiltins when the catalog moves to a new release.
+	for name := range builtin {
+		if _, err := Parse([]byte(name + "\tgit status\n")); err == nil {
+			t.Errorf("Parse accepts %q, a built-in of the installed Nushell; add it to nushellBuiltins", name)
+		}
+	}
+}
+
+// baseCommands are first words the toolbox does not list in packages.txt
+// because the base image provides them.
+var baseCommands = map[string]bool{"git": true}
+
+// TestShortcutCommandsAreShippedTools requires every first word of every table
+// command to be a base command or a tool named in the toolbox package list, so
+// a shortcut never points at a tool the toolbox does not ship.
+func TestShortcutCommandsAreShippedTools(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join("..", "..", "bundles", "toolbox", "packages.txt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	shipped := map[string]bool{}
+	for _, line := range strings.Split(string(data), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		if i := strings.IndexAny(line, "<>=!,~ "); i >= 0 {
+			line = line[:i]
+		}
+		shipped[line] = true
+	}
+	if !shipped["lsd"] || !shipped["jj"] {
+		t.Fatalf("packages.txt not read correctly: %v", shipped)
+	}
+	shortcuts, err := Shortcuts()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, s := range shortcuts {
+		if first := s.Words()[0]; !baseCommands[first] && !shipped[first] {
+			t.Errorf("%s runs %q, which is neither a base command nor in packages.txt", s.Name, first)
+		}
 	}
 }
