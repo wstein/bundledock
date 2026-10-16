@@ -1,7 +1,7 @@
 {
   "schema": 2,
-  "desired_digest": "290843e14673f3fb365d7387b01ef34c7bd54de6c5d6841caaa8c96dc0264067",
-  "catalog_digest": "6d31e4dfe8baf16d665dc22e4618c9992c2a236a0566a85361a2759c1764827e",
+  "desired_digest": "f49661f74a2744cf3379ee38336d066166d7cfc3663730170e4ce52b4a7ffb4c",
+  "catalog_digest": "6c35b88185b771733eec17d3637eb3f615cf62f3ca1bc5b4f3203a7f255be945",
   "platforms": {
     "amd64": {
       "age": {
@@ -69,19 +69,6 @@
         "url": "https://github.com/git-lfs/git-lfs/releases/download/v3.8.0/git-lfs-linux-amd64-v3.8.0.tar.gz",
         "sha256": "e455e00f15d9b95661b8d53498ffb0c3367962cf1ec73c31ab7369516cd6ab8d",
         "verification": "publisher-sha256"
-      },
-      "git-trim": {
-        "version": "v0.4.3",
-        "url": "https://codeload.github.com/foriequal0/git-trim/tar.gz/65288617a637029573a5c3517abcb95b050ea02b",
-        "sha256": "dffccf97f3801976a647f5d03629d49f17d3b930b322ee1056239084093b4e53",
-        "verification": "tls-download-sha256",
-        "source": {
-          "commit": "65288617a637029573a5c3517abcb95b050ea02b",
-          "cargo_lock_sha256": "86abff4cefcfcfa8c55b163c900030f820f036d2ad092f51a765e81c2ddb25f3",
-          "builder": "rust:1.75.0-bookworm@sha256:87f3b2f93b82995443a1a558c234212dafe79cfdc3af956539610560369ddcd0",
-          "recipe": "git-trim-v0.4.3-rust1.75-bookworm-v1",
-          "source_date_epoch": 1670865239
-        }
       },
       "gitleaks": {
         "version": "v8.30.1",
@@ -324,19 +311,6 @@
         "url": "https://github.com/git-lfs/git-lfs/releases/download/v3.8.0/git-lfs-linux-arm64-v3.8.0.tar.gz",
         "sha256": "ac9c8efac980bb0505ead384d087e2acb6486fd8498691a2165fa174ec6118c2",
         "verification": "publisher-sha256"
-      },
-      "git-trim": {
-        "version": "v0.4.3",
-        "url": "https://codeload.github.com/foriequal0/git-trim/tar.gz/65288617a637029573a5c3517abcb95b050ea02b",
-        "sha256": "dffccf97f3801976a647f5d03629d49f17d3b930b322ee1056239084093b4e53",
-        "verification": "tls-download-sha256",
-        "source": {
-          "commit": "65288617a637029573a5c3517abcb95b050ea02b",
-          "cargo_lock_sha256": "86abff4cefcfcfa8c55b163c900030f820f036d2ad092f51a765e81c2ddb25f3",
-          "builder": "rust:1.75.0-bookworm@sha256:87f3b2f93b82995443a1a558c234212dafe79cfdc3af956539610560369ddcd0",
-          "recipe": "git-trim-v0.4.3-rust1.75-bookworm-v1",
-          "source_date_epoch": 1670865239
-        }
       },
       "gitleaks": {
         "version": "v8.30.1",

@@ -25,7 +25,6 @@ LABELS = (
     ("hyperfine", "hyperfine (`hyperfine`)"),
     ("age", "age (`age`, `age-keygen`, `age-inspect`, plugins)"),
     ("gh", "GitHub CLI"),
-	("git-trim", "git-trim (`git-trim`, reviewed source exception)"),
     ("jq", "jq"),
     ("rg", "ripgrep (`rg`)"),
     ("fzf", "fzf (`fzf`)"),
