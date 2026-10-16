@@ -88,19 +88,14 @@ func checkout(t *testing.T) string {
 	return dir
 }
 
-// Generic prebuilt fixtures exercise moving releases independently of the exact
-// source exception; dedicated git-trim tests cover its fail-closed updater.
+// Generic prebuilt fixtures exercise moving releases on a rebound copy of the
+// toolbox inputs.
 func checkoutPrebuilts(t *testing.T) string {
 	t.Helper()
 	dir := checkout(t)
 	c, err := toolconfig.Load(dir)
 	if err != nil {
 		t.Fatal(err)
-	}
-	delete(c.Desired, "git-trim")
-	delete(c.Catalog.Packages, "git-trim")
-	for arch := range c.Lock.Platforms {
-		delete(c.Lock.Platforms[arch], "git-trim")
 	}
 	c.Bind()
 	var desired strings.Builder

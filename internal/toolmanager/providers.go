@@ -280,9 +280,6 @@ func (r resolver) resolve(ctx context.Context, p toolconfig.Package, c toolconfi
 	if err != nil && !(p.Provider == "claude" && errors.Is(err, errNoRelease)) {
 		return nil, err
 	}
-	if p.Install.Profile == toolconfig.GitTrimProfile {
-		return r.gitTrim(ctx, rel)
-	}
 	version, _ := p.Version(rel.Tag)
 	specs := map[string]toolconfig.Spec{}
 	if p.Provider == "claude" {

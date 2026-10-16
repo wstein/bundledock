@@ -46,29 +46,11 @@ func checksum(spec Spec) (hash.Hash, string, error) {
 
 // Build downloads each artifact to a temporary file, verifies it, then extracts.
 // A failed build leaves its incomplete output for inspection; use a fresh directory.
-func Build(ctx context.Context, client *http.Client, tools map[string]Spec, packages map[string]toolconfig.Package, notices fs.FS, arch, destination string, output io.Writer, opts ...BuildOption) error {
-	return BuildWithGitTrimStage(ctx, client, tools, packages, notices, arch, destination, "", output, opts...)
-}
-
-// BuildWithGitTrimStage consumes only the fixed git-trim recipe's sealed stage.
 // It never invokes a compiler or executes catalog-provided commands.
-func BuildWithGitTrimStage(ctx context.Context, client *http.Client, tools map[string]Spec, packages map[string]toolconfig.Package, notices fs.FS, arch, destination, gitTrimStage string, output io.Writer, opts ...BuildOption) error {
+func Build(ctx context.Context, client *http.Client, tools map[string]Spec, packages map[string]toolconfig.Package, notices fs.FS, arch, destination string, output io.Writer, opts ...BuildOption) error {
 	var o buildOptions
 	for _, opt := range opts {
 		opt(&o)
-	}
-	for name, p := range packages {
-		if p.Install.Profile == toolconfig.GitTrimProfile && gitTrimStage == "" {
-			return fmt.Errorf("staged git-trim payload required")
-		}
-		if tools[name].Source != nil {
-			if err := toolconfig.ValidateGitTrimPackage(name, p); err != nil {
-				return err
-			}
-			if err := toolconfig.ValidateGitTrimSpec(tools[name]); err != nil {
-				return err
-			}
-		}
 	}
 	if client == nil {
 		client = &http.Client{Timeout: 120 * time.Second}
@@ -104,12 +86,6 @@ func BuildWithGitTrimStage(ctx context.Context, client *http.Client, tools map[s
 	for _, name := range names {
 		spec := tools[name]
 		fmt.Fprintln(output, "Installing", name, spec.Version)
-		if packages[name].Install.Profile == toolconfig.GitTrimProfile {
-			if err := installGitTrimStage(root, gitTrimStage, arch, spec); err != nil {
-				return err
-			}
-			continue
-		}
 		if err := install(ctx, client, root, name, packages[name], spec); err != nil {
 			return fmt.Errorf("install %s: %w", name, err)
 		}
