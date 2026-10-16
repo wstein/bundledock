@@ -19,7 +19,7 @@
 # shortcut named like a Nushell built-in. Flags are the ones documented for
 # lsd 1.2.0 (doc/lsd.md): -l, -A, -t, -r, -1, --tree, --color <auto> and
 # --group-dirs <first>. They come from documentation and were not measured here.
-# `ltree` is the tree view (lt already means "long, newest first"); `llg` is the
+# `ltree` is the tree view (lt already means "long, sorted by modification time"; the direction of lsd's -t is from its documentation and has not been run here); `llg` is the
 # long listing with directories grouped first.
 
 # Git: core

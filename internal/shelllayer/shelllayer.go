@@ -56,17 +56,19 @@ var (
 // Shortcuts parses and validates the embedded table.
 func Shortcuts() ([]Shortcut, error) { return Parse(table) }
 
-// nushellBuiltins are the built-in and keyword commands of the Nushell release
-// pinned in the catalog (0.116.1) whose names a shortcut could take. An alias
+// nushellBuiltins are the built-in, keyword and shipped custom commands (pwd,
+// banner) of the Nushell release pinned in the catalog (0.116.1) whose names a
+// shortcut could take. An alias
 // with one of these names would replace the built-in for the whole Nushell
 // session; `ls` in particular returns a table that pipelines rely on. Names
 // with a dash cannot be shortcut names and are left out. A test compares the
-// list with the installed nu, so a Nushell bump fails until it is refreshed.
+// list with the installed nu, so a Nushell bump fails until it is refreshed;
+// that test skips on machines without nu, so it protects only where nu exists.
 var nushellBuiltins = func() map[string]bool {
 	m := map[string]bool{}
 	for _, n := range []string{
 		"abbr", "alias", "all", "ansi", "any", "append", "ast", "attr",
-		"bits", "break", "bytes", "cal", "cd", "char", "chunks", "clear",
+		"banner", "bits", "break", "bytes", "cal", "cd", "char", "chunks", "clear",
 		"collect", "columns", "combinations", "commandline", "compact",
 		"complete", "config", "const", "continue", "cp", "date", "debug",
 		"decode", "def", "default", "describe", "detect", "difference", "do",
@@ -80,7 +82,7 @@ var nushellBuiltins = func() map[string]bool {
 		"lines", "loop", "ls", "match", "math", "matrix", "merge", "metadata",
 		"mkdir", "mktemp", "module", "move", "mut", "mv", "open", "overlay",
 		"panic", "parse", "path", "peek", "permutations", "plugin", "port",
-		"prepend", "print", "ps", "query", "random", "reduce", "reject",
+		"prepend", "print", "ps", "pwd", "query", "random", "reduce", "reject",
 		"rename", "return", "reverse", "rm", "roll", "rotate", "run", "save",
 		"schema", "scope", "select", "semver", "seq", "shuffle", "skip",
 		"sleep", "slice", "sort", "source", "split", "start", "stor", "str",
