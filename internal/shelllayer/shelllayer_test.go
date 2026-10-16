@@ -898,3 +898,78 @@ func TestNavigationDefinitionsMatchTheSupportTable(t *testing.T) {
 		}
 	}
 }
+
+// TestNavigationCapabilityTableInDocsMatchesGenerator parses the capability
+// table in docs/toolbox.md and requires every cell to agree with what the
+// generator emits: "defined by the layer" exactly where the generated file
+// defines the name, and "native" or "unsupported" exactly where it does not
+// (NavigationSupport records which of the two, and the real-shell test above
+// proves it).
+func TestNavigationCapabilityTableInDocsMatchesGenerator(t *testing.T) {
+	doc, err := os.ReadFile(filepath.Join("..", "..", "docs", "toolbox.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	cellState := map[string]NavState{
+		"native": NavNative, "defined by the layer": NavLayer, "unsupported": NavUnsupported,
+	}
+	header := "| Shell (version) | `..` | `...` | `....` | `-` |"
+	lines := strings.Split(string(doc), "\n")
+	start := -1
+	for i, l := range lines {
+		if strings.TrimSpace(l) == header {
+			start = i
+		}
+	}
+	if start < 0 {
+		t.Fatalf("docs/toolbox.md has no capability table with header %q", header)
+	}
+	gen := Generate(nil)
+	files := map[string]string{"bash": BashPath, "zsh": ZshPath, "fish": FishPath, "nu": NuPath}
+	seen := map[string]bool{}
+	for _, l := range lines[start+2:] {
+		if !strings.HasPrefix(l, "|") {
+			break
+		}
+		cells := strings.Split(strings.Trim(strings.TrimSpace(l), "|"), "|")
+		if len(cells) != 5 {
+			t.Fatalf("capability row %q: want 5 cells", l)
+		}
+		shellName := strings.ToLower(strings.Fields(cells[0])[0])
+		if shellName == "nushell" {
+			shellName = "nu"
+		}
+		file, ok := files[shellName]
+		if !ok {
+			t.Fatalf("capability row for unknown shell %q", shellName)
+		}
+		seen[shellName] = true
+		text := string(gen[file])
+		for i, s := range Navigation() {
+			state, ok := cellState[strings.TrimSpace(cells[i+1])]
+			if !ok {
+				t.Fatalf("%s %s: unknown state %q", shellName, s.Name, cells[i+1])
+			}
+			var def string
+			switch shellName {
+			case "bash", "zsh":
+				def = "alias -- " + s.Name + "='" + s.Command + "'\n"
+			case "fish":
+				def = "abbr --add --global -- " + s.Name + " '" + s.Command + "'\n"
+			case "nu":
+				def = "alias " + s.Name + " ="
+			}
+			if has := strings.Contains(text, def); has != (state == NavLayer) {
+				t.Errorf("%s %s: docs say %q but generated definition present=%v", shellName, s.Name, cells[i+1], has)
+			}
+			if got := NavigationSupport(shellName, s.Name); got != state {
+				t.Errorf("%s %s: docs say %q, NavigationSupport says %q", shellName, s.Name, state, got)
+			}
+		}
+	}
+	for name := range files {
+		if !seen[name] {
+			t.Errorf("capability table has no row for %s", name)
+		}
+	}
+}

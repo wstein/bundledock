@@ -552,7 +552,8 @@ require separately approved builds before release or consumer activation.
 
 ## Shared shell layer
 
-The toolbox carries one set of Git, Jujutsu and `lsd` listing shortcuts (86 in all) and a
+The toolbox carries one set of Git, Jujutsu, `lsd` listing, search, disk and
+directory shortcuts (95 in all), four navigation names and a
 starship prompt for bash, zsh, fish and Nushell. Every shell gets the same names, and each name
 runs the same command with the same arguments: `gst` is `git status`, `gpsup`
 pushes the current branch with an upstream, `jst` is `jj status`, in all four.
@@ -564,7 +565,8 @@ shortcuts. Names use `[a-z0-9]` only, so `gc!`-style names are not offered.
 
 The listing family is read-only and runs [lsd](https://github.com/lsd-rs/lsd),
 which the toolbox ships (`lsd` in `packages.txt`; a source test requires every
-shortcut command to be `git` or a shipped tool): `ll` (`lsd -l`), `la` (`-A`),
+shortcut command to be a shipped tool or a base command on an explicit,
+justified allowlist): `ll` (`lsd -l`), `la` (`-A`),
 `lla` (`-lA`), `lt` (`-lt`, long, sorted by modification time), `ltr` (`-ltr`,
 reversed), `l1` (`-1`, one entry per line), `ltree` (`--tree`) and `llg` (`-l
 --group-dirs first`), each with `--color auto` and any extra arguments
@@ -578,6 +580,44 @@ including the sort direction of `-t`. The family is opted out with the rest of
 the shortcuts (`BDOCK_SHORTCUTS=0`; in Nushell, which cannot define aliases
 conditionally, by leaving the toolbox out of `XDG_DATA_DIRS`, where the aliases
 call the external `^lsd`).
+
+Everyday shortcuts cover search, disk and memory reports, and directories:
+`rgi` (`rg -i`), `rgl` (`rg -l`), `rgf` (`rg --files`), `fdh` (`fd --hidden`),
+`dfh` (`df -h`), `duh` (`du -h -d 1`), `fr` (`free -h`), `md` (`mkdir -p`) and
+`rd` (`rmdir`). `rg` and `fd` are toolbox tools, covered by the `packages.txt`
+test. `df`, `du`, `free`, `mkdir` and `rmdir` come from the base image and are on
+that test's explicit allowlist with a reason each: `df`, `du` and `free` only
+report, `mkdir -p` only creates and never overwrites, and `rmdir` removes only an
+empty directory. None of the names is an executable on `PATH` or in the
+toolbox's `bin`; a test checks that. `cp -i`, `mv -i` and every `rm` variant are
+deliberately absent: the interactive prompts hang agent terminals that cannot
+answer, and `rm` is irreversible. `du -d 1` and `mkdir -p` work in GNU coreutils
+and busybox alike.
+
+Navigation names `..` (`cd ..`), `...` (`cd ../..`), `....` (`cd ../../..`) and
+`-` (`cd -`) are not table rows: they have their own short fixed list in the
+generator with strict patterns and per-shell rendering, and `validName` and
+`validWord` still reject such names and path words. The layer defines a name only
+where the shell does not run it natively and accepts the definition; otherwise it
+leaves the name alone and says so here. Measured in an interactive
+pseudo-terminal, and re-checked by a test that runs the real `cd` in a temporary
+tree in each installed shell and asserts `pwd`:
+
+| Shell (version) | `..` | `...` | `....` | `-` |
+| --- | --- | --- | --- | --- |
+| bash 5.2.37 | defined by the layer | defined by the layer | defined by the layer | defined by the layer |
+| zsh 5.9 | defined by the layer | defined by the layer | defined by the layer | defined by the layer |
+| fish 4.9.3 | native | defined by the layer | defined by the layer | defined by the layer |
+| Nushell 0.116.1 | native | native | native | unsupported |
+
+bash and zsh define aliases (`alias -- -='cd -'`); `autocd` and `auto_cd` would
+only cover `..`, so they are not used. fish defines abbreviations. Nushell's
+implicit `cd` works only for a bare path typed alone in the interactive REPL, not
+under `nu -c`, `-e` or after `;`. In Nushell `-` is unsupported: `alias - = cd -`
+and `def "-"` are accepted but never run, because the parser treats a lone `-` as
+a string, so the layer defines nothing there. A test requires this table to
+match what the generator emits. The navigation names follow the same opt-out as
+the shortcuts (`BDOCK_SHORTCUTS=0` in bash, zsh and fish).
 
 | Shell | File in the toolbox | How it loads | Shortcuts |
 | --- | --- | --- | --- |
@@ -617,7 +657,7 @@ volume initializer that every bundle image ships imports the layer. After
 editing the table, run
 `go test ./internal/shelllayer -run TestGeneratedFilesAreCurrent -update`.
 `TestShortcutsBehaveTheSameInEveryShell` runs every shortcut in each installed
-shell against stub `git` and `jj` commands and requires identical arguments;
+shell against stub commands and requires identical arguments;
 `TestBranchShortcutsRefuseDetachedHead` checks the detached-HEAD refusal.
 Verified on 2026-10-15 with bash 5.2.21, zsh 5.9 and the pinned fish 4.9.3,
 Nushell 0.116.1 and starship 1.26.0, including starship initialization in all
