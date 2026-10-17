@@ -326,6 +326,11 @@ func (c Config) validate(strict bool) error {
 		if p.Verification != "official-or-download" {
 			return fmt.Errorf("unknown verification policy for %s", name)
 		}
+		if p.Source != nil {
+			if err := validateSource(name, p.Source); err != nil {
+				return err
+			}
+		}
 		for _, u := range []string{p.BaseURL, p.MetadataURL} {
 			if u != "" {
 				if err := ValidateURL(u, p.AllowedHosts); err != nil {
