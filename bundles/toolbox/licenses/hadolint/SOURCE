@@ -1,0 +1,10 @@
+Upstream: https://github.com/hadolint/hadolint
+Pinned release: v2.15.1
+License: GPL-3.0-only
+Source archive: https://api.github.com/repos/hadolint/hadolint/tarball/v2.15.1
+Source SHA256: 48d1ca567bcb05debdff07668121f1c68bedc0f3d48ae8f03ea7e3f32fd6ab01
+Source for corresponding release: https://github.com/hadolint/hadolint/releases/tag/v2.15.1
+Linux x86_64/arm64 official raw binaries, unchanged executable; selected by tag prefix 'v'.
+The static Haskell binary links GPL-3.0-only ShellCheck, GPL-3.0-or-later language-docker and GPL-2.0-only HsYAML among other dependencies; the upstream ThirdPartyNotices.txt (dependency license report, tag v2.15.1) is retained alongside the full upstream LICENSE (the release archive carries neither).
+Lock pins use the official release API SHA256 digests (checked 2026-10-17). No upstream binary was executed or modified; retained notices do not establish a complete transitive license audit.
+The repository owner accepted the combined GPL license mix on 2026-10-17 (unchanged binary, full LICENSE and ThirdPartyNotices.txt retained, as for ShellCheck). This is a written offer: the corresponding source is the Source archive above (verify against Source SHA256); BundleDock will point any recipient to it on request. The offer relies on upstream availability and is not legal advice.

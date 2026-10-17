@@ -188,23 +188,29 @@ networking disabled. Native smoke acceptance remains part of an approved build.
 <!-- BEGIN GENERATED TOOL INVENTORY -->
 | Tool | Pinned version | Homepage | Source |
 | --- | --- | --- | --- |
+| actionlint (`actionlint`) | 1.7.12 | [Homepage](https://github.com/rhysd/actionlint) | [Source](https://github.com/rhysd/actionlint) |
 | age (`age`, `age-keygen`, `age-inspect`, plugins) | 1.3.2 | [Homepage](https://age-encryption.org) | [Source](https://github.com/FiloSottile/age) |
 | ast-grep (`ast-grep`) | 0.51.0 | [Homepage](https://ast-grep.github.io/) | [Source](https://github.com/ast-grep/ast-grep) |
 | bat (`bat`) | 0.26.1 | [Homepage](https://github.com/sharkdp/bat) | [Source](https://github.com/sharkdp/bat) |
 | bottom (`btm`) | 0.14.9 | [Homepage](https://bottom.pages.dev) | [Source](https://github.com/ClementTsang/bottom) |
 | btop (`btop`) | 1.4.7 | [Homepage](https://github.com/aristocratos/btop) | [Source](https://github.com/aristocratos/btop) |
+| Cosign (`cosign`) | 3.1.3 | [Homepage](https://github.com/sigstore/cosign) | [Source](https://github.com/sigstore/cosign) |
 | delta (`delta`) | 0.20.1 | [Homepage](https://dandavison.github.io/delta/) | [Source](https://github.com/dandavison/delta) |
+| Difftastic (`difft`) | 0.71.0 | [Homepage](https://github.com/Wilfred/difftastic) | [Source](https://github.com/Wilfred/difftastic) |
 | fd (`fd`, `fdfind`) | 10.5.0 | [Homepage](https://github.com/sharkdp/fd) | [Source](https://github.com/sharkdp/fd) |
 | Fish (`fish`) | 4.9.3 | [Homepage](https://fishshell.com) | [Source](https://github.com/fish-shell/fish-shell) |
 | fzf (`fzf`) | 0.74.5 | [Homepage](https://junegunn.github.io/fzf/) | [Source](https://github.com/junegunn/fzf) |
 | Git LFS (`git-lfs`) | 3.8.0 | [Homepage](https://git-lfs.com) | [Source](https://github.com/git-lfs/git-lfs) |
+| git-cliff (`git-cliff`) | 2.14.2 | [Homepage](https://github.com/orhun/git-cliff) | [Source](https://github.com/orhun/git-cliff) |
 | GitHub CLI | 2.102.0 | [Homepage](https://cli.github.com) | [Source](https://github.com/cli/cli) |
 | Gitleaks (`gitleaks`) | 8.30.1 | [Homepage](https://gitleaks.io) | [Source](https://github.com/gitleaks/gitleaks) |
+| Hadolint (`hadolint`) | 2.15.1 | [Homepage](https://github.com/hadolint/hadolint) | [Source](https://github.com/hadolint/hadolint) |
 | Helix (`hx`) | 25.07.1 | [Homepage](https://helix-editor.com) | [Source](https://github.com/helix-editor/helix) |
 | Herdr (`herdr`) | 0.9.5 | [Homepage](https://herdr.dev) | [Source](https://github.com/herdrdev/herdr) |
 | Hugo (`hugo`, standard) | 0.168.0 | [Homepage](https://gohugo.io) | [Source](https://github.com/gohugoio/hugo) |
 | hyperfine (`hyperfine`) | 2.0.0 | [Homepage](https://github.com/sharkdp/hyperfine) | [Source](https://github.com/sharkdp/hyperfine) |
 | jq | 1.8.2 | [Homepage](https://jqlang.org) | [Source](https://github.com/jqlang/jq) |
+| jsonschema-cli (`jsonschema-cli`) | 0.58.5 | [Homepage](https://github.com/Stranger6667/jsonschema) | [Source](https://github.com/Stranger6667/jsonschema) |
 | Jujutsu (`jj`) | 0.46.0 | [Homepage](https://jj-vcs.dev) | [Source](https://github.com/jj-vcs/jj) |
 | just (`just`) | 1.59.0 | [Homepage](https://just.systems) | [Source](https://github.com/casey/just) |
 | lazygit (`lazygit`) | 0.66.2 | [Homepage](https://github.com/jesseduffield/lazygit) | [Source](https://github.com/jesseduffield/lazygit) |
@@ -215,6 +221,7 @@ networking disabled. Native smoke acceptance remains part of an approved build.
 | mise (`mise`) | 2026.10.11 | [Homepage](https://mise.jdx.dev) | [Source](https://github.com/jdx/mise) |
 | navi (`navi`) | 2.24.0 | [Homepage](https://github.com/denisidoro/navi) | [Source](https://github.com/denisidoro/navi) |
 | Nushell (`nu`) | 0.116.1 | [Homepage](https://www.nushell.sh/) | [Source](https://github.com/nushell/nushell) |
+| pinact (`pinact`) | 5.0.0 | [Homepage](https://github.com/suzuki-shunsuke/pinact) | [Source](https://github.com/suzuki-shunsuke/pinact) |
 | regctl (`regctl`) | 0.11.6 | [Homepage](https://regclient.org) | [Source](https://github.com/regclient/regclient) |
 | ripgrep (`rg`) | 15.2.0 | [Homepage](https://github.com/BurntSushi/ripgrep) | [Source](https://github.com/BurntSushi/ripgrep) |
 | Ruff (`ruff`) | 0.17.1 | [Homepage](https://docs.astral.sh/ruff) | [Source](https://github.com/astral-sh/ruff) |
@@ -231,6 +238,8 @@ networking disabled. Native smoke acceptance remains part of an approved build.
 | Typst (`typst`) | 0.15.1 | [Homepage](https://typst.app) | [Source](https://github.com/typst/typst) |
 | uv (`uv`, `uvx`) | 0.13.1 | [Homepage](https://docs.astral.sh/uv) | [Source](https://github.com/astral-sh/uv) |
 | watchexec (`watchexec`) | 2.8.0 | [Homepage](https://watchexec.github.io) | [Source](https://github.com/watchexec/watchexec) |
+| zizmor (`zizmor`) | 1.31.1 | [Homepage](https://github.com/zizmorcore/zizmor) | [Source](https://github.com/zizmorcore/zizmor) |
+| zoxide (`zoxide`) | 0.10.0 | [Homepage](https://github.com/ajeetdsouza/zoxide) | [Source](https://github.com/ajeetdsouza/zoxide) |
 <!-- END GENERATED TOOL INVENTORY -->
 
 Nushell and tmux are opt-in commands. tmux pins the published stable
@@ -380,6 +389,9 @@ providers, repositories, tag prefixes, platform aliases, asset templates, suppor
 raw/tar/ZIP extraction, executable members, regular-file aliases, notices, and the
 extraction recipes. Preserved tar recipes can omit exact relative directories
 with `exclude_directories`; names are normalized paths, without glob matching.
+Non-preserved tar recipes can retain whole archive directories as notices with
+`archive_notice_trees` (exact normalized relative paths); regular files below them
+are kept under `licenses/<tool>/` with their relative paths.
 Every omitted entry still undergoes path, type, duplicate, payload and stream
 integrity validation. Recipes cannot execute shell commands.
 Both upgrade and build validate this catalog. Review catalog edits as build inputs. A catalog change requires
@@ -459,6 +471,24 @@ completion directory. regctl assets are raw executables. These recipes retain
 the existing extractor's rejection of archive links. Source tests use synthetic
 artifacts and smoke stubs. Native execution, OCI builds/smoke, vulnerability scans
 and consumer activation remain unverified pending separate approval.
+
+`actionlint` lints GitHub Actions workflow files statically: `actionlint .github/workflows/ci.yml`. It runs `shellcheck` and `pyflakes` only when they are on `PATH`. It needs no network access or user configuration.
+
+`hadolint` lints Dockerfiles: `hadolint Dockerfile`. Keep a project `.hadolint.yaml` in the repository. It is an unmodified official GPL-3.0 release binary; the full upstream `LICENSE`, the upstream `ThirdPartyNotices.txt` and a corresponding-source record (tarball URL and SHA256) are retained under `licenses/hadolint/`. The static binary links GPL-3.0-only ShellCheck, GPL-3.0-or-later language-docker and GPL-2.0-only HsYAML. The repository owner accepted shipping this combined GPL mix on 2026-10-17, following the ShellCheck precedent: the binary is unchanged, the full `LICENSE` and the upstream `ThirdPartyNotices.txt` are retained, and the upstream source tarball URL and SHA256 are recorded in `licenses/hadolint/SOURCE`. The license is GPL-3.0-only with the third-party notice mix exactly as reported by upstream `ThirdPartyNotices.txt`, including GPL-2.0-only HsYAML. As a written offer, BundleDock will give any recipient of the toolbox the corresponding source of `hadolint` on request, by pointing to that recorded tarball; the offer relies on upstream continuing to host the tagged source. This is not legal advice.
+
+`pinact` pins GitHub Actions and reusable workflows to commit SHAs. `pinact run` rewrites workflow files and, unless offline, queries the GitHub API (set `GITHUB_TOKEN` in the environment); `pinact run --check` reports without writing. The release archive's `third_party_licenses/` tree (Apache-2.0 cobra and afero, MPL-2.0 go-version, BSD-licensed Go packages and other dependency notices) is retained with its relative paths under `licenses/pinact/third_party_licenses/` via the catalog's `archive_notice_trees`.
+
+`zizmor` statically audits GitHub Actions workflows for security issues: `zizmor --offline .github/workflows`. Online audits query the GitHub API with an optional `GH_TOKEN` or `GITHUB_TOKEN` from the environment. The official Linux archives are GNU/glibc builds, and `zizmor` needs glibc 2.34 or newer on both architectures; Alpine and other musl-based images are unsupported. The archive carries only the executable, so the upstream MIT `LICENSE` is retained separately.
+
+`cosign` signs and verifies container images and other artifacts. Verification contacts registries and Sigstore services and signing can open a browser; neither runs at image build or shell startup. Keys, tokens and the TUF cache belong in writable HOME (`~/.sigstore`), outside the read-only toolbox.
+
+`git-cliff` generates changelogs from Git history and Conventional Commits: `git-cliff --config cliff.toml`. Keep the configuration in the repository. Release archives also carry completions, man pages and `git-cliff-completions`/`git-cliff-mangen` generators; only the `git-cliff` executable, both licenses and README are installed.
+
+`zoxide` is a directory jumper. BundleDock installs the executable only: no shell hook, alias or `cd` replacement is added. To opt in, source `zoxide init <shell>` output from your own shell configuration. Its database lives in `$_ZO_DATA_DIR` or the XDG data directory under writable HOME, outside the read-only toolbox. The nested completion `README.md` is not extracted, to avoid a name clash with the top-level README.
+
+`difft` (Difftastic) compares files by syntax structure: `difft old.go new.go`. Use `--color never` for predictable output. As an optional Git external diff, set `GIT_EXTERNAL_DIFF=difft` in your own environment; BundleDock sets no Git configuration. The ARM64 release is the official GNU/Linux build (no musl asset exists); the archive carries only the executable, so the upstream MIT `LICENSE` is retained separately.
+
+`jsonschema-cli` validates JSON instances against JSON Schema: `jsonschema-cli validate schema.json -i instance.json` (the older flat form without `validate` is deprecated and warns). It is selected from the repository's `cli-v` releases, which are separate from the library's `rust-v`, `python-v` and `ruby-v` releases (the repository's latest-release marker points at a non-CLI release). Remote `$ref` resolution may use the network when a schema asks for it.
 
 ## Git Large File Storage
 

@@ -115,8 +115,10 @@ still pins an older image, so do not assume these commands exist in a running se
 | List directory contents | `lsd`. |
 | Inspect OCI registries | `regctl`. |
 | Find files by name | `fd` or its `fdfind` alias. |
+| Jump to frequently used directories | `zoxide` (`eval "$(zoxide init bash)"` is an opt-in user choice). |
 | Query code structure | `ast-grep`; use the full binary name, never `sg`. |
 | Process structured data | `jq` for JSON; `yq` for YAML. |
+| Validate JSON instances against JSON Schema | `jsonschema-cli`. |
 | Manage Python environments and run Python tools | `uv` and `uvx`. |
 | GitHub workflows | `gh`. |
 | Work with Jujutsu repositories | `jj`. |
@@ -135,15 +137,22 @@ still pins an older image, so do not assume these commands exist in a running se
 | Check shell scripts | `shellcheck`, `shfmt`. |
 | Run project recipes | `just`. |
 | Lint and format Python | `ruff`. |
+| Generate changelogs from Conventional Commits | `git-cliff`. |
 | View diffs | `delta`. |
+| Compare files structurally | `difft`. |
 | Watch files and benchmark commands | `watchexec`, `hyperfine`. |
 | Encrypt files | `age`, `age-keygen`, `age-inspect`. |
 | Check spelling | `typos`. |
 | Check links | `lychee`. |
 | Detect secrets | `gitleaks`. |
+| Audit GitHub Actions workflows for security issues | `zizmor` (use `--offline` to avoid GitHub API calls). |
+| Pin GitHub Actions to commit SHAs | `pinact` (`pinact run` edits workflow files; use `--check` to verify only). |
+| Lint Dockerfiles | `hadolint`. |
+| Lint GitHub Actions workflows | `actionlint`. |
 | Scan Git history and files for credentials | `trufflehog` (disable verification for offline scans). |
 | Scan vulnerabilities and configuration | `trivy`. |
 | Generate software bills of materials | `syft`. |
+| Verify and sign container images and artifacts | `cosign`. |
 
 Keep HOME, caches, and virtual environments in writable locations outside the
 read-only `/opt/bundledock/toolbox` tool bundle.

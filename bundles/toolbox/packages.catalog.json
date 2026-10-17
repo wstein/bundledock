@@ -1134,6 +1134,244 @@
       "notices": [
         "licenses/lsd/SOURCE"
       ]
+    },
+    "actionlint": {
+      "provider": "github",
+      "repository": "rhysd/actionlint",
+      "tag_prefix": "v",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "amd64",
+        "arm64": "arm64"
+      },
+      "asset": "actionlint_{version}_linux_{arch}.tar.gz",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "tar.gz",
+        "members": {
+          "actionlint": "bin/actionlint"
+        },
+        "archive_notices": [
+          "LICENSE.txt",
+          "README.md"
+        ]
+      },
+      "notices": [
+        "licenses/actionlint/SOURCE"
+      ]
+    },
+    "hadolint": {
+      "provider": "github",
+      "repository": "hadolint/hadolint",
+      "tag_prefix": "v",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "x86_64",
+        "arm64": "arm64"
+      },
+      "asset": "hadolint-linux-{arch}",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "raw",
+        "members": {
+          "hadolint": "bin/hadolint"
+        }
+      },
+      "notices": [
+        "licenses/hadolint/LICENSE",
+        "licenses/hadolint/ThirdPartyNotices.txt",
+        "licenses/hadolint/SOURCE"
+      ]
+    },
+    "pinact": {
+      "provider": "github",
+      "repository": "suzuki-shunsuke/pinact",
+      "tag_prefix": "v",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "amd64",
+        "arm64": "arm64"
+      },
+      "asset": "pinact_linux_{arch}.tar.gz",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "tar.gz",
+        "members": {
+          "pinact": "bin/pinact"
+        },
+        "archive_notice_trees": [
+          "third_party_licenses"
+        ]
+      },
+      "notices": [
+        "licenses/pinact/LICENSE",
+        "licenses/pinact/SOURCE"
+      ]
+    },
+    "zizmor": {
+      "provider": "github",
+      "repository": "zizmorcore/zizmor",
+      "tag_prefix": "v",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "x86_64",
+        "arm64": "aarch64"
+      },
+      "asset": "zizmor-{arch}-unknown-linux-gnu.tar.gz",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "tar.gz",
+        "members": {
+          "zizmor": "bin/zizmor"
+        }
+      },
+      "notices": [
+        "licenses/zizmor/LICENSE",
+        "licenses/zizmor/SOURCE"
+      ]
+    },
+    "cosign": {
+      "provider": "github",
+      "repository": "sigstore/cosign",
+      "tag_prefix": "v",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "amd64",
+        "arm64": "arm64"
+      },
+      "asset": "cosign-linux-{arch}",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "raw",
+        "members": {
+          "cosign": "bin/cosign"
+        }
+      },
+      "notices": [
+        "licenses/cosign/LICENSE",
+        "licenses/cosign/SOURCE"
+      ]
+    },
+    "git-cliff": {
+      "provider": "github",
+      "repository": "orhun/git-cliff",
+      "tag_prefix": "v",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "x86_64",
+        "arm64": "aarch64"
+      },
+      "asset": "git-cliff-{version}-{arch}-unknown-linux-musl.tar.gz",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "tar.gz",
+        "members": {
+          "git-cliff": "bin/git-cliff"
+        },
+        "archive_notices": [
+          "LICENSE-APACHE",
+          "LICENSE-MIT",
+          "README.md"
+        ]
+      },
+      "notices": [
+        "licenses/git-cliff/SOURCE"
+      ]
+    },
+    "zoxide": {
+      "provider": "github",
+      "repository": "ajeetdsouza/zoxide",
+      "tag_prefix": "v",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "x86_64",
+        "arm64": "aarch64"
+      },
+      "asset": "zoxide-{version}-{arch}-unknown-linux-musl.tar.gz",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "tar.gz",
+        "members": {
+          "zoxide": "bin/zoxide"
+        },
+        "archive_notices": [
+          "LICENSE",
+          "CHANGELOG.md"
+        ]
+      },
+      "notices": [
+        "licenses/zoxide/SOURCE"
+      ]
+    },
+    "difftastic": {
+      "provider": "github",
+      "repository": "Wilfred/difftastic",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "x86_64-unknown-linux-musl",
+        "arm64": "aarch64-unknown-linux-gnu"
+      },
+      "asset": "difft-{version}-{arch}.tar.gz",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "tar.gz",
+        "members": {
+          "difft": "bin/difft"
+        }
+      },
+      "notices": [
+        "licenses/difftastic/LICENSE",
+        "licenses/difftastic/SOURCE"
+      ]
+    },
+    "jsonschema-cli": {
+      "provider": "github",
+      "repository": "Stranger6667/jsonschema",
+      "tag_prefix": "cli-v",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "x86_64",
+        "arm64": "aarch64"
+      },
+      "asset": "jsonschema-cli-{arch}-unknown-linux-musl.tar.gz",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "tar.gz",
+        "members": {
+          "jsonschema-cli": "bin/jsonschema-cli"
+        }
+      },
+      "notices": [
+        "licenses/jsonschema-cli/LICENSE",
+        "licenses/jsonschema-cli/SOURCE"
+      ]
     }
   }
 }

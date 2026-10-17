@@ -24,7 +24,7 @@ func TestQualityUtilitiesInstallExecutablesAndFullNotices(t *testing.T) {
 			payloads := map[string][]byte{}
 			packages := map[string]toolconfig.Package{}
 			specs := map[string]Spec{}
-			for _, name := range []string{"shellcheck", "shfmt", "just", "ruff", "delta", "watchexec", "hyperfine", "age", "leaf", "jj", "lazygit", "git-lfs", "navi", "typst", "trufflehog", "lsd"} {
+			for _, name := range []string{"shellcheck", "shfmt", "just", "ruff", "delta", "watchexec", "hyperfine", "age", "leaf", "jj", "lazygit", "git-lfs", "navi", "typst", "trufflehog", "lsd", "actionlint", "hadolint", "pinact", "zizmor", "cosign", "git-cliff", "zoxide", "difftastic", "jsonschema-cli"} {
 				p := c.Catalog.Packages[name]
 				packages[name] = p
 				var files []member
@@ -33,6 +33,9 @@ func TestQualityUtilitiesInstallExecutablesAndFullNotices(t *testing.T) {
 				}
 				for _, notice := range p.Install.ArchiveNotices {
 					files = append(files, member{"upstream/" + notice, "full upstream " + notice, 0644, 0})
+				}
+				for _, tree := range p.Install.ArchiveNoticeTrees {
+					files = append(files, member{tree + "/pkg/LICENSE", "tree license", 0644, 0})
 				}
 				switch p.Install.Kind {
 				case "raw":

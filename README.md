@@ -131,14 +131,14 @@ describes the desired source inventory; published images retain their own pins:
 | --- | --- |
 | GitHub workflows | [GitHub CLI (`gh`)](https://github.com/cli/cli) |
 | Search and structured data | [ripgrep (`rg`)](https://github.com/BurntSushi/ripgrep), [fd (`fd`, `fdfind`)](https://github.com/sharkdp/fd), [ast-grep](https://github.com/ast-grep/ast-grep), [jq](https://github.com/jqlang/jq), [yq](https://github.com/mikefarah/yq) |
-| Interactive filtering and file viewing | [fzf](https://github.com/junegunn/fzf), [bat](https://github.com/sharkdp/bat), [lsd](https://github.com/lsd-rs/lsd) |
+| Interactive filtering and file viewing | [fzf](https://github.com/junegunn/fzf), [bat](https://github.com/sharkdp/bat), [lsd](https://github.com/lsd-rs/lsd), [zoxide](https://github.com/ajeetdsouza/zoxide) |
 | Markdown preview | [Leaf](https://github.com/RivoLink/leaf) |
-| Development utilities | [ShellCheck](https://github.com/koalaman/shellcheck), [shfmt](https://github.com/mvdan/sh), [just](https://github.com/casey/just), [Ruff](https://github.com/astral-sh/ruff), [delta](https://github.com/dandavison/delta), [watchexec](https://github.com/watchexec/watchexec), [hyperfine](https://github.com/sharkdp/hyperfine), [age](https://github.com/FiloSottile/age) |
+| Development utilities | [ShellCheck](https://github.com/koalaman/shellcheck), [shfmt](https://github.com/mvdan/sh), [just](https://github.com/casey/just), [Ruff](https://github.com/astral-sh/ruff), [delta](https://github.com/dandavison/delta), [watchexec](https://github.com/watchexec/watchexec), [hyperfine](https://github.com/sharkdp/hyperfine), [age](https://github.com/FiloSottile/age), [git-cliff](https://github.com/orhun/git-cliff), [Difftastic (`difft`)](https://github.com/Wilfred/difftastic), [jsonschema-cli](https://github.com/Stranger6667/jsonschema) |
 | OCI registries | [regctl](https://github.com/regclient/regclient) |
 | Python environments | [uv and uvx](https://github.com/astral-sh/uv) |
 | Spec-driven project setup | [Spec Kit (`specify`, pinned runtime launcher)](docs/toolbox.md#spec-kit-launcher-source) |
 | Shells and terminal workspaces | [Herdr](https://github.com/herdrdev/herdr), [Fish](https://github.com/fish-shell/fish-shell), [Starship](https://github.com/starship/starship), [Nushell (`nu`)](https://github.com/nushell/nushell), [tmux](https://github.com/tmux/tmux-builds) |
-| Quality and security | [typos](https://github.com/crate-ci/typos), [lychee](https://github.com/lycheeverse/lychee), [Gitleaks](https://github.com/gitleaks/gitleaks), [TruffleHog](https://github.com/trufflesecurity/trufflehog), [Trivy](https://github.com/aquasecurity/trivy), [Syft](https://github.com/anchore/syft) |
+| Quality and security | [typos](https://github.com/crate-ci/typos), [lychee](https://github.com/lycheeverse/lychee), [Gitleaks](https://github.com/gitleaks/gitleaks), [TruffleHog](https://github.com/trufflesecurity/trufflehog), [Trivy](https://github.com/aquasecurity/trivy), [Syft](https://github.com/anchore/syft), [actionlint](https://github.com/rhysd/actionlint), [Hadolint](https://github.com/hadolint/hadolint), [pinact](https://github.com/suzuki-shunsuke/pinact), [zizmor](https://github.com/zizmorcore/zizmor), [Cosign](https://github.com/sigstore/cosign) |
 | Optional version manager | [mise](https://github.com/jdx/mise) |
 | Terminal editor | [Helix (`hx`)](https://github.com/helix-editor/helix) |
 | Static sites | [Hugo (standard)](https://github.com/gohugoio/hugo) |

@@ -53,6 +53,15 @@ LABELS = (
     ("btop", "btop (`btop`)"),
     ("helix", "Helix (`hx`)"),
     ("hugo", "Hugo (`hugo`, standard)"),
+    ("jsonschema-cli", "jsonschema-cli (`jsonschema-cli`)"),
+    ("difftastic", "Difftastic (`difft`)"),
+    ("zoxide", "zoxide (`zoxide`)"),
+    ("git-cliff", "git-cliff (`git-cliff`)"),
+    ("cosign", "Cosign (`cosign`)"),
+    ("zizmor", "zizmor (`zizmor`)"),
+    ("pinact", "pinact (`pinact`)"),
+    ("hadolint", "Hadolint (`hadolint`)"),
+    ("actionlint", "actionlint (`actionlint`)"),
 )
 DISPLAY_SUFFIX = {"tmux": " (official static builds)"}
 
