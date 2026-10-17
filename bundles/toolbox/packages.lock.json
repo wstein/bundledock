@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "desired_digest": "52f3df69d26d83aad248d8f798c57baa5bc20cfbc29abbaa54efe58e683d8a8d",
-  "catalog_digest": "90bc5821ad684ec47ed7039953cace0d28c7332a69897799f3cef03a646370e8",
+  "catalog_digest": "69fb19853edfcff4db91fdb1bc7f157b0e397ff4cb60d95e51b23153510054c7",
   "platforms": {
     "amd64": {
       "actionlint": {

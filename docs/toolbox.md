@@ -389,6 +389,9 @@ providers, repositories, tag prefixes, platform aliases, asset templates, suppor
 raw/tar/ZIP extraction, executable members, regular-file aliases, notices, and the
 extraction recipes. Preserved tar recipes can omit exact relative directories
 with `exclude_directories`; names are normalized paths, without glob matching.
+Non-preserved tar recipes can retain whole archive directories as notices with
+`archive_notice_trees` (exact normalized relative paths); regular files below them
+are kept under `licenses/<tool>/` with their relative paths.
 Every omitted entry still undergoes path, type, duplicate, payload and stream
 integrity validation. Recipes cannot execute shell commands.
 Both upgrade and build validate this catalog. Review catalog edits as build inputs. A catalog change requires
@@ -473,7 +476,7 @@ and consumer activation remain unverified pending separate approval.
 
 `hadolint` lints Dockerfiles: `hadolint Dockerfile`. Keep a project `.hadolint.yaml` in the repository. It is an unmodified official GPL-3.0 release binary; the full upstream `LICENSE`, the upstream `ThirdPartyNotices.txt` and a corresponding-source record (tarball URL and SHA256) are retained under `licenses/hadolint/`. The static binary links GPL-3.0-only ShellCheck, GPL-3.0-or-later language-docker and GPL-2.0-only HsYAML. **Owner acceptance required before publication:** the combined GPL license mix (including GPL-2.0-only HsYAML) has not been decided and must be accepted by the repository owner before any publication.
 
-`pinact` pins GitHub Actions and reusable workflows to commit SHAs. `pinact run` rewrites workflow files and, unless offline, queries the GitHub API (set `GITHUB_TOKEN` in the environment); `pinact run --check` reports without writing. The release archive's `third_party_licenses/` tree is not extracted (the catalog retains notices by file name only), so the dependency licenses remain available only from the official release archive.
+`pinact` pins GitHub Actions and reusable workflows to commit SHAs. `pinact run` rewrites workflow files and, unless offline, queries the GitHub API (set `GITHUB_TOKEN` in the environment); `pinact run --check` reports without writing. The release archive's `third_party_licenses/` tree (Apache-2.0 cobra and afero, MPL-2.0 go-version, BSD-licensed Go packages and other dependency notices) is retained with its relative paths under `licenses/pinact/third_party_licenses/` via the catalog's `archive_notice_trees`.
 
 `zizmor` statically audits GitHub Actions workflows for security issues: `zizmor --offline .github/workflows`. Online audits query the GitHub API with an optional `GH_TOKEN` or `GITHUB_TOKEN` from the environment. The official Linux archives are GNU/glibc builds; the archive carries only the executable, so the upstream MIT `LICENSE` is retained separately.
 

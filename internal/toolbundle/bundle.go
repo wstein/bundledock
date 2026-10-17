@@ -356,10 +356,18 @@ func extract(root *os.Root, tool string, p toolconfig.Package, source io.Reader,
 				target = "lib/helix/" + name
 			}
 		} else {
-			for _, notice := range p.Install.ArchiveNotices {
-				if path.Base(name) == notice {
-					target = "licenses/" + tool + "/" + notice
+			for _, tree := range p.Install.ArchiveNoticeTrees {
+				if strings.HasPrefix(name, tree+"/") {
+					target = "licenses/" + tool + "/" + name
 					break
+				}
+			}
+			if target == "" {
+				for _, notice := range p.Install.ArchiveNotices {
+					if path.Base(name) == notice {
+						target = "licenses/" + tool + "/" + notice
+						break
+					}
 				}
 			}
 			if target == "" {

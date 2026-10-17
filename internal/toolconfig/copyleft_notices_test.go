@@ -40,3 +40,42 @@ func TestHadolintRetainsGPLSourceRecordAndThirdPartyNotices(t *testing.T) {
 		t.Fatalf("third-party notices missing or truncated: %v", err)
 	}
 }
+
+func TestArchiveNoticeTreesValidation(t *testing.T) {
+	for _, tree := range []string{"third_party_licenses", "a/b", "", ".", "..", "../x", "/abs", "a/../b", "a/", "a\\b"} {
+		t.Run(tree, func(t *testing.T) {
+			c, err := Load("../../bundles/toolbox")
+			if err != nil {
+				t.Fatal(err)
+			}
+			p := c.Catalog.Packages["pinact"]
+			p.Install.ArchiveNoticeTrees = []string{tree}
+			c.Catalog.Packages["pinact"] = p
+			c.Bind()
+			err = c.Validate()
+			ok := tree == "third_party_licenses" || tree == "a/b"
+			if ok && err != nil || !ok && err == nil {
+				t.Fatalf("tree %q: %v", tree, err)
+			}
+			if ok {
+				p.Install.Preserve = true
+				c.Catalog.Packages["pinact"] = p
+				c.Bind()
+				if c.Validate() == nil {
+					t.Fatal("notice trees accepted with preserve")
+				}
+			}
+		})
+	}
+}
+
+func TestPinactCatalogRetainsThirdPartyLicenses(t *testing.T) {
+	c, err := Load("../../bundles/toolbox")
+	if err != nil {
+		t.Fatal(err)
+	}
+	trees := c.Catalog.Packages["pinact"].Install.ArchiveNoticeTrees
+	if len(trees) != 1 || trees[0] != "third_party_licenses" {
+		t.Fatalf("pinact notice trees: %v", trees)
+	}
+}

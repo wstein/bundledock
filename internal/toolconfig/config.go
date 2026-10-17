@@ -55,13 +55,16 @@ type Package struct {
 	Notices       []string          `json:"notices,omitempty"`
 }
 type Install struct {
-	Profile            string            `json:"profile,omitempty"`
-	Kind               string            `json:"kind"`
-	Members            map[string]string `json:"members,omitempty"`
-	Aliases            map[string]string `json:"aliases,omitempty"`
-	Preserve           bool              `json:"preserve,omitempty"`
-	ArchiveNotices     []string          `json:"archive_notices,omitempty"`
-	ExcludeDirectories []string          `json:"exclude_directories,omitempty"`
+	Profile        string            `json:"profile,omitempty"`
+	Kind           string            `json:"kind"`
+	Members        map[string]string `json:"members,omitempty"`
+	Aliases        map[string]string `json:"aliases,omitempty"`
+	Preserve       bool              `json:"preserve,omitempty"`
+	ArchiveNotices []string          `json:"archive_notices,omitempty"`
+	// ArchiveNoticeTrees are exact relative archive directories whose regular
+	// files are retained under licenses/<tool>/ with their relative paths.
+	ArchiveNoticeTrees []string `json:"archive_notice_trees,omitempty"`
+	ExcludeDirectories []string `json:"exclude_directories,omitempty"`
 }
 
 // Excludes reports whether a normalized archive path is in an omitted directory.
@@ -391,6 +394,14 @@ func (c Config) validate(strict bool) error {
 		for _, notice := range append(append([]string{}, p.Notices...), p.Install.ArchiveNotices...) {
 			if !validPath(notice) {
 				return fmt.Errorf("unsafe notice for %s", name)
+			}
+		}
+		if len(p.Install.ArchiveNoticeTrees) > 0 && p.Install.Preserve {
+			return fmt.Errorf("notice trees require a non-preserved recipe for %s", name)
+		}
+		for _, tree := range p.Install.ArchiveNoticeTrees {
+			if !validPath(tree) {
+				return fmt.Errorf("unsafe notice tree for %s", name)
 			}
 		}
 		var first string
