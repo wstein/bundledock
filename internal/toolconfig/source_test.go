@@ -217,6 +217,15 @@ func TestSourceBlockValidation(t *testing.T) {
 		{"tarball with an encoded no-break space", func(s *Source) { s.Upstream.Tarball = "https://github.com/a/b/archive/x%C2%A0y/{lock_version}.tar.gz" }},
 		{"tarball with a literal no-break space", func(s *Source) { s.Upstream.Tarball = "https://github.com/a/b/archive/x\u00a0y/{lock_version}.tar.gz" }},
 		{"version_regex with an unterminated quote", func(s *Source) { s.VersionRegex = `([0-9.]+)\Q` }},
+		{"excluded 65 entries", func(s *Source) { s.Recipe.Excluded = numbered("x", 65) }},
+		{"static libs 65 entries", func(s *Source) { s.Recipe.StaticSystemLibs = numbered("x", 65) }},
+		{"licenses 65 entries", func(s *Source) { s.Licenses = numbered("L", 65) }},
+		{"excluded entry of 201 bytes", func(s *Source) { s.Recipe.Excluded = []string{strings.Repeat("x", 201)} }},
+		{"license of 201 bytes", func(s *Source) { s.Licenses = []string{strings.Repeat("A", 201)} }},
+		{"version_regex of 201 bytes", func(s *Source) { s.VersionRegex = "(" + strings.Repeat("a", 199) + ")" }},
+		{"tarball of 201 bytes", func(s *Source) {
+			s.Upstream.Tarball = "https://github.com/a/b/archive/{lock_version}/" + strings.Repeat("x", 163)
+		}},
 		{"tarball with a dot path segment", func(s *Source) { s.Upstream.Tarball = "https://github.com/a/./{lock_version}.tar.gz" }},
 		{"tarball with an encoded C1 control", func(s *Source) { s.Upstream.Tarball = "https://github.com/a/b/archive/{lock_version}%C2%85.tar.gz" }},
 		{"tarball with an encoded bidi override", func(s *Source) { s.Upstream.Tarball = "https://github.com/a/b/archive/{lock_version}%E2%80%AE.tar.gz" }},
@@ -357,6 +366,30 @@ func TestSourceBlockAcceptsVersionOnlyTemplates(t *testing.T) {
 		if err := withSource(t, "shellcheck", s); err != nil {
 			t.Errorf("%s: %v", tarball, err)
 		}
+	}
+}
+
+// Exact boundaries, written with literals so that the constants are pinned.
+func TestSourceBlockBoundaries(t *testing.T) {
+	for name, mutate := range map[string]func(*Source){
+		"excluded 64 entries":        func(s *Source) { s.Recipe.Excluded = numbered("x", 64) },
+		"static libs 64 entries":     func(s *Source) { s.Recipe.StaticSystemLibs = numbered("x", 64) },
+		"licenses 64 entries":        func(s *Source) { s.Licenses = numbered("L", 64) },
+		"excluded entry of 200":      func(s *Source) { s.Recipe.Excluded = []string{strings.Repeat("x", 200)} },
+		"license of 200 bytes":       func(s *Source) { s.Licenses = []string{strings.Repeat("A", 200)} },
+		"version_regex of 200 bytes": func(s *Source) { s.VersionRegex = "(" + strings.Repeat("a", 198) + ")" },
+		"tarball of 200 bytes": func(s *Source) {
+			s.Upstream.Tarball = "https://github.com/a/b/archive/{lock_version}/" + strings.Repeat("x", 162)
+		},
+		"tarball with a trailing slash": func(s *Source) { s.Upstream.Tarball = "https://github.com/a/b/archive/{lock_version}/" },
+	} {
+		t.Run(name, func(t *testing.T) {
+			s := validSource()
+			mutate(s)
+			if err := withSource(t, "shellcheck", s); err != nil {
+				t.Fatal(err)
+			}
+		})
 	}
 }
 
