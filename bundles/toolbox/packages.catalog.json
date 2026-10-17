@@ -1237,6 +1237,31 @@
         "licenses/zizmor/LICENSE",
         "licenses/zizmor/SOURCE"
       ]
+    },
+    "cosign": {
+      "provider": "github",
+      "repository": "sigstore/cosign",
+      "tag_prefix": "v",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "amd64",
+        "arm64": "arm64"
+      },
+      "asset": "cosign-linux-{arch}",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "raw",
+        "members": {
+          "cosign": "bin/cosign"
+        }
+      },
+      "notices": [
+        "licenses/cosign/LICENSE",
+        "licenses/cosign/SOURCE"
+      ]
     }
   }
 }
