@@ -115,6 +115,7 @@ still pins an older image, so do not assume these commands exist in a running se
 | List directory contents | `lsd`. |
 | Inspect OCI registries | `regctl`. |
 | Find files by name | `fd` or its `fdfind` alias. |
+| Jump to frequently used directories | `zoxide` (`eval "$(zoxide init bash)"` is an opt-in user choice). |
 | Query code structure | `ast-grep`; use the full binary name, never `sg`. |
 | Process structured data | `jq` for JSON; `yq` for YAML. |
 | Manage Python environments and run Python tools | `uv` and `uvx`. |

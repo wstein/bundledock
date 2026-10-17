@@ -53,6 +53,7 @@ LABELS = (
     ("btop", "btop (`btop`)"),
     ("helix", "Helix (`hx`)"),
     ("hugo", "Hugo (`hugo`, standard)"),
+    ("zoxide", "zoxide (`zoxide`)"),
     ("git-cliff", "git-cliff (`git-cliff`)"),
     ("cosign", "Cosign (`cosign`)"),
     ("zizmor", "zizmor (`zizmor`)"),

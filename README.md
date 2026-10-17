@@ -131,7 +131,7 @@ describes the desired source inventory; published images retain their own pins:
 | --- | --- |
 | GitHub workflows | [GitHub CLI (`gh`)](https://github.com/cli/cli) |
 | Search and structured data | [ripgrep (`rg`)](https://github.com/BurntSushi/ripgrep), [fd (`fd`, `fdfind`)](https://github.com/sharkdp/fd), [ast-grep](https://github.com/ast-grep/ast-grep), [jq](https://github.com/jqlang/jq), [yq](https://github.com/mikefarah/yq) |
-| Interactive filtering and file viewing | [fzf](https://github.com/junegunn/fzf), [bat](https://github.com/sharkdp/bat), [lsd](https://github.com/lsd-rs/lsd) |
+| Interactive filtering and file viewing | [fzf](https://github.com/junegunn/fzf), [bat](https://github.com/sharkdp/bat), [lsd](https://github.com/lsd-rs/lsd), [zoxide](https://github.com/ajeetdsouza/zoxide) |
 | Markdown preview | [Leaf](https://github.com/RivoLink/leaf) |
 | Development utilities | [ShellCheck](https://github.com/koalaman/shellcheck), [shfmt](https://github.com/mvdan/sh), [just](https://github.com/casey/just), [Ruff](https://github.com/astral-sh/ruff), [delta](https://github.com/dandavison/delta), [watchexec](https://github.com/watchexec/watchexec), [hyperfine](https://github.com/sharkdp/hyperfine), [age](https://github.com/FiloSottile/age), [git-cliff](https://github.com/orhun/git-cliff) |
 | OCI registries | [regctl](https://github.com/regclient/regclient) |
