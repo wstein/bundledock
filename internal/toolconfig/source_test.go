@@ -203,6 +203,7 @@ func TestSourceBlockValidation(t *testing.T) {
 		{"tarball too long", func(s *Source) {
 			s.Upstream.Tarball = "https://github.com/a/b/archive/{lock_version}/" + strings.Repeat("x", maxSourceText-25)
 		}},
+		{"version_regex with an unterminated quote", func(s *Source) { s.VersionRegex = `([0-9.]+)\Q` }},
 		{"tarball with a dot path segment", func(s *Source) { s.Upstream.Tarball = "https://github.com/a/./{lock_version}.tar.gz" }},
 		{"tarball with an encoded C1 control", func(s *Source) { s.Upstream.Tarball = "https://github.com/a/b/archive/{lock_version}%C2%85.tar.gz" }},
 		{"tarball with an encoded bidi override", func(s *Source) { s.Upstream.Tarball = "https://github.com/a/b/archive/{lock_version}%E2%80%AE.tar.gz" }},

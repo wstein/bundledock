@@ -213,8 +213,7 @@ func validateSource(name string, s *Source) error {
 		}
 	}
 	if s.VersionRegex != "" {
-		re, err := regexp.Compile(s.VersionRegex)
-		if len(s.VersionRegex) > maxSourceText || err != nil || re.NumSubexp() != 1 {
+		if _, err := compileVersionRegex(s.VersionRegex); err != nil {
 			return fmt.Errorf("source version_regex of %s must compile and have exactly one capture group", name)
 		}
 	}
@@ -282,14 +281,9 @@ var (
 func (p Package) SourceVersion(lockVersion string) (string, error) {
 	re := defaultSourceVersion
 	if p.Source != nil && p.Source.VersionRegex != "" {
-		user, err := regexp.Compile(p.Source.VersionRegex)
-		if err != nil || user.NumSubexp() != 1 {
-			return "", fmt.Errorf("version-shape: invalid version_regex")
-		}
-		// Whole-version match: anchoring the pattern lets the engine search
-		// alternatives and lazy quantifiers for a full match.
-		if re, err = regexp.Compile(`^(?:` + p.Source.VersionRegex + `)$`); err != nil {
-			return "", fmt.Errorf("version-shape: invalid version_regex")
+		var err error
+		if re, err = compileVersionRegex(p.Source.VersionRegex); err != nil {
+			return "", fmt.Errorf("version-shape: %w", err)
 		}
 	}
 	m := re.FindStringSubmatch(lockVersion)
@@ -305,4 +299,20 @@ func shorten(s string) string {
 		return s[:40] + "..."
 	}
 	return s
+}
+
+// compileVersionRegex compiles a catalog version_regex in the form that
+// SourceVersion applies: the user pattern must be bounded, compile and have
+// exactly one capture group, and the returned expression is anchored as
+// ^(?:pattern)$ so that it must match the whole lock version and the engine
+// searches alternatives and lazy quantifiers for a full match.
+func compileVersionRegex(pattern string) (*regexp.Regexp, error) {
+	if len(pattern) > maxSourceText {
+		return nil, fmt.Errorf("invalid version_regex: too long")
+	}
+	user, err := regexp.Compile(pattern)
+	if err != nil || user.NumSubexp() != 1 {
+		return nil, fmt.Errorf("invalid version_regex: it must compile and have exactly one capture group")
+	}
+	return regexp.Compile(`^(?:` + pattern + `)$`)
 }

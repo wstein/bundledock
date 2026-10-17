@@ -34,6 +34,7 @@ func TestSourceVersionShape(t *testing.T) {
 		{"trailing newline with the default rule", "", "v1.2.3\n", "", false},
 		{"trailing newline with a regex", `^lychee-v([0-9.]+)$`, "lychee-v0.24.2\n", "", false},
 		{"regex yields five groups", `^x(.*)$`, "x1.2.3.4.5", "", false},
+		{"two capture groups with an optional second", `([0-9.]+)(-rc)?`, "1.2-rc", "", false},
 		{"regex capture empty", `^x([0-9]*)$`, "x", "", false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
