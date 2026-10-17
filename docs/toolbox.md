@@ -478,7 +478,7 @@ and consumer activation remain unverified pending separate approval.
 
 `pinact` pins GitHub Actions and reusable workflows to commit SHAs. `pinact run` rewrites workflow files and, unless offline, queries the GitHub API (set `GITHUB_TOKEN` in the environment); `pinact run --check` reports without writing. The release archive's `third_party_licenses/` tree (Apache-2.0 cobra and afero, MPL-2.0 go-version, BSD-licensed Go packages and other dependency notices) is retained with its relative paths under `licenses/pinact/third_party_licenses/` via the catalog's `archive_notice_trees`.
 
-`zizmor` statically audits GitHub Actions workflows for security issues: `zizmor --offline .github/workflows`. Online audits query the GitHub API with an optional `GH_TOKEN` or `GITHUB_TOKEN` from the environment. The official Linux archives are GNU/glibc builds; the archive carries only the executable, so the upstream MIT `LICENSE` is retained separately.
+`zizmor` statically audits GitHub Actions workflows for security issues: `zizmor --offline .github/workflows`. Online audits query the GitHub API with an optional `GH_TOKEN` or `GITHUB_TOKEN` from the environment. The official Linux archives are GNU/glibc builds, and `zizmor` needs glibc 2.34 or newer on both architectures; Alpine and other musl-based images are unsupported. the archive carries only the executable, so the upstream MIT `LICENSE` is retained separately.
 
 `cosign` signs and verifies container images and other artifacts. Verification contacts registries and Sigstore services and signing can open a browser; neither runs at image build or shell startup. Keys, tokens and the TUF cache belong in writable HOME (`~/.sigstore`), outside the read-only toolbox.
 
@@ -488,7 +488,7 @@ and consumer activation remain unverified pending separate approval.
 
 `difft` (Difftastic) compares files by syntax structure: `difft old.go new.go`. Use `--color never` for predictable output. As an optional Git external diff, set `GIT_EXTERNAL_DIFF=difft` in your own environment; BundleDock sets no Git configuration. The ARM64 release is the official GNU/Linux build (no musl asset exists); the archive carries only the executable, so the upstream MIT `LICENSE` is retained separately.
 
-`jsonschema-cli` validates JSON instances against JSON Schema: `jsonschema-cli schema.json -i instance.json`. It is selected from the repository's `cli-v` releases, which are separate from the library's `rust-v`, `python-v` and `ruby-v` releases (the repository's latest-release marker points at a non-CLI release). Remote `$ref` resolution may use the network when a schema asks for it.
+`jsonschema-cli` validates JSON instances against JSON Schema: `jsonschema-cli validate schema.json -i instance.json` (the older flat form without `validate` is deprecated and warns). It is selected from the repository's `cli-v` releases, which are separate from the library's `rust-v`, `python-v` and `ruby-v` releases (the repository's latest-release marker points at a non-CLI release). Remote `$ref` resolution may use the network when a schema asks for it.
 
 ## Git Large File Storage
 

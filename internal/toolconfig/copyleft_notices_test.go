@@ -79,3 +79,22 @@ func TestPinactCatalogRetainsThirdPartyLicenses(t *testing.T) {
 		t.Fatalf("pinact notice trees: %v", trees)
 	}
 }
+
+func TestToolboxDocsStateRuntimeRequirementsAndInvocation(t *testing.T) {
+	b, err := os.ReadFile("../../docs/toolbox.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	doc := string(b)
+	for _, want := range []string{
+		"zizmor` needs glibc 2.34 or newer on both architectures; Alpine and other musl-based images are unsupported",
+		"jsonschema-cli validate schema.json -i instance.json",
+	} {
+		if !strings.Contains(doc, want) {
+			t.Errorf("docs/toolbox.md lacks %q", want)
+		}
+	}
+	if strings.Contains(doc, "jsonschema-cli schema.json") {
+		t.Error("docs still show the deprecated flat jsonschema-cli invocation")
+	}
+}
