@@ -276,6 +276,10 @@ jobs:
           # The tag must still name the verified commit; the owner may have moved it during the run.
           remote=$(git ls-remote "https://github.com/$REPO" "refs/tags/$TAG^{}" | cut -f1)
           test "$remote" = "$COMMIT" || { echo "tag $TAG now names '$remote', not the verified $COMMIT" >&2; exit 1; }
+          # The version order again, with the write token, which also lists drafts.
+          tags=$(git ls-remote --tags "https://github.com/$REPO" 'refs/tags/bdock/v*' | cut -f2 | sed 's|^refs/tags/||; s|\^{}$||')
+          releases=$(gh api "repos/$REPO/releases" --paginate --jq '.[].tag_name')
+          printf '%s\n%s\n' "$tags" "$releases" | sh .github/scripts/release-verify.sh monotonic "$TAG"
           test "$(git rev-parse HEAD)" = "$COMMIT"
           cd "$RUNNER_TEMP/dist"
           test "$(ls -1 -- bdock_*.tar.gz | wc -l)" -eq 3 || { echo "expected exactly three archives" >&2; exit 1; }

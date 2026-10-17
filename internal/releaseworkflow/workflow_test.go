@@ -574,6 +574,19 @@ func violations(w workflow, raw string) []string {
 			add("build", "nothing may run between the second build and the comparison")
 		}
 	}
+	// Publish repeats the version-order check with the write token, which also sees drafts.
+	for _, want := range []string{
+		`tags=$(git ls-remote --tags "https://github.com/$REPO" 'refs/tags/bdock/v*' | cut -f2 | sed 's|^refs/tags/||; s|\^{}$||')`,
+		`releases=$(gh api "repos/$REPO/releases" --paginate --jq '.[].tag_name')`,
+		`printf '%s\n%s\n' "$tags" "$releases" | sh .github/scripts/release-verify.sh monotonic "$TAG"`,
+	} {
+		if !strings.Contains(ps.Run, want) {
+			add("monotonic", "publish lacks the version-order check line %q", want)
+		}
+	}
+	if i, j := strings.Index(ps.Run, "monotonic \"$TAG\""), strings.Index(ps.Run, "gh release create"); i < 0 || j < 0 || i > j {
+		add("monotonic", "publish must check the version order before creating the release")
+	}
 	if !strings.Contains(ps.Run, `if [ "$DRAFT" = true ]; then flags+=(--draft); fi`) {
 		add("publish", "publish lacks the draft rule")
 	}
@@ -695,6 +708,8 @@ func TestReleaseWorkflowMutantsAreCaught(t *testing.T) {
 		{"monotonic ignores tags", "monotonic", `printf '%s\n%s\n' "$tags" "$releases"`, `printf '%s\n' "$releases"`},
 		{"monotonic wrong tag", "monotonic", "          TAG: ${{ steps.resolve.outputs.tag }}\n        run: |\n          set -euo pipefail\n          # Tags (annotated", "          TAG: bdock/v999.0.0\n        run: |\n          set -euo pipefail\n          # Tags (annotated"},
 		{"monotonic tag filter widened", "monotonic", `'refs/tags/bdock/v*'`, `'refs/tags/nothing'`},
+		{"publish monotonic call removed", "monotonic", "          printf '%s\\n%s\\n' \"$tags\" \"$releases\" | sh .github/scripts/release-verify.sh monotonic \"$TAG\"\n          test \"$(git rev-parse HEAD)\" = \"$COMMIT\"", "          test \"$(git rev-parse HEAD)\" = \"$COMMIT\""},
+		{"publish monotonic ignores drafts", "monotonic", "          releases=$(gh api \"repos/$REPO/releases\" --paginate --jq '.[].tag_name')\n          printf '%s\\n%s\\n' \"$tags\" \"$releases\" | sh .github/scripts/release-verify.sh monotonic \"$TAG\"\n          test \"$(git rev-parse HEAD)\" = \"$COMMIT\"", "          releases=\n          printf '%s\\n%s\\n' \"$tags\" \"$releases\" | sh .github/scripts/release-verify.sh monotonic \"$TAG\"\n          test \"$(git rev-parse HEAD)\" = \"$COMMIT\""},
 		{"no second build", "build", `GOCACHE="$RUNNER_TEMP/gocache-second" TARGETS="$OS/$ARCH" RELEASE_DIR="$RUNNER_TEMP/second" sh scripts/release.sh`, `true`},
 		{"no byte comparison", "build", `diff -r "$RUNNER_TEMP/first" "$RUNNER_TEMP/second"`, `true`},
 		{"dirty source allowed", "build", `grep -Fx "source_modified=false"`, `grep -F "source_modified"`},
