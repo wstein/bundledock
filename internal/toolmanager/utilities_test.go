@@ -107,3 +107,45 @@ func TestSidecarRejectsForeignPaths(t *testing.T) {
 		}
 	}
 }
+
+// The repository mixes library (rust-v, python-v) and CLI (cli-v) releases;
+// only the newest cli-v stable release with the musl asset may be selected.
+func TestJSONSchemaCLISelectsCLIReleasesOnly(t *testing.T) {
+	c, err := toolconfig.Load("../../bundles/toolbox")
+	if err != nil {
+		t.Fatal(err)
+	}
+	p := c.Catalog.Packages["jsonschema-cli"]
+	payload := []byte("synthetic official artifact")
+	sum := fmt.Sprintf("sha256:%x", sha256.Sum256(payload))
+	client := fixtureClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "/repos/") {
+			var releases []any
+			for _, tag := range []string{"rust-v0.59.0", "python-v0.60.0", "cli-v0.58.5", "cli-v0.58.4", "cli-v0.59.0-rc1"} {
+				var assets []any
+				for _, arch := range []string{"x86_64", "aarch64"} {
+					for _, libc := range []string{"musl", "gnu"} {
+						asset := "jsonschema-cli-" + arch + "-unknown-linux-" + libc + ".tar.gz"
+						assets = append(assets, map[string]string{"name": asset, "browser_download_url": "https://github.com/" + p.Repository + "/releases/download/" + tag + "/" + asset, "digest": sum})
+					}
+				}
+				releases = append(releases, map[string]any{"tag_name": tag, "assets": assets})
+			}
+			if err := json.NewEncoder(w).Encode(releases); err != nil {
+				t.Fatal(err)
+			}
+			return
+		}
+		w.Write(payload)
+	})
+	pins, err := (resolver{client}).resolve(context.Background(), p, c.Desired["jsonschema-cli"])
+	if err != nil {
+		t.Fatal(err)
+	}
+	for arch, token := range map[string]string{"amd64": "x86_64", "arm64": "aarch64"} {
+		want := "https://github.com/Stranger6667/jsonschema/releases/download/cli-v0.58.5/jsonschema-cli-" + token + "-unknown-linux-musl.tar.gz"
+		if pins[arch].Version != "cli-v0.58.5" || pins[arch].URL != want || pins[arch].Verification != "publisher-sha256" {
+			t.Fatalf("%s: %+v", arch, pins[arch])
+		}
+	}
+}
