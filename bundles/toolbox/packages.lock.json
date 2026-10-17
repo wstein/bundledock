@@ -1,7 +1,7 @@
 {
   "schema": 2,
-  "desired_digest": "8fd95d02f85e5061c6da0c7ddebde7502dbe0bc56dbd73310b7db780b2e79055",
-  "catalog_digest": "af4b4990a207db13a0b37c924d5b779b752c38f80ed73ec1126f655eb2d78480",
+  "desired_digest": "3e4d107cd7b0f9abc48f3120517ed349a3f3adee2c31fe45da86d823ee0c2064",
+  "catalog_digest": "d1f299f94d8c56771410097ff7d9a0c98f8717500777157de1899bd06537948c",
   "platforms": {
     "amd64": {
       "actionlint": {
@@ -284,6 +284,12 @@
         "version": "v1.31.1",
         "url": "https://github.com/zizmorcore/zizmor/releases/download/v1.31.1/zizmor-x86_64-unknown-linux-gnu.tar.gz",
         "sha256": "d185f726bdaf92df78273217dfdd24ebcd6b0ef48cf3ce776ff5762b6e138c99",
+        "verification": "publisher-sha256"
+      },
+      "zoxide": {
+        "version": "v0.10.0",
+        "url": "https://github.com/ajeetdsouza/zoxide/releases/download/v0.10.0/zoxide-0.10.0-x86_64-unknown-linux-musl.tar.gz",
+        "sha256": "2d93385b99f3e82cf2701609a1bffcad863fbeb75aa3fe7eb6be4d29be68b1ae",
         "verification": "publisher-sha256"
       }
     },
@@ -568,6 +574,12 @@
         "version": "v1.31.1",
         "url": "https://github.com/zizmorcore/zizmor/releases/download/v1.31.1/zizmor-aarch64-unknown-linux-gnu.tar.gz",
         "sha256": "37eebbd5762a44f262d94875431b14a6d2402991e90a685113ea97b8b41be833",
+        "verification": "publisher-sha256"
+      },
+      "zoxide": {
+        "version": "v0.10.0",
+        "url": "https://github.com/ajeetdsouza/zoxide/releases/download/v0.10.0/zoxide-0.10.0-aarch64-unknown-linux-musl.tar.gz",
+        "sha256": "f1f16c5d6298d63dee467eedea1cdcd8490e43e493bea43acd416dc9033ef641",
         "verification": "publisher-sha256"
       }
     }

@@ -47,3 +47,4 @@ uv>=0.13.0
 watchexec>=2.8.0
 yq>=4.54.1
 zizmor>=1.31.1
+zoxide>=0.10.0
