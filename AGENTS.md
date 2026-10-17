@@ -148,6 +148,7 @@ still pins an older image, so do not assume these commands exist in a running se
 | Scan Git history and files for credentials | `trufflehog` (disable verification for offline scans). |
 | Scan vulnerabilities and configuration | `trivy`. |
 | Generate software bills of materials | `syft`. |
+| Verify and sign container images and artifacts | `cosign`. |
 
 Keep HOME, caches, and virtual environments in writable locations outside the
 read-only `/opt/bundledock/toolbox` tool bundle.
