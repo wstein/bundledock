@@ -189,8 +189,8 @@ func TestInventoryUsesDisplayedLabelAlphabeticalOrder(t *testing.T) {
 			labels = append(labels, strings.TrimSpace(strings.Split(line, "|")[1]))
 		}
 	}
-	if len(labels) != 45 {
-		t.Fatalf("expected 43 catalog tools and two launchers, got %d rows", len(labels))
+	if len(labels) != 46 {
+		t.Fatalf("expected 44 catalog tools and two launchers, got %d rows", len(labels))
 	}
 	for i := 1; i < len(labels); i++ {
 		if strings.ToLower(labels[i-1]) > strings.ToLower(labels[i]) {

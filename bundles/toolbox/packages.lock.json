@@ -1,7 +1,7 @@
 {
   "schema": 2,
-  "desired_digest": "c7d8673e3ed341d0f7189359843598373e858963acfb49f804a4fa26ca68ba42",
-  "catalog_digest": "261382afa02eb4a666fd72b77a5e5128dbcae1663057782e7786062b10b7c7aa",
+  "desired_digest": "d07ceaad351e46b0eace2e194af635a3f9353f3a45733537c658cf19470f6f5b",
+  "catalog_digest": "d3c5772ec80f8451a22408c60f81b8b114b70799c7d853fe7c1c48ecd1934bde",
   "platforms": {
     "amd64": {
       "actionlint": {
@@ -170,6 +170,12 @@
         "version": "0.116.1",
         "url": "https://github.com/nushell/nushell/releases/download/0.116.1/nu-0.116.1-x86_64-unknown-linux-musl.tar.gz",
         "sha256": "13ef75df08df30f8d7b031df538e82a52c6e74ce839b1a9091c3a3f1969c3742",
+        "verification": "publisher-sha256"
+      },
+      "pinact": {
+        "version": "v5.0.0",
+        "url": "https://github.com/suzuki-shunsuke/pinact/releases/download/v5.0.0/pinact_linux_amd64.tar.gz",
+        "sha256": "d005bbb85da80dacdc07816f24a5da723a9f6d1e9f3d3e7e73df33f9caa1358f",
         "verification": "publisher-sha256"
       },
       "regctl": {
@@ -430,6 +436,12 @@
         "version": "0.116.1",
         "url": "https://github.com/nushell/nushell/releases/download/0.116.1/nu-0.116.1-aarch64-unknown-linux-musl.tar.gz",
         "sha256": "b103770c00bf322c409caa007aad44882d1cc5d24d82f719f877812ac33d6ad1",
+        "verification": "publisher-sha256"
+      },
+      "pinact": {
+        "version": "v5.0.0",
+        "url": "https://github.com/suzuki-shunsuke/pinact/releases/download/v5.0.0/pinact_linux_arm64.tar.gz",
+        "sha256": "d28ca5e9ddd7950da4a808288f8a83f84fc3ca40e86bab970f3adeef33578c0b",
         "verification": "publisher-sha256"
       },
       "regctl": {
