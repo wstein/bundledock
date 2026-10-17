@@ -41,6 +41,28 @@ func TestHadolintRetainsGPLSourceRecordAndThirdPartyNotices(t *testing.T) {
 	}
 }
 
+// The owner accepted the combined GPL mix on 2026-10-17; the record and the
+// documentation must state the decision and the written source offer instead
+// of a pending-acceptance note.
+func TestHadolintLicenseDecisionIsRecorded(t *testing.T) {
+	src, err := os.ReadFile("../../bundles/toolbox/licenses/hadolint/SOURCE")
+	if err != nil {
+		t.Fatal(err)
+	}
+	doc, err := os.ReadFile("../../docs/toolbox.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for name, text := range map[string]string{"SOURCE": string(src), "docs/toolbox.md": string(doc)} {
+		if strings.Contains(text, "Owner acceptance") {
+			t.Errorf("%s still carries the pending owner-acceptance note", name)
+		}
+		if !strings.Contains(text, "2026-10-17") || !strings.Contains(text, "written offer") {
+			t.Errorf("%s must record the 2026-10-17 acceptance and the written source offer", name)
+		}
+	}
+}
+
 func TestArchiveNoticeTreesValidation(t *testing.T) {
 	for _, tree := range []string{"third_party_licenses", "a/b", "", ".", "..", "../x", "/abs", "a/../b", "a/", "a\\b", "a\x00b", "Third_Party_Licenses/\n"} {
 		t.Run(tree, func(t *testing.T) {
