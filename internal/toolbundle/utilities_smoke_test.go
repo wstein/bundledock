@@ -12,7 +12,7 @@ func TestUtilitiesSmokeRejectsWrongOutput(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, broken := range []string{"", "fzf", "bat", "lsd", "regctl", "actionlint", "hadolint", "pinact", "zizmor", "cosign", "git-cliff", "zoxide", "difft", "jsonschema-cli", "fail:actionlint", "fail:hadolint", "fail:pinact", "fail:zizmor", "fail:cosign", "fail:git-cliff", "fail:zoxide", "fail:difft", "fail:jsonschema-cli", "loose:zizmor", "dotted:actionlint", "dotted:hadolint", "dotted:pinact", "dotted:zizmor", "dotted:cosign", "dotted:git-cliff", "dotted:zoxide", "dotted:difft", "dotted:jsonschema-cli"} {
+	for _, broken := range []string{"", "fzf", "bat", "lsd", "regctl", "actionlint", "hadolint", "pinact", "zizmor", "cosign", "git-cliff", "zoxide", "difft", "jsonschema-cli", "fail:actionlint", "fail:hadolint", "fail:pinact", "fail:zizmor", "fail:cosign", "fail:git-cliff", "fail:zoxide", "fail:difft", "fail:jsonschema-cli", "loose:zizmor", "dotted:actionlint", "dotted:hadolint", "dotted:pinact", "dotted:zizmor", "dotted:cosign", "dotted:git-cliff", "dotted:zoxide", "dotted:difft", "dotted:jsonschema-cli", "prefixed:actionlint", "prefixed:hadolint", "prefixed:pinact", "prefixed:zizmor", "prefixed:cosign", "prefixed:git-cliff", "prefixed:zoxide", "prefixed:difft", "prefixed:jsonschema-cli", "keyword:pinact"} {
 		t.Run("broken-"+broken, func(t *testing.T) {
 			home := t.TempDir()
 			bin := t.TempDir()
@@ -46,6 +46,12 @@ func TestUtilitiesSmokeRejectsWrongOutput(t *testing.T) {
 				case broken == "dotted:"+name:
 					// Exit 0 with a dotted number outside any anchored banner must fail.
 					body = "echo 'warning: unsupported loader 2.34.0'"
+				case broken == "prefixed:"+name:
+					// The real banner after a prefix is not a version line: the anchor must hold.
+					body = "case \"$*\" in -version|--version|version) { " + versionEcho[name] + "; } | sed 's/^/error: /';; *) exit 2;; esac"
+				case broken == "keyword:"+name:
+					// Leading keyword without the exact banner shape must fail.
+					body = "echo 'pinact: cannot run, needs 2.34.0'"
 				case broken == "loose:"+name:
 					// A glibc loader error contains a dotted number but is no version banner.
 					body = "echo '/lib/libc.so.6: version `GLIBC_2.34.0` not found' >&2; exit 1"
