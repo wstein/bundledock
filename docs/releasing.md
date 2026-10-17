@@ -75,6 +75,10 @@ accepts only if no release exists. The module path `bundledock` is not fetchable
 proxy, so no module cache can pin a bad tag, but release assets and users' copied checksums
 can.
 
+Notes: `BDOCK_RELEASE_DRAFT` must be empty, `true` or `false` (anything else, such as `True`,
+fails publish before a release is created). A manual dry run started on a tag ref shares that
+tag's concurrency group; start dry runs from `main`.
+
 ## Maintaining the workflow
 
 `internal/releaseworkflow` pins the workflow with rules and mutants. Bumping an action pin,

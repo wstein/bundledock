@@ -156,7 +156,6 @@ jobs:
         env:
           CGO_ENABLED: '0'
           GOTOOLCHAIN: local
-          GOFLAGS: -mod=readonly
           OS: ${{ matrix.os }}
           ARCH: ${{ matrix.arch }}
           VERSION: ${{ needs.verify.outputs.version }}
@@ -275,6 +274,7 @@ jobs:
           sha256sum --check SHA256SUMS
           cd "$GITHUB_WORKSPACE"
           sh .github/scripts/release-notes.sh "$TAG" "$COMMIT" "$(cat .go-version)" > "$RUNNER_TEMP/notes.md"
+          test -z "$DRAFT" -o "$DRAFT" = true -o "$DRAFT" = false || { echo "BDOCK_RELEASE_DRAFT must be empty, true or false, got $DRAFT" >&2; exit 1; }
           flags=()
           if [ "$DRAFT" = true ]; then flags+=(--draft); fi
           gh release create "$TAG" --repo "$REPO" --verify-tag --title "bdock v$VERSION" --notes-file "$RUNNER_TEMP/notes.md" ${flags[@]+"${flags[@]}"} \

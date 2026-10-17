@@ -414,7 +414,7 @@ func violations(w workflow, raw string) []string {
 			add("build", "build step lacks %q", want)
 		}
 	}
-	if bs.Env["CGO_ENABLED"] != "0" || bs.Env["GOTOOLCHAIN"] != "local" || bs.Env["GOFLAGS"] != "-mod=readonly" ||
+	if bs.Env["CGO_ENABLED"] != "0" || bs.Env["GOTOOLCHAIN"] != "local" ||
 		bs.Env["VERSION"] != "${{ needs.verify.outputs.version }}" || bs.Env["COMMIT"] != "${{ needs.verify.outputs.commit }}" ||
 		bs.Env["OS"] != "${{ matrix.os }}" || bs.Env["ARCH"] != "${{ matrix.arch }}" {
 		add("build", "build env = %v", bs.Env)
@@ -488,6 +488,7 @@ func violations(w workflow, raw string) []string {
 		`test "$(ls -1 -- bdock_*.tar.gz | wc -l)" -eq 3 ||`,
 		`for platform in darwin_arm64 linux_amd64 linux_arm64; do`,
 		`test -f "bdock_${VERSION}_${platform}.tar.gz" ||`,
+		`test -z "$DRAFT" -o "$DRAFT" = true -o "$DRAFT" = false ||`,
 		`cat -- bdock_*.tar.gz.sha256 | LC_ALL=C sort -k2 > SHA256SUMS`,
 		`test "$(wc -l < SHA256SUMS)" -eq 3 ||`,
 		`sha256sum --check SHA256SUMS`,
@@ -598,6 +599,7 @@ func TestReleaseWorkflowMutantsAreCaught(t *testing.T) {
 		{"main redirected", "redirect", "          commit=$(sh .github/scripts/release-verify.sh tag", "          git update-ref refs/remotes/origin/main HEAD\n          commit=$(sh .github/scripts/release-verify.sh tag"},
 		{"build fail-fast default", "needs", "  build:\n    name: build (${{ matrix.os }}/${{ matrix.arch }})\n    needs: verify\n    runs-on: ubuntu-24.04\n    timeout-minutes: 20\n    permissions:\n      contents: read\n    strategy:\n      fail-fast: false\n", "  build:\n    name: build (${{ matrix.os }}/${{ matrix.arch }})\n    needs: verify\n    runs-on: ubuntu-24.04\n    timeout-minutes: 20\n    permissions:\n      contents: read\n    strategy:\n"},
 		{"archive names unchecked", "publish", "            test -f \"bdock_${VERSION}_${platform}.tar.gz\" ||", "            test -n \"$platform\" ||"},
+		{"draft unchecked", "publish", `test -z "$DRAFT" -o "$DRAFT" = true -o "$DRAFT" = false ||`, `test -n "$DRAFT" ||`},
 		{"no second build", "build", `GOCACHE="$RUNNER_TEMP/gocache-second" TARGETS="$OS/$ARCH" RELEASE_DIR="$RUNNER_TEMP/second" sh scripts/release.sh`, `true`},
 		{"no byte comparison", "build", `diff -r "$RUNNER_TEMP/first" "$RUNNER_TEMP/second"`, `true`},
 		{"dirty source allowed", "build", `grep -Fx "source_modified=false"`, `grep -F "source_modified"`},
@@ -697,6 +699,18 @@ func TestCIVetsEveryReleasePlatform(t *testing.T) {
 		if !strings.Contains(s.Run, want) {
 			t.Errorf("step lacks %q", want)
 		}
+	}
+	if s.ContinueOnError != nil {
+		t.Error("the vet step must not continue on error")
+	}
+	var vetLines []string
+	for _, l := range strings.Split(s.Run, "\n") {
+		if l = strings.TrimSpace(l); l != "" && !strings.HasPrefix(l, "#") {
+			vetLines = append(vetLines, l)
+		}
+	}
+	if len(vetLines) != 3 {
+		t.Errorf("want exactly three uncommented vet lines, got %v", vetLines)
 	}
 	if n := strings.Count(s.Run, "go vet"); n != 3 || strings.Contains(s.Run, "||") || strings.Contains(s.Run, "set +e") {
 		t.Errorf("want exactly three unconditional go vet lines, got %d", n)

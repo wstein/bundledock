@@ -142,7 +142,7 @@ func TestReleaseNotesNameBaselineAndFacts(t *testing.T) {
 	}
 	head := commit(t, dir, "feat: first change")
 	first := notes("bdock/v0.1.0", head)
-	for _, want := range []string{"bdock v0.1.0", head, "Go 1.27.2", "linux/amd64, linux/arm64, darwin/arm64", "bdock_0.1.0_<os>_<arch>.tar.gz", "sha256sum --check --ignore-missing SHA256SUMS", "bdock --version", "not signed or notarized", "First release."} {
+	for _, want := range []string{"bdock v0.1.0", head, "Go 1.27.2", "linux/amd64, linux/arm64, darwin/arm64", "bdock_0.1.0_<os>_<arch>.tar.gz", "sha256sum --check --ignore-missing SHA256SUMS", "bdock --version", "prints `bdock version 0.1.0`", "not signed or notarized", "First release."} {
 		if !strings.Contains(first, want) {
 			t.Errorf("first release notes miss %q:\n%s", want, first)
 		}
@@ -162,6 +162,10 @@ func TestReleaseNotesNameBaselineAndFacts(t *testing.T) {
 // fakeRelease builds the archive for one target with the real scripts/release.sh and a
 // fake compiler whose "binary" is a shell script, in a throwaway clean repository.
 func fakeRelease(t *testing.T, version, target string, mutate func(string)) (archive, commitID, repo string) {
+	return fakeReleaseIn(t, version, target, mutate, nil)
+}
+
+func fakeReleaseIn(t *testing.T, version, target string, mutate func(string), dirty func(repo string)) (archive, commitID, repo string) {
 	t.Helper()
 	repo = gitRepo(t)
 	if err := os.MkdirAll(filepath.Join(repo, "scripts"), 0o755); err != nil {
@@ -178,6 +182,9 @@ func fakeRelease(t *testing.T, version, target string, mutate func(string)) (arc
 	}
 	mustRun(t, repo, nil, "git", "add", "-A")
 	commitID = commit(t, repo, "add release inputs")
+	if dirty != nil {
+		dirty(repo)
+	}
 	bin := t.TempDir()
 	fakeBdock := `#!/bin/sh
 case "$*" in
@@ -348,5 +355,36 @@ func TestSmokeUsesShasumWhenSha256sumIsAbsent(t *testing.T) {
 	}
 	if raw, _ := os.ReadFile(log); !strings.Contains(string(raw), "-a 256 -c") {
 		t.Errorf("shasum -a 256 -c was not used: %q", raw)
+	}
+}
+
+func provenanceOf(t *testing.T, archive string) string {
+	dir := t.TempDir()
+	mustRun(t, dir, nil, "tar", "-xzf", archive)
+	raw, err := os.ReadFile(filepath.Join(dir, "PROVENANCE"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(raw)
+}
+
+func TestProvenanceRecordsRevisionAndDirtyState(t *testing.T) {
+	archive, c, _ := fakeRelease(t, "0.1.0", "linux/amd64", nil)
+	got := provenanceOf(t, archive)
+	if !strings.Contains(got, "source_revision="+c+"\n") || !strings.Contains(got, "source_modified=false\n") {
+		t.Errorf("clean build provenance wrong:\n%s", got)
+	}
+	for name, dirty := range map[string]func(string){
+		"untracked file": func(r string) { os.WriteFile(filepath.Join(r, "stray"), []byte("x"), 0o644) },
+		"edited file":    func(r string) { os.WriteFile(filepath.Join(r, "LICENSE"), []byte("changed"), 0o644) },
+	} {
+		archive, c, repo := fakeReleaseIn(t, "0.1.0", "linux/amd64", nil, dirty)
+		got := provenanceOf(t, archive)
+		if !strings.Contains(got, "source_modified=true\n") {
+			t.Errorf("%s: provenance does not record the dirty tree:\n%s", name, got)
+		}
+		if out, err := smoke(t, repo, "0.1.0", c, "linux/amd64", archive); err == nil {
+			t.Errorf("%s: smoke accepted a modified-source archive: %s", name, out)
+		}
 	}
 }

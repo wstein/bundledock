@@ -73,3 +73,18 @@ exception.
 
 Harmless survivors (fail closed at run time or equivalent) were not chased individually.
 
+### Round 2 (one reviewer on a3dbe40, both scopes, 62 fresh mutants): READY
+
+No run-time attack made the workflow publish when it should not. With the golden test
+excluded 46 of 62 mutants survive; every release.yml survivor (23) is caught by the golden
+test. So the golden file, not the rules, is the effective detector for workflow edits such as
+a redirected main ref, a reassigned `GITHUB_SHA`, `echo make check`, a commented-out gate or
+a second build that reuses the cache. The rules remain defence in depth; any workflow edit
+must be a reviewed golden update. Fixed after the round: `BDOCK_RELEASE_DRAFT` is validated
+(empty, `true`, `false`); a test for `source_revision`/`source_modified` (the clean/dirty
+provenance, previously unasserted); stricter CI vet-step test (uncommented lines, no
+`continue-on-error`); notes print the right version; the dead `GOFLAGS` in the build job was
+dropped; AGENTS.md names the exception in the remaining sentence. Not fixed, recorded: no
+version monotonicity check (open decision 10), a few low gaps in the smoke script's
+PROVENANCE greps and release.sh `--untracked-files`, reproducibility proven on one runner only.
+
