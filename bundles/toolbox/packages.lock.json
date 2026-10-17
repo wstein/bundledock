@@ -1,7 +1,7 @@
 {
   "schema": 2,
-  "desired_digest": "52f3df69d26d83aad248d8f798c57baa5bc20cfbc29abbaa54efe58e683d8a8d",
-  "catalog_digest": "69fb19853edfcff4db91fdb1bc7f157b0e397ff4cb60d95e51b23153510054c7",
+  "desired_digest": "f3cd464a9256114ad9947cf107671c72d9d4d8699024e34cd75c109301f6b385",
+  "catalog_digest": "0b461fded92be13427a960a0e7b0ab578d5d76a93780f109d8baefd272fc6d89",
   "platforms": {
     "amd64": {
       "actionlint": {
@@ -80,6 +80,12 @@
         "version": "v2.102.0",
         "url": "https://github.com/cli/cli/releases/download/v2.102.0/gh_2.102.0_linux_amd64.tar.gz",
         "sha256": "bb766f710eef8ede859c18578c72c327597cd4c8a85b06001b1f3843c6019386",
+        "verification": "publisher-sha256"
+      },
+      "gh-stack": {
+        "version": "v0.2.1",
+        "url": "https://github.com/github/gh-stack/releases/download/v0.2.1/linux-amd64",
+        "sha256": "ffe9d48b6342faffc3b0cb420202ff1df32e24faf32693debd7423274bbdf859",
         "verification": "publisher-sha256"
       },
       "git-cliff": {
@@ -382,6 +388,12 @@
         "version": "v2.102.0",
         "url": "https://github.com/cli/cli/releases/download/v2.102.0/gh_2.102.0_linux_arm64.tar.gz",
         "sha256": "7862c86c72f43df3a2d93ddde6f473285b4e2af61b494849846827e513ef6484",
+        "verification": "publisher-sha256"
+      },
+      "gh-stack": {
+        "version": "v0.2.1",
+        "url": "https://github.com/github/gh-stack/releases/download/v0.2.1/linux-arm64",
+        "sha256": "25ec261a391261a1462d38f85c230b0e0b14ae3547926130996541f62f25f78b",
         "verification": "publisher-sha256"
       },
       "git-cliff": {

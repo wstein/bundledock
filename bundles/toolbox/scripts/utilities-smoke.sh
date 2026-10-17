@@ -13,6 +13,19 @@ expect_version() {
 	printf '%s\n' "$out" | grep -Eq "$pattern" || { echo "unexpected $1 version output" >&2; exit 1; }
 }
 expect_version '^Version: [0-9]+\.[0-9]+\.[0-9]+' jsonschema-cli --version
+# gh-stack is a gh extension shipped at libexec/gh-stack in the toolbox root.
+toolbox=${BUNDLEDOCK_TOOLBOX:-/opt/bdock/toolbox}
+expect_version '^gh stack version [0-9]+\.[0-9]+\.[0-9]+' "$toolbox/libexec/gh-stack" --version
+# Also resolve it through gh's own discovery path, as a consumer symlink would.
+if command -v gh >/dev/null 2>&1; then
+	ext_data=$(mktemp -d "${TMPDIR:-/tmp}/bundledock-gh-stack-smoke.XXXXXX")
+	mkdir -p "$ext_data/gh/extensions/gh-stack"
+	ln -s "$toolbox/libexec/gh-stack" "$ext_data/gh/extensions/gh-stack/gh-stack"
+	(XDG_DATA_HOME=$ext_data; export XDG_DATA_HOME; expect_version '^gh stack version [0-9]+\.[0-9]+\.[0-9]+' gh stack --version) || { rm -rf "$ext_data"; exit 1; }
+	rm -rf "$ext_data"
+else
+	echo "gh is absent from the smoke environment; skipping gh stack discovery check" >&2
+fi
 expect_version '^Difftastic [0-9]+\.[0-9]+\.[0-9]+' difft --version
 expect_version '^zoxide [0-9]+\.[0-9]+\.[0-9]+' zoxide --version
 expect_version '^git-cliff [0-9]+\.[0-9]+\.[0-9]+' git-cliff --version

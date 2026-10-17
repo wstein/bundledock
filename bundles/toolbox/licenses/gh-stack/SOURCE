@@ -1,0 +1,9 @@
+Upstream: https://github.com/github/gh-stack
+Initial reviewed release: v0.2.1 (stable, not a pre-release or draft)
+License: MIT
+Source for corresponding release: https://github.com/github/gh-stack/releases/tag/v0.2.1
+Tag v0.2.1 resolves to commit 29a36d314be664583705f18e41cebdf2b61ad514. The release asset linux-amd64 carries a GitHub Sigstore build attestation that `gh attestation verify -R github/gh-stack` accepted on 2026-10-17.
+Linux AMD64/ARM64 official raw binaries (assets 'linux-amd64' and 'linux-arm64'), unchanged executable; selected by tag prefix 'v'.
+The binary is a GitHub CLI extension. It is staged unchanged as libexec/gh-stack; a consumer exposes it to gh with a symlink in its writable gh data directory. BundleDock edits no dotfiles and writes no manifest.
+Full upstream LICENSE retained from the tagged repository (the release assets carry no license file).
+Lock pins use the official release API SHA256 digests (checked 2026-10-17). No upstream binary was executed or modified; retained notices do not establish a complete transitive license audit.
