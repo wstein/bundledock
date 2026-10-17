@@ -121,3 +121,30 @@ func TestArchiveNoticeBasenameCollisionFails(t *testing.T) {
 		t.Fatal("colliding LICENSE basenames were accepted")
 	}
 }
+
+func TestPinactRetainsThirdPartyLicenseTree(t *testing.T) {
+	dst, found, err := extractLayout(t, "pinact",
+		member{"LICENSE", "pinact license", 0644, 0},
+		member{"README.md", "readme", 0644, 0},
+		member{"third_party_licenses/", "", 0755, tar.TypeDir},
+		member{"third_party_licenses/github.com/spf13/cobra/LICENSE.txt", "apache", 0444, 0},
+		member{"third_party_licenses/github.com/hashicorp/go-version/LICENSE", "mpl", 0444, 0},
+		member{"third_party_licenses/go/LICENSE", "bsd", 0444, 0},
+		member{"other/LICENSE", "outside the tree", 0644, 0},
+		member{"pinact", "exe", 0755, 0},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "third_party_licenses/github.com/hashicorp/go-version/LICENSE,third_party_licenses/github.com/spf13/cobra/LICENSE.txt,third_party_licenses/go/LICENSE"
+	if strings.Join(found, ",") != want {
+		t.Fatalf("pinact notices: %v", found)
+	}
+	if b, _ := os.ReadFile(filepath.Join(dst, "licenses/pinact/third_party_licenses/go/LICENSE")); string(b) != "bsd" {
+		t.Fatalf("content: %q", b)
+	}
+	info, err := os.Stat(filepath.Join(dst, "licenses/pinact/third_party_licenses/go/LICENSE"))
+	if err != nil || info.Mode().Perm() != 0644 {
+		t.Fatalf("mode: %v %v", info, err)
+	}
+}

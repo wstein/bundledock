@@ -3,5 +3,5 @@ Initial reviewed release: v5.0.0
 License: MIT
 Source for corresponding release: https://github.com/suzuki-shunsuke/pinact/releases/tag/v5.0.0
 Linux AMD64/ARM64 official archives, unchanged executable; selected by tag prefix 'v'.
-Full upstream LICENSE retained from the tagged repository (the release archive does not carry it).
+Full upstream LICENSE retained from the tagged repository. The release archive's third_party_licenses/ tree (dependency licenses) is retained unchanged under licenses/pinact/third_party_licenses/.
 Lock pins use the official release API SHA256 digests (checked 2026-10-17). No upstream binary was executed or modified; retained notices do not establish a complete transitive license audit.

@@ -1207,7 +1207,10 @@
         "kind": "tar.gz",
         "members": {
           "pinact": "bin/pinact"
-        }
+        },
+        "archive_notice_trees": [
+          "third_party_licenses"
+        ]
       },
       "notices": [
         "licenses/pinact/LICENSE",
