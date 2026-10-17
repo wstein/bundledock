@@ -1,0 +1,7 @@
+Upstream: https://github.com/Wilfred/difftastic
+Initial reviewed release: 0.71.0
+License: MIT
+Source for corresponding release: https://github.com/Wilfred/difftastic/releases/tag/0.71.0
+Linux AMD64 musl and ARM64 GNU official archives, unchanged executable; selected by tag prefix ''.
+Full upstream LICENSE retained from the tagged repository (the release archive does not carry it).
+Lock pins use the official release API SHA256 digests (checked 2026-10-17). No upstream binary was executed or modified; retained notices do not establish a complete transitive license audit.

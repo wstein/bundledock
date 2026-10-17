@@ -138,6 +138,7 @@ still pins an older image, so do not assume these commands exist in a running se
 | Lint and format Python | `ruff`. |
 | Generate changelogs from Conventional Commits | `git-cliff`. |
 | View diffs | `delta`. |
+| Compare files structurally | `difft`. |
 | Watch files and benchmark commands | `watchexec`, `hyperfine`. |
 | Encrypt files | `age`, `age-keygen`, `age-inspect`. |
 | Check spelling | `typos`. |

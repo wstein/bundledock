@@ -1319,6 +1319,30 @@
       "notices": [
         "licenses/zoxide/SOURCE"
       ]
+    },
+    "difftastic": {
+      "provider": "github",
+      "repository": "Wilfred/difftastic",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "x86_64-unknown-linux-musl",
+        "arm64": "aarch64-unknown-linux-gnu"
+      },
+      "asset": "difft-{version}-{arch}.tar.gz",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "tar.gz",
+        "members": {
+          "difft": "bin/difft"
+        }
+      },
+      "notices": [
+        "licenses/difftastic/LICENSE",
+        "licenses/difftastic/SOURCE"
+      ]
     }
   }
 }
