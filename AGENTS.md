@@ -102,6 +102,13 @@ pins; manifests and locks describe the installed artifacts. Separate docs-tool p
 
 Use test-driven development (TDD): write a failing test before implementing behavior changes, make it pass, then refactor.
 
+## Pull requests and history
+
+Agents push only their own topic branches and open pull requests for reviewed
+work within the requested task. They never push the default branch or tags, never
+merge, and never rewrite commits they did not author. The owner merges. A containing
+workspace may add owner-workflow rules in its own `AGENTS.md`; follow them when present.
+
 ## Common CLI tools
 
 The tools OCI image bundles the commands below. Rebuild the tools image and
