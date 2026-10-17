@@ -79,24 +79,26 @@ hold the bytes.
   `install.archive_notices` members of the locked artifacts (21 of 41 packages take notices from the
   upstream archive at build time) **plus** the dependency scan of WI2. A package whose evidence is
   incomplete is `undetermined`. A test fails when a package classified `none` has a copyleft marker in
-  the repository-visible part of its evidence. Packages not in the catalog (`licenses/xz`) are ignored.
+  the repository-visible part of its evidence. The marker set is normative, case-insensitive substrings:
+  `GNU General Public`, `GNU Lesser General Public`, `GNU Library General Public`, `GNU Affero`, `GPL-`,
+  `GPL3`, `GPLv`, `LGPL`, `AGPL`, `Mozilla Public License`, `MPL-`, `Eclipse Public License`, `EPL-`,
+  `CDDL`; the test also has a negative fixture (warranty-disclaimer text must not match). Packages not in the catalog (`licenses/xz`) are ignored.
 - **FR-2 Mirror coverage.** For every package with `obligation` `source-offer` or `file-level-source`
   and every locked version, [`sources.lock.json`](data-model.md#sources-lock) names a mirror release
   whose manifest `component` and `version` match. [`bdock tools sources check`](contracts/sources-check.md)
   enforces it in `make check`.
 - **FR-3 Naming.** One normative [naming table](#naming-table). Versions are numeric dotted groups only;
-  other shapes refuse (`version-shape`) until a pattern is declared.
+  other shapes refuse (`version-shape`) until the catalog declares a `version_regex` that yields a numeric shape. Measured lock versions: `lychee-v0.24.2` and `jq-1.8.2` need a regex; `v3.7c` (tmux) cannot be mirrored until a letter-suffix rule exists.
 - **FR-4 Bundle content.** Complete per the [completeness policy](#completeness-policy). Release assets
-  (the release process adds its own checksum and build manifest, FR-10): the bundle, the source
-  manifest.
+  (the release process adds its own checksum and build manifest, FR-10): the bundle and the source manifest.
 - **FR-5 Manifest.** JSON, schema `bundledock.source-manifest/v1` ([data model](data-model.md#source-manifest)).
 - **FR-6 Deterministic production.** The bundle is a pure function of the plan and the bytes fetched:
   sorted entries, uid/gid 0, fixed modes, mtime `SOURCE_DATE_EPOCH`, declared tar format; the recorded
-  `argv` is the **normalized** command (no output path, no limit flags, no `--accept-new-digest`); the Go
+  `argv` is the **normalized** command (`bdock tools sources fetch --component C --version N`, without the output path); the Go
   toolchain used to build `bdock` is pinned in the plan (`bdock_go_version`). The reproducibility claim is
   for `tar_sha256`; the compressed digest is recorded separately ([research D6](research.md#d6-determinism-boundary)).
-- **FR-7 Modes.** `pin` (network, read-only on the repository, writes a plan) , `plan` (offline, validates and
-  renders a plan against catalog and lock), `fetch` (network, produces the bundle), `check` (offline).
+- **FR-7 Modes.** `pin` (network, read-only on the repository, writes a source-lock entry), `plan` (offline, validates and
+  renders an entry against catalog and lock, or standalone for mirror CI), `fetch` (network, produces the bundle), `check` (offline).
   Per-mode effects are the table in the [command contract](contracts/sources-command.md#effects).
 - **FR-8 Never execute upstream code.** No build script, `Setup.hs`, `build.rs`, `go generate`, `go
   build`, `cabal`, `cargo`, `go` or other process is started by `pin`, `plan`, `fetch` or `check`; fetchers
@@ -107,13 +109,20 @@ hold the bytes.
   Links, special members and duplicate member names do not refuse (real tarballs contain them,
   [research R2](research.md#r2-what-upstream-tarballs-vendor)); they are listed in the manifest
   `archive_anomalies`. For a duplicated name the last member wins, as for `tar`. Only resource
-  [limits](#limits) refuse.
+  [limits](#limits) refuse. The same no-extraction, in-memory, limited rule applies to the dependency
+  archives the fetchers read (module zips for `h1:`, `.crate` files, git archives, Hackage sdists), and any
+  bundle entry path built from lockfile content (module path, crate name, git URL, package name) is
+  validated against `^[A-Za-z0-9._~@+/-]+$`, no `..` segment, no leading `/`, at most 512 bytes
+  (`dep-unsafe-path`).
 - **FR-10 Publication path.** Mirror releases are published by SourceSteward's release process
   ([contracts/mirror-project.md](contracts/mirror-project.md)); a release is never created by hand.
 - **FR-11 Failure policy.** [Failure table](#failure-modes). Fail closed; no partial bundle; no
   overwrite.
 - **FR-12 Order on upgrade.** The mirror release for a new version must exist before any bundle
-  containing that version is published; `check --enforce` is the machine rule.
+  containing that version is published. The offline `check --enforce` only sees the hand-edited registry
+  entry; the rule is made machine-checkable by `check --online` (read-only GET of the release: published
+  not draft, asset digests equal the registry, manifest `component` and `version` match), which the bundle
+  publication gate runs.
 - **FR-13 Notices in the image.** Each `source-offer` / `file-level-source` tool's `SOURCE` gets a
   **version-independent** paragraph (mirror repository URL, the tag rule of the [naming table](#naming-table),
   the written-offer text). Version-specific data (tag, asset URL, SHA256s) live in a **generated**
@@ -131,26 +140,28 @@ hold the bytes.
 - **FR-16 Retroactivity.** Backfill covers **source availability** for every copyleft version found in
   published carriers (WI9 counts them). It does not change already-published images: their `SOURCE`
   files are immutable and keep upstream-only offers. Backfill order is **oldest version first per
-  component** so monotonic ordering holds ([plan](plan.md#rollout-order)).
+  component** so monotonic ordering holds, and the complete WI9 list for a component is a hard gate before
+  that component's first release ([plan](plan.md#rollout-order)).
 - **FR-17 Documentation.** Owner procedure and repository settings are docs only
   ([plan](plan.md#mirror-repository-settings-for-the-owner)).
 
 ## Naming table
 
-Normative; the plan path, assets, tag, registry key and URL templates derive from it.
+Normative; the source-lock path, assets, tag, registry key and URL templates derive from it.
 
 | Concept | Rule | Example |
 | --- | --- | --- |
 | `component` | catalog package name | `shellcheck` |
 | lock version `LV` | exactly as in `packages.lock.json` | `v0.11.0`, `25.07.1` |
-| `V` | `LV` without one leading `v`; must match `^[0-9]+(\.[0-9]+){0,3}$` | `0.11.0` |
+| `V` | derived from `LV` by the package's `source.version_regex` (one capture group; default `^v?([0-9]+(\.[0-9]+){0,3})$`); the result must match `^[0-9]+(\.[0-9]+){0,3}$` or the package is blocked (`version-shape`) | `0.11.0` |
 | revision `R` | integer `>= 1`; a corrected re-issue of the same `V` | `2` |
 | `release tag` | `<component>-v<V>` for `R=1`, `<component>-v<V>-r<R>` for `R>=2` | `shellcheck-v0.11.0-r2` |
-| assets | `<tag>-source.tar.gz`, `<tag>-source-manifest.json`; the release process adds its `SHA256SUMS` and `build-manifest.json` | |
-| plan path (mirror repo) | `plans/<component>/<V>.json` for `R=1`, `plans/<component>/<V>-r<R>.json` otherwise | |
+| `version id` | `<V>` for `R=1`, `<V>-r<R>` for `R>=2` (Spec 026 `{version_number}`) | `0.11.0-r2` |
+| assets | `<component>-<version id>-sources.tar.gz` and `<component>-<version id>-sources.manifest.json` (the names in Spec 026 worked example 5); the release process adds `SHA256SUMS` and `build-manifest.json` | `shellcheck-0.11.0-sources.tar.gz` |
+| source lock (mirror repo) | one file per component, `sources/<component>.lock.json`, holding an entry per `version id` ([data model](data-model.md#source-lock-and-plan-entries)) | |
 | registry key | `component` -> `LV` -> `revisions[]` (see [data model](data-model.md#sources-lock)) | |
 | ordering (per component) | numeric tuple `(groups of V..., R)`, missing groups sort below present ones | `0.11.0 < 0.11.0-r2 < 0.11.1` |
-| dispatch `version` input (Spec 026) | `<V>` or `<V>-r<R>` (the contract's pattern with a component prefix) | |
+| dispatch `version` input (Spec 026) | the `version id`; the product (`<component>`) is a separate Spec 026 input and the tag is `<component>-v<version id>` | |
 
 ## Obligation classes
 
@@ -168,7 +179,7 @@ Normative; the plan path, assets, tag, registry key and URL templates derive fro
 | fish 4.9.3 | `SOURCE`: GPL-2.0-only AND LGPL-2.0-or-later AND MIT AND PSF-2.0 | `source-offer` |
 | shellcheck v0.11.0 | `licenses/shellcheck/LICENSE` is GPL-3.0 | `source-offer` |
 | trufflehog v3.99.2 | `SOURCE`: AGPL-3.0 | `source-offer` |
-| helix 25.07.1 | `SOURCE` MPL-2.0; `GRAMMAR-NOTICES` holds the GPL-3.0 text of `runtime/grammars/sources/jinja2/LICENSE.md`; the shipped aarch64 tarball (SHA256 equals the lock) contains `runtime/grammars/jinja2.so` | `source-offer` (GPL-3.0 grammar, plus MPL-2.0) |
+| helix 25.07.1 | `SOURCE` MPL-2.0; `GRAMMAR-NOTICES` carries copyleft license texts for the grammars jinja2, amber, blueprint, hare (GPL-3.0 per round-2 reviewer), prolog (AGPL-3.0), vala (LGPL), inko and nim (MPL-2.0), and a GPL text for nginx; the shipped aarch64 tarball (SHA256 equals the lock) contains `runtime/grammars/{jinja2,amber,gas,blueprint,hare,prolog,vala,inko,nim}.so` (nginx and the exact SPDX per grammar not verified; WI2 resolves them) | `source-offer` (GPL/AGPL/LGPL grammars, plus MPL-2.0) |
 | typst v0.15.1 | `SOURCE`: the embedded NewCM10-Regular font is "GPL3-or-later with Font and Distribution exceptions"; `ASSETS-NOTICE` holds the GPL-3.0 text | `source-offer` pending lawyer ([legal item 6](#legal-caveat)); the font exceptions may remove the source obligation |
 | hadolint v2.15.1 (PR #119, not on main) | GPL-3.0-only; `ThirdPartyNotices.txt`: HsYAML GPL-2.0-only, ShellCheck GPL-3.0-only, language-docker GPL-3.0-or-later, colourista MPL-2.0, semver MPL-2.0 | `source-offer` |
 | actionlint, cosign, difftastic, git-cliff, jsonschema-cli, pinact, zizmor, zoxide (PR #119) | not scanned | `undetermined` |
@@ -241,7 +252,10 @@ Normative constants in code; each row has a test. Status 1 = refusal exit.
 | one release asset | 1.9 GiB provisional (WI2 confirms; GitHub documents 2 GiB per asset, unverified here) | `bundle-too-large` | 1 |
 | HTTP redirects per request / hosts | 5 / [per-hop host allow-list](data-model.md#fetch-hosts) | `fetch-redirect-limit`, `fetch-host-refused` | 1 |
 | single response body | 2 GiB for tarballs and zips; 16 MiB for JSON | `fetch-too-large` | 1 |
-| `manifest.json` / plan JSON read by `check` | 16 MiB / 1 MiB, also line count 1 000 000 | `parse-too-large` | 1 |
+| `<tag>-sources.manifest.json`, in-bundle `MANIFEST.json`, source-lock file read by `check` | 16 MiB / 16 MiB / 1 MiB, also line count 1 000 000 | `parse-too-large` | 1 |
+| `archive_anomalies` entries | 1 000 recorded; further ones only counted (`anomalies_truncated: N`), never a refusal | n/a | n/a |
+| members read from one dependency archive (module zip, `.crate`, git archive, sdist) | same limits as the first three rows, per archive | `archive-too-many-members`, `archive-too-large`, `archive-bomb` | 1 |
+| lockfile-derived entry path | see FR-9 | `dep-unsafe-path` | 1 |
 
 There is no `--max-bytes` flag; limits are constants.
 
@@ -261,7 +275,12 @@ Normative; exit status 1 unless stated; `fetch` publishes nothing on any of them
 | `recipe-custom` | recipe kind `custom` | exit 3 |
 | `out-not-empty` | `--out` not empty | refuse |
 | `manifest-schema` | schema violation | refuse |
-| `network-disabled` | `BDOCK_SOURCES_OFFLINE=1` set for `pin` or `fetch` | exit 3 |
+| `network-disabled` | `BDOCK_SOURCES_OFFLINE=1` set for `pin`, `fetch` or `check --online` | exit 3 |
+| `tool-not-eligible` | `pin`/`fetch` for a package whose obligation is `none` or `undetermined`, or unknown tool | exit 3 |
+| `tag-unresolved` | `fetch --component/--version` finds no entry in `sources/<component>.lock.json` | refuse |
+| `notice-drift` | `sync --check` finds `SOURCE-MIRROR` different from the generated text | refuse |
+| `bundle-hash-mismatch`, `bundle-file-missing`, `bundle-file-extra`, `bundle-manifest-mismatch`, `sums-mismatch` | `check --bundle-dir` tamper cases (changed byte; entry listed but absent; entry present but unlisted; standalone manifest and `MANIFEST.json` disagree; `SHA256SUMS` disagrees or lists other files). `SHA256SUMS` and the release process's `build-manifest.json` are allowed extras | refuse |
+| `release-not-published`, `release-hash-mismatch` | `check --online`: release missing or draft; asset digests differ from the registry | refuse |
 | `release-exists` | publisher found the tag | refused by the publisher (Spec 026 gate), not by bdock |
 
 Upstream vanished before we mirrored a shipped version: the bundle cannot be made from upstream; recover
@@ -271,7 +290,11 @@ Pinning at lock time for every new copyleft tool avoids this ([WI7](tasks.md)).
 ## Retention
 
 Releases and tags in the mirror are never deleted, edited or moved. A wrong bundle is superseded by a new
-revision (`-rN`); the superseded release stays and its registry entry is marked `superseded`. Retention
+revision (`-rN`) **only while no greater version of the component has been released**, because Spec 026
+requires each new version to exceed all existing ones of its product. After that a wrong bundle cannot be
+superseded under the current monotonicity rule; this is a stated limitation and a request to Spec 026 for a
+re-issue exemption (plan open question 8). A superseded release stays and its registry entry is marked
+`superseded`. Retention
 lasts as long as any published bundle containing the version may be distributed and at least three years
 after the last distribution (a policy of this design; the legal duration is a lawyer item). The mirror
 repository is never deleted; if it must move, GitHub transfer keeps URLs working and the next bundle's
@@ -304,7 +327,7 @@ Conservancy:
    conclusion.)
 3. Statically linked LGPL components in Haskell and Rust binaries (GMP, and in bun JavaScriptCore): relinking
    ability, and whether the "system library" exclusion covers libraries we ship inside the object code.
-4. AGPL-3.0 (trufflehog): scope of the network-interaction clause for how the tool is used in the toolbox.
+4. AGPL-3.0 (trufflehog, and the AGPL-3.0 prolog grammar shipped in helix): scope of the network-interaction clause for how the tools are used in the toolbox.
 5. MPL-2.0 file-level source: is a link enough, and what does the scale finding imply?
 6. typst's embedded GPL-3.0-or-later font with Font and Distribution exceptions, and helix's GPL-3.0 jinja2
    grammar `.so` in its runtime directory: separate work or part of the program?
@@ -314,11 +337,13 @@ Conservancy:
 
 ## Dependencies and unverified items
 
-- **SourceSteward Spec 026** (read 2026-10-17 at `codex/026-release-process-v2` `9a810a2`,
-  `specs/026-release-process/`): provides kinds `file` and `oci-image` (record field `source_offer`),
-  build-once-promote, `.stw/release.toml`, per-track monotonicity. It is a **draft**; its `dispatch`,
-  `build` and workflows wait for a constitution amendment (its own notice). Binding conflicts with the
-  mirror and the reconciliation are in [contracts/mirror-project.md](contracts/mirror-project.md).
+- **SourceSteward Spec 026** (read at `codex/026-release-process-v2` `f7751e4`,
+  `specs/026-release-process/`, 2026-10-17; it moved from `9a810a2` during this design): kinds `file` and
+  `oci-image` (record field `source_offer`), build once and promote, products with one contract file each
+  (D9, FR-025), fetch builds with `network = "fetch"`, `network_hosts` and `lock_files` (FR-026), `os`/`arch`
+  `any`, worked example 5 for this mirror. It is a **draft**; `dispatch`, `build` and workflows wait for a
+  constitution amendment (its own notice). The interface and the three points where this design adopts
+  its example 5 (argv, asset names, lock file layout) are in [contracts/mirror-project.md](contracts/mirror-project.md).
   The bundledock-side work (`pin`, `plan`, `fetch`, `check`, catalog) does not depend on it.
 - PR #119 (hadolint) and the `bdock` CLI release workflow (a released `bdock` or a pinned source commit
   is needed by the mirror CI).
