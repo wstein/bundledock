@@ -7,4 +7,4 @@ Source for corresponding release: https://github.com/hadolint/hadolint/releases/
 Linux x86_64/arm64 official raw binaries, unchanged executable; selected by tag prefix 'v'.
 The static Haskell binary links GPL-3.0-only ShellCheck, GPL-3.0-or-later language-docker and GPL-2.0-only HsYAML among other dependencies; the upstream ThirdPartyNotices.txt (dependency license report, tag v2.15.1) is retained alongside the full upstream LICENSE (the release archive carries neither).
 Lock pins use the official release API SHA256 digests (checked 2026-10-17). No upstream binary was executed or modified; retained notices do not establish a complete transitive license audit.
-Owner acceptance of the combined GPL license mix is required before publication.
+The repository owner accepted the combined GPL license mix on 2026-10-17 (unchanged binary, full LICENSE and ThirdPartyNotices.txt retained, as for ShellCheck). This is a written offer: the corresponding source is the Source archive above (verify against Source SHA256); BundleDock will point any recipient to it on request. The offer relies on upstream availability and is not legal advice.
