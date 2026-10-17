@@ -101,6 +101,23 @@ re-reviewed**.
 | 14 | low | quickstart order | steps swapped, `--sources` passed |
 | 15 | low | `gas` license | added to the WI2 resolution list |
 
+## Round 4 (reviewer on `b31fc98`): NOT READY (0 critical/high, 3 medium, 6 low)
+
+The round-4 reviewer ran after the three-round limit at the coordinator's request; it is not a fifth
+round. All findings were fixed by the author and are **not re-reviewed**.
+
+| # | Sev | Finding | Resolution |
+| --- | --- | --- | --- |
+| M1 | medium | quickstart approval text after the step swap; "read-only" wording | steps and approvals restated (`pin` network and writes the source lock; `plan` offline) |
+| M2 | medium | `fetch` cannot evaluate arch, shape, staleness | codes restricted to `pin` and `plan` |
+| M3 | medium | `rev` group incompatible with Spec 026 `[0-9]{1,9}` | `rev` = `[0-9]{1,9}`; refusal of r0, r1, leading zeros by `plan --standalone` and tag review; ruleset only a possible second line |
+| L1 | low | regex claims | single capture group stated with `(?:...)`; leading zeros allowed (helix `25.07.1`) |
+| L2 | low | `plan-unpinned` emitter, `entry-missing` modes | corrected |
+| L3 | low | re-pin behavior | identical digests no-op exit 0, differing error |
+| L4 | low | canonical JSON details | trailing newline, no HTML escaping |
+| L5 | low | 1.9 vs 2 GiB wording | fixed |
+| L6 | low | analysis entry | this entry |
+
 ## Status
 
 Round 3 verdict was NOT READY with one high finding, now fixed in the artifacts but not re-reviewed
