@@ -412,12 +412,14 @@ func TestVerifyMonotonicVersion(t *testing.T) {
 		"bdock/v0.1.0":  "bdock/v0.1.0\n", // first release
 		"bdock/v0.3.0":  "bdock/v0.3.0\nbdock/v0.3.0\nbdock/v0.2.9\n",
 	}
-	// Pre-releases never count as an existing version.
-	ok["bdock/v1.0.0"] = "bdock/v2.0.0-rc1\nbdock/v1.0.0\n"
 	for tag, ex := range ok {
 		if out, err := monotonic(t, tag, ex); err != nil {
 			t.Errorf("%s over %q rejected: %s", tag, ex, out)
 		}
+	}
+	// Pre-releases never count as an existing version (its own case: not a map key of ok).
+	if out, err := monotonic(t, "bdock/v1.0.0", "bdock/v2.0.0-rc1\nbdock/v1.0.0\n"); err != nil {
+		t.Errorf("a higher pre-release blocked 1.0.0: %s", out)
 	}
 	bad := []struct{ tag, in string }{
 		{"bdock/v0.2.0", existing + "bdock/v0.2.0\n"}, // older than 0.10.0
