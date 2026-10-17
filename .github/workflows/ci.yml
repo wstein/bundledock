@@ -1,3 +1,5 @@
+# Source CI. A bdock/vX.Y.Z tag push also runs this workflow (unfiltered push); the tag-driven
+# CLI release in release.yml requires a successful push run of this workflow for the tagged commit.
 name: CI
 
 on:
@@ -36,3 +38,11 @@ jobs:
           cache: false
       - name: Check formatting, tests and vet
         run: make check
+      - name: Vet the release platforms
+        env:
+          CGO_ENABLED: '0'
+        run: |
+          # Compiler verification only, no artifact: release.yml builds these platforms on a tag.
+          GOOS=linux GOARCH=amd64 go vet ./cmd/... ./internal/...
+          GOOS=linux GOARCH=arm64 go vet ./cmd/... ./internal/...
+          GOOS=darwin GOARCH=arm64 go vet ./cmd/... ./internal/...
