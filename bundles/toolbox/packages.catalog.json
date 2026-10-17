@@ -1185,6 +1185,7 @@
       },
       "notices": [
         "licenses/hadolint/LICENSE",
+        "licenses/hadolint/ThirdPartyNotices.txt",
         "licenses/hadolint/SOURCE"
       ]
     },
