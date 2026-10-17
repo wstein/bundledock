@@ -26,6 +26,13 @@ func TestSourceVersionShape(t *testing.T) {
 		{"regex does not match", `^jq-([0-9.]+)$`, "v1.8.2", "", false},
 		{"regex yields a bad shape", `^(.*)$`, "v3.7c", "", false},
 		{"regex capture ten digits", `^x([0-9]+)$`, "x1234567890", "", false},
+		{"unanchored regex spanning the whole version", `lychee-v([0-9.]+)`, "lychee-v0.24.2", "0.24.2", true},
+		{"regex must span the whole version: prerelease", `([0-9.]+)`, "1.2.3-rc1", "", false},
+		{"regex must span the whole version: prefix", `([0-9.]+)`, "x1.2y", "", false},
+		{"regex must span the whole version: suffix", `v([0-9.]+)`, "v1.2.3-rc1", "", false},
+		{"trailing newline with the default rule", "", "v1.2.3\n", "", false},
+		{"trailing newline with a regex", `^lychee-v([0-9.]+)$`, "lychee-v0.24.2\n", "", false},
+		{"regex yields five groups", `^x(.*)$`, "x1.2.3.4.5", "", false},
 		{"regex capture empty", `^x([0-9]*)$`, "x", "", false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

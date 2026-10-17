@@ -201,7 +201,8 @@ var (
 
 // SourceVersion derives the numeric mirror version V from a lock version LV
 // (naming table): the package's version_regex, or the default rule when it has
-// none, must yield one to four dotted groups of at most nine digits. Leading
+// none, must match the whole lock version (full-match semantics, so a
+// pattern cannot silently drop a prerelease suffix) and yield one to four dotted groups of at most nine digits. Leading
 // zeros inside a group are allowed. Any other outcome is "version-shape".
 func (p Package) SourceVersion(lockVersion string) (string, error) {
 	re := defaultSourceVersion
@@ -211,9 +212,18 @@ func (p Package) SourceVersion(lockVersion string) (string, error) {
 			return "", fmt.Errorf("version-shape: invalid version_regex")
 		}
 	}
+	// The pattern must match the whole lock version, not a substring of it.
 	m := re.FindStringSubmatch(lockVersion)
-	if m == nil || !numericSourceVersion.MatchString(m[1]) {
-		return "", fmt.Errorf("version-shape: lock version %q does not yield a numeric version", lockVersion)
+	if m == nil || m[0] != lockVersion || !numericSourceVersion.MatchString(m[1]) {
+		return "", fmt.Errorf("version-shape: lock version %q does not yield a numeric version", shorten(lockVersion))
 	}
 	return m[1], nil
+}
+
+// shorten bounds a value echoed in an error message.
+func shorten(s string) string {
+	if len(s) > 40 {
+		return s[:40] + "..."
+	}
+	return s
 }
