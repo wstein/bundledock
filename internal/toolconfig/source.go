@@ -49,22 +49,78 @@ var SourceFetchHosts = []string{
 	"static.crates.io",
 }
 
-var (
-	sourceRepository = regexp.MustCompile(`^https://[a-z0-9][a-z0-9.-]*/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$`)
-	sourceLicense    = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9.+-]*$`)
+// Bounds on the free-form parts of a source block.
+const (
+	maxSourceEntries = 64  // entries in licenses, excluded and static_system_libs
+	maxSourceText    = 200 // bytes in one license, list entry or version_regex
 )
 
+var (
+	sourceRepository = regexp.MustCompile(`^https://[a-z0-9][a-z0-9.-]*/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$`)
+	sourceLicenseID  = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9.+-]*$`)
+	encodedControl   = regexp.MustCompile(`(?i)%(?:[01][0-9a-f]|7f)`)
+)
+
+// validSourceText refuses empty, over-long and non-printable text: control
+// characters and format characters (bidi overrides, zero width characters).
 func validSourceText(s string) bool {
-	return s != "" && !strings.ContainsFunc(s, unicode.IsControl)
+	return s != "" && len(s) <= maxSourceText && !strings.ContainsFunc(s, func(r rune) bool {
+		return unicode.IsControl(r) || unicode.Is(unicode.Cf, r)
+	})
 }
 
+// validSourceTexts requires a bounded list of distinct valid texts.
 func validSourceTexts(values []string) bool {
+	if len(values) > maxSourceEntries {
+		return false
+	}
+	seen := map[string]bool{}
 	for _, v := range values {
-		if !validSourceText(v) {
+		if !validSourceText(v) || seen[v] {
+			return false
+		}
+		seen[v] = true
+	}
+	return true
+}
+
+// validSourceLicense accepts an SPDX license expression shape: identifiers
+// joined by single AND, OR or WITH operators, with balanced parentheses. It does
+// not check identifiers against the SPDX list.
+func validSourceLicense(expression string) bool {
+	if !validSourceText(expression) {
+		return false
+	}
+	depth, wantID := 0, true
+	for _, token := range strings.Split(expression, " ") {
+		for strings.HasPrefix(token, "(") {
+			if !wantID {
+				return false
+			}
+			depth++
+			token = token[1:]
+		}
+		closing := 0
+		for strings.HasSuffix(token, ")") {
+			closing++
+			token = token[:len(token)-1]
+		}
+		if wantID {
+			if !sourceLicenseID.MatchString(token) || token == "AND" || token == "OR" || token == "WITH" {
+				return false
+			}
+		} else {
+			if closing > 0 || token != "AND" && token != "OR" && token != "WITH" {
+				return false
+			}
+		}
+		wantID = !wantID
+		depth -= closing
+		if depth < 0 || closing > 0 && wantID {
 			return false
 		}
 	}
-	return true
+	return depth == 0 && !wantID
 }
 
 func validSourceRepository(raw string) bool {
@@ -83,7 +139,11 @@ func validSourceRepository(raw string) bool {
 // {version} and {lock_version}.
 func validSourceTarball(template string) bool {
 	expanded := strings.NewReplacer("{version}", "1.2.3", "{lock_version}", "v1.2.3").Replace(template)
-	if !validSourceText(expanded) || strings.ContainsAny(expanded, "{}\\ ") {
+	if !strings.Contains(template, "{version}") && !strings.Contains(template, "{lock_version}") {
+		return false
+	}
+	// Empty queries and fragments vanish when parsed, so refuse the markers.
+	if !validSourceText(expanded) || strings.ContainsAny(expanded, "{}\\ ?#") || encodedControl.MatchString(expanded) {
 		return false
 	}
 	u, err := url.Parse(expanded)
@@ -102,10 +162,10 @@ func validateSource(name string, s *Source) error {
 	switch s.Obligation {
 	case "none", "source-offer", "file-level-source", "undetermined":
 	default:
-		return fmt.Errorf("invalid source obligation %q for %s", s.Obligation, name)
+		return fmt.Errorf("invalid source obligation %q for %s", shorten(s.Obligation), name)
 	}
 	if s.Basis != "" && s.Basis != "declared" && s.Basis != "scanned" {
-		return fmt.Errorf("invalid source basis %q for %s", s.Basis, name)
+		return fmt.Errorf("invalid source basis %q for %s", shorten(s.Basis), name)
 	}
 	copyleft := s.Obligation == "source-offer" || s.Obligation == "file-level-source"
 	if s.Obligation != "undetermined" {
@@ -113,13 +173,19 @@ func validateSource(name string, s *Source) error {
 			return fmt.Errorf("source block of %s requires licenses and basis", name)
 		}
 	}
+	if len(s.Licenses) > maxSourceEntries {
+		return fmt.Errorf("source block of %s lists too many licenses", name)
+	}
 	for i, l := range s.Licenses {
-		if !sourceLicense.MatchString(l) || i > 0 && l <= s.Licenses[i-1] {
+		if !validSourceLicense(l) || i > 0 && l <= s.Licenses[i-1] {
 			return fmt.Errorf("source licenses of %s must be valid SPDX-style identifiers, sorted and unique", name)
 		}
 	}
 	if copyleft && (s.Upstream == nil || s.Recipe == nil) {
-		return fmt.Errorf("%s source block of %s requires upstream and recipe", s.Obligation, name)
+		return fmt.Errorf("%s source block of %s requires upstream and recipe", shorten(s.Obligation), name)
+	}
+	if s.Recipe != nil && s.Upstream == nil {
+		return fmt.Errorf("source recipe of %s requires upstream", name)
 	}
 	if s.Obligation == "none" && s.Recipe != nil {
 		return fmt.Errorf("source obligation none forbids a recipe for %s", name)
@@ -139,7 +205,7 @@ func validateSource(name string, s *Source) error {
 	}
 	if s.VersionRegex != "" {
 		re, err := regexp.Compile(s.VersionRegex)
-		if err != nil || re.NumSubexp() != 1 {
+		if len(s.VersionRegex) > maxSourceText || err != nil || re.NumSubexp() != 1 {
 			return fmt.Errorf("source version_regex of %s must compile and have exactly one capture group", name)
 		}
 	}
@@ -152,7 +218,7 @@ func validateSourceRecipe(name string, r *SourceRecipe) error {
 	case "custom":
 		return fmt.Errorf("source recipe custom is reserved and refused for %s", name)
 	default:
-		return fmt.Errorf("invalid source recipe kind %q for %s", r.Kind, name)
+		return fmt.Errorf("invalid source recipe kind %q for %s", shorten(r.Kind), name)
 	}
 	if !validSourceTexts(r.Excluded) || !validSourceTexts(r.StaticSystemLibs) {
 		return fmt.Errorf("invalid source recipe text for %s", name)
