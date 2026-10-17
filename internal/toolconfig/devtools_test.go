@@ -15,6 +15,7 @@ func TestDeveloperToolRecipes(t *testing.T) {
 		{"pinact", "suzuki-shunsuke/pinact", "tar.gz", "pinact", "v"},
 		{"zizmor", "zizmorcore/zizmor", "tar.gz", "zizmor", "v"},
 		{"cosign", "sigstore/cosign", "raw", "cosign", "v"},
+		{"git-cliff", "orhun/git-cliff", "tar.gz", "git-cliff", "v"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			p, ok := c.Catalog.Packages[tc.name]
