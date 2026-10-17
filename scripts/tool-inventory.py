@@ -53,6 +53,7 @@ LABELS = (
     ("btop", "btop (`btop`)"),
     ("helix", "Helix (`hx`)"),
     ("hugo", "Hugo (`hugo`, standard)"),
+    ("hadolint", "Hadolint (`hadolint`)"),
     ("actionlint", "actionlint (`actionlint`)"),
 )
 DISPLAY_SUFFIX = {"tmux": " (official static builds)"}

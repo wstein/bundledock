@@ -4,6 +4,7 @@ fzf --version
 bat --version
 lsd --version
 regctl version
+case "$(hadolint --version 2>&1)" in *[0-9].[0-9]*.[0-9]*) ;; *) echo "unexpected hadolint version output" >&2; exit 1 ;; esac
 case "$(actionlint -version 2>&1)" in *[0-9].[0-9]*.[0-9]*) ;; *) echo "unexpected actionlint version output" >&2; exit 1 ;; esac
 # Fixed input and filter avoid TTY interaction and inherited shell integrations.
 test "$(printf '%s\n' alpha beta | FZF_DEFAULT_OPTS= FZF_DEFAULT_OPTS_FILE= fzf --filter beta)" = beta

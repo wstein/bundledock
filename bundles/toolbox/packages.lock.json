@@ -1,7 +1,7 @@
 {
   "schema": 2,
-  "desired_digest": "236afec15056f6f5a0591cec4d2db5686120fb00190d83d243f1ba6ec4677991",
-  "catalog_digest": "41cd027fc551f7cc59737fe3f439e6a32d4a8a55b169cac0ee2c3cc930d901c0",
+  "desired_digest": "c7d8673e3ed341d0f7189359843598373e858963acfb49f804a4fa26ca68ba42",
+  "catalog_digest": "261382afa02eb4a666fd72b77a5e5128dbcae1663057782e7786062b10b7c7aa",
   "platforms": {
     "amd64": {
       "actionlint": {
@@ -80,6 +80,12 @@
         "version": "v8.30.1",
         "url": "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz",
         "sha256": "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb",
+        "verification": "publisher-sha256"
+      },
+      "hadolint": {
+        "version": "v2.15.1",
+        "url": "https://github.com/hadolint/hadolint/releases/download/v2.15.1/hadolint-linux-x86_64",
+        "sha256": "c7187db94eeeeca956519a6af171adc31453941a1e777961f6e680f697c8c507",
         "verification": "publisher-sha256"
       },
       "helix": {
@@ -334,6 +340,12 @@
         "version": "v8.30.1",
         "url": "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_arm64.tar.gz",
         "sha256": "e4a487ee7ccd7d3a7f7ec08657610aa3606637dab924210b3aee62570fb4b080",
+        "verification": "publisher-sha256"
+      },
+      "hadolint": {
+        "version": "v2.15.1",
+        "url": "https://github.com/hadolint/hadolint/releases/download/v2.15.1/hadolint-linux-arm64",
+        "sha256": "f6198ef8090f404dbb771abfee086eb8c48ac177f30da7fd3510aca35b344b5d",
         "verification": "publisher-sha256"
       },
       "helix": {

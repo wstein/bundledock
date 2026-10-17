@@ -201,6 +201,7 @@ networking disabled. Native smoke acceptance remains part of an approved build.
 | Git LFS (`git-lfs`) | 3.8.0 | [Homepage](https://git-lfs.com) | [Source](https://github.com/git-lfs/git-lfs) |
 | GitHub CLI | 2.102.0 | [Homepage](https://cli.github.com) | [Source](https://github.com/cli/cli) |
 | Gitleaks (`gitleaks`) | 8.30.1 | [Homepage](https://gitleaks.io) | [Source](https://github.com/gitleaks/gitleaks) |
+| Hadolint (`hadolint`) | 2.15.1 | [Homepage](https://github.com/hadolint/hadolint) | [Source](https://github.com/hadolint/hadolint) |
 | Helix (`hx`) | 25.07.1 | [Homepage](https://helix-editor.com) | [Source](https://github.com/helix-editor/helix) |
 | Herdr (`herdr`) | 0.9.5 | [Homepage](https://herdr.dev) | [Source](https://github.com/herdrdev/herdr) |
 | Hugo (`hugo`, standard) | 0.168.0 | [Homepage](https://gohugo.io) | [Source](https://github.com/gohugoio/hugo) |
@@ -462,6 +463,8 @@ artifacts and smoke stubs. Native execution, OCI builds/smoke, vulnerability sca
 and consumer activation remain unverified pending separate approval.
 
 `actionlint` lints GitHub Actions workflow files statically: `actionlint .github/workflows/ci.yml`. It runs `shellcheck` and `pyflakes` only when they are on `PATH`. It needs no network access or user configuration.
+
+`hadolint` lints Dockerfiles: `hadolint Dockerfile`. Keep a project `.hadolint.yaml` in the repository. It is an unmodified official GPL-3.0 release binary; the full upstream `LICENSE` is retained under `licenses/hadolint/`.
 
 ## Git Large File Storage
 

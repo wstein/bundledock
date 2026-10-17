@@ -1162,6 +1162,31 @@
       "notices": [
         "licenses/actionlint/SOURCE"
       ]
+    },
+    "hadolint": {
+      "provider": "github",
+      "repository": "hadolint/hadolint",
+      "tag_prefix": "v",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "x86_64",
+        "arm64": "arm64"
+      },
+      "asset": "hadolint-linux-{arch}",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "raw",
+        "members": {
+          "hadolint": "bin/hadolint"
+        }
+      },
+      "notices": [
+        "licenses/hadolint/LICENSE",
+        "licenses/hadolint/SOURCE"
+      ]
     }
   }
 }
