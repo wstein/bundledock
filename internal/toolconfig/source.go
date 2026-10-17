@@ -193,3 +193,27 @@ func ValidateProductNames(names []string) error {
 	}
 	return nil
 }
+
+var (
+	defaultSourceVersion = regexp.MustCompile(`^v?([0-9]{1,9}(?:\.[0-9]{1,9}){0,3})$`)
+	numericSourceVersion = regexp.MustCompile(`^[0-9]{1,9}(?:\.[0-9]{1,9}){0,3}$`)
+)
+
+// SourceVersion derives the numeric mirror version V from a lock version LV
+// (naming table): the package's version_regex, or the default rule when it has
+// none, must yield one to four dotted groups of at most nine digits. Leading
+// zeros inside a group are allowed. Any other outcome is "version-shape".
+func (p Package) SourceVersion(lockVersion string) (string, error) {
+	re := defaultSourceVersion
+	if p.Source != nil && p.Source.VersionRegex != "" {
+		var err error
+		if re, err = regexp.Compile(p.Source.VersionRegex); err != nil || re.NumSubexp() != 1 {
+			return "", fmt.Errorf("version-shape: invalid version_regex")
+		}
+	}
+	m := re.FindStringSubmatch(lockVersion)
+	if m == nil || !numericSourceVersion.MatchString(m[1]) {
+		return "", fmt.Errorf("version-shape: lock version %q does not yield a numeric version", lockVersion)
+	}
+	return m[1], nil
+}
