@@ -53,6 +53,7 @@ type Package struct {
 	Sidecar       string            `json:"sidecar,omitempty"`
 	Install       Install           `json:"install"`
 	Notices       []string          `json:"notices,omitempty"`
+	Source        *Source           `json:"source,omitempty"`
 }
 type Install struct {
 	Profile        string            `json:"profile,omitempty"`
