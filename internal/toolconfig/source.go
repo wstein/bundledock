@@ -147,11 +147,11 @@ func validSourceTarball(template string) bool {
 	// A percent-encoded percent sign (%25) is refused outright: it is the way
 	// to smuggle an encoded control byte past a single decode. Other encoded
 	// control bytes are caught by the check of the decoded path below.
-	if !strings.HasPrefix(expanded, "https://") || !validSourceText(expanded) || strings.ContainsAny(expanded, "{}\\ ?#") || strings.Contains(expanded, "%25") {
+	if !strings.HasPrefix(expanded, "https://") || !validSourceText(expanded) || strings.ContainsAny(expanded, "?#") || strings.Contains(expanded, "%25") {
 		return false
 	}
 	u, err := url.Parse(expanded)
-	if err != nil || u.Scheme != "https" || u.User != nil || !slices.Contains(SourceFetchHosts, u.Host) {
+	if err != nil || u.User != nil || !slices.Contains(SourceFetchHosts, u.Host) {
 		return false
 	}
 	// The decoded path gets the same rules as the literal text: no control or
