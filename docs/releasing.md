@@ -24,7 +24,8 @@ and every image tag such as `toolbox/2026.10.15-b98.1` start no release run) and
 dispatch (dry run, never publishes).
 
 1. **verify**: owner-only; annotated tag; tag commit equals the run commit and is on `main`;
-   a successful `CI` push run for that commit; no release for the tag yet; `make check`;
+   a successful `CI` push run for that commit; no release for the tag yet; a version strictly
+   above every other `bdock/vX.Y.Z` tag and release (numeric comparison, so 0.10.0 > 0.9.0); `make check`;
    `go mod verify`.
 2. **build** (linux/amd64, linux/arm64, darwin/arm64): `scripts/release.sh` twice per
    platform with an empty second build cache; the trees must be byte-identical and name the
@@ -49,7 +50,14 @@ flags, platform). Nothing is signed or notarized.
       deployment-tag rule `bdock/v*`. The workflow names `environment: release`; if it does not
       exist GitHub creates it unprotected on first use. Optional: set the repository variable
       `BDOCK_RELEASE_DRAFT` to `true` to publish drafts you release by hand.
-- [ ] Optional: a ruleset blocking deletion and update of `bdock/v*` tags.
+- [ ] Recommended, a repository setting only you change (the workflow and agents never do):
+      Settings, Rules, Rulesets, New ruleset, "New tag ruleset". Name it e.g. `bdock release tags`,
+      Enforcement status `Active`, target `Include by pattern` with `bdock/v*`, enable the rules
+      "Restrict deletions" and "Block force pushes" (this blocks moving or deleting a tag), and
+      leave "Restrict creations" off so you can still push new tags (or restrict creations to
+      yourself in the bypass list). Create the ruleset before the first tag; a tag cannot be
+      protected retroactively against an earlier deletion. The version-order check in `verify`
+      does not replace it: it stops a lower version, the ruleset stops tag rewriting.
 - [ ] Rehearse once: Actions, `release`, "Run workflow" on `main` (version `0.0.0-dryrun`).
       Dry-run artifacts live one day and, in a public repository, any signed-in GitHub user can
       download them; they are unsigned rehearsal builds, not releases.
@@ -76,6 +84,9 @@ tag (accepted only while no release exists) or, if in doubt, use the next patch 
 Never delete and re-create a tag. The module path `bundledock` is not fetchable through the Go
 proxy, so no module cache can pin a bad tag, but release assets and users' copied checksums
 can.
+
+A tag whose version is not above every existing `bdock/v` tag or release fails `verify` with
+"not above every existing bdock/v tag": release the next higher version.
 
 Notes: `BDOCK_RELEASE_DRAFT` must be empty, `true` or `false` (anything else, such as `True`,
 fails publish before a release is created). A manual dry run started on a tag ref shares that

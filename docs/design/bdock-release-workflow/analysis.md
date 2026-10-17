@@ -103,3 +103,11 @@ must be exactly `make check` and `go mod verify`, nothing between the second bui
 comparison, only known `if` lines, no `-o` test tricks, exactly two `git fetch` in verify.
 The golden file refuses updates when `CI` is set and always fails after writing. Docs: dry-run
 artifact visibility and expiry-versus-approval, next patch version instead of re-creating a tag.
+
+### Owner decisions after round 3
+
+Version monotonicity is built (`release-verify.sh monotonic`, a tag-only verify step, script tests,
+six workflow mutants). The tag ruleset stays a setting the owner changes, documented in
+`docs/releasing.md`. `SECURITY.md` is postponed by the owner (open decision 7 stays). The question
+whether the decision covers later tags is still open with the owner and is not recorded as a
+standing approval in `AGENTS.md`.
