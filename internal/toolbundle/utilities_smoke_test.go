@@ -12,10 +12,15 @@ func TestUtilitiesSmokeRejectsWrongOutput(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, broken := range []string{"", "fzf", "bat", "lsd", "regctl", "actionlint", "hadolint", "pinact", "zizmor", "cosign", "git-cliff", "zoxide", "difft", "jsonschema-cli"} {
+	for _, broken := range []string{"", "fzf", "bat", "lsd", "regctl", "actionlint", "hadolint", "pinact", "zizmor", "cosign", "git-cliff", "zoxide", "difft", "jsonschema-cli", "fail:actionlint", "fail:hadolint", "fail:pinact", "fail:zizmor", "fail:cosign", "fail:git-cliff", "fail:zoxide", "fail:difft", "fail:jsonschema-cli", "loose:zizmor"} {
 		t.Run("broken-"+broken, func(t *testing.T) {
 			home := t.TempDir()
 			bin := t.TempDir()
+			versionEcho := map[string]string{
+				"actionlint": "echo '1.7.12'", "hadolint": "echo 'Haskell Dockerfile Linter 2.15.1'", "pinact": "echo 'pinact version 5.0.0'",
+				"zizmor": "echo 'zizmor 1.31.1'", "cosign": "echo 'GitVersion:    v3.1.3'", "git-cliff": "echo 'git-cliff 2.14.2'",
+				"zoxide": "echo 'zoxide 0.10.0'", "difft": "echo 'Difftastic 0.71.0'", "jsonschema-cli": "echo 'jsonschema-cli 0.58.5'",
+			}
 			stubs := map[string]string{
 				"fzf":            "case \"$*\" in --version) echo 0.74.5;; '--filter beta') cat >/dev/null; echo beta;; *) exit 2;; esac",
 				"bat":            "case \"$*\" in --version) echo 'bat 0.26.1';; '--paging=never --color=never --style=plain --language=go -') cat;; *) exit 2;; esac",
@@ -32,8 +37,15 @@ func TestUtilitiesSmokeRejectsWrongOutput(t *testing.T) {
 				"regctl":         "case \"$*\" in version) echo 'VCSTag: v0.11.6';; --help) echo help;; 'image digest --help') echo help;; 'ref --format {{.Repository}} example.invalid/team/image:v1') echo team/image;; *) exit 2;; esac",
 			}
 			for name, body := range stubs {
-				if name == broken {
+				switch {
+				case name == broken:
 					body = "echo wrong"
+				case broken == "fail:"+name:
+					// Matching text with a failing exit status must not pass.
+					body = "case \"$*\" in -version|--version|version) " + versionEcho[name] + "; exit 1;; *) exit 2;; esac"
+				case broken == "loose:"+name:
+					// A glibc loader error contains a dotted number but is no version banner.
+					body = "echo '/lib/libc.so.6: version `GLIBC_2.34.0` not found' >&2; exit 1"
 				}
 				if err := os.WriteFile(filepath.Join(bin, name), []byte("#!/bin/sh\nset -eu\n"+body+"\n"), 0755); err != nil {
 					t.Fatal(err)
