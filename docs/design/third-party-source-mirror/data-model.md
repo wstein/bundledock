@@ -111,7 +111,7 @@ fields marked (standalone only), because a file cannot contain its own hash. Sch
 | --- | --- |
 | `schema` | `bundledock.source-manifest/v1` |
 | `component`, `version` (`LV`), `release_tag`, `revision` | identity |
-| `produced_by` | `tool: "bdock"`, `tool_version`, `bdock_source_commit`, `bdock_go_version`, `entry_sha256` (SHA-256 of the canonical JSON of the single source-lock entry: keys sorted, two-space indent, LF; never of the whole file, so later versions do not change older bundles) |
+| `produced_by` | `tool: "bdock"`, `tool_version`, `bdock_source_commit`, `bdock_go_version`, `entry_sha256` (SHA-256 of the canonical JSON of the single source-lock entry: keys sorted, two-space indent, LF, one trailing newline, no HTML escaping of `<`, `>`, `&` in strings (Go `SetEscapeHTML(false)`), other escapes per RFC 8259; never of the whole file, so later versions do not change older bundles) |
 | `source_date_epoch` | mtime of all bundle entries; the peeled upstream tag commit time written by `pin` |
 | `upstream` | `repository`, `tag`, `tag_object` (annotated tag object or null), `tag_commit` (peeled), `tarball_url`, `tarball_name`, `tarball_sha256`, `tarball_bytes` |
 | `archive_anomalies`, `anomalies_truncated` | `anomalies_truncated` is an integer count of entries beyond the first 1 000; `archive_anomalies` objects: absolute or escaping symlink targets, duplicate member names, special members (bounded to 1 000 entries) |

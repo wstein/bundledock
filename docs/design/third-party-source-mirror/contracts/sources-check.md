@@ -29,7 +29,7 @@ architectures):
 
 Network, read-only GETs to the mirror's release API; exits 3 (`network-disabled`) under
 `BDOCK_SOURCES_OFFLINE=1`. For every registry entry used by the lock: the release exists, is not a draft,
-its asset digests equal the registry (source of the digest: the release API `digest` field of each asset, **unverified** to exist for this repository; fallback: download each asset with the response limit of the [spec](../spec.md#limits) and hash it, which can be up to 1.9 GiB per asset, run only by the publication gate, with a 30 minute total timeout), and the manifest `component` and `version` match. Codes
+its asset digests equal the registry (source of the digest: the release API `digest` field of each asset, **unverified** to exist for this repository; fallback: download each asset with the response limit of the [spec](../spec.md#limits) (2 GiB per response; assets are limited to 1.9 GiB each) and hash it, run only by the publication gate, with a 30 minute total timeout), and the manifest `component` and `version` match. Codes
 `release-not-published`, `release-hash-mismatch` (spec failure table). The publication gate for a bundle
 runs `check --enforce --online`; `make check` never uses `--online`.
 
