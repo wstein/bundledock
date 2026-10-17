@@ -122,6 +122,19 @@ jobs:
             *"HTTP 404"*) echo "no release for $TAG yet" ;;
             *) echo "cannot tell whether a release exists: $out" >&2; exit 1 ;;
           esac
+      - name: Require a version above every existing release
+        if: steps.resolve.outputs.dry_run == 'false'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ steps.resolve.outputs.tag }}
+        run: |
+          set -euo pipefail
+          # Tags (annotated ones peeled) and releases, so a deleted tag with a surviving release counts too.
+          tags=$(git ls-remote --tags "https://github.com/$REPO" 'refs/tags/bdock/v*' | cut -f2 | sed 's|^refs/tags/||; s|\^{}$||')
+          releases=$(gh api "repos/$REPO/releases" --paginate --jq '.[].tag_name')
+          printf '%s\n%s\n' "$tags" "$releases" | sh .github/scripts/release-verify.sh monotonic "$TAG"
       - run: make check
       - run: go mod verify
 

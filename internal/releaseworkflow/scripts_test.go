@@ -392,3 +392,44 @@ func TestProvenanceRecordsRevisionAndDirtyState(t *testing.T) {
 		}
 	}
 }
+
+func monotonic(t *testing.T, tag, existing string) (string, error) {
+	t.Helper()
+	cmd := exec.Command("sh", script(t, "release-verify.sh"), "monotonic", tag)
+	cmd.Stdin = strings.NewReader(existing)
+	var out bytes.Buffer
+	cmd.Stdout, cmd.Stderr = &out, &out
+	err := cmd.Run()
+	return out.String(), err
+}
+
+func TestVerifyMonotonicVersion(t *testing.T) {
+	existing := "bdock/v0.1.0\nbdock/v0.2.0\nbdock/v0.10.0\n\nbdock/v0.1.0-rc1\ntoolbox/2026.10.15-b98.1\n"
+	ok := map[string]string{
+		"bdock/v0.10.1": existing, // numeric, not lexical: 0.10.1 > 0.10.0 > 0.2.0
+		"bdock/v1.0.0":  existing,
+		"bdock/v0.1.0":  "",               // first release
+		"bdock/v0.2.0":  "bdock/v0.2.0\n", // the tag itself, listed by ls-remote and releases
+		"bdock/v0.3.0":  "bdock/v0.3.0\nbdock/v0.3.0\nbdock/v0.2.9\n",
+	}
+	for tag, ex := range ok {
+		if out, err := monotonic(t, tag, ex); err != nil {
+			t.Errorf("%s over %q rejected: %s", tag, ex, out)
+		}
+	}
+	bad := map[string]string{
+		"bdock/v0.2.0": existing,         // older than 0.10.0
+		"bdock/v0.9.0": existing,         // numeric: 0.9.0 < 0.10.0
+		"bdock/v0.1.5": "bdock/v0.2.0\n", // older patch line
+		"bdock/v1.0.0": "bdock/v1.0.1\n", // newer exists
+		"bdock/v0.1.0": "bdock/v0.0.1\nbdock/v0.1.0\nv0.1.0\nbdock/v0.1.1\n",
+	}
+	for tag, ex := range bad {
+		if out, err := monotonic(t, tag, ex); err == nil {
+			t.Errorf("%s over %q accepted: %s", tag, ex, out)
+		}
+	}
+	if _, err := monotonic(t, "bdock/v0.1.0-rc1", ""); err == nil {
+		t.Error("a non-release tag is accepted")
+	}
+}

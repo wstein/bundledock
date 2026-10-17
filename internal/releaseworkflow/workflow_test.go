@@ -376,7 +376,23 @@ func violations(w workflow, raw string) []string {
 			add("exists", "release-exists step lacks %q", want)
 		}
 	}
-	for _, name := range []string{"Require an annotated tag", "Require a green CI run", "Require that no release exists"} {
+	mono, _ := stepNamed(verify, "Require a version above every existing release")
+	for _, want := range []string{
+		`tags=$(git ls-remote --tags "https://github.com/$REPO" 'refs/tags/bdock/v*' | cut -f2 | sed 's|^refs/tags/||; s|\^{}$||')`,
+		`releases=$(gh api "repos/$REPO/releases" --paginate --jq '.[].tag_name')`,
+		`printf '%s\n%s\n' "$tags" "$releases" | sh .github/scripts/release-verify.sh monotonic "$TAG"`,
+	} {
+		if !strings.Contains(mono.Run, want) {
+			add("monotonic", "monotonic step lacks %q", want)
+		}
+	}
+	if mono.Env["TAG"] != "${{ steps.resolve.outputs.tag }}" || mono.Env["GH_TOKEN"] != "${{ github.token }}" || mono.Env["REPO"] != "${{ github.repository }}" {
+		add("monotonic", "monotonic step env = %v", mono.Env)
+	}
+	if i, j := indexOf(verify, "Require a version above"), indexOf(verify, "Require that no release exists"); i < 0 || j < 0 || i < j {
+		add("monotonic", "the monotonic check must follow the release-exists check")
+	}
+	for _, name := range []string{"Require an annotated tag", "Require a green CI run", "Require that no release exists", "Require a version above every existing release"} {
 		s, ok := stepNamed(verify, name)
 		if !ok || s.If != "steps.resolve.outputs.dry_run == 'false'" {
 			add("guard", "step %q must be guarded by %s", name, dryGuard)
@@ -673,6 +689,12 @@ func TestReleaseWorkflowMutantsAreCaught(t *testing.T) {
 		{"draft test inverted", "publish", "if [ \"$DRAFT\" = true ]; then flags+=(--draft); fi", "if [ \"$DRAFT\" != true ]; then flags+=(--draft); fi"},
 		{"extra release asset", "publish", "\"$RUNNER_TEMP\"/dist/bdock_*.tar.gz \"$RUNNER_TEMP/dist/SHA256SUMS\"", "\"$RUNNER_TEMP\"/dist/* \"$RUNNER_TEMP/dist/SHA256SUMS\""},
 		{"test -o trick", "swallow", "test \"$n\" -ge 1 ||", "test \"$n\" -ge 1 -o 1 = 1 ||"},
+		{"monotonic step unguarded", "guard", "      - name: Require a version above every existing release\n        if: steps.resolve.outputs.dry_run == 'false'\n", "      - name: Require a version above every existing release\n"},
+		{"monotonic script call removed", "monotonic", `| sh .github/scripts/release-verify.sh monotonic "$TAG"`, `| cat`},
+		{"monotonic ignores releases", "monotonic", `printf '%s\n%s\n' "$tags" "$releases"`, `printf '%s\n' "$tags"`},
+		{"monotonic ignores tags", "monotonic", `printf '%s\n%s\n' "$tags" "$releases"`, `printf '%s\n' "$releases"`},
+		{"monotonic wrong tag", "monotonic", "          TAG: ${{ steps.resolve.outputs.tag }}\n        run: |\n          set -euo pipefail\n          # Tags (annotated", "          TAG: bdock/v999.0.0\n        run: |\n          set -euo pipefail\n          # Tags (annotated"},
+		{"monotonic tag filter widened", "monotonic", `'refs/tags/bdock/v*'`, `'refs/tags/nothing'`},
 		{"no second build", "build", `GOCACHE="$RUNNER_TEMP/gocache-second" TARGETS="$OS/$ARCH" RELEASE_DIR="$RUNNER_TEMP/second" sh scripts/release.sh`, `true`},
 		{"no byte comparison", "build", `diff -r "$RUNNER_TEMP/first" "$RUNNER_TEMP/second"`, `true`},
 		{"dirty source allowed", "build", `grep -Fx "source_modified=false"`, `grep -F "source_modified"`},
