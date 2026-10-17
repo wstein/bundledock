@@ -88,3 +88,18 @@ dropped; AGENTS.md names the exception in the remaining sentence. Not fixed, rec
 version monotonicity check (open decision 10), a few low gaps in the smoke script's
 PROVENANCE greps and release.sh `--untracked-files`, reproducibility proven on one runner only.
 
+
+### Round 3 (author, on the coordinator's instruction to close every low finding)
+
+Closed on top of c438c55, each with a failing test or mutant first: smoke PROVENANCE
+exactness (four mutated-archive cases), `source_modified`/untracked state (already tested),
+and, from the SheetMill 019 final reviews, rules plus mutants for: reassigning
+`ACTOR`/`OWNER`/`PUSHER`/`COMMIT`/`TAG`/`REPO`/`GITHUB_SHA`/`n`/`remote`/`existing`
+(including `declare`, `read`, `printf -v`), `HEAD == COMMIT` in build, smoke and publish,
+exact `with:` lists (no `ref`, `run-id`, `github-token`), setup-go `go-version-file` plus
+`check-latest: false` in every job (`.go-version` 1.27.2 differs from the `go.mod` minimum
+1.25 on purpose), the exact `SHA256SUMS` line, the exact CI count query, verify gates that
+must be exactly `make check` and `go mod verify`, nothing between the second build and the
+comparison, only known `if` lines, no `-o` test tricks, exactly two `git fetch` in verify.
+The golden file refuses updates when `CI` is set and always fails after writing. Docs: dry-run
+artifact visibility and expiry-versus-approval, next patch version instead of re-creating a tag.
