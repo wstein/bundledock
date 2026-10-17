@@ -39,7 +39,7 @@ func TestUtilitiesSmokeRejectsWrongOutput(t *testing.T) {
 				"zoxide":         "case \"$*\" in --version) echo 'zoxide 0.10.0';; *) exit 2;; esac",
 				"difft":          "case \"$*\" in --version) echo 'Difftastic 0.71.0';; *) exit 2;; esac",
 				"jsonschema-cli": "case \"$*\" in --version) echo 'Version: 0.58.5';; *) exit 2;; esac",
-				"gh":             "test \"${GH_PROMPT_DISABLED:-}\" = 1 || exit 3; case \"$*\" in 'stack --version') exec \"$XDG_DATA_HOME/gh/extensions/gh-stack/gh-stack\" --version;; *) exit 2;; esac",
+				"gh":             "test \"${GH_PROMPT_DISABLED:-}\" = 1 || exit 3; IFS= read -r _ && exit 4; case \"$*\" in 'stack --version') exec \"$XDG_DATA_HOME/gh/extensions/gh-stack/gh-stack\" --version;; *) exit 2;; esac",
 				"gh-stack":       "case \"$*\" in --version) echo 'gh stack version 0.2.1';; *) exit 2;; esac",
 				"regctl":         "case \"$*\" in version) echo 'VCSTag: v0.11.6';; --help) echo help;; 'image digest --help') echo help;; 'ref --format {{.Repository}} example.invalid/team/image:v1') echo team/image;; *) exit 2;; esac",
 			}
@@ -83,14 +83,27 @@ func TestUtilitiesSmokeRejectsWrongOutput(t *testing.T) {
 			if broken == "no-gh" {
 				// Without gh the discovery check is skipped with a message.
 				path = bin + ":/usr/bin:/bin"
-				for _, dir := range []string{"/usr/bin", "/bin"} {
-					if _, err := os.Stat(dir + "/gh"); err == nil {
-						t.Skip("gh is installed in a system directory")
+				// Only the utilities the script needs, so gh is never on PATH.
+				tools := filepath.Join(root, "tools")
+				if err := os.MkdirAll(tools, 0755); err != nil {
+					t.Fatal(err)
+				}
+				for _, tool := range []string{"sh", "grep", "sed", "cat", "mktemp", "rm", "mkdir", "ln", "printf", "dirname", "env", "head", "tr", "sort", "uname"} {
+					if p, err := exec.LookPath(tool); err == nil {
+						if err := os.Symlink(p, filepath.Join(tools, tool)); err != nil {
+							t.Fatal(err)
+						}
 					}
 				}
+				path = bin + ":" + tools
 			}
 			cmd.Env = append(os.Environ(), "HOME="+home, "BUNDLEDOCK_TOOLBOX="+root, "PATH="+path)
+			// A live stdin: an unguarded gh call would read it (a prompt hazard).
+			cmd.Stdin = strings.NewReader("y\n")
 			out, err := cmd.CombinedOutput()
+			if broken == "missing:gh-stack" && !strings.Contains(string(out), "libexec/gh-stack version probe failed") {
+				t.Fatalf("missing extension binary must fail its direct probe: %v\n%s", err, out)
+			}
 			if broken == "no-gh" {
 				if err != nil || !strings.Contains(string(out), "skipping gh stack discovery check") {
 					t.Fatalf("missing gh must skip with a message: %v\n%s", err, out)
