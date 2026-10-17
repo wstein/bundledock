@@ -36,7 +36,7 @@ the repository root, choosing the additional checks that cover your change:
 | Change | Checks |
 | --- | --- |
 | Go or build behavior | `make check`; `make build` only with explicit user approval |
-| Local CLI release artifacts | `make release-test` |
+| Local CLI release artifacts | `make release-test`; the CI release is described in [releasing](docs/releasing.md) |
 | Documentation site or rendered guides | `make docs-test` |
 | Tool extraction, catalog, or volumes | `make bundle-test`, plus Docker checks below |
 | OCI image, tool pins, or consumer compatibility | `make bundle-build bundle-smoke` on native Linux AMD64 and ARM64 |

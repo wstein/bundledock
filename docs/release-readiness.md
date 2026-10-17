@@ -1,71 +1,47 @@
 ---
-title: Draft release readiness
-description: Unreleased capabilities, evidence limits, and decisions needed before a first tagged CLI release.
+title: Release readiness
+description: State of the bdock CLI release path and what remains the owner's decision.
 weight: 60
 ---
 
-# v0.1 release readiness — draft
+# `bdock` CLI release readiness
 
-This is a local preparation note, not a release announcement or approval to tag,
-publish, or activate an image. It summarizes the repository state inspected on
-2026-10-10 at `731c6fdb4b0da3b2c5c8a55b47a84dc8877aceb0`, plus the contribution
-and review templates introduced with this note. Later changes need their own
-verification; the authoritative tool inventory is the
-[catalog and lock](toolbox.md), not a count in these notes.
+Updated 2026-10-17. This replaces the draft of 2026-10-10. It is a status note, not a release
+announcement and not approval to tag, publish or activate an image. The gap analysis against
+the earlier draft is in [the design analysis](design/bdock-release-workflow/analysis.md); the
+authoritative tool inventory is the [catalog and lock](toolbox.md).
 
-## Draft release notes
+## CLI release
 
-- BundleDock is a standalone repository with the original shared history
-  preserved; Anchorage owns consumer devcontainer integration separately.
-- The CLI supports tool upgrades and shared volume initialization. Local release
-  preparation builds Linux AMD64 and ARM64 binaries with version injection,
-  license, checksums, and compiler/source provenance.
-- The scratch OCI carrier provides pinned tools for read-only shared volumes.
-  Tool inputs and licenses live under `bundles/toolbox/`.
-- Publication retains a durable published-tool baseline. The current
-  [owner-merge flow](publication.md) accepts an actual human `wstein` merge of
-  an eligible bot updater for frozen-lock publication across all nine bundles
-  after successful exact merged-main CI. First publication requires separate
-  exact-revision operation approval. Manual publication of an exact approved
-  `main` SHA remains available. Native build/smoke checks gate registry writes.
-- A local Hugo site renders the existing guides using a verified official
-  prebuilt dependency. Host documentation integration checks are opt-in.
-- [Contribution guidance](../CONTRIBUTING.md), bug and feature templates, and a
-  pull request template document focused changes and review evidence.
-- BundleDock's own code is licensed under [EUPL-1.2](../LICENSE); upstream tools
-  retain their own notices.
+- Owner decision 2026-10-17: "bdock wie smill". The CLI is released by a tag-driven CI workflow
+  (`.github/workflows/release.yml`), for linux/amd64, linux/arm64 and darwin/arm64. Tags are
+  `bdock/vMAJOR.MINOR.PATCH`; the first planned version is `0.1.0`. The owner procedure is
+  [releasing](releasing.md); the design is [docs/design/bdock-release-workflow](design/bdock-release-workflow/spec.md).
+- State: the workflow is **implemented on a branch and not merged**; no tag exists and no
+  workflow has run. Archive building, version injection (`-X main.version`), `PROVENANCE`
+  and `SHA256SUMS` are in `scripts/release.sh`, shared by local preparation and CI.
+- Unverified until the first real run: the GitHub-side tag path (annotated-tag fetch, CI-run
+  query, release lookup, `gh release create`), runner labels such as `ubuntu-24.04-arm`, and
+  the `release` environment. The workflow's dry run covers verify, build and smoke only.
+- Native evidence for the CLI will come from the smoke job on three native runners. It runs
+  hermetic commands only and says nothing about `tools volume` or `tools upgrade`.
 
-## Evidence and release blockers
+## What this release does not cover
 
-The [verification record](development.md#verification-evidence) names historical
-native AMD64 and ARM64 CI results and their exact revisions. Those results do
-not verify every later change. The [local artifact checks](development.md#local-cli-artifacts)
-cover artifact preparation; they do not demonstrate registry publication or
-consumer activation. Obtain explicit user approval before collecting artifact, image, release, or
-documentation build evidence for the final candidate, including both native
-architectures for changed tool/image behavior, before calling it ready. Routine
-source tests and vet remain automatic. Pushes, merges, schedules and bots alone
-do not authorize builds. Lock-only updaters do not dispatch native builds;
-the separate publisher validates the actual owner merge described above.
+- The OCI tool images and their registry publication, which follow [publication](publication.md).
+- [Embedded dependency findings](development.md#embedded-dependency-findings) in Gitleaks,
+  Syft and Trivy concern third-party binaries inside the toolbox image. The CLI archives do
+  not contain them, so they neither block nor qualify a CLI release; they stay open for the
+  image and must not be closed by rebuilding or patching third-party tools.
+- Consumer activation of any image; Quay publication; authenticated agent workflows.
 
-[Embedded dependency findings](development.md#embedded-dependency-findings)
-remain open in Gitleaks, Syft, and Trivy. The recorded upstream inspection found
-no patched official stable prebuilt at those pins. Recheck official stable
-releases before release review; do not rebuild or patch third-party tools to
-close the findings. Checksum and smoke success do not resolve them.
+## Before the first tag
 
-Before any release tag or publication, apply the
-[release review requirement](development.md#release-review) to every item in the
-untracked local TODO list. Unfinished or blocked items need resolution or an
-explicit user decision to defer each one. This note does not defer any item.
+Apply the [release review requirement](development.md#release-review) to the untracked local
+TODO list: every item resolved or explicitly deferred by the owner. Report builds and
+workflow runs honestly: a passing source check is not release readiness, and pushes, merges,
+schedules and bots do not authorize builds outside the exceptions in `AGENTS.md`.
 
-A security reporting contact/channel and a code of conduct with an enforcement
-owner still require user decisions; no such contact or policy is established by
-the contribution templates. Confirm those decisions as part of the remaining
-community standards review.
-
-Quay publication, authenticated agent workflows, interactive terminal behavior,
-and adoption of a new consumer image have separate verification needs; see the
-[development limits](development.md#verification-evidence) and
-[publication procedure](publication.md). No release tag, GitHub release, registry
-publication, or consumer activation is performed by preparing this draft.
+Community files exist: [contributing guide](../CONTRIBUTING.md), templates, and the
+[code of conduct](../CODE_OF_CONDUCT.md) with its reporting contact. BundleDock's own code is
+licensed under [EUPL-1.2](../LICENSE); upstream tools keep their notices.

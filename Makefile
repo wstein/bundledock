@@ -22,7 +22,7 @@ export IMAGE CONSUMER
 help:
 	@printf '%s\n' \
 	  'make build             Build bin/bdock' \
-	  'make release           Build local two-architecture CLI artifacts' \
+	  'make release           Build local CLI artifacts (linux amd64/arm64, darwin arm64)' \
 	  'make release-test      Verify CLI release artifacts end to end' \
 	  'make run ARGS="--help"  Run the CLI' \
 	  'make test              Run tests' \
