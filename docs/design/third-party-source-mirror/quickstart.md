@@ -1,41 +1,47 @@
 # Quickstart: third-party source mirror
 
-Commands exist only after the work items in [tasks.md](tasks.md); this is the intended use. Steps 1,
-2 and 5 are offline and run automatically; step 3 is a build and needs explicit approval each time.
-Use a temporary directory for outputs, never the repository tree.
+Commands exist only after the work items in [tasks.md](tasks.md); this is the intended use. Steps 1, 2 and 6
+run without approval in a source checkout. Steps 3 and 4 are network/build steps (see
+[effects](contracts/sources-command.md#effects)); `fetch` needs explicit approval each time. Use a temporary
+directory for outputs.
 
-1. Inspect the plan for a copyleft tool (offline):
+1. Inspect what the catalog says (offline):
+
+   ```bash
+   bdock tools sources check --json | jq '.summary'
+   ```
+
+2. Render an existing plan against the catalog and lock (offline; `consistent: yes` expected):
+
+   ```bash
+   bdock tools sources plan --plan plans/shellcheck/0.11.0.json
+   ```
+
+3. Create or refresh a plan (network, read-only, writes only the plan; the owner decides whether this
+   needs approval):
 
    ```bash
    out="$(mktemp -d)"
-   bdock tools sources plan shellcheck --out "$out/plan.json"
-   jq '{component,version,recipe: .recipe.kind, pinned: (.upstream.tarball_sha256 != null)}' "$out/plan.json"
+   bdock tools sources pin shellcheck --out "$out/plan.json"
+   jq '{component,version,pinned: (.upstream.tarball_sha256 != null)}' "$out/plan.json"
    ```
 
-2. Pin the digest the first time (network, still read-only on the repository; human compares the
-   printed digest against upstream's published value or a second download):
+   Review the digest against an independent download or upstream's published value, then commit the
+   plan to the mirror repository by PR.
+4. (Approval required) the build step, run by the release process in the mirror repo, locally equivalent to:
 
    ```bash
-   bdock tools sources fetch --plan "$out/plan.json" --out "$out/first" --accept-new-digest
+   bdock tools sources fetch --plan "$out/plan.json" --out "$out/bundle"
    ```
 
-   Commit the plan, with the digest filled in, to the mirror repository by PR.
-3. (Approval required) the mirror workflow runs the same fetch: `workflow_dispatch(component=shellcheck,
-   version=v0.11.0)`. Locally equivalent:
-
-   ```bash
-   bdock tools sources fetch --plan plans/shellcheck/v0.11.0.json --out "$out/bundle"
-   ```
-
-4. Compare two runs: both `tar_sha256` values in the manifests are equal.
+   Run it twice into different directories: both manifests report the same `tar_sha256`.
 5. Verify (offline):
 
    ```bash
-   (cd "$out/bundle" && sha256sum --check SHA256SUMS)
    bdock tools sources check --bundle-dir "$out/bundle"
    ```
 
-6. After the release exists, add the registry entry and the `SOURCE` mirror block; then
+6. After the release exists, add the registry entry, run `bdock tools sources sync`, and
    `bdock tools sources check --enforce` exits 0.
 7. Upgrade rehearsal: bump a copyleft tool in a scratch copy of the lock; `check --enforce` exits 1 with
-   `mirror-entry-missing`.
+   `mirror-entry-missing` (the [upgrade sequence](plan.md#upgrade-sequence) continues from there).
