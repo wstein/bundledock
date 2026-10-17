@@ -1,9 +1,15 @@
 {
   "schema": 2,
-  "desired_digest": "42172710fd1086d8f65f7cc542d9937d65ff9b5493b29119826adce80322021b",
-  "catalog_digest": "7263ab350faecdd3cd83aea6e4f78bddf18ad259dc6f8596b28a3743ed9a9a78",
+  "desired_digest": "236afec15056f6f5a0591cec4d2db5686120fb00190d83d243f1ba6ec4677991",
+  "catalog_digest": "41cd027fc551f7cc59737fe3f439e6a32d4a8a55b169cac0ee2c3cc930d901c0",
   "platforms": {
     "amd64": {
+      "actionlint": {
+        "version": "v1.7.12",
+        "url": "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz",
+        "sha256": "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8",
+        "verification": "publisher-sha256"
+      },
       "age": {
         "version": "v1.3.2",
         "url": "https://github.com/FiloSottile/age/releases/download/v1.3.2/age-v1.3.2-linux-amd64.tar.gz",
@@ -252,6 +258,12 @@
       }
     },
     "arm64": {
+      "actionlint": {
+        "version": "v1.7.12",
+        "url": "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_arm64.tar.gz",
+        "sha256": "325e971b6ba9bfa504672e29be93c24981eeb1c07576d730e9f7c8805afff0c6",
+        "verification": "publisher-sha256"
+      },
       "age": {
         "version": "v1.3.2",
         "url": "https://github.com/FiloSottile/age/releases/download/v1.3.2/age-v1.3.2-linux-arm64.tar.gz",
