@@ -21,7 +21,8 @@ if command -v gh >/dev/null 2>&1; then
 	ext_data=$(mktemp -d "${TMPDIR:-/tmp}/bundledock-gh-stack-smoke.XXXXXX")
 	mkdir -p "$ext_data/gh/extensions/gh-stack"
 	ln -s "$toolbox/libexec/gh-stack" "$ext_data/gh/extensions/gh-stack/gh-stack"
-	(XDG_DATA_HOME=$ext_data; export XDG_DATA_HOME; expect_version '^gh stack version [0-9]+\.[0-9]+\.[0-9]+' gh stack --version) || { rm -rf "$ext_data"; exit 1; }
+	# Never let gh offer to install an unpinned copy of a missing official extension.
+	(XDG_DATA_HOME=$ext_data GH_PROMPT_DISABLED=1; export XDG_DATA_HOME GH_PROMPT_DISABLED; expect_version '^gh stack version [0-9]+\.[0-9]+\.[0-9]+' gh stack --version </dev/null) || { rm -rf "$ext_data"; exit 1; }
 	rm -rf "$ext_data"
 else
 	echo "gh is absent from the smoke environment; skipping gh stack discovery check" >&2
