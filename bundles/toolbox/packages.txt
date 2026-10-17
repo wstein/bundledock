@@ -12,6 +12,7 @@ fd>=10.5.0
 fish>=4.9.3
 fzf>=0.74.5
 gh>=2.102.0
+git-cliff>=2.14.2
 git-lfs>=3.8.0
 gitleaks>=8.30.1
 hadolint>=2.15.1

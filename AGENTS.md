@@ -135,6 +135,7 @@ still pins an older image, so do not assume these commands exist in a running se
 | Check shell scripts | `shellcheck`, `shfmt`. |
 | Run project recipes | `just`. |
 | Lint and format Python | `ruff`. |
+| Generate changelogs from Conventional Commits | `git-cliff`. |
 | View diffs | `delta`. |
 | Watch files and benchmark commands | `watchexec`, `hyperfine`. |
 | Encrypt files | `age`, `age-keygen`, `age-inspect`. |

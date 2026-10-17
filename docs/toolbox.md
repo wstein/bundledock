@@ -200,6 +200,7 @@ networking disabled. Native smoke acceptance remains part of an approved build.
 | Fish (`fish`) | 4.9.3 | [Homepage](https://fishshell.com) | [Source](https://github.com/fish-shell/fish-shell) |
 | fzf (`fzf`) | 0.74.5 | [Homepage](https://junegunn.github.io/fzf/) | [Source](https://github.com/junegunn/fzf) |
 | Git LFS (`git-lfs`) | 3.8.0 | [Homepage](https://git-lfs.com) | [Source](https://github.com/git-lfs/git-lfs) |
+| git-cliff (`git-cliff`) | 2.14.2 | [Homepage](https://github.com/orhun/git-cliff) | [Source](https://github.com/orhun/git-cliff) |
 | GitHub CLI | 2.102.0 | [Homepage](https://cli.github.com) | [Source](https://github.com/cli/cli) |
 | Gitleaks (`gitleaks`) | 8.30.1 | [Homepage](https://gitleaks.io) | [Source](https://github.com/gitleaks/gitleaks) |
 | Hadolint (`hadolint`) | 2.15.1 | [Homepage](https://github.com/hadolint/hadolint) | [Source](https://github.com/hadolint/hadolint) |
@@ -474,6 +475,8 @@ and consumer activation remain unverified pending separate approval.
 `zizmor` statically audits GitHub Actions workflows for security issues: `zizmor --offline .github/workflows`. Online audits query the GitHub API with an optional `GH_TOKEN` or `GITHUB_TOKEN` from the environment. The official Linux archives are GNU/glibc builds; the archive carries only the executable, so the upstream MIT `LICENSE` is retained separately.
 
 `cosign` signs and verifies container images and other artifacts. Verification contacts registries and Sigstore services and signing can open a browser; neither runs at image build or shell startup. Keys, tokens and the TUF cache belong in writable HOME (`~/.sigstore`), outside the read-only toolbox.
+
+`git-cliff` generates changelogs from Git history and Conventional Commits: `git-cliff --config cliff.toml`. Keep the configuration in the repository. Release archives also carry completions, man pages and `git-cliff-completions`/`git-cliff-mangen` generators; only the `git-cliff` executable, both licenses and README are installed.
 
 ## Git Large File Storage
 
