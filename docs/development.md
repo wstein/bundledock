@@ -201,13 +201,19 @@ Keep the local TODO list untracked.
 ### Local CLI artifacts
 
 After explicit user approval, `make release VERSION=dev RELEASE_DIR=dist/cli` builds BundleDock's own CLI for
-Linux AMD64 and ARM64. For `VERSION=0.1.0`, it creates
-`bdock_0.1.0_linux_amd64.tar.gz`, `bdock_0.1.0_linux_arm64.tar.gz`, `LICENSE`,
+Linux AMD64, Linux ARM64 and macOS ARM64 (`TARGETS` selects a subset, for example
+`TARGETS=darwin/arm64`; darwin/amd64 and Windows are not supported). For `VERSION=0.1.0`, it creates
+`bdock_0.1.0_darwin_arm64.tar.gz`, `bdock_0.1.0_linux_amd64.tar.gz`, `bdock_0.1.0_linux_arm64.tar.gz`, `LICENSE`,
 `PROVENANCE`, and `SHA256SUMS`; each archive contains the executable `bdock`,
 `LICENSE` and platform-specific `PROVENANCE`. Extract the archive for your
-architecture and install `bdock` on your PATH. An existing destination
+platform and install `bdock` on your PATH. An existing destination
 is refused. Verify the outputs with `cd dist/cli && sha256sum -c SHA256SUMS`.
-The target does not create a Git tag or publish a release.
+The target does not create a Git tag or publish a release. GNU tar is required.
+
+The same script, `scripts/release.sh`, is the single archive builder of the tag-driven CI
+release (`.github/workflows/release.yml`; owner procedure in `docs/releasing.md`, design in
+`docs/design/bdock-release-workflow/`). CI runs it one platform per job, twice, and requires
+byte-identical output. A local run is never a substitute for that workflow.
 
 The version defaults to `dev`; choose an identifier for local verification or
 an explicitly approved release. The linker sets the CLI's `--version` output.
@@ -218,11 +224,13 @@ local verification artifacts, not a clean release candidate.
 Builds use the selected `GO` executable, `CGO_ENABLED=0`, `-trimpath`,
 `GOAMD64=v1`, and `GOARM64=v8.0`, and clear `GOFLAGS` for consistent flags.
 Use the pinned compiler in `.go-version`; the Go module's minimum is 1.25.
-`make release-test` also requires explicit user approval: it builds both architectures twice, verifies checksums, the
+`make release-test` also requires explicit user approval: it builds all three platforms twice, verifies checksums, the
 bundled license and build settings, compares repeated outputs, checks the native Linux version when
 supported, and tests rejection of existing destinations and invalid versions.
-This validates local artifact preparation; native AMD64 execution, Docker image
-checks and publication remain separate checks.
+This validates local artifact preparation; native execution on every platform, Docker image
+checks and publication remain separate checks (the CI smoke job runs the shipped archives on
+native runners). The source-level tests `scripts/release_test.py` and
+`internal/releaseworkflow` use a fake compiler and run in `make check`.
 
 Checks target this repository's `cmd` and `internal` Go packages.
 `make bundle-test` runs the focused CLI, catalog, extraction, volume, and Docker

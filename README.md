@@ -74,6 +74,13 @@ for using, maintaining, and publishing each bundle.
 The shared publication workflow badge reports the latest controller run. Individual
 bundle publication and version evidence remains in each bundle guide.
 
+## CLI releases
+
+The `bdock` CLI is released as archives for Linux AMD64, Linux ARM64 and macOS ARM64 by a
+tag-driven CI workflow (tags `bdock/vMAJOR.MINOR.PATCH`, separate from the OCI image tags).
+No CLI release has been published yet. The owner procedure is `docs/releasing.md` in the
+repository; OCI images are published separately.
+
 ## Quick start
 
 You need Docker running and a local clone of this repository. Pull the published
