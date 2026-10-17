@@ -1,0 +1,295 @@
+{
+  "concurrency": {
+    "cancel-in-progress": false,
+    "group": "release-${{ github.ref }}"
+  },
+  "jobs": {
+    "build": {
+      "name": "build (${{ matrix.os }}/${{ matrix.arch }})",
+      "needs": "verify",
+      "permissions": {
+        "contents": "read"
+      },
+      "runs-on": "ubuntu-24.04",
+      "steps": [
+        {
+          "uses": "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "with": {
+            "persist-credentials": false
+          }
+        },
+        {
+          "uses": "actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e",
+          "with": {
+            "cache": false,
+            "check-latest": false,
+            "go-version-file": ".go-version"
+          }
+        },
+        {
+          "env": {
+            "ARCH": "${{ matrix.arch }}",
+            "CGO_ENABLED": "0",
+            "COMMIT": "${{ needs.verify.outputs.commit }}",
+            "GOFLAGS": "-mod=readonly",
+            "GOTOOLCHAIN": "local",
+            "OS": "${{ matrix.os }}",
+            "VERSION": "${{ needs.verify.outputs.version }}"
+          },
+          "name": "Build bdock twice and compare",
+          "run": "set -euo pipefail\ntest \"$(git rev-parse HEAD)\" = \"$COMMIT\" || { echo \"checkout is not the verified commit $COMMIT\" \u003e\u00262; exit 1; }\n# scripts/release.sh is the single archive builder; output stays outside the checkout.\nTARGETS=\"$OS/$ARCH\" RELEASE_DIR=\"$RUNNER_TEMP/first\" sh scripts/release.sh\n# A second build with an empty build cache must give the same bytes.\nGOCACHE=\"$RUNNER_TEMP/gocache-second\" TARGETS=\"$OS/$ARCH\" RELEASE_DIR=\"$RUNNER_TEMP/second\" sh scripts/release.sh\ndiff -r \"$RUNNER_TEMP/first\" \"$RUNNER_TEMP/second\"\ngrep -Fx \"source_revision=$COMMIT\" \"$RUNNER_TEMP/first/PROVENANCE\"\ngrep -Fx \"source_modified=false\" \"$RUNNER_TEMP/first/PROVENANCE\"\nmkdir \"$RUNNER_TEMP/dist\"\nname=\"bdock_${VERSION}_${OS}_${ARCH}.tar.gz\"\ncp \"$RUNNER_TEMP/first/$name\" \"$RUNNER_TEMP/dist/$name\"\n(cd \"$RUNNER_TEMP/dist\" \u0026\u0026 sha256sum \"$name\" \u003e \"$name.sha256\")\n",
+          "shell": "bash"
+        },
+        {
+          "uses": "actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9",
+          "with": {
+            "if-no-files-found": "error",
+            "name": "release-${{ matrix.os }}-${{ matrix.arch }}",
+            "path": "${{ runner.temp }}/dist/*",
+            "retention-days": 1
+          }
+        }
+      ],
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "include": [
+            {
+              "arch": "amd64",
+              "os": "linux"
+            },
+            {
+              "arch": "arm64",
+              "os": "linux"
+            },
+            {
+              "arch": "arm64",
+              "os": "darwin"
+            }
+          ]
+        }
+      },
+      "timeout-minutes": 20
+    },
+    "publish": {
+      "environment": "release",
+      "if": "needs.verify.outputs.dry_run == 'false' \u0026\u0026 github.event_name == 'push' \u0026\u0026 github.ref_type == 'tag'",
+      "name": "publish",
+      "needs": [
+        "verify",
+        "build",
+        "smoke"
+      ],
+      "permissions": {
+        "contents": "write"
+      },
+      "runs-on": "ubuntu-24.04",
+      "steps": [
+        {
+          "uses": "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "with": {
+            "fetch-depth": 0,
+            "persist-credentials": false
+          }
+        },
+        {
+          "uses": "actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c",
+          "with": {
+            "merge-multiple": true,
+            "path": "${{ runner.temp }}/dist",
+            "pattern": "release-*"
+          }
+        },
+        {
+          "env": {
+            "ACTOR": "${{ github.triggering_actor }}",
+            "COMMIT": "${{ needs.verify.outputs.commit }}",
+            "DRAFT": "${{ vars.BDOCK_RELEASE_DRAFT }}",
+            "GH_TOKEN": "${{ github.token }}",
+            "OWNER": "${{ github.repository_owner }}",
+            "PUSHER": "${{ github.actor }}",
+            "REPO": "${{ github.repository }}",
+            "TAG": "${{ needs.verify.outputs.tag }}",
+            "VERSION": "${{ needs.verify.outputs.version }}"
+          },
+          "name": "Create the release",
+          "run": "set -euo pipefail\n# A re-run by someone else must not publish on the owner's earlier approval.\ntest \"$ACTOR\" = \"$OWNER\" || { echo \"run triggered by $ACTOR, not by the repository owner $OWNER\" \u003e\u00262; exit 1; }\ntest \"$PUSHER\" = \"$OWNER\" || { echo \"run originally started by $PUSHER, not by the repository owner $OWNER\" \u003e\u00262; exit 1; }\n# Drafts are invisible to the verify job's read token; refuse any release, draft or not, for the tag.\nexisting=$(gh api \"repos/$REPO/releases\" --paginate --jq \".[] | select(.tag_name == \\\"$TAG\\\") | .id\")\ntest -z \"$existing\" || { echo \"a release (possibly a draft) for $TAG already exists: $existing\" \u003e\u00262; exit 1; }\n# The tag must still name the verified commit; the owner may have moved it during the run.\nremote=$(git ls-remote \"https://github.com/$REPO\" \"refs/tags/$TAG^{}\" | cut -f1)\ntest \"$remote\" = \"$COMMIT\" || { echo \"tag $TAG now names '$remote', not the verified $COMMIT\" \u003e\u00262; exit 1; }\ntest \"$(git rev-parse HEAD)\" = \"$COMMIT\"\ncd \"$RUNNER_TEMP/dist\"\ntest \"$(ls -1 -- bdock_*.tar.gz | wc -l)\" -eq 3 || { echo \"expected exactly three archives\" \u003e\u00262; exit 1; }\nfor platform in darwin_arm64 linux_amd64 linux_arm64; do\n  test -f \"bdock_${VERSION}_${platform}.tar.gz\" || { echo \"missing archive for $platform\" \u003e\u00262; exit 1; }\ndone\ncat -- bdock_*.tar.gz.sha256 | LC_ALL=C sort -k2 \u003e SHA256SUMS\ntest \"$(wc -l \u003c SHA256SUMS)\" -eq 3 || { echo \"expected exactly three checksums\" \u003e\u00262; exit 1; }\nsha256sum --check SHA256SUMS\ncd \"$GITHUB_WORKSPACE\"\nsh .github/scripts/release-notes.sh \"$TAG\" \"$COMMIT\" \"$(cat .go-version)\" \u003e \"$RUNNER_TEMP/notes.md\"\nflags=()\nif [ \"$DRAFT\" = true ]; then flags+=(--draft); fi\ngh release create \"$TAG\" --repo \"$REPO\" --verify-tag --title \"bdock v$VERSION\" --notes-file \"$RUNNER_TEMP/notes.md\" ${flags[@]+\"${flags[@]}\"} \\\n  \"$RUNNER_TEMP\"/dist/bdock_*.tar.gz \"$RUNNER_TEMP/dist/SHA256SUMS\"\n",
+          "shell": "bash"
+        }
+      ],
+      "timeout-minutes": 15
+    },
+    "smoke": {
+      "name": "smoke (${{ matrix.os }}/${{ matrix.arch }})",
+      "needs": [
+        "verify",
+        "build"
+      ],
+      "permissions": {
+        "contents": "read"
+      },
+      "runs-on": "${{ matrix.runner }}",
+      "steps": [
+        {
+          "uses": "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "with": {
+            "persist-credentials": false
+          }
+        },
+        {
+          "uses": "actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c",
+          "with": {
+            "name": "release-${{ matrix.os }}-${{ matrix.arch }}",
+            "path": "${{ runner.temp }}/dist"
+          }
+        },
+        {
+          "env": {
+            "ARCH": "${{ matrix.arch }}",
+            "COMMIT": "${{ needs.verify.outputs.commit }}",
+            "OS": "${{ matrix.os }}",
+            "VERSION": "${{ needs.verify.outputs.version }}"
+          },
+          "name": "Smoke-test the shipped archive natively",
+          "run": "set -euo pipefail\ntest \"$(git rev-parse HEAD)\" = \"$COMMIT\" || { echo \"checkout is not the verified commit $COMMIT\" \u003e\u00262; exit 1; }\nsh .github/scripts/release-smoke.sh \"$VERSION\" \"$COMMIT\" \"$OS\" \"$ARCH\" \"$RUNNER_TEMP/dist/bdock_${VERSION}_${OS}_${ARCH}.tar.gz\"\n",
+          "shell": "bash"
+        }
+      ],
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "include": [
+            {
+              "arch": "amd64",
+              "os": "linux",
+              "runner": "ubuntu-24.04"
+            },
+            {
+              "arch": "arm64",
+              "os": "linux",
+              "runner": "ubuntu-24.04-arm"
+            },
+            {
+              "arch": "arm64",
+              "os": "darwin",
+              "runner": "macos-15"
+            }
+          ]
+        }
+      },
+      "timeout-minutes": 15
+    },
+    "verify": {
+      "name": "verify",
+      "outputs": {
+        "commit": "${{ steps.resolve.outputs.commit }}",
+        "dry_run": "${{ steps.resolve.outputs.dry_run }}",
+        "tag": "${{ steps.resolve.outputs.tag }}",
+        "version": "${{ steps.resolve.outputs.version }}"
+      },
+      "permissions": {
+        "actions": "read",
+        "contents": "read"
+      },
+      "runs-on": "ubuntu-24.04",
+      "steps": [
+        {
+          "uses": "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "with": {
+            "fetch-depth": 0,
+            "persist-credentials": false
+          }
+        },
+        {
+          "uses": "actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e",
+          "with": {
+            "cache": false,
+            "check-latest": false,
+            "go-version-file": ".go-version"
+          }
+        },
+        {
+          "env": {
+            "EVENT_NAME": "${{ github.event_name }}",
+            "INPUT_VERSION": "${{ inputs.version }}",
+            "REF_NAME": "${{ github.ref_name }}",
+            "REF_TYPE": "${{ github.ref_type }}"
+          },
+          "id": "resolve",
+          "name": "Resolve the version and the run kind",
+          "run": "set -euo pipefail\nif [ \"$EVENT_NAME\" = push ] \u0026\u0026 [ \"$REF_TYPE\" = tag ]; then\n  version=$(sh .github/scripts/release-verify.sh tag-version \"$REF_NAME\")\n  tag=$REF_NAME\n  dry_run=false\nelse\n  version=$INPUT_VERSION\n  sh .github/scripts/release-verify.sh dryversion \"$version\"\n  tag=\n  dry_run=true\nfi\n{\n  echo \"version=$version\"\n  echo \"tag=$tag\"\n  echo \"dry_run=$dry_run\"\n  echo \"commit=$GITHUB_SHA\"\n} \u003e\u003e \"$GITHUB_OUTPUT\"\n",
+          "shell": "bash"
+        },
+        {
+          "env": {
+            "ACTOR": "${{ github.triggering_actor }}",
+            "OWNER": "${{ github.repository_owner }}",
+            "PUSHER": "${{ github.actor }}"
+          },
+          "name": "Require the repository owner to have started the run",
+          "run": "set -euo pipefail\ntest \"$ACTOR\" = \"$OWNER\" || { echo \"run started by $ACTOR, not by the repository owner $OWNER\" \u003e\u00262; exit 1; }\ntest \"$PUSHER\" = \"$OWNER\" || { echo \"run originally started by $PUSHER, not by the repository owner $OWNER\" \u003e\u00262; exit 1; }\n",
+          "shell": "bash"
+        },
+        {
+          "env": {
+            "REPO": "${{ github.repository }}",
+            "TAG": "${{ steps.resolve.outputs.tag }}"
+          },
+          "if": "steps.resolve.outputs.dry_run == 'false'",
+          "name": "Require an annotated tag on a commit of main",
+          "run": "set -euo pipefail\n# Fetch the tag object itself so a lightweight tag is not mistaken for an annotated one.\ngit fetch --force --no-tags \"https://github.com/$REPO\" \"+refs/tags/$TAG:refs/tags/$TAG\"\ngit fetch --force --no-tags \"https://github.com/$REPO\" '+refs/heads/main:refs/remotes/origin/main'\ncommit=$(sh .github/scripts/release-verify.sh tag \"$TAG\" refs/remotes/origin/main)\ntest \"$commit\" = \"$GITHUB_SHA\" || { echo \"tag $TAG names $commit but the run is for $GITHUB_SHA\" \u003e\u00262; exit 1; }\n",
+          "shell": "bash"
+        },
+        {
+          "env": {
+            "GH_TOKEN": "${{ github.token }}",
+            "REPO": "${{ github.repository }}"
+          },
+          "if": "steps.resolve.outputs.dry_run == 'false'",
+          "name": "Require a green CI run for the tagged commit",
+          "run": "set -euo pipefail\nn=$(gh api \"repos/$REPO/actions/workflows/ci.yml/runs?head_sha=$GITHUB_SHA\u0026event=push\u0026status=success\" --jq '.workflow_runs | map(select(.conclusion == \"success\")) | length')\ntest \"$n\" -ge 1 || { echo \"no successful CI run on push for $GITHUB_SHA; wait for or re-run CI for that commit first\" \u003e\u00262; exit 1; }\n",
+          "shell": "bash"
+        },
+        {
+          "env": {
+            "GH_TOKEN": "${{ github.token }}",
+            "REPO": "${{ github.repository }}",
+            "TAG": "${{ steps.resolve.outputs.tag }}"
+          },
+          "if": "steps.resolve.outputs.dry_run == 'false'",
+          "name": "Require that no release exists for the tag",
+          "run": "set -euo pipefail\nif out=$(gh api \"repos/$REPO/releases/tags/$TAG\" 2\u003e\u00261); then\n  echo \"a release for $TAG already exists\" \u003e\u00262\n  exit 1\nfi\ncase \"$out\" in\n  *\"HTTP 404\"*) echo \"no release for $TAG yet\" ;;\n  *) echo \"cannot tell whether a release exists: $out\" \u003e\u00262; exit 1 ;;\nesac\n",
+          "shell": "bash"
+        },
+        {
+          "run": "make check"
+        },
+        {
+          "run": "go mod verify"
+        }
+      ],
+      "timeout-minutes": 15
+    }
+  },
+  "name": "release",
+  "on": {
+    "push": {
+      "tags": [
+        "bdock/v[0-9]+.[0-9]+.[0-9]+"
+      ]
+    },
+    "workflow_dispatch": {
+      "inputs": {
+        "version": {
+          "default": "0.0.0-dryrun",
+          "description": "Dry-run version label (a dispatch never publishes)",
+          "required": false,
+          "type": "string"
+        }
+      }
+    }
+  },
+  "permissions": {
+    "contents": "read"
+  }
+}
