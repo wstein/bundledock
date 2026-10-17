@@ -4,38 +4,43 @@
 bdock tools sources check [--bundle toolbox] [--enforce] [--bundle-dir DIR] [--json]
 ```
 
-Offline. Two uses.
+Offline; starts no process. Exit statuses as in the [command contract](sources-command.md#exit-status):
+1 when any error finding exists, 3 for usage errors, 2 internal.
 
-**Registry check (default).** Reads `packages.catalog.json`, `packages.lock.json`, `sources.lock.json`
-and `licenses/*/SOURCE`. For every package whose `obligation` is `source-offer` or `file-level-source`
-and every locked version (both architectures):
+## Registry check (default)
+
+Reads the catalog, `packages.lock.json`, `sources.lock.json` and `licenses/*/{SOURCE,SOURCE-MIRROR}`. For
+every package of obligation `source-offer` or `file-level-source` and every locked version (both
+architectures):
 
 | Finding code | Condition | Level |
 | --- | --- | --- |
 | `source-block-missing` | package has no `source` block | error |
-| `mirror-entry-missing` | no `sources.lock.json` entry for (component, version) | error with `--enforce`, else warning |
-| `mirror-tag-mismatch` | tag is not `<component>-v<version>[-rN]` | error |
-| `source-file-missing-block` | `SOURCE` lacks the mirror block, or its tag/hash lines disagree with the registry | error with `--enforce`, else warning |
-| `classification-contradiction` | `obligation: none` but a retained license file has a copyleft marker | error |
-| `undetermined-package` | `obligation: undetermined` | warning (count in summary) |
-| `registry-orphan` | registry entry for a component/version absent from the catalog or lock history | warning (history is allowed; not an error) |
+| `mirror-entry-missing` | no `current` registry revision for (component, `LV`) | error with `--enforce`, else warning |
+| `mirror-tag-mismatch` | registry tag is not the naming table's tag | error |
+| `mirror-notice-drift` | `SOURCE-MIRROR` missing or different from what `sync` would write | error with `--enforce`, else warning |
+| `source-paragraph-missing` | `SOURCE` lacks the version-independent paragraph | error with `--enforce`, else warning |
+| `classification-contradiction` | `obligation: none` but repository-visible evidence has a copyleft marker | error |
+| `undetermined-package` | `obligation: undetermined` | warning (counted in the summary) |
+| `registry-orphan` | registry entry for a version no longer in the lock | informational (history allowed) |
 
-**Bundle check (`--bundle-dir`).** Verifies a directory produced by `fetch` or downloaded from a
-release: `SHA256SUMS` covers exactly the three files; manifest passes the schema and limits;
-`asset_sha256` and `tar_sha256` match; every `files[]` entry exists with its hash and no other entry
-exists; every `dependencies[]` entry is verified against its recorded source; `upstream.tarball_sha256`
-matches the upstream member in the bundle; the plan digest matches. Reading uses the same bounded
-reader (hostile-input rules). No network; exit codes as in the
-[command contract](sources-command.md#exit-status), 1 when any error finding exists.
+## Bundle check (`--bundle-dir`)
+
+Verifies a directory with the two bundle files (and, if present, a `SHA256SUMS` made by the release
+process, which must list every file of the directory and only those). Checks: manifest schema and the
+[limits](../spec.md#limits) (byte caps first); `asset_sha256` and `tar_sha256`; every `files[]` entry
+exists with its hash and size and no other entry exists, apart from `MANIFEST.json`, which is checked
+by parsing and comparing its non-standalone fields to the standalone manifest; every `dependencies[]` entry
+verifies against its recorded class; `upstream.tarball_sha256` equals the stored tarball's hash. Reading
+uses the same bounded in-memory reader; nothing is extracted.
 
 ## Wiring
 
-`make check` runs `go run ./cmd/bdock tools sources check` (compiler verification only, no artifact;
-if the project wishes to avoid `go run` in the Makefile, the same logic is a Go test in
-`internal/toolconfig`; tasks WI7 pick the test form and the command form shares the library).
-`--enforce` is default-off until [rollout step 6](../plan.md#rollout-order), then default-on.
+`make check` runs the check as a Go test in `internal/toolconfig` (compiler verification only; no artifact);
+the CLI command shares the library. `--enforce` is default-off until
+[rollout step 7](../plan.md#rollout-order), then default-on.
 
-## JSON (also the OCI record input, FR-14)
+## JSON
 
 ```json
 {
@@ -53,10 +58,12 @@ if the project wishes to avoid `go run` in the Makefile, the same logic is a Go 
       "manifest_sha256": "<64 hex>"
     }
   ],
-  "summary": { "errors": 0, "warnings": 0, "undetermined": 38 }
+  "summary": { "errors": 0, "warnings": 0, "undetermined": 0 }
 }
 ```
 
-`releases` lists only the versions in the current lock, sorted by component. The `oci-image` record in
-Spec 026 embeds this list verbatim (unverified shape on the Spec 026 side). Human output prints each
-finding as `level code component version`, bounded to 200 lines.
+`releases` lists the current revision for each copyleft version in the lock, sorted by component.
+`summary.undetermined` is the count of `undetermined-package` findings (a number computed at run time; no
+fixed value is promised by this design). The OCI record's `source_offer` string references this output (for
+example the path of a file holding it); the exact reference form is Spec 026's field ([mirror
+contract](mirror-project.md)). Human output prints `level code component version`, at most 200 lines.
