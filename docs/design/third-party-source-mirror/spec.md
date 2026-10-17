@@ -153,8 +153,8 @@ Normative; the source-lock path, assets, tag, registry key and URL templates der
 | --- | --- | --- |
 | `component` | catalog package name | `shellcheck` |
 | lock version `LV` | exactly as in `packages.lock.json` | `v0.11.0`, `25.07.1` |
-| `V` | derived from `LV` by the package's `source.version_regex` (one capture group; default `^v?([0-9]{1,9}(\.[0-9]{1,9}){0,3})$`); the result must match `^[0-9]{1,9}(\.[0-9]{1,9}){0,3}$` (no leading-zero groups beyond `0`) or the package is blocked (`version-shape`) | `0.11.0` |
-| revision `R` | integer `>= 1`, written without leading zeros, `1` never written; a corrected re-issue of the same `V` | `2` |
+| `V` | derived from `LV` by the package's `source.version_regex` (exactly one capturing group, any others `(?:...)`; default `^v?([0-9]{1,9}(?:\.[0-9]{1,9}){0,3})$`); the result must match `^[0-9]{1,9}(?:\.[0-9]{1,9}){0,3}$` (leading zeros inside a group are allowed, as in helix `25.07.1`; ordering is numeric) or the package is blocked (`version-shape`) | `0.11.0` |
+| revision `R` | integer `>= 2` in tags and version ids (`1` is never written, `0` and leading zeros are refused); a corrected re-issue of the same `V` | `2` |
 | `release tag` | `<component>-v<V>` for `R=1`, `<component>-v<V>-r<R>` for `R>=2` | `shellcheck-v0.11.0-r2` |
 | `version id` | `<V>` for `R=1`, `<V>-r<R>` for `R>=2` (Spec 026 `{version_number}`) | `0.11.0-r2` |
 | assets | `<component>-<version id>-sources.tar.gz` and `<component>-<version id>-sources.manifest.json` (the names in Spec 026 worked example 5); the release process adds `SHA256SUMS` and `build-manifest.json` | `shellcheck-0.11.0-sources.tar.gz` |
@@ -261,15 +261,15 @@ There is no `--max-bytes` flag; limits are constants.
 
 ## Failure modes
 
-Normative; exit status 1 unless stated; `fetch` publishes nothing on any of them. Emitting modes: `upstream-missing`, `upstream-hash-mismatch`, `dependency-hash-mismatch`, `plan-unpinned`, `lock-arch-mismatch`, `version-shape`: `pin` and `fetch` (`plan` for the last two); `entry-stale`, `entry-missing`: `plan`, `fetch`; `out-not-empty`, `manifest-schema`: `fetch`; `notice-drift`: `sync --check`; bundle codes: `check --bundle-dir`; release codes: `check --online`.
+Normative; exit status 1 unless stated; `fetch` publishes nothing on any of them. Emitting modes: `upstream-missing`, `upstream-hash-mismatch`, `dependency-hash-mismatch`: `pin` and `fetch`; `plan-unpinned`: `fetch` and `plan`; `lock-arch-mismatch`, `version-shape`, `entry-stale`: `pin` and `plan` (`fetch` reads only the source-lock entry and cannot evaluate them); `entry-missing`: `plan` and `fetch`; `out-not-empty`, `manifest-schema`: `fetch`; `notice-drift`: `sync --check`; bundle codes: `check --bundle-dir`; release codes: `check --online`.
 
 | Code | When | Result |
 | --- | --- | --- |
 | `upstream-missing` | 404/410 for a tarball or dependency | refuse; existing releases unaffected |
 | `upstream-hash-mismatch` | observed SHA256 differs from the plan | refuse; plan never auto-updated |
 | `dependency-hash-mismatch` | differs from the `lockfile-hash` source or the plan pin | refuse |
-| `plan-unpinned` | plan lacks a digest | refuse; `pin` is the only writer of digests |
-| `entry-stale` | plan disagrees with catalog or lock | refuse (`plan`, `fetch`) |
+| `plan-unpinned` | the entry lacks a digest | refuse; `pin` is the only writer of digests |
+| `entry-stale` | the entry disagrees with catalog or lock | refuse (`pin`, `plan`) |
 | `lock-arch-mismatch` | amd64 and arm64 lock versions differ | refuse |
 | `version-shape` | `V` does not match the naming table | refuse |
 | `recipe-custom` | recipe kind `custom` | exit 3 |
@@ -277,7 +277,7 @@ Normative; exit status 1 unless stated; `fetch` publishes nothing on any of them
 | `manifest-schema` | schema violation | refuse |
 | `network-disabled` | `BDOCK_SOURCES_OFFLINE=1` set for `pin`, `fetch` or `check --online` | exit 3 |
 | `tool-not-eligible` | `pin`/`fetch` for a package whose obligation is `none` or `undetermined`, or unknown tool | exit 3 |
-| `entry-missing` | `fetch --component/--version` finds no entry in `sources/<component>.lock.json` | refuse |
+| `entry-missing` | `fetch` or `plan --component/--version` finds no entry in `sources/<component>.lock.json` | refuse |
 | `notice-drift` | `sync --check` finds `SOURCE-MIRROR` different from the generated text | refuse |
 | `bundle-hash-mismatch`, `bundle-file-missing`, `bundle-file-extra`, `bundle-manifest-mismatch`, `sums-mismatch` | `check --bundle-dir` tamper cases (changed byte; entry listed but absent; entry present but unlisted; standalone manifest and `MANIFEST.json` disagree; `SHA256SUMS` disagrees or lists other files). `SHA256SUMS` and the release process's `build-manifest.json` are allowed extras | refuse |
 | `release-not-published`, `release-hash-mismatch` | `check --online`: release missing or draft; asset digests differ from the registry | refuse |
