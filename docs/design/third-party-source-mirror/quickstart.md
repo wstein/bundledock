@@ -11,13 +11,7 @@ directory for outputs.
    bdock tools sources check --json | jq '.summary'
    ```
 
-2. Render an existing plan against the catalog and lock (offline; `consistent: yes` expected):
-
-   ```bash
-   bdock tools sources plan --component shellcheck --version 0.11.0
-   ```
-
-3. Create or refresh a plan (network, read-only, writes only the plan; the owner decides whether this
+2. Create or refresh a plan (network, read-only, writes only the plan; the owner decides whether this
    needs approval):
 
    ```bash
@@ -28,6 +22,12 @@ directory for outputs.
 
    Review the digest against an independent download or upstream's published value, then commit the
    source lock to the mirror repository by PR.
+3. Render an existing plan against the catalog and lock (offline; `consistent: yes` expected):
+
+   ```bash
+   bdock tools sources plan --component shellcheck --version 0.11.0 --sources "$out/sources"
+   ```
+
 4. (Approval required) the build step, run by the release process in the mirror repo, locally equivalent to:
 
    ```bash

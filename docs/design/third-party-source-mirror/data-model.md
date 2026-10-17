@@ -20,7 +20,7 @@ until WI2 completes, required afterwards).
 | `recipe.static_system_libs` | string[] | optional review aid |
 | `recipe.freeze_source` | string | `cabal-freeze`: member path of the dependency report in the tarball |
 | `recipe.freeze_file` | string | `cabal-freeze`: name of an owner-reviewed freeze file supplied to `pin` with `--freeze-file PATH` (its SHA256 is recorded in the source-lock entry; `reconstruction` is `true` for every `cabal-freeze` component, because no upstream freeze file for the exact target is used) |
-| `version_regex` | string | optional; one capture group on `LV` yielding `V` ([naming table](spec.md#naming-table)); Go RE2 |
+| `version_regex` | string | optional; one capture group on `LV` yielding `V` ([naming table](spec.md#naming-table)); Go RE2; each numeric group at most 9 digits |
 
 `component` is the package key (no separate field). Validation (`toolconfig.Validate`): enum values; copyleft
 classes require `upstream`, `recipe`, `licenses`; `none` forbids `recipe`; https only; no `..` or control
@@ -103,7 +103,7 @@ release).
 
 ## Source manifest
 
-Published asset `<tag>-source-manifest.json`; also stored in the bundle as `MANIFEST.json` **without** the
+Published asset `<component>-<version id>-sources.manifest.json`; also stored in the bundle as `MANIFEST.json` **without** the
 fields marked (standalone only), because a file cannot contain its own hash. Schema id
 `bundledock.source-manifest/v1`.
 
@@ -111,10 +111,10 @@ fields marked (standalone only), because a file cannot contain its own hash. Sch
 | --- | --- |
 | `schema` | `bundledock.source-manifest/v1` |
 | `component`, `version` (`LV`), `release_tag`, `revision` | identity |
-| `produced_by` | `tool: "bdock"`, `tool_version`, `bdock_source_commit`, `bdock_go_version`, `plan_sha256` |
+| `produced_by` | `tool: "bdock"`, `tool_version`, `bdock_source_commit`, `bdock_go_version`, `entry_sha256` (SHA-256 of the canonical JSON of the single source-lock entry: keys sorted, two-space indent, LF; never of the whole file, so later versions do not change older bundles) |
 | `source_date_epoch` | mtime of all bundle entries; the peeled upstream tag commit time written by `pin` |
 | `upstream` | `repository`, `tag`, `tag_object` (annotated tag object or null), `tag_commit` (peeled), `tarball_url`, `tarball_name`, `tarball_sha256`, `tarball_bytes` |
-| `archive_anomalies` | objects: absolute or escaping symlink targets, duplicate member names, special members (bounded to 1 000 entries) |
+| `archive_anomalies`, `anomalies_truncated` | `anomalies_truncated` is an integer count of entries beyond the first 1 000; `archive_anomalies` objects: absolute or escaping symlink targets, duplicate member names, special members (bounded to 1 000 entries) |
 | `licenses` | as catalog |
 | `bundle_license_note` | fixed text: bundles keep upstream licenses; the mirror's own files are EUPL-1.2 |
 | `recipe` | `kind`, `reconstruction` (bool), `argv` (normalized: `bdock tools sources fetch --component <C> --version <version id>`, no output path), `endpoints`, `excluded`, `static_system_libs`, `toolchain_notes`, `cabal_revisions` |
@@ -161,10 +161,10 @@ lock, listed in the catalog `notices`, verified by `check`:
 ```text
 Installed version: v0.11.0
 Mirror release: https://github.com/wstein/bundledock-third-party-sources/releases/tag/shellcheck-v0.11.0
-Mirror bundle: https://github.com/wstein/bundledock-third-party-sources/releases/download/shellcheck-v0.11.0/shellcheck-v0.11.0-source.tar.gz
+Mirror bundle: https://github.com/wstein/bundledock-third-party-sources/releases/download/shellcheck-v0.11.0/shellcheck-0.11.0-sources.tar.gz
 Mirror bundle SHA256: <64 hex>
 Mirror manifest SHA256: <64 hex>
-Reconstruction: false
+Reconstruction: true
 ```
 
 ## Check report (JSON)
