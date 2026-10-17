@@ -14,7 +14,7 @@ directory for outputs.
 2. Render an existing plan against the catalog and lock (offline; `consistent: yes` expected):
 
    ```bash
-   bdock tools sources plan --plan plans/shellcheck/0.11.0.json
+   bdock tools sources plan --component shellcheck --version 0.11.0
    ```
 
 3. Create or refresh a plan (network, read-only, writes only the plan; the owner decides whether this
@@ -22,16 +22,16 @@ directory for outputs.
 
    ```bash
    out="$(mktemp -d)"
-   bdock tools sources pin shellcheck --out "$out/plan.json"
-   jq '{component,version,pinned: (.upstream.tarball_sha256 != null)}' "$out/plan.json"
+   bdock tools sources pin shellcheck --sources "$out/sources"
+   jq '.versions' "$out/sources/shellcheck.lock.json"
    ```
 
    Review the digest against an independent download or upstream's published value, then commit the
-   plan to the mirror repository by PR.
+   source lock to the mirror repository by PR.
 4. (Approval required) the build step, run by the release process in the mirror repo, locally equivalent to:
 
    ```bash
-   bdock tools sources fetch --plan "$out/plan.json" --out "$out/bundle"
+   bdock tools sources fetch --component shellcheck --version 0.11.0 --sources "$out/sources" --out "$out/bundle"
    ```
 
    Run it twice into different directories: both manifests report the same `tar_sha256`.

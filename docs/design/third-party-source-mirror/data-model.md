@@ -1,7 +1,7 @@
 # Data model: third-party source mirror
 
 All JSON is UTF-8, LF, two-space indent, keys sorted, no duplicate keys, unknown keys refused.
-Names (`component`, `V`, `R`, tag, assets, plan path) follow the [naming table](spec.md#naming-table).
+Names (`component`, `V`, `R`, tag, assets, source-lock path) follow the [naming table](spec.md#naming-table).
 
 ## Catalog `source` block
 
@@ -19,7 +19,8 @@ until WI2 completes, required afterwards).
 | `recipe.excluded` | string[] | copied to the manifest |
 | `recipe.static_system_libs` | string[] | optional review aid |
 | `recipe.freeze_source` | string | `cabal-freeze`: member path of the dependency report in the tarball |
-| `recipe.freeze_file` | string | `cabal-freeze`: path of an owner-reviewed freeze file in the mirror repo (sets `reconstruction: true`) |
+| `recipe.freeze_file` | string | `cabal-freeze`: name of an owner-reviewed freeze file supplied to `pin` with `--freeze-file PATH` (its SHA256 is recorded in the source-lock entry; `reconstruction` is `true` for every `cabal-freeze` component, because no upstream freeze file for the exact target is used) |
+| `version_regex` | string | optional; one capture group on `LV` yielding `V` ([naming table](spec.md#naming-table)); Go RE2 |
 
 `component` is the package key (no separate field). Validation (`toolconfig.Validate`): enum values; copyleft
 classes require `upstream`, `recipe`, `licenses`; `none` forbids `recipe`; https only; no `..` or control
@@ -58,8 +59,13 @@ First hops and their measured redirect targets (HEAD requests, 2026-10-17):
 | `api.github.com` (`/repos/.../tarball/`) | `codeload.github.com` | API tarballs |
 | `proxy.golang.org` | none (HTTP 200) | Go modules |
 | `static.crates.io` | none (HTTP 200) | crates |
-| `hackage.haskell.org` | not measured | Hackage sdists |
-| `codeberg.org` | not measured | Cargo git sources hosted there |
+| `hackage.haskell.org` | none (HTTP 200, measured) | Hackage sdists |
+| `codeberg.org` | none (HTTP 200, measured) | Cargo git sources hosted there |
+| `github.com` (`/<owner>/<repo>/archive/<commit>.tar.gz`) | `codeload.github.com` (same family as tag archives; not measured for commit archives) | Cargo git sources |
+
+Caveat for Cargo git sources: a host archive of a commit omits submodules and honours `export-ignore`,
+while `cargo` clones the repository. No current instance (fish's `rust-pcre2` has an empty `.gitmodules`
+and vendors PCRE2 as a tree, per round-2), but `fetch` records the archive URL and hash as `plan-pin`.
 
 The list may grow only by a code change with a test; other hosts refuse with `fetch-host-refused`.
 
@@ -111,7 +117,7 @@ fields marked (standalone only), because a file cannot contain its own hash. Sch
 | `archive_anomalies` | objects: absolute or escaping symlink targets, duplicate member names, special members (bounded to 1 000 entries) |
 | `licenses` | as catalog |
 | `bundle_license_note` | fixed text: bundles keep upstream licenses; the mirror's own files are EUPL-1.2 |
-| `recipe` | `kind`, `reconstruction` (bool), `argv` (normalized: `bdock tools sources fetch --plan <plan path in repo>`; no output path, no limit or digest-acceptance flags), `endpoints`, `excluded`, `static_system_libs`, `toolchain_notes`, `cabal_revisions` |
+| `recipe` | `kind`, `reconstruction` (bool), `argv` (normalized: `bdock tools sources fetch --component <C> --version <version id>`, no output path), `endpoints`, `excluded`, `static_system_libs`, `toolchain_notes`, `cabal_revisions` |
 | `dependencies[]` | `ecosystem` (`go`, `cargo`, `hackage`), `name`, `version`, `path` (in bundle), `sha256` (of the stored file), `verified_against` (`lockfile-hash` or `plan-pin`, [classes](spec.md#verification-classes)), `source_url` |
 | `files[]` | every bundle entry **except `MANIFEST.json`**: `path`, `size`, `sha256`, `mode` |
 | `bundle` (standalone only) | `name`, `tar_sha256`, `asset_sha256`, `asset_bytes`, `format` (`pax-sorted-v1`), `compression` (`gzip-9-go`) |
@@ -120,12 +126,16 @@ fields marked (standalone only), because a file cannot contain its own hash. Sch
 `tar_sha256` in the bundle is computed over the tar **including** `MANIFEST.json` (so it is derived after
 the manifest is final); the standalone manifest repeats it. Limits are in the [spec](spec.md#limits).
 
-## Plan
+## Source lock and plan entries
 
-`plans/<component>/<V>.json` (or `-r<R>`) in the mirror repo, schema `bundledock.source-plan/v1`:
-identity, `upstream` (URL, `tarball_sha256`, `tag_object`, `tag_commit`), `recipe` (kind, parameters, and
-for `plan-pin` classes a `pins[]` list of `{url, sha256}`), `source_date_epoch`, `shipped_binary`,
-`bdock_source_commit`, `bdock_go_version`. Written only by `pin`.
+Mirror-repository file `sources/<component>.lock.json` (the `lock_files` input that Spec 026 example 5
+declares for a fetch build; fixed path per component), schema `bundledock.source-lock/v1`:
+`{"schema", "component", "versions": {"<version id>": <entry>}}`. Each entry is a **plan** written only by
+`pin`: `component`, `version` (`LV`), `revision`, `upstream` (`tarball_url`, `tarball_sha256`, `tag_object`,
+`tag_commit`), `recipe` (`kind`, parameters, `pins[]` of `{url, sha256}` for `plan-pin` dependencies,
+`freeze_file_sha256` if any), `source_date_epoch`, `shipped_binary`, `bdock_source_commit`,
+`bdock_go_version`. Adding a version changes the file, so the fetch build input is the reviewed state of C.
+`pin --revision R` creates a re-issue entry (`R >= 2`); a missing flag means `R = 1`.
 
 ## Version-independent `SOURCE` paragraph
 

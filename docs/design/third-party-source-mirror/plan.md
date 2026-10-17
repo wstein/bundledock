@@ -54,7 +54,7 @@ internal/sourcebundle/                    manifest, writer, safe reader       (W
 internal/sourcefetch/                     fetchers                            (WI6)
 cmd/bdock/tools_sources*.go               pin, plan, fetch, check, sync      (WI5, WI6, WI7)
 docs/third-party-sources.md               owner procedure and settings        (WI11)
-mirror repo: plans/, .stw/ contract, workflow                                 (handoff, WI12)
+mirror repo: sources/<component>.lock.json, .stw/release.<component>.toml, workflow (handoff, WI12)
 ```
 
 ## Design decisions
@@ -62,9 +62,11 @@ mirror repo: plans/, .stw/ contract, workflow                                 (h
 - **D1 Producer in BundleDock, publisher in SourceSteward.** Interface in
   [contracts/mirror-project.md](contracts/mirror-project.md).
 - **D2 Catalog-declared recipes.** One `recipe.kind` per tool, closed vocabulary, no argv; `custom` refused.
-- **D3 Plans live in the mirror repo.** `pin` (network) writes `plans/<component>/<V>.json` with digests, the
-  peeled tag commit and `source_date_epoch` (commit time). `plan` (offline) validates a plan against
-  catalog and lock and renders it. The release-process commit C contains the plan; `fetch` reads it from C.
+- **D3 Source locks live in the mirror repo.** `pin` (network) writes an entry into
+  `sources/<component>.lock.json` with digests, the peeled tag commit and `source_date_epoch` (commit time);
+  this is the `lock_files` input of the Spec 026 fetch build. `plan` (offline) validates an entry against
+  catalog and lock, or `--standalone` for mirror CI. The release-process commit C contains the file; `fetch`
+  reads it from C.
 - **D4 No toolchain invocation.** Fetchers re-implement the protocols (Go module proxy URLs and `h1:`
   dirhash, crates.io `static.crates.io` `.crate` URLs, Hackage sdist URLs). Cost: protocol drift, mitigated
   by fixtures and by recording URLs. Measured for trufflehog v3.99.2 with Go's own tooling: 310 modules,
@@ -75,10 +77,12 @@ mirror repo: plans/, .stw/ contract, workflow                                 (h
   `packages.lock.json` so updater semantics change only by the one catalog edit.
 - **D6 Check is Go.** `tool-inventory.py --check` stays a doc-drift check.
 - **D7 Naming** per the [naming table](spec.md#naming-table).
-- **D8 Notices.** `SOURCE` version-independent paragraph; generated `SOURCE-MIRROR` (FR-13). Whether the
-  image builder stages a new notice file with no code change (the catalog `notices` list) is unverified;
-  WI10 starts with a failing test that reads the staging code.
-- **D9 Pinned toolchain for reproducibility.** The plan records `bdock_source_commit` and
+- **D8 Notices.** `SOURCE` version-independent paragraph; generated `SOURCE-MIRROR` (FR-13). Read in code: notices are opened
+  from `os.DirFS(<bundle dir>)` (`cmd/tools-bundle/main.go`) and copied by `internal/toolbundle/bundle.go`
+  (loop over `p.Notices`, `licenses/<name>/<base>`); the Dockerfile copies `bundles/toolbox/licenses`;
+  `catalog_digest` covers the catalog only. A generated file listed in `notices` stages without code change;
+  whether the catalog validator restricts notice names is not checked, so WI10 still starts with a failing test.
+- **D9 Pinned toolchain for reproducibility.** The source-lock entry records `bdock_source_commit` and
   `bdock_go_version`; the mirror workflow uses exactly that Go (FR-6).
 
 ## Upgrade sequence
@@ -88,15 +92,16 @@ Normative. Preconditions: the version is copyleft (`source-offer` or `file-level
 1. The bot updater PR changes `packages.lock.json` (own-file scope). `check --enforce` is red with
    `mirror-entry-missing`; the PR cannot merge.
 2. A human or an authorized agent runs `bdock tools sources pin <tool> --lock <path to the PR head's
-   lock>` (the lock path is a flag so the PR head is not needed in the working tree), reviews the plan,
-   and opens a mirror-repo PR containing `plans/<component>/<V>.json`.
+   lock>` (the lock path is a flag so the PR head is not needed in the working tree), reviews the entry,
+   and opens a mirror-repo PR changing `sources/<component>.lock.json`.
 3. After the mirror PR merges, the owner approves the exact build; the release process builds C, drafts,
    records, and the owner pushes the annotated tag (Spec 026 D1/D4).
 4. A human pushes a follow-up commit to the updater PR branch with `sources.lock.json` and the regenerated
    `SOURCE-MIRROR` (`bdock tools sources sync`). The PR now has a non-bot commit and files outside the
    updater's own-file scope, so by `AGENTS.md` **automatic publication stops**; publication needs the
    owner's manual exact-SHA dispatch. This is the accepted consequence ([open question 2](#open-questions-for-the-owner)).
-5. `check --enforce` is green; the owner merges; bundle publication proceeds under its own approval.
+5. `check --enforce` is green; the owner merges; the publication gate also runs `check --enforce --online`;
+   bundle publication proceeds under its own approval.
 
 ## Rollout order
 
@@ -105,7 +110,8 @@ Authoritative; each step needs the previous. (owner) = not done by an agent.
 1. (done) Repository exists, public, EUPL-1.2 README and LICENSE.
 2. (owner) Apply the [settings](#mirror-repository-settings-for-the-owner).
 3. bundledock source work WI1, WI3 to WI7 (`check` report-only, `--enforce` off).
-4. **WI2 measurement and classification** (dependency licenses of every shipped binary; sizes of every
+4. **WI9** (complete list of copyleft versions in published carriers; a hard gate per component, finished
+   before that component's first release) and **WI2 measurement and classification** (dependency licenses of every shipped binary; sizes of every
    candidate bundle). Its recorded result fixes: the backfill list (every `source-offer` and
    `file-level-source` component), the asset limit and the need for a split strategy, and the date of the
    enforcement flip. No backfill starts before this step.
@@ -148,7 +154,7 @@ Documentation only; nothing here is automated by this design. Verify in the GitH
 | Static system libs in Haskell binaries | listed in `static_system_libs`; legal item 3 |
 | Protocol drift in fetchers | fixtures; `fetch` not in `make check` |
 | Spec 026 not usable (draft, constitution amendment pending) | work through WI7 is independent; WI12 waits |
-| Spec 026 per-contract track model vs one multi-component repo | [mirror-project.md](contracts/mirror-project.md) requirements; open question 8 |
+| Spec 026 monotonicity forbids re-issue of non-newest versions and late backfills | [mirror-project.md](contracts/mirror-project.md) item 1; open question 8 |
 | Copyleft bumps cannot auto-publish | accepted ([upgrade sequence](#upgrade-sequence)) |
 
 ## Open questions for the owner
@@ -163,5 +169,6 @@ Documentation only; nothing here is automated by this design. Verify in the GitH
 5. Split strategy for bundles over the asset limit (decided after WI2; blocking if any component exceeds).
 6. Deferred carriers (`opentofu`, `bun`, `node*`): in scope for a v2? (recommended: opentofu and bun next).
 7. Classify `bdock tools sources pin` as not an artifact build (recommended: yes, it writes a plan only).
-8. Spec 026 tracks: one contract per component, or a multi-track contract (Spec 026 open question 3).
+8. Spec 026 monotonicity: ask for a re-issue/backfill exemption, or accept that a wrong non-newest bundle
+   cannot be superseded (recommended: ask; accept the limitation meanwhile).
 9. Typst: treat the embedded font as `source-offer` until the lawyer answers (decided by the coordinator).
