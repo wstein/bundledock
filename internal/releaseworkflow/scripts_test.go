@@ -404,32 +404,42 @@ func monotonic(t *testing.T, tag, existing string) (string, error) {
 }
 
 func TestVerifyMonotonicVersion(t *testing.T) {
+	// ls-remote always lists the pushed tag, so every real input contains the tag itself.
 	existing := "bdock/v0.1.0\nbdock/v0.2.0\nbdock/v0.10.0\n\nbdock/v0.1.0-rc1\ntoolbox/2026.10.15-b98.1\n"
 	ok := map[string]string{
-		"bdock/v0.10.1": existing, // numeric, not lexical: 0.10.1 > 0.10.0 > 0.2.0
-		"bdock/v1.0.0":  existing,
-		"bdock/v0.1.0":  "",               // first release
-		"bdock/v0.2.0":  "bdock/v0.2.0\n", // the tag itself, listed by ls-remote and releases
+		"bdock/v0.10.1": existing + "bdock/v0.10.1\n", // numeric, not lexical: 0.10.1 > 0.10.0 > 0.2.0
+		"bdock/v1.0.0":  existing + "bdock/v1.0.0\nbdock/v1.0.0\n",
+		"bdock/v0.1.0":  "bdock/v0.1.0\n", // first release
 		"bdock/v0.3.0":  "bdock/v0.3.0\nbdock/v0.3.0\nbdock/v0.2.9\n",
 	}
+	// Pre-releases never count as an existing version.
+	ok["bdock/v1.0.0"] = "bdock/v2.0.0-rc1\nbdock/v1.0.0\n"
 	for tag, ex := range ok {
 		if out, err := monotonic(t, tag, ex); err != nil {
 			t.Errorf("%s over %q rejected: %s", tag, ex, out)
 		}
 	}
-	bad := map[string]string{
-		"bdock/v0.2.0": existing,         // older than 0.10.0
-		"bdock/v0.9.0": existing,         // numeric: 0.9.0 < 0.10.0
-		"bdock/v0.1.5": "bdock/v0.2.0\n", // older patch line
-		"bdock/v1.0.0": "bdock/v1.0.1\n", // newer exists
-		"bdock/v0.1.0": "bdock/v0.0.1\nbdock/v0.1.0\nv0.1.0\nbdock/v0.1.1\n",
+	bad := []struct{ tag, in string }{
+		{"bdock/v0.2.0", existing + "bdock/v0.2.0\n"}, // older than 0.10.0
+		{"bdock/v0.9.0", existing + "bdock/v0.9.0\n"}, // numeric: 0.9.0 < 0.10.0
+		{"bdock/v0.1.5", "bdock/v0.2.0\nbdock/v0.1.5\n"},
+		{"bdock/v1.0.0", "bdock/v1.0.1\nbdock/v1.0.0\n"},
+		{"bdock/v0.1.0", "bdock/v0.0.1\nbdock/v0.1.0\nv0.1.0\nbdock/v0.1.1\n"},
+		// Fail closed when the listing does not show the pushed tag: empty, garbled, CRLF,
+		// leading space, or a different tag only.
+		{"bdock/v0.1.0", ""},
+		{"bdock/v0.1.0", "\n"},
+		{"bdock/v0.1.0", "garbage<html>\n"},
+		{"bdock/v0.1.0", "bdock/v0.1.0\r\n"},
+		{"bdock/v0.1.0", " bdock/v0.1.0\n"},
+		{"bdock/v0.5.0", "bdock/v0.4.0\n"},
 	}
-	for tag, ex := range bad {
-		if out, err := monotonic(t, tag, ex); err == nil {
-			t.Errorf("%s over %q accepted: %s", tag, ex, out)
+	for _, c := range bad {
+		if out, err := monotonic(t, c.tag, c.in); err == nil {
+			t.Errorf("%s over %q accepted: %s", c.tag, c.in, out)
 		}
 	}
-	if _, err := monotonic(t, "bdock/v0.1.0-rc1", ""); err == nil {
+	if _, err := monotonic(t, "bdock/v0.1.0-rc1", "bdock/v0.1.0-rc1\n"); err == nil {
 		t.Error("a non-release tag is accepted")
 	}
 }

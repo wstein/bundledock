@@ -8,7 +8,7 @@
 #   sh release-verify.sh tag TAG MAIN_REF TAG is an annotated bdock/vX.Y.Z tag on a commit
 #                                         reachable from MAIN_REF; prints the tagged commit
 #   sh release-verify.sh monotonic TAG    TAG is bdock/vX.Y.Z; stdin lists existing tag or release
-#                                         names, one per line; fails when any other strict
+#                                         names, one per line, and must include TAG itself; fails when any other strict
 #                                         bdock/v tag has a version greater than or equal to TAG's.
 #                                         Other lines (pre-releases, image tags, blanks) are ignored.
 #
@@ -72,19 +72,20 @@ monotonic)
 	[ "$#" -eq 1 ] || usage
 	match "$tag_re" "$1" || fail "not a CLI release tag (want bdock/vMAJOR.MINOR.PATCH): $1"
 	new=${1#bdock/v}
-	# Compare numerically per component; the tag itself may be listed and is skipped.
+	# Compare numerically per component. The listing must show the pushed tag itself (ls-remote
+	# always does), which proves it is the real listing; empty or garbled input fails closed.
 	awk -v tag="$1" -v new="$new" '
 		function cmp(a, b,   x, y, i) {
 			split(a, x, "."); split(b, y, ".")
 			for (i = 1; i <= 3; i++) { if (x[i] + 0 > y[i] + 0) return 1; if (x[i] + 0 < y[i] + 0) return -1 }
 			return 0
 		}
-		$0 == tag { next }
+		$0 == tag { seen = 1; next }
 		$0 ~ /^bdock\/v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$/ {
 			v = substr($0, 8)
 			if (cmp(v, new) >= 0) { printf "release-verify: existing %s is not below %s\n", $0, tag > "/dev/stderr"; bad = 1 }
 		}
-		END { exit bad }
+		END { if (!seen) { printf "release-verify: the listing does not show %s; refusing to guess\n", tag > "/dev/stderr"; exit 1 } exit bad }
 	' || fail "version $new is not above every existing bdock/v tag; release the next version"
 	;;
 *)
