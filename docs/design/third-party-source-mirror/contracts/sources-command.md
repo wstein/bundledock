@@ -23,7 +23,7 @@ build command of the mirror's contracts and reads only `sources/<C>.lock.json`.
 
 | Mode | Reads | Network | Writes | Starts processes |
 | --- | --- | --- | --- | --- |
-| `pin` | catalog, lock, the existing source lock | https to the [fetch hosts](../data-model.md#fetch-hosts) and the repository's tag API (read-only); hashes the upstream tarball and pin targets in memory, nothing distributable is written | creates or appends one entry in `<sources>/<component>.lock.json`; an existing version id is never overwritten (`upstream-hash-mismatch` if the observed digests differ) | none |
+| `pin` | catalog, lock, the existing source lock | https to the [fetch hosts](../data-model.md#fetch-hosts) and the repository's tag API (read-only); hashes the upstream tarball and pin targets in memory, nothing distributable is written | creates or appends one entry in `<sources>/<component>.lock.json`; an existing version id is never overwritten: re-pinning with identical digests is a no-op (exit 0, file unchanged), differing digests are `upstream-hash-mismatch` (exit 1) | none |
 | `plan` | the source lock, catalog, lock | none | none | none |
 | `fetch` | the source lock entry | same hosts, https only, per-hop checks | in `--out`: `<component>-<version id>-sources.tar.gz` and `<component>-<version id>-sources.manifest.json`; a private 0700 temp directory beside `--out`, removed on exit | none |
 | `sync` | `sources.lock.json`, lock | none | `licenses/<tool>/SOURCE-MIRROR` (`--check`: none) | none |
