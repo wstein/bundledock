@@ -261,6 +261,17 @@
           "shell": "bash"
         },
         {
+          "env": {
+            "GH_TOKEN": "${{ github.token }}",
+            "REPO": "${{ github.repository }}",
+            "TAG": "${{ steps.resolve.outputs.tag }}"
+          },
+          "if": "steps.resolve.outputs.dry_run == 'false'",
+          "name": "Require a version above every existing release",
+          "run": "set -euo pipefail\n# Tags (annotated ones peeled) and releases, so a deleted tag with a surviving release counts too.\ntags=$(git ls-remote --tags \"https://github.com/$REPO\" 'refs/tags/bdock/v*' | cut -f2 | sed 's|^refs/tags/||; s|\\^{}$||')\nreleases=$(gh api \"repos/$REPO/releases\" --paginate --jq '.[].tag_name')\nprintf '%s\\n%s\\n' \"$tags\" \"$releases\" | sh .github/scripts/release-verify.sh monotonic \"$TAG\"\n",
+          "shell": "bash"
+        },
+        {
           "run": "make check"
         },
         {
