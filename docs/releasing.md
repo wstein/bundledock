@@ -20,7 +20,7 @@ before the second release.
 ## What the workflow does
 
 `.github/workflows/release.yml` runs on a pushed tag `bdock/vX.Y.Z` (exact pattern; `bdock/v1.2.3-rc1`
-and every image tag such as `toolbox/2026.10.15-b98.1` start nothing) and on a manual
+and every image tag such as `toolbox/2026.10.15-b98.1` start no release run) and on a manual
 dispatch (dry run, never publishes).
 
 1. **verify**: owner-only; annotated tag; tag commit equals the run commit and is on `main`;
@@ -64,7 +64,10 @@ flags, platform). Nothing is signed or notarized.
 
 ## When something fails
 
-Do not delete and re-create the tag. A failed `verify` or `build` publishes nothing: fix the
+A transient failure (runner outage, CI not yet green at tag time) before `publish` created
+anything can be fixed by re-running the same workflow run as the owner; the tag is untouched.
+If `publish` failed after creating a release with missing assets, delete that release by hand
+and re-run, or release the next patch version. Otherwise do not delete and re-create the tag. A failed `verify` or `build` publishes nothing: fix the
 cause on `main` and release the next patch version. If `publish` created a wrong release,
 delete the release by hand and use the next patch version; the tag stays. An expired
 artifact (one day) means re-running the whole workflow for the same tag, which `publish`

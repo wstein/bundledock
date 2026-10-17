@@ -144,9 +144,16 @@ tagging and merging.
 3. **Standing approval.** Does "bdock wie smill" cover every later `bdock/vX.Y.Z` tag the owner
    pushes (this spec's reading, as for SheetMill) or only the first? Recommended: standing, with
    the owner confirming before the second release. Until confirmed it is a reading, not a grant.
-4. **Amend the `AGENTS.md` rule wording** that CLI release builds need per-operation approval:
-   done here as an exception paragraph; the owner may prefer to phrase it differently.
+4. **`AGENTS.md` wording.** The CLI release exception is named beside the Pages exception in the
+   build-approval sentences and has its own paragraph; the owner may prefer other phrasing.
 5. **Tag ruleset.** Block deletion and update of `bdock/v*` tags after release. Recommended.
 6. **Attestations** (build provenance) after the first release. Recommended later.
-7. **Review of the local TODO list** (`AGENTS.md`) before the first tag is a precondition the
+7. **Security reporting.** There is no `SECURITY.md`; `CODE_OF_CONDUCT.md` has a contact for
+   conduct reports only. Recommended: decide a vulnerability-reporting channel (or defer
+   explicitly) before the first public binary.
+8. **Dry-run artifacts** live one day and, if the repository is public, any signed-in GitHub
+   user can download them. Acceptable? Recommended: yes.
+9. **Vulnerability scanning of the CLI's own Go dependencies** (`govulncheck`) is not part of
+   verify. Recommended: add later as a separate change; it needs network and a tool pin.
+10. **Review of the local TODO list** (`AGENTS.md`) before the first tag is a precondition the
    owner checks; no tool can check an untracked list.

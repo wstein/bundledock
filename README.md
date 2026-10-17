@@ -6,7 +6,7 @@
 [![Go 1.25 or newer](https://img.shields.io/badge/Go-1.25%2B-00ADD8?logo=go&logoColor=white)](go.mod)
 [![Documentation deployment](https://github.com/wstein/bundledock/actions/workflows/pages.yml/badge.svg?branch=main)](https://github.com/wstein/bundledock/actions/workflows/pages.yml)
 [![License: EUPL 1.2](https://img.shields.io/badge/license-EUPL--1.2-blue)](LICENSE)
-[![Supported platforms: Linux AMD64 and ARM64](https://img.shields.io/badge/platforms-Linux%20AMD64%20%7C%20ARM64-blue)](docs/architecture.md#consumer-compatibility-and-build-layout)
+[![Supported bundle platforms: Linux AMD64 and ARM64](https://img.shields.io/badge/platforms-Linux%20AMD64%20%7C%20ARM64-blue)](docs/architecture.md#consumer-compatibility-and-build-layout)
 [![Container: ready](https://img.shields.io/badge/container-ready-5eead4)](https://quay.io/organization/bundledock)
 
 BundleDock packages official stable prebuilt tools and runtimes as OCI volume

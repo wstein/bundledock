@@ -12,7 +12,9 @@
 | Release is local, no CI path | owner decided "bdock wie smill" | `release.yml` |
 | "Embedded dependency findings remain open in Gitleaks, Syft, Trivy" | concern the OCI toolbox image, not the CLI | stated honestly; not a CLI release blocker, still open for the image |
 | Release review of the untracked TODO list | rule in `AGENTS.md` and `docs/development.md` | kept as a precondition in `docs/releasing.md`; not machine-checkable |
-| Security contact and code of conduct decisions | `CODE_OF_CONDUCT.md` now exists with a contact (CONTRIBUTING links it) | removed from the draft's open list; nothing asserted beyond that file |
+| Code of conduct enforcement owner | `CODE_OF_CONDUCT.md` exists with a conduct-report contact | closed |
+| Security (vulnerability) reporting channel | still none: no `SECURITY.md` | kept open: spec open decision 7 |
+| Interactive terminal behavior, `development.md#verification-evidence` link, draft feature summary | image/consumer topics or release-note prose | dropped on purpose: not CLI-release facts (verification evidence stays in development.md) |
 | Quay publication, consumer adoption | separate (`publication.md`) | unchanged, out of scope |
 | Tag namespace and version | undefined | `bdock/vX.Y.Z`, first `0.1.0` ([research](research.md)) |
 
@@ -41,8 +43,8 @@ of `make check`, `actionlint` v1.7.7 on `release.yml` and `ci.yml`, `go vet` wit
 `GOOS`/`GOARCH` for the three platforms. `go test ./internal/toolbundle` fails in this
 environment on `main` as well (Python launcher state ownership under the scratch worktree).
 Not run, by rule: `make build`, `make release`, `make release-test`, `make docs*`, any Docker
-check, any workflow, any tag operation. A scratch `go build -o` to a temporary directory was
-used only to look at CLI output.
+check, any workflow, any tag operation. One scratch `go build -o` to a temporary directory was made only to read the CLI's help output
+(the coordinator's brief allowed it); it was not packaged or kept.
 
 ## Review rounds
 
