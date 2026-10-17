@@ -34,14 +34,16 @@ Amendments recorded with WI1 (`internal/toolconfig`, implemented and tested ther
 - Each `licenses` entry is an SPDX expression shape: identifiers joined by single `AND`, `OR` or `WITH` operators,
   with balanced parentheses (`GPL-3.0-or-later WITH GCC-exception-3.1`). Only the shape is checked, not the SPDX
   list. The list is sorted and unique.
-- `upstream.tarball` must contain `{version}` or `{lock_version}`, no other placeholder, and after expansion must be
-  https with a first-hop host from the [fetch hosts](#fetch-hosts) table and no userinfo, port, query (not even an
-  empty `?`), fragment (not even an empty `#`), backslash, space, `.` or `..` segment, `%25`, or control or format
-  character (bidi overrides, zero width), literal or percent-encoded (the decoded path is checked). The catalog check only sees a sample expansion:
-  `pin` and `plan` (WI5, WI6) must validate the URL again after expanding it with the real lock version, and must
-  not fetch `upstream.repository` without its own host check.
+- `upstream.tarball` must contain `{version}` or `{lock_version}` and no other placeholder. After expansion the text
+  must start with lower-case `https://`, have a first-hop host from the [fetch hosts](#fetch-hosts) table, and
+  contain no userinfo, port, query or fragment (not even an empty `?` or `#`), backslash, space, `.` or `..`
+  segment, empty segment (`//`), `%25`, or control or format character (bidi overrides, zero width). The decoded
+  path is held to the same rules, so `%20`, `%5C`, `%3F`, `%23`, `%7B`, `%2F%2F`, encoded no-break space and encoded
+  C1 or format characters are refused too. A trailing `/` is accepted. Go proxy `!` escapes and `@v` are fine.
+  The catalog check only sees a sample expansion: `pin` and `plan` (WI5, WI6) must validate the URL again after
+  expanding it with the real lock version, and must not fetch `upstream.repository` without its own host check.
 - Free-form text is bounded: at most 64 entries in `licenses`, `excluded` and `static_system_libs`, each at most 200
-  bytes, `excluded` and `static_system_libs` without duplicates; `version_regex` at most 200 bytes.
+  bytes, `excluded` and `static_system_libs` without duplicates; `version_regex` at most 200 bytes. A catalog `version_regex` must compile in its anchored form.
 - `version_regex` has full-match semantics: the pattern is applied as `^(?:pattern)$`, so it must match the whole lock version (an unanchored
   pattern cannot drop a prerelease suffix) and alternatives are searched for a full match. `version-shape` is raised by `pin` and `plan` through
   `Package.SourceVersion`; catalog validation only checks that the pattern compiles with exactly one capture group.
