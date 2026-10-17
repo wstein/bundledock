@@ -98,3 +98,38 @@ func TestToolboxDocsStateRuntimeRequirementsAndInvocation(t *testing.T) {
 		t.Error("docs still show the deprecated flat jsonschema-cli invocation")
 	}
 }
+
+// Retained license files must be the complete canonical texts, so a replaced or
+// truncated file fails in source tests.
+func TestRetainedFullLicensesAreCanonical(t *testing.T) {
+	gpl3 := []string{"GNU GENERAL PUBLIC LICENSE", "Version 3, 29 June 2007", "END OF TERMS AND CONDITIONS", "How to Apply These Terms to Your New Programs"}
+	apache := []string{"Apache License", "Version 2.0, January 2004", "END OF TERMS AND CONDITIONS", "Licensed under the Apache License, Version 2.0"}
+	mit := []string{"MIT License", "Permission is hereby granted, free of charge", "WITHOUT WARRANTY OF ANY KIND"}
+	for name, tc := range map[string]struct {
+		markers []string
+		minSize int
+	}{
+		"hadolint":       {gpl3, 30000},
+		"shellcheck":     {gpl3, 30000},
+		"cosign":         {apache, 10000},
+		"pinact":         {mit, 900},
+		"difftastic":     {mit, 900},
+		"jsonschema-cli": {mit, 900},
+		"zizmor":         {[]string{"The MIT License (MIT)", "Permission is hereby granted, free of charge", "WITHOUT WARRANTY OF ANY KIND"}, 900},
+	} {
+		t.Run(name, func(t *testing.T) {
+			b, err := os.ReadFile("../../bundles/toolbox/licenses/" + name + "/LICENSE")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(b) < tc.minSize {
+				t.Fatalf("license truncated: %d bytes", len(b))
+			}
+			for _, m := range tc.markers {
+				if !strings.Contains(string(b), m) {
+					t.Errorf("license lacks canonical text %q", m)
+				}
+			}
+		})
+	}
+}
