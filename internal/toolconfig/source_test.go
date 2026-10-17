@@ -1,6 +1,7 @@
 package toolconfig
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -99,6 +100,43 @@ func validSource() *Source {
 	}
 }
 
+func numbered(prefix string, n int) []string {
+	out := make([]string, n)
+	for i := range out {
+		out[i] = fmt.Sprintf("%s%03d", prefix, i)
+	}
+	return out
+}
+
+func TestSourceBlockAcceptsLicenseExpressions(t *testing.T) {
+	s := validSource()
+	s.Licenses = []string{"(Apache-2.0 OR MIT) AND Unicode-3.0", "GPL-3.0-or-later WITH GCC-exception-3.1", "MPL-2.0"}
+	if err := withSource(t, "shellcheck", s); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// The version_regex rules apply to every class, not only to those that the
+// strict version derivation would reject anyway.
+func TestSourceBlockRejectsBadVersionRegexInEveryClass(t *testing.T) {
+	for _, obligation := range []string{"none", "undetermined", "source-offer", "file-level-source"} {
+		for name, regex := range map[string]string{"does not compile": "([0-9", "no capture group": `^v[0-9.]+$`, "two capture groups": `^(v)([0-9.]+)$`} {
+			t.Run(obligation+" "+name, func(t *testing.T) {
+				s := validSource()
+				s.Obligation = obligation
+				if obligation == "none" {
+					s.Recipe = nil
+				}
+				s.VersionRegex = regex
+				err := withSource(t, "shellcheck", s)
+				if err == nil || !strings.Contains(err.Error(), "version_regex") {
+					t.Fatalf("got %v", err)
+				}
+			})
+		}
+	}
+}
+
 func TestSourceBlockValidation(t *testing.T) {
 	if err := withSource(t, "shellcheck", validSource()); err != nil {
 		t.Fatalf("valid block refused: %v", err)
@@ -129,6 +167,32 @@ func TestSourceBlockValidation(t *testing.T) {
 		{"tarball with a query", func(s *Source) { s.Upstream.Tarball = "https://github.com/a/b/archive/{lock_version}.tar.gz?token=x" }},
 		{"tarball with a fragment", func(s *Source) { s.Upstream.Tarball = "https://github.com/a/b/archive/{lock_version}.tar.gz#x" }},
 		{"tarball with a unicode control character", func(s *Source) { s.Upstream.Tarball = "https://github.com/a/b/archive/{lock_version}\u0085.tar.gz" }},
+		{"tarball with a backslash", func(s *Source) { s.Upstream.Tarball = "https://github.com/a/b/archive/\\{lock_version}.tar.gz" }},
+		{"tarball with a space", func(s *Source) { s.Upstream.Tarball = "https://github.com/a/b/archive/{lock_version} .tar.gz" }},
+		{"tarball with a bidi format character", func(s *Source) { s.Upstream.Tarball = "https://github.com/a/b/archive/{lock_version}\u202e.tar.gz" }},
+		{"tarball with a zero width space", func(s *Source) { s.Upstream.Tarball = "https://github.com/a/b/archive/{lock_version}\u200b.tar.gz" }},
+		{"tarball without a placeholder", func(s *Source) { s.Upstream.Tarball = "https://github.com/a/b/archive/refs/tags/v1.2.3.tar.gz" }},
+		{"tarball with a trailing empty query", func(s *Source) { s.Upstream.Tarball = "https://github.com/a/b/archive/{lock_version}.tar.gz?" }},
+		{"tarball with a trailing empty fragment", func(s *Source) { s.Upstream.Tarball = "https://github.com/a/b/archive/{lock_version}.tar.gz#" }},
+		{"tarball with an encoded newline", func(s *Source) { s.Upstream.Tarball = "https://github.com/a/b/archive/{lock_version}%0a.tar.gz" }},
+		{"tarball with an encoded NUL", func(s *Source) { s.Upstream.Tarball = "https://github.com/a/b/archive/{lock_version}%00.tar.gz" }},
+		{"tarball with an encoded DEL", func(s *Source) { s.Upstream.Tarball = "https://github.com/a/b/archive/{lock_version}%7F.tar.gz" }},
+		{"repository with a dot segment", func(s *Source) { s.Upstream.Repository = "https://github.com/./shellcheck" }},
+		{"excluded with a bidi format character", func(s *Source) { s.Recipe.Excluded = []string{"gcc\u202e"} }},
+		{"excluded duplicated", func(s *Source) { s.Recipe.Excluded = []string{"gcc", "gcc"} }},
+		{"excluded too many", func(s *Source) { s.Recipe.Excluded = numbered("x", maxSourceEntries+1) }},
+		{"excluded entry too long", func(s *Source) { s.Recipe.Excluded = []string{strings.Repeat("x", maxSourceText+1)} }},
+		{"static libs too many", func(s *Source) { s.Recipe.StaticSystemLibs = numbered("lib", maxSourceEntries+1) }},
+		{"licenses too many", func(s *Source) { s.Licenses = numbered("L", maxSourceEntries+1) }},
+		{"license too long", func(s *Source) { s.Licenses = []string{strings.Repeat("A", maxSourceText+1)} }},
+		{"version_regex too long", func(s *Source) { s.VersionRegex = "(" + strings.Repeat("a", maxSourceText) + ")" }},
+		{"license expression ending in an operator", func(s *Source) { s.Licenses = []string{"MIT AND"} }},
+		{"license expression starting with an operator", func(s *Source) { s.Licenses = []string{"AND MIT"} }},
+		{"license expression with doubled operators", func(s *Source) { s.Licenses = []string{"MIT OR OR GPL-3.0-only"} }},
+		{"license expression with a double space", func(s *Source) { s.Licenses = []string{"MIT  OR Apache-2.0"} }},
+		{"license expression with an open parenthesis", func(s *Source) { s.Licenses = []string{"(MIT OR Apache-2.0"} }},
+		{"license expression with a stray close parenthesis", func(s *Source) { s.Licenses = []string{"MIT)"} }},
+		{"license expression without an operator", func(s *Source) { s.Licenses = []string{"MIT Apache-2.0"} }},
 		{"tarball on an unlisted host", func(s *Source) { s.Upstream.Tarball = "https://example.com/a/b/{lock_version}.tar.gz" }},
 		{"tarball on an IP literal", func(s *Source) { s.Upstream.Tarball = "https://140.82.112.3/a/b/{lock_version}.tar.gz" }},
 		{"tarball with an unknown placeholder", func(s *Source) { s.Upstream.Tarball = "https://github.com/a/b/archive/{tag}.tar.gz" }},
@@ -189,6 +253,8 @@ func TestSourceBlockObligationRules(t *testing.T) {
 		{"none without a recipe", &Source{Obligation: "none", Basis: "scanned", Licenses: []string{"MIT"}}, true},
 		{"none with an upstream only", &Source{Obligation: "none", Basis: "declared", Licenses: []string{"MIT"}, Upstream: validSource().Upstream}, true},
 		{"none with licenses missing", &Source{Obligation: "none", Basis: "declared"}, false},
+		{"undetermined with a recipe but no upstream", &Source{Obligation: "undetermined", Recipe: &SourceRecipe{Kind: "cargo-vendor"}}, false},
+		{"undetermined with upstream and recipe", &Source{Obligation: "undetermined", Upstream: validSource().Upstream, Recipe: &SourceRecipe{Kind: "cargo-vendor"}}, true},
 		{"undetermined alone", &Source{Obligation: "undetermined"}, true},
 		{"undetermined with a bad basis", &Source{Obligation: "undetermined", Basis: "x"}, false},
 		{"source-offer", func() *Source { s := validSource(); s.Obligation = "source-offer"; return s }(), true},
