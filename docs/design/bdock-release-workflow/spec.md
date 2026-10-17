@@ -155,5 +155,8 @@ tagging and merging.
    user can download them. Acceptable? Recommended: yes.
 9. **Vulnerability scanning of the CLI's own Go dependencies** (`govulncheck`) is not part of
    verify. Recommended: add later as a separate change; it needs network and a tool pin.
-10. **Review of the local TODO list** (`AGENTS.md`) before the first tag is a precondition the
+10. **Monotonic versions.** Nothing checks that a new tag is above the highest existing
+    `bdock/v` tag; an older version pushed later would become GitHub's "Latest". Recommended:
+    the owner tags in order; add a verify rule if that proves fragile.
+11. **Review of the local TODO list** (`AGENTS.md`) before the first tag is a precondition the
    owner checks; no tool can check an untracked list.
