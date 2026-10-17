@@ -49,3 +49,30 @@ dependency scale (stays labelled as reported).
 | 24 | low | wrong peeled commits | corrected in R2 |
 | 25 | low | hadolint example incomplete | semver added; eight PR #119 tools `undetermined`; API tarball chosen |
 | 26 | low | small inconsistencies | FR-3 in tasks, undetermined count not fixed, `pax-sorted-v1` everywhere, FR-9 vs byte-identical resolved |
+
+## Round 2 (reviewer on `407c797`): NOT READY (0 critical, 4 high, 5 medium, 8 low)
+
+Hygiene: all reviewer requests used the generic User-Agent; no identifiers were sent. The reviewer found that
+Spec 026 moved to `f7751e4` while round 1 was fixed; the author re-read it (D9, FR-025, FR-026, worked example
+5) and re-measured: helix ships nine copyleft-related `.so` files (listing re-run), hackage.haskell.org and
+codeberg.org answer HEAD with 200 and no redirect, notice staging code read.
+
+| # | Sev | Finding | Resolution |
+| --- | --- | --- | --- |
+| 1 | high | Spec 026 stale; example 5 differs (argv, asset names, lock file, os/arch, records path) | [mirror-project.md](contracts/mirror-project.md) rewritten at `f7751e4`; this design adopts example 5: `fetch --component C --version N`, assets `<C>-<version id>-sources.tar.gz` / `.manifest.json`, one `sources/<C>.lock.json` per component as `lock_files`; per-version plan files dropped |
+| 2 | high | naming table vs dispatch version | naming table: dispatch `version` is the `version id`, product is the component, tag `<C>-v<version id>` |
+| 3 | high | `-rN` and late backfill vs monotonicity | `-rN` only while no greater version exists; backfill complete list is a hard gate (WI9 before WI2/release); exemption requested from Spec 026 (open question 8) |
+| 4 | high | helix classification incomplete | spec row lists all copyleft grammars; AGPL grammar added to legal item 4; exact SPDX per grammar left to WI2 |
+| 5 | medium | unreachable check codes | scope of the check is every package; codes state their own scope |
+| 6 | medium | codes missing for tamper, drift, unknown tool, tag | new rows in the failure table and check contract |
+| 7 | medium | "copyleft marker" undefined | normative marker set and negative fixture (FR-1) |
+| 8 | medium | version shapes outside the regex | `source.version_regex`; tmux letter versions blocked |
+| 9 | medium | dependency inputs unbounded; enforce presence-only | dependency archive limits and `dep-unsafe-path` (FR-9, Limits); `check --online` (FR-12) |
+| 10 | low | leftover flags | removed |
+| 11 | low | D8 unverified though checkable | read in code; recorded (D8) |
+| 12 | low | fetch host table | hackage/codeberg measured; git-archive caveat added |
+| 13 | low | `reconstruction`/`freeze_file` | reconstruction true for every `cabal-freeze`; `pin --freeze-file` |
+| 14 | low | `pin` revision and plan identity | `pin --revision`; entry fields listed |
+| 15 | low | limits naming and overflow | renamed; anomalies truncated with a count |
+| 16 | low | WI9/WI11 in rollout | WI9 placed before WI2; WI11 stays a docs item |
+| 17 | low | mirror CI cannot run `plan` | `plan --standalone` |
