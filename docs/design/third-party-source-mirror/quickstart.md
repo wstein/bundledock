@@ -1,8 +1,9 @@
 # Quickstart: third-party source mirror
 
-Commands exist only after the work items in [tasks.md](tasks.md); this is the intended use. Steps 1, 2 and 6
-run without approval in a source checkout. Steps 3 and 4 are network/build steps (see
-[effects](contracts/sources-command.md#effects)); `fetch` needs explicit approval each time. Use a temporary
+Commands exist only after the work items in [tasks.md](tasks.md); this is the intended use. Steps 1, 3, 5 and 6
+are offline and run without approval in a source checkout. Step 2 (`pin`) uses the network and writes the
+source lock, so agents do not run it without asking ([effects](contracts/sources-command.md#effects));
+step 4 (`fetch`) is a build and needs explicit approval each time. Use a temporary
 directory for outputs.
 
 1. Inspect what the catalog says (offline):
@@ -11,8 +12,8 @@ directory for outputs.
    bdock tools sources check --json | jq '.summary'
    ```
 
-2. Create or refresh a plan (network, read-only, writes only the plan; the owner decides whether this
-   needs approval):
+2. Create a source-lock entry (network; reads upstream, writes only the entry into the source lock
+   under `--sources`; the owner decides whether this needs approval, plan open question 7):
 
    ```bash
    out="$(mktemp -d)"
