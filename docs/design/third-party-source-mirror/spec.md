@@ -93,11 +93,11 @@ hold the bytes.
   (the release process adds its own checksum and build manifest, FR-10): the bundle and the source manifest.
 - **FR-5 Manifest.** JSON, schema `bundledock.source-manifest/v1` ([data model](data-model.md#source-manifest)).
 - **FR-6 Deterministic production.** The bundle is a pure function of the plan and the bytes fetched:
-  sorted entries, uid/gid 0, fixed modes, mtime `SOURCE_DATE_EPOCH`, declared tar format; the recorded
+  sorted entries, uid/gid 0, fixed modes, mtime `SOURCE_DATE_EPOCH` taken from the entry (the upstream tag commit time; the `SOURCE_DATE_EPOCH` environment value that Spec 026 sets to the build commit time is ignored, so record and manifest epochs differ by design), declared tar format; the recorded
   `argv` is the **normalized** command (`bdock tools sources fetch --component C --version N`, without the output path); the Go
   toolchain used to build `bdock` is pinned in the plan (`bdock_go_version`). The reproducibility claim is
   for `tar_sha256`; the compressed digest is recorded separately ([research D6](research.md#d6-determinism-boundary)).
-- **FR-7 Modes.** `pin` (network, read-only on the repository, writes a source-lock entry), `plan` (offline, validates and
+- **FR-7 Modes.** `pin` (network, creates or appends one entry in `sources/<component>.lock.json`, never overwrites an existing version id), `plan` (offline, validates and
   renders an entry against catalog and lock, or standalone for mirror CI), `fetch` (network, produces the bundle), `check` (offline).
   Per-mode effects are the table in the [command contract](contracts/sources-command.md#effects).
 - **FR-8 Never execute upstream code.** No build script, `Setup.hs`, `build.rs`, `go generate`, `go
@@ -153,8 +153,8 @@ Normative; the source-lock path, assets, tag, registry key and URL templates der
 | --- | --- | --- |
 | `component` | catalog package name | `shellcheck` |
 | lock version `LV` | exactly as in `packages.lock.json` | `v0.11.0`, `25.07.1` |
-| `V` | derived from `LV` by the package's `source.version_regex` (one capture group; default `^v?([0-9]+(\.[0-9]+){0,3})$`); the result must match `^[0-9]+(\.[0-9]+){0,3}$` or the package is blocked (`version-shape`) | `0.11.0` |
-| revision `R` | integer `>= 1`; a corrected re-issue of the same `V` | `2` |
+| `V` | derived from `LV` by the package's `source.version_regex` (one capture group; default `^v?([0-9]{1,9}(\.[0-9]{1,9}){0,3})$`); the result must match `^[0-9]{1,9}(\.[0-9]{1,9}){0,3}$` (no leading-zero groups beyond `0`) or the package is blocked (`version-shape`) | `0.11.0` |
+| revision `R` | integer `>= 1`, written without leading zeros, `1` never written; a corrected re-issue of the same `V` | `2` |
 | `release tag` | `<component>-v<V>` for `R=1`, `<component>-v<V>-r<R>` for `R>=2` | `shellcheck-v0.11.0-r2` |
 | `version id` | `<V>` for `R=1`, `<V>-r<R>` for `R>=2` (Spec 026 `{version_number}`) | `0.11.0-r2` |
 | assets | `<component>-<version id>-sources.tar.gz` and `<component>-<version id>-sources.manifest.json` (the names in Spec 026 worked example 5); the release process adds `SHA256SUMS` and `build-manifest.json` | `shellcheck-0.11.0-sources.tar.gz` |
@@ -179,7 +179,7 @@ Normative; the source-lock path, assets, tag, registry key and URL templates der
 | fish 4.9.3 | `SOURCE`: GPL-2.0-only AND LGPL-2.0-or-later AND MIT AND PSF-2.0 | `source-offer` |
 | shellcheck v0.11.0 | `licenses/shellcheck/LICENSE` is GPL-3.0 | `source-offer` |
 | trufflehog v3.99.2 | `SOURCE`: AGPL-3.0 | `source-offer` |
-| helix 25.07.1 | `SOURCE` MPL-2.0; `GRAMMAR-NOTICES` carries copyleft license texts for the grammars jinja2, amber, blueprint, hare (GPL-3.0 per round-2 reviewer), prolog (AGPL-3.0), vala (LGPL), inko and nim (MPL-2.0), and a GPL text for nginx; the shipped aarch64 tarball (SHA256 equals the lock) contains `runtime/grammars/{jinja2,amber,gas,blueprint,hare,prolog,vala,inko,nim}.so` (nginx and the exact SPDX per grammar not verified; WI2 resolves them) | `source-offer` (GPL/AGPL/LGPL grammars, plus MPL-2.0) |
+| helix 25.07.1 | `SOURCE` MPL-2.0; `GRAMMAR-NOTICES` carries copyleft license texts for the grammars jinja2, amber, blueprint, hare (GPL-3.0 per round-2 reviewer), prolog (AGPL-3.0), vala (LGPL), inko and nim (MPL-2.0), and a GPL text for nginx; the shipped aarch64 tarball (SHA256 equals the lock) contains `runtime/grammars/{jinja2,amber,gas,blueprint,hare,prolog,vala,inko,nim}.so` (nginx and the exact SPDX per grammar, including `gas`, not verified; WI2 resolves them) | `source-offer` (GPL/AGPL/LGPL grammars, plus MPL-2.0) |
 | typst v0.15.1 | `SOURCE`: the embedded NewCM10-Regular font is "GPL3-or-later with Font and Distribution exceptions"; `ASSETS-NOTICE` holds the GPL-3.0 text | `source-offer` pending lawyer ([legal item 6](#legal-caveat)); the font exceptions may remove the source obligation |
 | hadolint v2.15.1 (PR #119, not on main) | GPL-3.0-only; `ThirdPartyNotices.txt`: HsYAML GPL-2.0-only, ShellCheck GPL-3.0-only, language-docker GPL-3.0-or-later, colourista MPL-2.0, semver MPL-2.0 | `source-offer` |
 | actionlint, cosign, difftastic, git-cliff, jsonschema-cli, pinact, zizmor, zoxide (PR #119) | not scanned | `undetermined` |
@@ -252,7 +252,7 @@ Normative constants in code; each row has a test. Status 1 = refusal exit.
 | one release asset | 1.9 GiB provisional (WI2 confirms; GitHub documents 2 GiB per asset, unverified here) | `bundle-too-large` | 1 |
 | HTTP redirects per request / hosts | 5 / [per-hop host allow-list](data-model.md#fetch-hosts) | `fetch-redirect-limit`, `fetch-host-refused` | 1 |
 | single response body | 2 GiB for tarballs and zips; 16 MiB for JSON | `fetch-too-large` | 1 |
-| `<tag>-sources.manifest.json`, in-bundle `MANIFEST.json`, source-lock file read by `check` | 16 MiB / 16 MiB / 1 MiB, also line count 1 000 000 | `parse-too-large` | 1 |
+| `<component>-<version id>-sources.manifest.json`, in-bundle `MANIFEST.json`, source-lock file read by `check` | 16 MiB / 16 MiB / 1 MiB, also line count 1 000 000 | `parse-too-large` | 1 |
 | `archive_anomalies` entries | 1 000 recorded; further ones only counted (`anomalies_truncated: N`), never a refusal | n/a | n/a |
 | members read from one dependency archive (module zip, `.crate`, git archive, sdist) | same limits as the first three rows, per archive | `archive-too-many-members`, `archive-too-large`, `archive-bomb` | 1 |
 | lockfile-derived entry path | see FR-9 | `dep-unsafe-path` | 1 |
@@ -261,7 +261,7 @@ There is no `--max-bytes` flag; limits are constants.
 
 ## Failure modes
 
-Normative; exit status 1 unless stated; `fetch` publishes nothing on any of them.
+Normative; exit status 1 unless stated; `fetch` publishes nothing on any of them. Emitting modes: `upstream-missing`, `upstream-hash-mismatch`, `dependency-hash-mismatch`, `plan-unpinned`, `lock-arch-mismatch`, `version-shape`: `pin` and `fetch` (`plan` for the last two); `entry-stale`, `entry-missing`: `plan`, `fetch`; `out-not-empty`, `manifest-schema`: `fetch`; `notice-drift`: `sync --check`; bundle codes: `check --bundle-dir`; release codes: `check --online`.
 
 | Code | When | Result |
 | --- | --- | --- |
@@ -269,7 +269,7 @@ Normative; exit status 1 unless stated; `fetch` publishes nothing on any of them
 | `upstream-hash-mismatch` | observed SHA256 differs from the plan | refuse; plan never auto-updated |
 | `dependency-hash-mismatch` | differs from the `lockfile-hash` source or the plan pin | refuse |
 | `plan-unpinned` | plan lacks a digest | refuse; `pin` is the only writer of digests |
-| `plan-stale` | plan disagrees with catalog or lock | refuse (`plan`, `fetch`) |
+| `entry-stale` | plan disagrees with catalog or lock | refuse (`plan`, `fetch`) |
 | `lock-arch-mismatch` | amd64 and arm64 lock versions differ | refuse |
 | `version-shape` | `V` does not match the naming table | refuse |
 | `recipe-custom` | recipe kind `custom` | exit 3 |
@@ -277,7 +277,7 @@ Normative; exit status 1 unless stated; `fetch` publishes nothing on any of them
 | `manifest-schema` | schema violation | refuse |
 | `network-disabled` | `BDOCK_SOURCES_OFFLINE=1` set for `pin`, `fetch` or `check --online` | exit 3 |
 | `tool-not-eligible` | `pin`/`fetch` for a package whose obligation is `none` or `undetermined`, or unknown tool | exit 3 |
-| `tag-unresolved` | `fetch --component/--version` finds no entry in `sources/<component>.lock.json` | refuse |
+| `entry-missing` | `fetch --component/--version` finds no entry in `sources/<component>.lock.json` | refuse |
 | `notice-drift` | `sync --check` finds `SOURCE-MIRROR` different from the generated text | refuse |
 | `bundle-hash-mismatch`, `bundle-file-missing`, `bundle-file-extra`, `bundle-manifest-mismatch`, `sums-mismatch` | `check --bundle-dir` tamper cases (changed byte; entry listed but absent; entry present but unlisted; standalone manifest and `MANIFEST.json` disagree; `SHA256SUMS` disagrees or lists other files). `SHA256SUMS` and the release process's `build-manifest.json` are allowed extras | refuse |
 | `release-not-published`, `release-hash-mismatch` | `check --online`: release missing or draft; asset digests differ from the registry | refuse |
@@ -337,8 +337,8 @@ Conservancy:
 
 ## Dependencies and unverified items
 
-- **SourceSteward Spec 026** (read at `codex/026-release-process-v2` `f7751e4`,
-  `specs/026-release-process/`, 2026-10-17; it moved from `9a810a2` during this design): kinds `file` and
+- **SourceSteward Spec 026** (read at `codex/026-release-process-v2` `ddde764`,
+  `specs/026-release-process/`, 2026-10-17; it moved twice, from `9a810a2` and `f7751e4`, while this design was written; `ddde764` adds the literal-prefix rule for product tags, which the catalog names satisfy by measurement): kinds `file` and
   `oci-image` (record field `source_offer`), build once and promote, products with one contract file each
   (D9, FR-025), fetch builds with `network = "fetch"`, `network_hosts` and `lock_files` (FR-026), `os`/`arch`
   `any`, worked example 5 for this mirror. It is a **draft**; `dispatch`, `build` and workflows wait for a

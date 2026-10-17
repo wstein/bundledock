@@ -61,7 +61,7 @@ its size is unmeasured. WI2 measures the designed set for every Go component.
 ## R4 Spec 026 state
 
 `/workspaces/Anchorage/sourcesteward` branch `codex/026-release-process-v2` was read at `ab77bac` (first
-look: only `specs/026-release-hygiene/`) and again at `9a810a2`, where `specs/026-release-process/` exists
+look: only `specs/026-release-hygiene/`) then at `9a810a2` and `f7751e4`, and finally `ddde764`, where `specs/026-release-process/` exists
 (the first reading was stale; round 1 caught it). Facts used are in
 [contracts/mirror-project.md](contracts/mirror-project.md). It is a draft; implementation waits for a
 constitution amendment (its own notice).
@@ -74,7 +74,7 @@ by path; uid/gid 0, empty uname/gname, mode 0644 or 0755, mtime `SOURCE_DATE_EPO
 Go `compress/gzip` level 9, empty header name and mtime; stable for a fixed Go release, **not claimed stable
 across Go releases**, therefore the plan pins the Go version that builds `bdock` (`bdock_go_version`) and the
 manifest records `tar_sha256` (the reproducibility claim) next to `asset_sha256`. The recorded fetch
-`argv` is normalized (no output path or flags) so two runs in different directories agree. Fetch inputs
+`argv` is normalized (`--component` and `--version` only, no output path) so two runs in different directories agree. Fetch inputs
 are reproducible only while upstream bytes stay the same; the plan digests pin them.
 
 ## Alternatives rejected

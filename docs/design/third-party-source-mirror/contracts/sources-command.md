@@ -23,7 +23,7 @@ build command of the mirror's contracts and reads only `sources/<C>.lock.json`.
 
 | Mode | Reads | Network | Writes | Starts processes |
 | --- | --- | --- | --- | --- |
-| `pin` | catalog, lock | https to the [fetch hosts](../data-model.md#fetch-hosts) and the repository's tag API (read-only); hashes the upstream tarball and pin targets in memory, nothing distributable is written | none |
+| `pin` | catalog, lock, the existing source lock | https to the [fetch hosts](../data-model.md#fetch-hosts) and the repository's tag API (read-only); hashes the upstream tarball and pin targets in memory, nothing distributable is written | none |
 | `plan` | the source lock, catalog, lock | none | none | none |
 | `fetch` | the source lock entry | same hosts, https only, per-hop checks | in `--out`: `<component>-<version id>-sources.tar.gz` and `<component>-<version id>-sources.manifest.json`; a private 0700 temp directory beside `--out`, removed on exit | none |
 | `sync` | `sources.lock.json`, lock | none | `licenses/<tool>/SOURCE-MIRROR` (`--check`: none) | none |
@@ -42,7 +42,7 @@ One table for every command of the group; precedence from highest to lowest is 3
 | --- | --- | --- |
 | 3 | usage or policy refusal decided before any work | unknown flag, `recipe-custom`, `network-disabled`, `tool-not-eligible` |
 | 2 | internal error | I/O failure, schema bug in our own output |
-| 1 | refusal with a code from the spec's [limits](../spec.md#limits) or [failure](../spec.md#failure-modes) tables, or an error finding of `check` | `upstream-hash-mismatch`, `lock-arch-mismatch`, `out-not-empty`, `plan-stale`, `version-shape`, `tag-unresolved`, `notice-drift` |
+| 1 | refusal with a code from the spec's [limits](../spec.md#limits) or [failure](../spec.md#failure-modes) tables, or an error finding of `check` | `upstream-hash-mismatch`, `lock-arch-mismatch`, `out-not-empty`, `entry-stale`, `version-shape`, `entry-missing`, `notice-drift` |
 | 0 | success | |
 
 ## Human output
