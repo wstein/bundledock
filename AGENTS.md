@@ -128,7 +128,7 @@ still pins an older image, so do not assume these commands exist in a running se
 | Process structured data | `jq` for JSON; `yq` for YAML. |
 | Validate JSON instances against JSON Schema | `jsonschema-cli`. |
 | Manage Python environments and run Python tools | `uv` and `uvx`. |
-| GitHub workflows | `gh`. |
+| GitHub workflows | `gh`; `gh stack` is shipped at `libexec/gh-stack` and needs a consumer symlink (docs/toolbox.md). |
 | Work with Jujutsu repositories | `jj`. |
 | Browse Git repositories interactively | `lazygit`. |
 | Manage Git large file storage | `git-lfs` (opt-in repository setup). |

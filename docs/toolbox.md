@@ -491,6 +491,44 @@ and consumer activation remain unverified pending separate approval.
 
 `jsonschema-cli` validates JSON instances against JSON Schema: `jsonschema-cli validate schema.json -i instance.json` (the older flat form without `validate` is deprecated and warns). It is selected from the repository's `cli-v` releases, which are separate from the library's `rust-v`, `python-v` and `ruby-v` releases (the repository's latest-release marker points at a non-CLI release). Remote `$ref` resolution may use the network when a schema asks for it.
 
+## GitHub CLI extension: gh stack
+
+The toolbox carries the official [`gh stack`](https://github.com/github/gh-stack)
+extension (MIT, stable release v0.2.1 when added, not a pre-release) as the
+unchanged release binary at `libexec/gh-stack` inside the toolbox. It is not on
+`PATH`. `gh` finds extensions only in
+`${XDG_DATA_HOME:-$HOME/.local/share}/gh/extensions/<name>/gh-<name>`, and that
+directory lives in writable HOME, which BundleDock never edits. A consumer links
+the shipped binary into it once. Set `toolbox` to wherever your environment
+mounts the toolbox (the devcontainer uses `/opt/bundledock/toolbox`):
+
+```sh
+toolbox=/opt/bundledock/toolbox
+src="$toolbox/libexec/gh-stack"
+d="${XDG_DATA_HOME:-$HOME/.local/share}/gh/extensions/gh-stack"
+if [ ! -x "$src" ]; then
+	:   # older toolbox image without gh-stack: nothing to link
+elif [ -e "$d/gh-stack" ] || [ -L "$d/gh-stack" ] || [ -e "$d/manifest.yml" ]; then
+	:   # an extension is already installed here: leave it untouched
+elif [ -L "$d" ] && [ ! -e "$d" ]; then
+	echo "dangling symlink at $d; leaving it untouched" >&2
+else
+	mkdir -p "$d" && ln -sfn "$src" "$d/gh-stack"   # also repairs an empty or partial directory
+fi
+gh stack --version || true   # optional check; do not fail a seed on it
+```
+
+No `manifest.yml` is needed: `gh` treats the directory as a local extension. It
+is therefore not upgradable through `gh`: `gh extension upgrade --all` skips it
+silently, `gh extension upgrade stack` exits 1 with "unable to retrieve latest
+version", and `gh extension list` shows no version. The version follows the
+toolbox lock; upgrade through BundleDock. The guard leaves an existing install,
+such as a user's own `gh extension install github/gh-stack`, untouched. A
+consumer seed (for example the devcontainer setup script) should perform this
+idempotent step. Source tests cover the catalog, lock, notices and smoke
+script; native smoke, which also resolves the extension through `gh`, needs an
+approved image build.
+
 ## Git Large File Storage
 
 The source toolbox includes [Git LFS 3.8.0](https://github.com/git-lfs/git-lfs/releases/tag/v3.8.0)
