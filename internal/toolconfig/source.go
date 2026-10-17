@@ -1,5 +1,14 @@
 package toolconfig
 
+import (
+	"fmt"
+	"net/url"
+	"regexp"
+	"slices"
+	"strings"
+	"unicode"
+)
+
 // Source is the optional per-package third-party source block of the catalog
 // (docs/design/third-party-source-mirror/data-model.md). It classifies the
 // source obligation of the shipped binary and declares the recipe for the
@@ -26,4 +35,139 @@ type SourceRecipe struct {
 	StaticSystemLibs []string `json:"static_system_libs,omitempty"`
 	FreezeSource     string   `json:"freeze_source,omitempty"`
 	FreezeFile       string   `json:"freeze_file,omitempty"`
+}
+
+// SourceFetchHosts are the permitted first-hop hosts of an upstream tarball
+// template (data-model.md, "Fetch hosts"). The list grows only by a code change
+// with a test; redirect targets are checked per hop by the fetcher, not here.
+var SourceFetchHosts = []string{
+	"api.github.com",
+	"codeberg.org",
+	"github.com",
+	"hackage.haskell.org",
+	"proxy.golang.org",
+	"static.crates.io",
+}
+
+var (
+	sourceRepository = regexp.MustCompile(`^https://[a-z0-9][a-z0-9.-]*/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$`)
+	sourceLicense    = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9.+-]*$`)
+)
+
+func validSourceText(s string) bool {
+	return s != "" && !strings.ContainsFunc(s, unicode.IsControl)
+}
+
+func validSourceTexts(values []string) bool {
+	for _, v := range values {
+		if !validSourceText(v) {
+			return false
+		}
+	}
+	return true
+}
+
+func validSourceRepository(raw string) bool {
+	if !sourceRepository.MatchString(raw) {
+		return false
+	}
+	for _, segment := range strings.Split(strings.TrimPrefix(raw, "https://"), "/") {
+		if segment == "." || segment == ".." {
+			return false
+		}
+	}
+	return true
+}
+
+// validSourceTarball checks a URL template whose only placeholders are
+// {version} and {lock_version}.
+func validSourceTarball(template string) bool {
+	expanded := strings.NewReplacer("{version}", "1.2.3", "{lock_version}", "v1.2.3").Replace(template)
+	if !validSourceText(expanded) || strings.ContainsAny(expanded, "{}\\ ") {
+		return false
+	}
+	u, err := url.Parse(expanded)
+	if err != nil || u.Scheme != "https" || u.User != nil || u.Port() != "" || u.RawQuery != "" || u.Fragment != "" || !slices.Contains(SourceFetchHosts, u.Host) {
+		return false
+	}
+	for _, segment := range strings.Split(u.Path, "/") {
+		if segment == ".." || segment == "." {
+			return false
+		}
+	}
+	return true
+}
+
+func validateSource(name string, s *Source) error {
+	switch s.Obligation {
+	case "none", "source-offer", "file-level-source", "undetermined":
+	default:
+		return fmt.Errorf("invalid source obligation %q for %s", s.Obligation, name)
+	}
+	if s.Basis != "" && s.Basis != "declared" && s.Basis != "scanned" {
+		return fmt.Errorf("invalid source basis %q for %s", s.Basis, name)
+	}
+	copyleft := s.Obligation == "source-offer" || s.Obligation == "file-level-source"
+	if s.Obligation != "undetermined" {
+		if len(s.Licenses) == 0 || s.Basis == "" {
+			return fmt.Errorf("source block of %s requires licenses and basis", name)
+		}
+	}
+	for i, l := range s.Licenses {
+		if !sourceLicense.MatchString(l) || i > 0 && l <= s.Licenses[i-1] {
+			return fmt.Errorf("source licenses of %s must be valid SPDX-style identifiers, sorted and unique", name)
+		}
+	}
+	if copyleft && (s.Upstream == nil || s.Recipe == nil) {
+		return fmt.Errorf("%s source block of %s requires upstream and recipe", s.Obligation, name)
+	}
+	if s.Obligation == "none" && s.Recipe != nil {
+		return fmt.Errorf("source obligation none forbids a recipe for %s", name)
+	}
+	if s.Upstream != nil {
+		if !validSourceRepository(s.Upstream.Repository) {
+			return fmt.Errorf("invalid source repository for %s", name)
+		}
+		if !validSourceTarball(s.Upstream.Tarball) {
+			return fmt.Errorf("invalid source tarball template for %s", name)
+		}
+	}
+	if s.Recipe != nil {
+		if err := validateSourceRecipe(name, s.Recipe); err != nil {
+			return err
+		}
+	}
+	if s.VersionRegex != "" {
+		re, err := regexp.Compile(s.VersionRegex)
+		if err != nil || re.NumSubexp() != 1 {
+			return fmt.Errorf("source version_regex of %s must compile and have exactly one capture group", name)
+		}
+	}
+	return nil
+}
+
+func validateSourceRecipe(name string, r *SourceRecipe) error {
+	switch r.Kind {
+	case "upstream-tarball-only", "cargo-vendor", "go-mod-download", "cabal-freeze":
+	case "custom":
+		return fmt.Errorf("source recipe custom is reserved and refused for %s", name)
+	default:
+		return fmt.Errorf("invalid source recipe kind %q for %s", r.Kind, name)
+	}
+	if !validSourceTexts(r.Excluded) || !validSourceTexts(r.StaticSystemLibs) {
+		return fmt.Errorf("invalid source recipe text for %s", name)
+	}
+	if r.Kind != "cabal-freeze" {
+		if r.FreezeSource != "" || r.FreezeFile != "" {
+			return fmt.Errorf("freeze fields are only valid for cabal-freeze in %s", name)
+		}
+		return nil
+	}
+	if (r.FreezeSource == "") == (r.FreezeFile == "") {
+		return fmt.Errorf("cabal-freeze requires exactly one of freeze_source and freeze_file for %s", name)
+	}
+	if r.FreezeSource != "" && !validPath(r.FreezeSource) || r.FreezeFile != "" && (!validPath(r.FreezeFile) || strings.Contains(r.FreezeFile, "/")) {
+		return fmt.Errorf("unsafe freeze path for %s", name)
+	}
+	return nil
 }
