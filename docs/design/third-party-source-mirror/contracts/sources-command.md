@@ -1,57 +1,67 @@
-# Contract: `bdock tools sources plan|fetch`
+# Contract: `bdock tools sources pin|plan|fetch|sync`
 
-Part of [spec](../spec.md); data in [data-model](../data-model.md). `check` is in
+Part of the [spec](../spec.md); data in the [data model](../data-model.md). `check` is in
 [sources-check.md](sources-check.md).
 
 ```text
-bdock tools sources plan  <tool> [--bundle toolbox] [--version V] [--out FILE] [--json]
-bdock tools sources fetch --plan FILE --out DIR [--accept-new-digest] [--max-bytes N] [--json]
+bdock tools sources pin   <tool> [--bundle toolbox] [--lock FILE] [--out FILE] [--json]
+bdock tools sources plan  --plan FILE [--bundle toolbox] [--lock FILE] [--json]
+bdock tools sources fetch (--plan FILE | --for TAG) --out DIR [--json]
+bdock tools sources sync  [--bundle toolbox] [--check]
 ```
 
-`<tool>` is a catalog package with `obligation` other than `none`. `--version` defaults to the lock
-version (amd64 and arm64 must agree; otherwise `lock-arch-mismatch`). `--bundle` is a catalog directory
-under `bundles/`; only `toolbox` has a `source` block in v1.
+`<tool>` is a catalog package with `obligation` `source-offer` or `file-level-source`. `--lock` (default the
+bundle's `packages.lock.json`) lets `pin` and `plan` read an updater PR's lock from another path. `fetch
+--for <tag>` resolves `plans/<component>/<V>[-r<R>].json` in the current directory from the tag name
+(the mirror's build argv, so a workflow needs only the Spec 026 `version`).
 
 ## Effects
 
 | Mode | Reads | Network | Writes | Starts processes |
 | --- | --- | --- | --- | --- |
-| `plan` | catalog, lock, `sources.lock.json` | none | `--out` file only (default stdout) | none |
-| `fetch` | the plan | only hosts in the [allow-list](../data-model.md#catalog-source-block), https only | `--out` directory: `<component>-v<version>-source.tar.gz`, `<component>-v<version>-manifest.json`, `SHA256SUMS`; a private temp directory beside `--out`, removed on exit | none |
+| `pin` | catalog, lock | https to the [fetch hosts](../data-model.md#fetch-hosts) and the repository's tag API (read-only); hashes the upstream tarball and pin targets in memory, nothing distributable is written | `--out` plan file (default stdout) | none |
+| `plan` | plan, catalog, lock | none | none | none |
+| `fetch` | the plan | same hosts, https only, per-hop checks | in `--out`: `<tag>-source.tar.gz`, `<tag>-source-manifest.json`; a private 0700 temp directory beside `--out`, removed on exit | none |
+| `sync` | `sources.lock.json`, lock | none | `licenses/<tool>/SOURCE-MIRROR` (`--check`: none) | none |
 
-`fetch` produces a distributable artifact: under `AGENTS.md` it needs explicit approval each time.
-The command refuses to write into a non-empty `--out` (`out-not-empty`). Working files are mode
-0600/0700. Environment: reads `SOURCE_DATE_EPOCH` only if the plan lacks `source_date_epoch`
-(`plan` always writes it from the peeled tag commit time).
+`fetch` produces distributable files and needs explicit approval each time (`AGENTS.md`). Whether `pin` is
+"an artifact build" is an owner decision (plan, open question 7); until decided it is not run by agents
+without asking. `fetch` does not write checksums (the release process does, FR-4); it refuses a non-empty
+`--out` (`out-not-empty`). The environment variable `BDOCK_SOURCES_OFFLINE=1` makes `pin` and `fetch`
+exit 3 (`network-disabled`). `SOURCE_DATE_EPOCH` is taken only from the plan.
 
 ## Exit status
 
-| Status | Meaning | Precedence |
+One table for every command of the group; precedence from highest to lowest is 3, 2, 1, 0.
+
+| Status | Meaning | Examples |
 | --- | --- | --- |
-| 0 | success | 4 |
-| 1 | refusal with a code from the [failure table](../spec.md#failure-modes) or [limits](../spec.md#limits) | 2 |
-| 2 | internal error (I/O, schema bug) | 3 |
-| 3 | usage error (flags, unknown tool, `custom` recipe, `network-disabled`) | 1 (highest) |
+| 3 | usage or policy refusal decided before any work | unknown flag or tool, `recipe-custom`, `network-disabled`, tool with obligation `none` or `undetermined` |
+| 2 | internal error | I/O failure, schema bug in our own output |
+| 1 | refusal with a code from the spec's [limits](../spec.md#limits) or [failure](../spec.md#failure-modes) tables | `upstream-hash-mismatch`, `lock-arch-mismatch`, `out-not-empty`, `plan-stale`, `version-shape` |
+| 0 | success | |
 
 ## Human output
 
-`plan`: one line per fact: `component`, `version`, `tarball`, `recipe`, `digest: pinned|unpinned`.
-`fetch`: progress lines on stderr, final lines on stdout: three file names with sizes and SHA256.
-Output is bounded (no per-dependency lines above 200; the rest summarized with a count).
+`pin`: facts one per line (component, version, tarball URL, digest, tag commit, recipe, count of pins).
+`plan`: the same from an existing plan plus `consistent: yes|no` against catalog and lock. `fetch`: progress
+on stderr; final lines on stdout list the two files with sizes and SHA256. Per-dependency lines are capped
+at 200, the rest summarized by count.
 
 ## JSON
 
-`--json` prints exactly the plan or a `fetch` result `{ "schema": "bundledock.source-fetch/v1",
-"component", "version", "files": [{"name","bytes","sha256"}], "observed_digests": {...} }`, same data
-as the human output.
+`--json` prints the plan (`bundledock.source-plan/v1`) for `pin` and `plan`, and for `fetch`
+`{"schema":"bundledock.source-fetch/v1","tag","files":[{"name","bytes","sha256"}]}`; same data as the human
+output.
 
 ## Determinism requirements (tests)
 
-Same plan and same fetched bytes produce the same `tar_sha256` (golden fixture); fixture variations:
-reordered upstream members, different member mtimes and owners, different HTTP arrival order, different
-umask and working directory, `TZ` and locale: all give an identical bundle. A mutation test per
-normalization (owner, mtime, order, mode) must fail the golden test.
+Same plan and same fetched bytes give the same `tar_sha256` (golden fixture). Invariance tests: reordered
+upstream members, member mtimes and owners, HTTP arrival order, umask, working directory, `TZ`, locale,
+`--out` path. A mutation per normalization (owner, mtime, order, mode, argv normalization) must fail the
+golden test.
 
 ## Compatibility
 
-New subcommand group; no existing command, flag, schema or file changes. Catalog `schema` stays 1.
+New subcommand group; no existing command, flag, schema or file changes except the catalog `source` block
+and `notices` entries.
