@@ -51,7 +51,8 @@ flags, platform). Nothing is signed or notarized.
       `BDOCK_RELEASE_DRAFT` to `true` to publish drafts you release by hand.
 - [ ] Optional: a ruleset blocking deletion and update of `bdock/v*` tags.
 - [ ] Rehearse once: Actions, `release`, "Run workflow" on `main` (version `0.0.0-dryrun`).
-      Download the artifacts within the day if you want to inspect them.
+      Dry-run artifacts live one day and, in a public repository, any signed-in GitHub user can
+      download them; they are unsigned rehearsal builds, not releases.
 
 ## Release
 
@@ -69,9 +70,10 @@ anything can be fixed by re-running the same workflow run as the owner; the tag 
 If `publish` failed after creating a release with missing assets, delete that release by hand
 and re-run, or release the next patch version. Otherwise do not delete and re-create the tag. A failed `verify` or `build` publishes nothing: fix the
 cause on `main` and release the next patch version. If `publish` created a wrong release,
-delete the release by hand and use the next patch version; the tag stays. An expired
-artifact (one day) means re-running the whole workflow for the same tag, which `publish`
-accepts only if no release exists. The module path `bundledock` is not fetchable through the Go
+delete the release by hand and use the next patch version; the tag stays. If the `release` environment makes a run wait for approval past the one-day artifact
+retention, `publish` fails at the artifact download; re-run the whole workflow for the same
+tag (accepted only while no release exists) or, if in doubt, use the next patch version.
+Never delete and re-create a tag. The module path `bundledock` is not fetchable through the Go
 proxy, so no module cache can pin a bad tag, but release assets and users' copied checksums
 can.
 

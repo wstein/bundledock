@@ -278,13 +278,17 @@ func TestSmokeRejectsMutatedContents(t *testing.T) {
 		"modified source": repack(func(d string) {
 			replaceIn(t, filepath.Join(d, "PROVENANCE"), "source_modified=false", "source_modified=true")
 		}),
-		"foreign license":     repack(func(d string) { os.WriteFile(filepath.Join(d, "LICENSE"), []byte("other"), 0o644) }),
-		"not executable":      repack(func(d string) { os.Chmod(filepath.Join(d, "bdock"), 0o644) }),
-		"broken help":         repack(func(d string) { os.WriteFile(filepath.Join(d, "bdock"), []byte("#!/bin/sh\nexit 1\n"), 0o755) }),
-		"unstamped version":   repack(func(d string) { replaceIn(t, filepath.Join(d, "bdock"), "bdock version 0.1.0", "bdock version dev") }),
-		"empty completion":    repack(func(d string) { replaceIn(t, filepath.Join(d, "bdock"), "echo '# bash completion for bdock'", "true") }),
-		"tools help trimmed":  repack(func(d string) { replaceIn(t, filepath.Join(d, "bdock"), "  volume", "  other") }),
-		"wrong command field": repack(func(d string) { replaceIn(t, filepath.Join(d, "PROVENANCE"), "command=bdock", "command=other") }),
+		"foreign license":             repack(func(d string) { os.WriteFile(filepath.Join(d, "LICENSE"), []byte("other"), 0o644) }),
+		"not executable":              repack(func(d string) { os.Chmod(filepath.Join(d, "bdock"), 0o644) }),
+		"broken help":                 repack(func(d string) { os.WriteFile(filepath.Join(d, "bdock"), []byte("#!/bin/sh\nexit 1\n"), 0o755) }),
+		"unstamped version":           repack(func(d string) { replaceIn(t, filepath.Join(d, "bdock"), "bdock version 0.1.0", "bdock version dev") }),
+		"empty completion":            repack(func(d string) { replaceIn(t, filepath.Join(d, "bdock"), "echo '# bash completion for bdock'", "true") }),
+		"tools help trimmed":          repack(func(d string) { replaceIn(t, filepath.Join(d, "bdock"), "  volume", "  other") }),
+		"provenance without CGO line": repack(func(d string) { replaceIn(t, filepath.Join(d, "PROVENANCE"), "CGO_ENABLED=0", "CGO_ENABLED=1") }),
+		"provenance without GOOS":     repack(func(d string) { replaceIn(t, filepath.Join(d, "PROVENANCE"), "GOOS=linux", "GOOS=plan9") }),
+		"provenance version suffix":   repack(func(d string) { replaceIn(t, filepath.Join(d, "PROVENANCE"), "version=0.1.0", "version=0.1.0-extra") }),
+		"provenance revision prefix":  repack(func(d string) { replaceIn(t, filepath.Join(d, "PROVENANCE"), "source_revision=", "source_revision=0") }),
+		"wrong command field":         repack(func(d string) { replaceIn(t, filepath.Join(d, "PROVENANCE"), "command=bdock", "command=other") }),
 	}
 	for name, mutate := range mutants {
 		archive, c, repo := fakeRelease(t, "0.1.0", "linux/amd64", mutate)

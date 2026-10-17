@@ -118,6 +118,9 @@ Whether "bdock wie smill" is a standing approval for every later tag is open dec
 - Nothing is signed, notarized or attested. macOS may quarantine a browser download.
 - Owner checks compare with `github.repository_owner`; if the repository moves to an
   organization they fail closed until rewritten.
+- Artifacts live one day. Approval of the `release` environment after that makes `publish` fail at
+  the download; the owner re-runs the workflow or releases the next patch version. In a public
+  repository any signed-in GitHub user can download dry-run artifacts for that day.
 - Not exercisable before the first real tag: annotated-tag fetch, the CI-run query, the
   release-exists API call for a tag containing a slash, `ls-remote`, the `release`
   environment, `gh release create`, runner labels. The `releases/tags/bdock/vX.Y.Z` route is

@@ -76,8 +76,9 @@ var (
 	swallowRe = regexp.MustCompile(`\|\|\s*(true|:)(\s|;|$)`)
 	assertRe  = regexp.MustCompile(`^test .* \|\| \{ echo .* >&2; exit 1; \}$`)
 	disarmRe  = regexp.MustCompile(`exit 0|set \+e|\|\| echo|\|\| exit`)
+	builtinRe = regexp.MustCompile(`(^|[;&|(]\\s*)(declare|typeset|local|read) `)
 	pinRe     = regexp.MustCompile(`^[A-Za-z0-9._-]+/[A-Za-z0-9._-]+@[0-9a-f]{40}$`)
-	reassign  = regexp.MustCompile(`(?m)^\s*(ACTOR|OWNER|PUSHER|COMMIT|TAG|REPO|VERSION|GH_TOKEN)=`)
+	reassign  = regexp.MustCompile(`(?m)^\s*(ACTOR|OWNER|PUSHER|COMMIT|TAG|REPO|VERSION|GH_TOKEN|GITHUB_SHA)=`)
 	platforms = []string{"darwin/arm64", "linux/amd64", "linux/arm64"}
 )
 
@@ -512,6 +513,57 @@ func violations(w workflow, raw string) []string {
 			add("publish", "publish checkout needs full history for the notes")
 		}
 	}
+
+	ifOK := []string{`if [ "$EVENT_NAME" = push ] && [ "$REF_TYPE" = tag ]; then`, `if out=$(gh api "repos/$REPO/releases/tags/$TAG" 2>&1); then`, `if [ "$DRAFT" = true ]; then flags+=(--draft); fi`}
+	for jobName, j := range w.Jobs {
+		for _, s := range j.Steps {
+			if s.Uses == setupGoPin && (s.With["go-version-file"] != ".go-version" || s.With["check-latest"] != false) {
+				add("setupgo", "job %s setup-go must use go-version-file: .go-version and check-latest: false, got %v", jobName, s.With)
+			}
+			for _, line := range strings.Split(s.Run, "\n") {
+				line = strings.TrimSpace(line)
+				if strings.HasPrefix(line, "if ") {
+					ok := false
+					for _, want := range ifOK {
+						ok = ok || line == want
+					}
+					if !ok {
+						add("if-line", "job %s step %q has an unexpected conditional %q", jobName, s.Name, line)
+					}
+				}
+				if builtinRe.MatchString(line) || strings.Contains(line, "printf -v") {
+					add("redirect", "job %s step %q assigns through a shell builtin: %q", jobName, s.Name, line)
+				}
+				if strings.Contains(line, " -o ") && !strings.HasPrefix(line, `test -z "$DRAFT" -o "$DRAFT" = true -o "$DRAFT" = false ||`) {
+					add("swallow", "job %s step %q combines tests with -o: %q", jobName, s.Name, line)
+				}
+			}
+		}
+	}
+	if strings.Count(gatesText(verify), "git fetch") != 2 {
+		add("redirect", "verify fetches exactly the tag and main")
+	}
+	for _, name := range []string{"make check", "go mod verify"} {
+		found := false
+		for _, s := range verify.Steps {
+			found = found || (s.Uses == "" && s.Run == name && s.If == nil)
+		}
+		if !found {
+			add("verify", "verify must have a step that runs exactly %q", name)
+		}
+	}
+	if first, diff := strings.LastIndex(bs.Run, "sh scripts/release.sh"), strings.Index(bs.Run, "diff -r"); first >= 0 && diff > first {
+		rest := bs.Run[first+len("sh scripts/release.sh") : diff]
+		if strings.TrimSpace(rest) != "" {
+			add("build", "nothing may run between the second build and the comparison")
+		}
+	}
+	if !strings.Contains(ps.Run, `if [ "$DRAFT" = true ]; then flags+=(--draft); fi`) {
+		add("publish", "publish lacks the draft rule")
+	}
+	if !strings.Contains(green.Run, `n=$(gh api "repos/$REPO/actions/workflows/ci.yml/runs?head_sha=$GITHUB_SHA&event=push&status=success" --jq '.workflow_runs | map(select(.conclusion == "success")) | length')`) {
+		add("ci", "CI step lacks the exact count query")
+	}
 	return v
 }
 
@@ -600,6 +652,27 @@ func TestReleaseWorkflowMutantsAreCaught(t *testing.T) {
 		{"build fail-fast default", "needs", "  build:\n    name: build (${{ matrix.os }}/${{ matrix.arch }})\n    needs: verify\n    runs-on: ubuntu-24.04\n    timeout-minutes: 20\n    permissions:\n      contents: read\n    strategy:\n      fail-fast: false\n", "  build:\n    name: build (${{ matrix.os }}/${{ matrix.arch }})\n    needs: verify\n    runs-on: ubuntu-24.04\n    timeout-minutes: 20\n    permissions:\n      contents: read\n    strategy:\n"},
 		{"archive names unchecked", "publish", "            test -f \"bdock_${VERSION}_${platform}.tar.gz\" ||", "            test -n \"$platform\" ||"},
 		{"draft unchecked", "publish", `test -z "$DRAFT" -o "$DRAFT" = true -o "$DRAFT" = false ||`, `test -n "$DRAFT" ||`},
+		{"ACTOR reassigned", "reassign", "          test \"$ACTOR\" = \"$OWNER\" || { echo \"run started by", "          ACTOR=$OWNER\n          test \"$ACTOR\" = \"$OWNER\" || { echo \"run started by"},
+		{"REPO reassigned", "reassign", "          existing=$(gh api", "          REPO=other/repo\n          existing=$(gh api"},
+		{"GITHUB_SHA reassigned", "reassign", "          test \"$commit\" = \"$GITHUB_SHA\" ||", "          GITHUB_SHA=$commit\n          test \"$commit\" = \"$GITHUB_SHA\" ||"},
+		{"smoke HEAD assertion removed", "smoke", "          test \"$(git rev-parse HEAD)\" = \"$COMMIT\" || { echo \"checkout is not the verified commit $COMMIT\" >&2; exit 1; }\n          sh .github/scripts/release-smoke.sh", "          sh .github/scripts/release-smoke.sh"},
+		{"checkout ref override", "with", "          fetch-depth: 0\n          persist-credentials: false\n      - uses: actions/setup-go", "          fetch-depth: 0\n          persist-credentials: false\n          ref: main\n      - uses: actions/setup-go"},
+		{"download run-id override", "with", "          name: release-${{ matrix.os }}-${{ matrix.arch }}\n          path: ${{ runner.temp }}/dist\n      - name: Smoke", "          name: release-${{ matrix.os }}-${{ matrix.arch }}\n          run-id: 1\n          path: ${{ runner.temp }}/dist\n      - name: Smoke"},
+		{"download github-token", "with", "          pattern: release-*\n", "          pattern: release-*\n          github-token: x\n"},
+		{"setup-go latest", "setupgo", "          check-latest: false\n          cache: false\n      - name: Build", "          check-latest: true\n          cache: false\n      - name: Build"},
+		{"setup-go version pin", "setupgo", "          go-version-file: .go-version\n          check-latest: false\n          cache: false\n      - name: Build", "          go-version: '1.25'\n          check-latest: false\n          cache: false\n      - name: Build"},
+		{"sums line changed", "publish", "cat -- bdock_*.tar.gz.sha256 | LC_ALL=C sort -k2 > SHA256SUMS", "cat -- bdock_*.tar.gz.sha256 > SHA256SUMS"},
+		{"CI count inflated", "ci", "--jq '.workflow_runs | map(select(.conclusion == \"success\")) | length'", "--jq '.total_count + 1'"},
+		{"verify gate echoed", "verify", "      - run: make check\n", "      - run: echo make check\n"},
+		{"verify gate commented", "verify", "      - run: go mod verify\n", "      - run: \"# go mod verify\"\n"},
+		{"copy after second build", "build", "          diff -r \"$RUNNER_TEMP/first\" \"$RUNNER_TEMP/second\"", "          rm -rf \"$RUNNER_TEMP/second\"; cp -r \"$RUNNER_TEMP/first\" \"$RUNNER_TEMP/second\"\n          diff -r \"$RUNNER_TEMP/first\" \"$RUNNER_TEMP/second\""},
+		{"gate wrapped in if false", "if-line", "          sha256sum --check SHA256SUMS", "          if false; then sha256sum --check SHA256SUMS; fi"},
+		{"declare reassignment", "redirect", "          test -z \"$existing\" ||", "          declare existing=\"\"\n          test -z \"$existing\" ||"},
+		{"printf -v reassignment", "redirect", "          test \"$remote\" = \"$COMMIT\" ||", "          printf -v remote %s \"$COMMIT\"\n          test \"$remote\" = \"$COMMIT\" ||"},
+		{"extra main fetch", "redirect", "          commit=$(sh .github/scripts/release-verify.sh tag", "          git fetch --force --no-tags \"https://github.com/$REPO\" '+refs/heads/dev:refs/remotes/origin/main'\n          commit=$(sh .github/scripts/release-verify.sh tag"},
+		{"draft test inverted", "publish", "if [ \"$DRAFT\" = true ]; then flags+=(--draft); fi", "if [ \"$DRAFT\" != true ]; then flags+=(--draft); fi"},
+		{"extra release asset", "publish", "\"$RUNNER_TEMP\"/dist/bdock_*.tar.gz \"$RUNNER_TEMP/dist/SHA256SUMS\"", "\"$RUNNER_TEMP\"/dist/* \"$RUNNER_TEMP/dist/SHA256SUMS\""},
+		{"test -o trick", "swallow", "test \"$n\" -ge 1 ||", "test \"$n\" -ge 1 -o 1 = 1 ||"},
 		{"no second build", "build", `GOCACHE="$RUNNER_TEMP/gocache-second" TARGETS="$OS/$ARCH" RELEASE_DIR="$RUNNER_TEMP/second" sh scripts/release.sh`, `true`},
 		{"no byte comparison", "build", `diff -r "$RUNNER_TEMP/first" "$RUNNER_TEMP/second"`, `true`},
 		{"dirty source allowed", "build", `grep -Fx "source_modified=false"`, `grep -F "source_modified"`},
@@ -759,4 +832,12 @@ func TestReleaseWorkflowMatchesGolden(t *testing.T) {
 	if string(want) != got {
 		t.Fatal("release.yml differs from testdata/release.golden.json; a workflow change must be deliberate: review it, then regenerate with UPDATE_RELEASE_GOLDEN=1")
 	}
+}
+
+func gatesText(j job) string {
+	var b strings.Builder
+	for _, s := range j.Steps {
+		b.WriteString(s.Run + "\n")
+	}
+	return b.String()
 }
