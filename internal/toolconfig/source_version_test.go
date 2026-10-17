@@ -1,6 +1,7 @@
 package toolconfig
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -62,5 +63,54 @@ func TestValidateDoesNotEnforceVersionShape(t *testing.T) {
 	s.VersionRegex = `^never-matches-([0-9.]+)$`
 	if err := withSource(t, "shellcheck", s); err != nil {
 		t.Fatalf("a regex that does not match the lock version blocked validation: %v", err)
+	}
+}
+
+func TestSourceVersionInvalidRegexNeverPanics(t *testing.T) {
+	for name, regex := range map[string]string{"no group": `^v[0-9.]+$`, "two groups": `^(v)([0-9.]+)$`, "does not compile": "([0-9"} {
+		t.Run(name, func(t *testing.T) {
+			p := Package{Source: &Source{Obligation: "source-offer", VersionRegex: regex}}
+			if v, err := p.SourceVersion("v1.2.3"); err == nil || v != "" {
+				t.Fatalf("got %q, %v", v, err)
+			}
+		})
+	}
+}
+
+// The whole lock version is matched, so alternation and lazy quantifiers
+// cannot make a valid full match fail on a shorter leftmost match.
+func TestSourceVersionFullMatchSearchesAlternatives(t *testing.T) {
+	for _, tc := range []struct{ regex, lock, want string }{
+		{`v?([0-9.]+?)`, "v1.2.3", "1.2.3"},
+		{`(1|1\.2)`, "1.2", "1.2"},
+		{`^(1|1\.2)$`, "1.2", "1.2"},
+		{`x?(1\.2|1)(?:\.3)?`, "x1.2.3", "1.2"},
+	} {
+		p := Package{Source: &Source{Obligation: "source-offer", VersionRegex: tc.regex}}
+		if got, err := p.SourceVersion(tc.lock); err != nil || got != tc.want {
+			t.Errorf("%s on %s: got %q, %v", tc.regex, tc.lock, got, err)
+		}
+	}
+	// A user pattern with an alternation at top level must not escape the anchors.
+	p := Package{Source: &Source{Obligation: "source-offer", VersionRegex: `([0-9.]+)|x`}}
+	if got, err := p.SourceVersion("1.2.3-rc1"); err == nil {
+		t.Fatalf("got %q", got)
+	}
+}
+
+func TestShortenBoundsEchoedValues(t *testing.T) {
+	long := strings.Repeat("9", 500)
+	_, err := (Package{}).SourceVersion(long)
+	if err == nil || len(err.Error()) > 200 || !strings.Contains(err.Error(), "...") || strings.Contains(err.Error(), long) {
+		t.Fatalf("echo not truncated: %v", err)
+	}
+	if got := shorten("short"); got != "short" {
+		t.Fatalf("short value changed: %q", got)
+	}
+	if got := shorten(strings.Repeat("a", 41)); got != strings.Repeat("a", 40)+"..." {
+		t.Fatalf("41 byte value: %q", got)
+	}
+	if got := shorten(strings.Repeat("a", 40)); got != strings.Repeat("a", 40) {
+		t.Fatalf("40 byte value truncated: %q", got)
 	}
 }

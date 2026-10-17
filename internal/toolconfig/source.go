@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 )
 
 // Source is the optional per-package third-party source block of the catalog
@@ -58,7 +59,6 @@ const (
 var (
 	sourceRepository = regexp.MustCompile(`^https://[a-z0-9][a-z0-9.-]*/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$`)
 	sourceLicenseID  = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9.+-]*$`)
-	encodedControl   = regexp.MustCompile(`(?i)%(?:[01][0-9a-f]|7f)`)
 )
 
 // validSourceText refuses empty, over-long and non-printable text: control
@@ -144,11 +144,19 @@ func validSourceTarball(template string) bool {
 	}
 	// Queries, fragments and ports are refused by the markers and the host list;
 	// empty ones vanish when parsed, so the markers are checked on the text.
-	if !validSourceText(expanded) || strings.ContainsAny(expanded, "{}\\ ?#") || encodedControl.MatchString(expanded) {
+	// A percent-encoded percent sign (%25) is refused outright: it is the way
+	// to smuggle an encoded control byte past a single decode. Other encoded
+	// control bytes are caught by the check of the decoded path below.
+	if !validSourceText(expanded) || strings.ContainsAny(expanded, "{}\\ ?#") || strings.Contains(expanded, "%25") {
 		return false
 	}
 	u, err := url.Parse(expanded)
-	if err != nil || u.Scheme != "https" || u.User != nil || u.Fragment != "" || !slices.Contains(SourceFetchHosts, u.Host) {
+	if err != nil || u.Scheme != "https" || u.User != nil || !slices.Contains(SourceFetchHosts, u.Host) {
+		return false
+	}
+	// The decoded path gets the same text rules (encoded C1 and format
+	// characters, invalid UTF-8).
+	if u.Path != "" && !validSourceText(u.Path) || !utf8.ValidString(u.Path) {
 		return false
 	}
 	for _, segment := range strings.Split(u.Path, "/") {
@@ -274,14 +282,18 @@ var (
 func (p Package) SourceVersion(lockVersion string) (string, error) {
 	re := defaultSourceVersion
 	if p.Source != nil && p.Source.VersionRegex != "" {
-		var err error
-		if re, err = regexp.Compile(p.Source.VersionRegex); err != nil || re.NumSubexp() != 1 {
+		user, err := regexp.Compile(p.Source.VersionRegex)
+		if err != nil || user.NumSubexp() != 1 {
+			return "", fmt.Errorf("version-shape: invalid version_regex")
+		}
+		// Whole-version match: anchoring the pattern lets the engine search
+		// alternatives and lazy quantifiers for a full match.
+		if re, err = regexp.Compile(`^(?:` + p.Source.VersionRegex + `)$`); err != nil {
 			return "", fmt.Errorf("version-shape: invalid version_regex")
 		}
 	}
-	// The pattern must match the whole lock version, not a substring of it.
 	m := re.FindStringSubmatch(lockVersion)
-	if m == nil || m[0] != lockVersion || !numericSourceVersion.MatchString(m[1]) {
+	if m == nil || !numericSourceVersion.MatchString(m[1]) {
 		return "", fmt.Errorf("version-shape: lock version %q does not yield a numeric version", shorten(lockVersion))
 	}
 	return m[1], nil
