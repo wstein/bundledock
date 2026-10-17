@@ -1,6 +1,7 @@
 package releaseworkflow
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -31,7 +32,7 @@ type job struct {
 	Permissions     map[string]string
 	Environment     any
 	Strategy        struct {
-		FailFast bool `yaml:"fail-fast"`
+		FailFast *bool `yaml:"fail-fast"`
 		Matrix   struct {
 			Include []map[string]string
 		}
@@ -279,6 +280,31 @@ func violations(w workflow, raw string) []string {
 		}
 	}
 
+	// Gate variables are assigned once, from a command, never defaulted or redirected.
+	gateAssign := regexp.MustCompile(`(?m)^\s*(n|out|existing|remote|commit|tag|dry_run|version|flags)=`)
+	for jobName, j := range w.Jobs {
+		for _, s := range j.Steps {
+			counts := map[string]int{}
+			for _, m := range gateAssign.FindAllStringSubmatch(s.Run, -1) {
+				counts[m[1]]++
+			}
+			for name, c := range counts {
+				limit := 1
+				if s.ID == "resolve" && (name == "version" || name == "tag" || name == "dry_run") {
+					limit = 2 // one per branch of the if/else
+				}
+				if c > limit {
+					add("reassign", "job %s step %q assigns %s %d times", jobName, s.Name, name, c)
+				}
+			}
+			for _, banned := range []string{":-", "update-ref", "git remote", "git config", "|| diff", "GIT_DIR", "git tag", "git branch", "git checkout", "git reset"} {
+				if strings.Contains(s.Run, banned) {
+					add("redirect", "job %s step %q contains %q", jobName, s.Name, banned)
+				}
+			}
+		}
+	}
+
 	verify, build, smoke, publish := w.Jobs["verify"], w.Jobs["build"], w.Jobs["smoke"], w.Jobs["publish"]
 	for _, s := range verify.Steps {
 		if s.Uses == "" && strings.Contains(s.Run, "make release") {
@@ -372,7 +398,7 @@ func violations(w workflow, raw string) []string {
 	if !reflect.DeepEqual(targets(build), platforms) {
 		add("matrix", "build targets = %v, want %v", targets(build), platforms)
 	}
-	if !reflect.DeepEqual(build.Needs, "verify") || build.Strategy.FailFast {
+	if !reflect.DeepEqual(build.Needs, "verify") || build.Strategy.FailFast == nil || *build.Strategy.FailFast {
 		add("needs", "build needs verify and must not fail fast")
 	}
 	bs, _ := stepNamed(build, "Build bdock twice and compare")
@@ -423,7 +449,7 @@ func violations(w workflow, raw string) []string {
 			add("runner", "smoke %s/%s must run natively on %s, got %s", m["os"], m["arch"], wantRunners[m["os"]+"/"+m["arch"]], m["runner"])
 		}
 	}
-	if smoke.RunsOn != "${{ matrix.runner }}" || smoke.Strategy.FailFast {
+	if smoke.RunsOn != "${{ matrix.runner }}" || smoke.Strategy.FailFast == nil || *smoke.Strategy.FailFast {
 		add("runner", "smoke runs on matrix.runner and must not fail fast")
 	}
 	ss, _ := stepNamed(smoke, "Smoke-test the shipped archive")
@@ -460,6 +486,8 @@ func violations(w workflow, raw string) []string {
 		`test "$remote" = "$COMMIT" ||`,
 		`test "$(git rev-parse HEAD)" = "$COMMIT"`,
 		`test "$(ls -1 -- bdock_*.tar.gz | wc -l)" -eq 3 ||`,
+		`for platform in darwin_arm64 linux_amd64 linux_arm64; do`,
+		`test -f "bdock_${VERSION}_${platform}.tar.gz" ||`,
 		`cat -- bdock_*.tar.gz.sha256 | LC_ALL=C sort -k2 > SHA256SUMS`,
 		`test "$(wc -l < SHA256SUMS)" -eq 3 ||`,
 		`sha256sum --check SHA256SUMS`,
@@ -564,6 +592,12 @@ func TestReleaseWorkflowMutantsAreCaught(t *testing.T) {
 		{"smoke on wrong runner", "runner", "runner: macos-15", "runner: ubuntu-24.04"},
 		{"smoke arm64 emulated", "runner", "runner: ubuntu-24.04-arm", "runner: ubuntu-24.04"},
 		{"copy between builds", "build", "          # A second build with an empty build cache", "          cp -r \"$RUNNER_TEMP/first\" \"$RUNNER_TEMP/second\"\n          # A second build with an empty build cache"},
+		{"n overwritten", "reassign", "          test \"$n\" -ge 1 ||", "          n=1\n          test \"$n\" -ge 1 ||"},
+		{"existing cleared", "reassign", "          test -z \"$existing\" ||", "          existing=\"\"\n          test -z \"$existing\" ||"},
+		{"remote defaulted", "redirect", "          test \"$remote\" = \"$COMMIT\" ||", "          remote=${remote:-$COMMIT}\n          test \"$remote\" = \"$COMMIT\" ||"},
+		{"main redirected", "redirect", "          commit=$(sh .github/scripts/release-verify.sh tag", "          git update-ref refs/remotes/origin/main HEAD\n          commit=$(sh .github/scripts/release-verify.sh tag"},
+		{"build fail-fast default", "needs", "  build:\n    name: build (${{ matrix.os }}/${{ matrix.arch }})\n    needs: verify\n    runs-on: ubuntu-24.04\n    timeout-minutes: 20\n    permissions:\n      contents: read\n    strategy:\n      fail-fast: false\n", "  build:\n    name: build (${{ matrix.os }}/${{ matrix.arch }})\n    needs: verify\n    runs-on: ubuntu-24.04\n    timeout-minutes: 20\n    permissions:\n      contents: read\n    strategy:\n"},
+		{"archive names unchecked", "publish", "            test -f \"bdock_${VERSION}_${platform}.tar.gz\" ||", "            test -n \"$platform\" ||"},
 		{"no second build", "build", `GOCACHE="$RUNNER_TEMP/gocache-second" TARGETS="$OS/$ARCH" RELEASE_DIR="$RUNNER_TEMP/second" sh scripts/release.sh`, `true`},
 		{"no byte comparison", "build", `diff -r "$RUNNER_TEMP/first" "$RUNNER_TEMP/second"`, `true`},
 		{"dirty source allowed", "build", `grep -Fx "source_modified=false"`, `grep -F "source_modified"`},
@@ -664,7 +698,51 @@ func TestCIVetsEveryReleasePlatform(t *testing.T) {
 			t.Errorf("step lacks %q", want)
 		}
 	}
+	if n := strings.Count(s.Run, "go vet"); n != 3 || strings.Contains(s.Run, "||") || strings.Contains(s.Run, "set +e") {
+		t.Errorf("want exactly three unconditional go vet lines, got %d", n)
+	}
 	if strings.Contains(s.Run, "go build") || strings.Contains(s.Run, "make ") {
 		t.Error("the CI platform step must not build artifacts")
+	}
+}
+
+// canonical renders the parsed workflow, comments dropped, as stable JSON.
+func canonical(t *testing.T, raw string) string {
+	t.Helper()
+	var v any
+	if err := yaml.Unmarshal([]byte(raw), &v); err != nil {
+		t.Fatal(err)
+	}
+	out, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(out) + "\n"
+}
+
+// The golden file is a change detector, not a safety proof: any edit of the workflow
+// must be a deliberate, reviewed change. UPDATE_RELEASE_GOLDEN=1 regenerates it and
+// fails the run on purpose; it is refused in CI.
+func TestReleaseWorkflowMatchesGolden(t *testing.T) {
+	path := filepath.Join(repoRoot(t), "internal", "releaseworkflow", "testdata", "release.golden.json")
+	got := canonical(t, readWorkflow(t))
+	if os.Getenv("UPDATE_RELEASE_GOLDEN") == "1" {
+		if os.Getenv("CI") != "" {
+			t.Fatal("refusing to update the golden file in CI")
+		}
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte(got), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		t.Fatal("golden file regenerated; review the diff and run the tests again")
+	}
+	want, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(want) != got {
+		t.Fatal("release.yml differs from testdata/release.golden.json; a workflow change must be deliberate: review it, then regenerate with UPDATE_RELEASE_GOLDEN=1")
 	}
 }

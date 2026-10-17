@@ -300,3 +300,53 @@ func replaceIn(t *testing.T, path, from, to string) {
 		t.Fatal(err)
 	}
 }
+
+func TestReleaseNotesBaselineIsTheNewestStableVersion(t *testing.T) {
+	dir := gitRepo(t)
+	// Created in non-version order: the newest stable version is not the newest tag, and a
+	// pre-release is never a baseline.
+	commit(t, dir, "a")
+	mustRun(t, dir, nil, "git", "tag", "-a", "-m", "r", "bdock/v0.2.0")
+	commit(t, dir, "b")
+	mustRun(t, dir, nil, "git", "tag", "-a", "-m", "r", "bdock/v0.1.9")
+	commit(t, dir, "c")
+	mustRun(t, dir, nil, "git", "tag", "-a", "-m", "r", "bdock/v0.3.0-rc1")
+	head := commit(t, dir, "d")
+	out := mustRun(t, dir, nil, "sh", script(t, "release-notes.sh"), "bdock/v0.3.0", head, "1.27.2")
+	if !strings.Contains(out, "Changes since bdock/v0.2.0\n") {
+		t.Errorf("wrong baseline:\n%s", out)
+	}
+}
+
+// On macOS there is no sha256sum; the smoke script must fall back to shasum -a 256 -c.
+func TestSmokeUsesShasumWhenSha256sumIsAbsent(t *testing.T) {
+	archive, c, repo := fakeRelease(t, "0.1.0", "darwin/arm64", nil)
+	tools := t.TempDir()
+	for _, name := range []string{"sh", "tar", "sort", "tr", "grep", "cmp", "mktemp", "rm", "basename", "dirname", "cat", "sed", "head", "gzip"} {
+		path, err := exec.LookPath(name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Symlink(path, filepath.Join(tools, name)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	realSum, err := exec.LookPath("sha256sum")
+	if err != nil {
+		t.Skip("no sha256sum to delegate to")
+	}
+	log := filepath.Join(t.TempDir(), "calls")
+	shim := "#!/bin/sh\necho \"$*\" >> " + log + "\n[ \"$1 $2\" = '-a 256' ] || exit 9\nshift 2\nexec " + realSum + " \"$@\"\n"
+	if err := os.WriteFile(filepath.Join(tools, "shasum"), []byte(shim), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	cmd := exec.Command("/bin/sh", script(t, "release-smoke.sh"), "0.1.0", c, "darwin", "arm64", archive)
+	cmd.Dir = repo
+	cmd.Env = []string{"PATH=" + tools}
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("smoke without sha256sum failed: %v\n%s", err, out)
+	}
+	if raw, _ := os.ReadFile(log); !strings.Contains(string(raw), "-a 256 -c") {
+		t.Errorf("shasum -a 256 -c was not used: %q", raw)
+	}
+}

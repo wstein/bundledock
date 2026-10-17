@@ -6,7 +6,8 @@
 #
 # Environment: VERSION (default dev), RELEASE_DIR (default dist/cli), GO, and
 # TARGETS, a space-separated subset of "linux/amd64 linux/arm64 darwin/arm64"
-# (the default is all three; CI builds one per job).
+# (the default is all three; CI builds one per job). GOFLAGS is cleared on purpose; a
+# RELEASE_DIR inside the checkout must be ignored by git or the tree counts as modified.
 set -eu
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 cd "$root"

@@ -95,7 +95,7 @@ Whether "bdock wie smill" is a standing approval for every later tag is open dec
   directly). Gates must stay literal `test … || { echo … >&2; exit 1; }` lines; `exit 0`,
   `set +e`, `|| true`, `|| echo` are forbidden in run blocks.
 - **FR-9 Tests.** `internal/releaseworkflow` (test-only; adds `go.yaml.in/yaml/v3`, which no
-  shipped package imports): rules over `release.yml`, about 60 single-edit mutants that must
+  shipped package imports): rules over `release.yml`, about 65 single-edit mutants plus a golden change detector (`testdata/release.golden.json`, regenerated only on purpose) that must
   each be caught, script tests in throwaway git repositories (version and tag rules, notes
   baseline, smoke against archives made by the real `scripts/release.sh` with a fake
   compiler and mutated archives), a check that no other workflow starts on `bdock/` tags,

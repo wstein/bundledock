@@ -61,7 +61,7 @@ jobs:
             tag=$REF_NAME
             dry_run=false
           else
-            version=${INPUT_VERSION:-0.0.0-dryrun}
+            version=$INPUT_VERSION
             sh .github/scripts/release-verify.sh dryversion "$version"
             tag=
             dry_run=true
@@ -267,6 +267,9 @@ jobs:
           test "$(git rev-parse HEAD)" = "$COMMIT"
           cd "$RUNNER_TEMP/dist"
           test "$(ls -1 -- bdock_*.tar.gz | wc -l)" -eq 3 || { echo "expected exactly three archives" >&2; exit 1; }
+          for platform in darwin_arm64 linux_amd64 linux_arm64; do
+            test -f "bdock_${VERSION}_${platform}.tar.gz" || { echo "missing archive for $platform" >&2; exit 1; }
+          done
           cat -- bdock_*.tar.gz.sha256 | LC_ALL=C sort -k2 > SHA256SUMS
           test "$(wc -l < SHA256SUMS)" -eq 3 || { echo "expected exactly three checksums" >&2; exit 1; }
           sha256sum --check SHA256SUMS
