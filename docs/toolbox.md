@@ -524,11 +524,12 @@ fi
 
 No `manifest.yml` is needed: `gh` treats the directory as a local extension. It
 is therefore not upgradable through `gh`: `gh extension upgrade --all` prints
-`[stack]: already up to date` and exits 0 without checking, `gh extension upgrade stack` exits 1 with "unable to retrieve latest
-version", and `gh extension list` shows no version. The version follows the
-toolbox lock; upgrade through BundleDock. The guard leaves an existing install,
-such as a user's own `gh extension install github/gh-stack`, untouched. A
-consumer seed (for example the devcontainer setup script) should perform this
+`[stack]: already up to date` and exits 0 without checking, `gh extension
+upgrade stack` exits 1 with "unable to retrieve latest version", and
+`gh extension list` shows no version. The version follows the toolbox lock;
+upgrade through BundleDock. The guard leaves an existing install, such as a
+user's own `gh extension install github/gh-stack`, untouched. A consumer seed
+(for example the devcontainer setup script) should perform this
 idempotent step. Source tests cover the catalog, lock, notices and smoke
 script; native smoke, which also resolves the extension through `gh`, needs an
 approved image build.
