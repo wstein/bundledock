@@ -4,15 +4,23 @@ fzf --version
 bat --version
 lsd --version
 regctl version
-case "$(jsonschema-cli --version 2>&1)" in *[0-9].[0-9]*.[0-9]*) ;; *) echo "unexpected jsonschema-cli version output" >&2; exit 1 ;; esac
-case "$(difft --version 2>&1)" in *[0-9].[0-9]*.[0-9]*) ;; *) echo "unexpected difft version output" >&2; exit 1 ;; esac
-case "$(zoxide --version 2>&1)" in *[0-9].[0-9]*.[0-9]*) ;; *) echo "unexpected zoxide version output" >&2; exit 1 ;; esac
-case "$(git-cliff --version 2>&1)" in *[0-9].[0-9]*.[0-9]*) ;; *) echo "unexpected git-cliff version output" >&2; exit 1 ;; esac
-case "$(cosign version 2>&1)" in *[0-9].[0-9]*.[0-9]*) ;; *) echo "unexpected cosign version output" >&2; exit 1 ;; esac
-case "$(zizmor --version 2>&1)" in *[0-9].[0-9]*.[0-9]*) ;; *) echo "unexpected zizmor version output" >&2; exit 1 ;; esac
-case "$(pinact --version 2>&1)" in *[0-9].[0-9]*.[0-9]*) ;; *) echo "unexpected pinact version output" >&2; exit 1 ;; esac
-case "$(hadolint --version 2>&1)" in *[0-9].[0-9]*.[0-9]*) ;; *) echo "unexpected hadolint version output" >&2; exit 1 ;; esac
-case "$(actionlint -version 2>&1)" in *[0-9].[0-9]*.[0-9]*) ;; *) echo "unexpected actionlint version output" >&2; exit 1 ;; esac
+# Version probes must exit 0 and print an anchored banner; a loader error such as
+# an unsupported glibc must not satisfy a loose dotted-number match.
+expect_version() {
+	pattern=$1
+	shift
+	out=$("$@") || { echo "$1 version probe failed" >&2; exit 1; }
+	printf '%s\n' "$out" | grep -Eq "$pattern" || { echo "unexpected $1 version output" >&2; exit 1; }
+}
+expect_version '^jsonschema-cli [0-9]+\.[0-9]+\.[0-9]+' jsonschema-cli --version
+expect_version '^Difftastic [0-9]+\.[0-9]+\.[0-9]+' difft --version
+expect_version '^zoxide [0-9]+\.[0-9]+\.[0-9]+' zoxide --version
+expect_version '^git-cliff [0-9]+\.[0-9]+\.[0-9]+' git-cliff --version
+expect_version '^GitVersion: +v[0-9]+\.[0-9]+\.[0-9]+' cosign version
+expect_version '^zizmor [0-9]+\.[0-9]+\.[0-9]+' zizmor --version
+expect_version '^pinact version [0-9]+\.[0-9]+\.[0-9]+' pinact --version
+expect_version '^Haskell Dockerfile Linter [0-9]+\.[0-9]+\.[0-9]+' hadolint --version
+expect_version '^[0-9]+\.[0-9]+\.[0-9]+' actionlint -version
 # Fixed input and filter avoid TTY interaction and inherited shell integrations.
 test "$(printf '%s\n' alpha beta | FZF_DEFAULT_OPTS= FZF_DEFAULT_OPTS_FILE= fzf --filter beta)" = beta
 # Never invoke a consumer pager or load user bat configuration.
