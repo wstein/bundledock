@@ -76,3 +76,32 @@ codeberg.org answer HEAD with 200 and no redirect, notice staging code read.
 | 15 | low | limits naming and overflow | renamed; anomalies truncated with a count |
 | 16 | low | WI9/WI11 in rollout | WI9 placed before WI2; WI11 stays a docs item |
 | 17 | low | mirror CI cannot run `plan` | `plan --standalone` |
+
+## Round 3 (reviewer on `2238f4d`, Spec 026 read at `ddde764`): NOT READY (0 critical, 1 high, 5 medium, 9 low)
+
+Hygiene: the reviewer sent no HTTP requests. The branch moved again to `ddde764`; the author re-cited it.
+After this round the maximum of three rounds is reached; the resolutions below are **not independently
+re-reviewed**.
+
+| # | Sev | Finding | Resolution |
+| --- | --- | --- | --- |
+| 1 | high | stale asset names in manifest, SOURCE-MIRROR, limits | all replaced by the naming-table names; the SOURCE-MIRROR download URL derives from them |
+| 2 | medium | `plan_sha256` undefined | renamed `entry_sha256`, canonical JSON of the single entry |
+| 3 | medium | `pin` effects row incomplete | reads existing source lock; creates or appends one entry, never overwrites |
+| 4 | medium | tag pattern prose, `-r0`/`-r1`, digits | exact pattern and `order` written; `rev` excludes `-r0`, `-r1`, leading zeros; `V` groups bounded to 9 digits; "checked against the Spec 026 text only" |
+| 5 | medium | product-name claim not enforced | WI1 tests added (prefix relation, product id regex); measurement cited |
+| 6 | medium | online digest source unspecified | API `digest` field (unverified) with a bounded download fallback |
+| 7 | low | `Reconstruction: false` | `true` |
+| 8 | low | `anomalies_truncated` missing | added |
+| 9 | low | stale Spec 026 revision | re-cited `ddde764` (spec, mirror-project, research) |
+| 10 | low | `network_hosts` scope | lists first-hop and redirect-target hosts |
+| 11 | low | failure table lacks emitting mode; reused code names | emitting modes added; renamed `entry-missing`, `entry-stale` |
+| 12 | low | `SOURCE_DATE_EPOCH` env vs entry | env value ignored; epochs differ by design; D6 argv text corrected |
+| 13 | low | 64 product-file cap | added to mirror-project item 2 |
+| 14 | low | quickstart order | steps swapped, `--sources` passed |
+| 15 | low | `gas` license | added to the WI2 resolution list |
+
+## Status
+
+Round 3 verdict was NOT READY with one high finding, now fixed in the artifacts but not re-reviewed
+(three-round limit). Open for the coordinator: a fourth narrow review, or accept.
