@@ -110,7 +110,7 @@ func validSourceLicense(expression string) bool {
 				return false
 			}
 		} else {
-			if closing > 0 || token != "AND" && token != "OR" && token != "WITH" {
+			if token != "AND" && token != "OR" && token != "WITH" {
 				return false
 			}
 		}
@@ -142,12 +142,13 @@ func validSourceTarball(template string) bool {
 	if !strings.Contains(template, "{version}") && !strings.Contains(template, "{lock_version}") {
 		return false
 	}
-	// Empty queries and fragments vanish when parsed, so refuse the markers.
+	// Queries, fragments and ports are refused by the markers and the host list;
+	// empty ones vanish when parsed, so the markers are checked on the text.
 	if !validSourceText(expanded) || strings.ContainsAny(expanded, "{}\\ ?#") || encodedControl.MatchString(expanded) {
 		return false
 	}
 	u, err := url.Parse(expanded)
-	if err != nil || u.Scheme != "https" || u.User != nil || u.Port() != "" || u.RawQuery != "" || u.Fragment != "" || !slices.Contains(SourceFetchHosts, u.Host) {
+	if err != nil || u.Scheme != "https" || u.User != nil || u.Fragment != "" || !slices.Contains(SourceFetchHosts, u.Host) {
 		return false
 	}
 	for _, segment := range strings.Split(u.Path, "/") {
