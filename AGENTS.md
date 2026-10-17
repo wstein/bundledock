@@ -68,9 +68,12 @@ creating, moving or deleting any tag, starting a run (the owner does), `make rel
 any other artifact build by an agent, creating the `release` environment, variables or other
 repository settings, OCI images or their tags, consumer activation, or any other tag
 namespace. Tags are never re-created after a failed or wrong release; use the next patch
-version. The grant is the workflow's publication on the owner's own tag push under these gates.
-Whether the owner wants to re-confirm before each later release, rather than rely on this
-decision, is open decision 3 of the spec; no agent pushes tags either way. Agents never start the workflow.
+version. There is no standing approval (owner decision): every tag and release, including later ones,
+needs Werner Stein's explicit approval each time, and an approval for one tag (for example
+`bdock/v0.1.1`) covers only that tag. The grant is the workflow's publication on the owner's own
+approved tag push under these gates. The `release` environment has no reviewer rule (owner
+decision), so a tag push by the owner that passes the checks publishes immediately. Agents
+never push tags and never start the workflow.
 
 Third-party tools must use official stable prebuilt releases. Never build
 third-party tools from source or silently patch any tool binary or embedded

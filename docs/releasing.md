@@ -12,10 +12,13 @@ archives only. OCI tool images follow [publication](publication.md) and are unaf
 Agents and contributors never create, move or delete tags, never start the workflow and never
 run `make release`.
 
+Approval: there is no standing approval. Every tag and release, including later ones, needs
+Werner Stein's explicit approval each time; an approval for one tag covers only that tag.
+Without a reviewer rule on the `release` environment, a tag push by the owner that passes the
+checks publishes immediately, with no pause. Agents never push tags.
+
 Authorization: the owner decided on 2026-10-17 "bdock wie smill" (recorded in `AGENTS.md`).
 Pushing a tag `bdock/vMAJOR.MINOR.PATCH` is the publication approval for that tag's release.
-Whether the decision also covers every later tag is open decision 3 of the spec; confirm it
-before the second release.
 
 ## What the workflow does
 
@@ -46,9 +49,9 @@ flags, platform). Nothing is signed or notarized.
 - [ ] The workflow PR is reviewed and merged by you; `main` carries `release.yml`.
 - [ ] The untracked local TODO list is reviewed: each item resolved or explicitly deferred
       ([release review](development.md#release-review)).
-- [ ] Optional: create the `release` environment with yourself as required reviewer and a
-      deployment-tag rule `bdock/v*`. The workflow names `environment: release`; if it does not
-      exist GitHub creates it unprotected on first use. Optional: set the repository variable
+- [ ] The `release` environment needs no setup: you decided not to configure a reviewer rule.
+      The workflow names `environment: release`; GitHub creates it unprotected on first use, so
+      a tag push by you that passes the checks publishes at once. Optional: set the repository variable
       `BDOCK_RELEASE_DRAFT` to `true` to publish drafts you release by hand.
 - [ ] Recommended, a repository setting only you change (the workflow and agents never do):
       Settings, Rules, Rulesets, New ruleset, "New tag ruleset". Name it e.g. `bdock release tags`,
@@ -57,7 +60,10 @@ flags, platform). Nothing is signed or notarized.
       leave "Restrict creations" off so you can still push new tags (or restrict creations to
       yourself in the bypass list). Create the ruleset before the first tag; a tag cannot be
       protected retroactively against an earlier deletion. The version-order check in `verify`
-      does not replace it: it stops a lower version, the ruleset stops tag rewriting.
+      does not replace it: it stops a lower version, the ruleset stops tag rewriting. In particular,
+      if a tag was deleted and no release exists for it, pushing the same version again still
+      passes the check (the listing shows the pushed tag itself, nothing higher); only the ruleset
+      guards against re-creating a tag.
 - [ ] Rehearse once: Actions, `release`, "Run workflow" on `main` (version `0.0.0-dryrun`).
       Dry-run artifacts live one day and, in a public repository, any signed-in GitHub user can
       download them; they are unsigned rehearsal builds, not releases.
@@ -78,8 +84,8 @@ anything can be fixed by re-running the same workflow run as the owner; the tag 
 If `publish` failed after creating a release with missing assets, delete that release by hand
 and re-run, or release the next patch version. Otherwise do not delete and re-create the tag. A failed `verify` or `build` publishes nothing: fix the
 cause on `main` and release the next patch version. If `publish` created a wrong release,
-delete the release by hand and use the next patch version; the tag stays. If the `release` environment makes a run wait for approval past the one-day artifact
-retention, `publish` fails at the artifact download; re-run the whole workflow for the same
+delete the release by hand and use the next patch version; the tag stays. If a reviewer rule is ever added to the `release` environment and a run waits for approval
+past the one-day artifact retention, `publish` fails at the artifact download; re-run the whole workflow for the same
 tag (accepted only while no release exists) or, if in doubt, use the next patch version.
 Never delete and re-create a tag. The module path `bundledock` is not fetchable through the Go
 proxy, so no module cache can pin a bad tag, but release assets and users' copied checksums

@@ -21,7 +21,9 @@ owner. It does **not** authorize: running the workflow or `make release` (an age
 creating, moving or deleting a tag, adding secrets, variables or environment protection, OCI
 image builds, publication or tags, consumer activation, or any other tag namespace. The existing
 bundle publication exceptions and the Pages exception in `AGENTS.md` are unchanged.
-Whether "bdock wie smill" is a standing approval for every later tag is open decision 3.
+There is **no standing approval** (owner decision, decision 3): every tag and release, including
+later ones, needs the owner's explicit approval each time, and an approval for one tag covers only
+that tag.
 
 ## Scenarios
 
@@ -120,8 +122,15 @@ Whether "bdock wie smill" is a standing approval for every later tag is open dec
 - Nothing is signed, notarized or attested. macOS may quarantine a browser download.
 - Owner checks compare with `github.repository_owner`; if the repository moves to an
   organization they fail closed until rewritten.
-- Artifacts live one day. Approval of the `release` environment after that makes `publish` fail at
-  the download; the owner re-runs the workflow or releases the next patch version. In a public
+- No reviewer gate: the `release` environment is unprotected, so an owner tag push publishes as
+  soon as verify, build and smoke pass; there is no pause between the push and the public release.
+  The controls are the owner-only actor checks, the annotated-tag, ancestor, version-order and
+  green-CI verification, the refusal when a release or draft exists, and the rule never to
+  re-create a tag.
+- The version-order check cannot see a deleted tag that has no release: re-pushing that version
+  passes (the tag itself is skipped). Only the tag ruleset prevents re-creating a tag.
+- Artifacts live one day. If a reviewer rule is ever added to the environment, an approval after that makes `publish`
+  fail at the download; the owner re-runs the workflow or releases the next patch version. In a public
   repository any signed-in GitHub user can download dry-run artifacts for that day.
 - Not exercisable before the first real tag: annotated-tag fetch, the CI-run query, the
   release-exists API call for a tag containing a slash, `ls-remote`, the `release`
@@ -142,13 +151,11 @@ tagging and merging.
 
 1. **Confirm `v0.1.0` as the first version.** Recommended: yes (no `bdock/` tag exists, docs
    already use `0.1.0`, [research D2](research.md)).
-2. **The `release` environment.** `publish` names `environment: release`, as SheetMill does. If
-   it does not exist GitHub creates it unprotected on first use. Recommended: the owner creates
-   it beforehand with himself as required reviewer and a deployment-tag rule `bdock/v*`; the
-   tag is the approval either way and the workflow does not depend on the protection.
-3. **Standing approval.** Does "bdock wie smill" cover every later `bdock/vX.Y.Z` tag the owner
-   pushes (this spec's reading, as for SheetMill) or only the first? Recommended: standing, with
-   the owner confirming before the second release. Until confirmed it is a reading, not a grant.
+2. **The `release` environment.** Decided (owner): no required-reviewer rule and no environment
+   setup. `publish` keeps `environment: release`; GitHub creates it unprotected on first use.
+   Any owner tag push that passes the checks therefore publishes immediately (Known limitations).
+3. **Standing approval.** Decided (owner): none. Every tag and release, including later ones, needs
+   the owner's explicit approval each time; an approval covers only the tag it names.
 4. **`AGENTS.md` wording.** The CLI release exception is named beside the Pages exception in the
    build-approval sentences and has its own paragraph; the owner may prefer other phrasing.
 5. **Tag ruleset.** Block deletion and update of `bdock/v*` tags. A repository setting only the owner
