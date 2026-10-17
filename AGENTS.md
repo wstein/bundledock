@@ -141,6 +141,7 @@ still pins an older image, so do not assume these commands exist in a running se
 | Check spelling | `typos`. |
 | Check links | `lychee`. |
 | Detect secrets | `gitleaks`. |
+| Pin GitHub Actions to commit SHAs | `pinact` (`pinact run` edits workflow files; use `--check` to verify only). |
 | Lint Dockerfiles | `hadolint`. |
 | Lint GitHub Actions workflows | `actionlint`. |
 | Scan Git history and files for credentials | `trufflehog` (disable verification for offline scans). |

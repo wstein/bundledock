@@ -217,6 +217,7 @@ networking disabled. Native smoke acceptance remains part of an approved build.
 | mise (`mise`) | 2026.10.11 | [Homepage](https://mise.jdx.dev) | [Source](https://github.com/jdx/mise) |
 | navi (`navi`) | 2.24.0 | [Homepage](https://github.com/denisidoro/navi) | [Source](https://github.com/denisidoro/navi) |
 | Nushell (`nu`) | 0.116.1 | [Homepage](https://www.nushell.sh/) | [Source](https://github.com/nushell/nushell) |
+| pinact (`pinact`) | 5.0.0 | [Homepage](https://github.com/suzuki-shunsuke/pinact) | [Source](https://github.com/suzuki-shunsuke/pinact) |
 | regctl (`regctl`) | 0.11.6 | [Homepage](https://regclient.org) | [Source](https://github.com/regclient/regclient) |
 | ripgrep (`rg`) | 15.2.0 | [Homepage](https://github.com/BurntSushi/ripgrep) | [Source](https://github.com/BurntSushi/ripgrep) |
 | Ruff (`ruff`) | 0.17.1 | [Homepage](https://docs.astral.sh/ruff) | [Source](https://github.com/astral-sh/ruff) |
@@ -465,6 +466,8 @@ and consumer activation remain unverified pending separate approval.
 `actionlint` lints GitHub Actions workflow files statically: `actionlint .github/workflows/ci.yml`. It runs `shellcheck` and `pyflakes` only when they are on `PATH`. It needs no network access or user configuration.
 
 `hadolint` lints Dockerfiles: `hadolint Dockerfile`. Keep a project `.hadolint.yaml` in the repository. It is an unmodified official GPL-3.0 release binary; the full upstream `LICENSE` is retained under `licenses/hadolint/`.
+
+`pinact` pins GitHub Actions and reusable workflows to commit SHAs. `pinact run` rewrites workflow files and, unless offline, queries the GitHub API (set `GITHUB_TOKEN` in the environment); `pinact run --check` reports without writing. The release archive's `third_party_licenses/` tree is not extracted (the catalog retains notices by file name only), so the dependency licenses remain available only from the official release archive.
 
 ## Git Large File Storage
 

@@ -12,6 +12,7 @@ func TestDeveloperToolRecipes(t *testing.T) {
 	for _, tc := range []struct{ name, repo, kind, bin, prefix string }{
 		{"actionlint", "rhysd/actionlint", "tar.gz", "actionlint", "v"},
 		{"hadolint", "hadolint/hadolint", "raw", "hadolint", "v"},
+		{"pinact", "suzuki-shunsuke/pinact", "tar.gz", "pinact", "v"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			p, ok := c.Catalog.Packages[tc.name]

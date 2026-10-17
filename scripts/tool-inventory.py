@@ -53,6 +53,7 @@ LABELS = (
     ("btop", "btop (`btop`)"),
     ("helix", "Helix (`hx`)"),
     ("hugo", "Hugo (`hugo`, standard)"),
+    ("pinact", "pinact (`pinact`)"),
     ("hadolint", "Hadolint (`hadolint`)"),
     ("actionlint", "actionlint (`actionlint`)"),
 )
