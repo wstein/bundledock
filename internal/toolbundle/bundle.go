@@ -275,6 +275,7 @@ func extract(root *os.Root, tool string, p toolconfig.Package, source io.Reader,
 	archive := tar.NewReader(decoded)
 	seen := map[string]bool{}
 	installed := map[string]bool{}
+	treeFiles := map[string]int{}
 	helixRoot := ""
 	for {
 		entry, err := archive.Next()
@@ -359,6 +360,7 @@ func extract(root *os.Root, tool string, p toolconfig.Package, source io.Reader,
 			for _, tree := range p.Install.ArchiveNoticeTrees {
 				if strings.HasPrefix(name, tree+"/") {
 					target = "licenses/" + tool + "/" + name
+					treeFiles[tree]++
 					break
 				}
 			}
@@ -390,6 +392,11 @@ func extract(root *os.Root, tool string, p toolconfig.Package, source io.Reader,
 	}
 	if len(installed) != len(p.Install.Members) {
 		return fmt.Errorf("expected %d %s executable(s), found %d", len(p.Install.Members), tool, len(installed))
+	}
+	for _, tree := range p.Install.ArchiveNoticeTrees {
+		if treeFiles[tree] == 0 {
+			return fmt.Errorf("%s notice tree %q retained no files", tool, tree)
+		}
 	}
 	if p.Install.Profile == "helix-runtime" {
 		return writeHelixLauncher(root)

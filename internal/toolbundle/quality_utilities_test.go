@@ -34,6 +34,9 @@ func TestQualityUtilitiesInstallExecutablesAndFullNotices(t *testing.T) {
 				for _, notice := range p.Install.ArchiveNotices {
 					files = append(files, member{"upstream/" + notice, "full upstream " + notice, 0644, 0})
 				}
+				for _, tree := range p.Install.ArchiveNoticeTrees {
+					files = append(files, member{tree + "/pkg/LICENSE", "tree license", 0644, 0})
+				}
 				switch p.Install.Kind {
 				case "raw":
 					payloads[name] = []byte("synthetic executable")

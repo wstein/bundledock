@@ -42,7 +42,7 @@ func TestHadolintRetainsGPLSourceRecordAndThirdPartyNotices(t *testing.T) {
 }
 
 func TestArchiveNoticeTreesValidation(t *testing.T) {
-	for _, tree := range []string{"third_party_licenses", "a/b", "", ".", "..", "../x", "/abs", "a/../b", "a/", "a\\b"} {
+	for _, tree := range []string{"third_party_licenses", "a/b", "", ".", "..", "../x", "/abs", "a/../b", "a/", "a\\b", "a\x00b", "Third_Party_Licenses/\n"} {
 		t.Run(tree, func(t *testing.T) {
 			c, err := Load("../../bundles/toolbox")
 			if err != nil {
@@ -131,5 +131,26 @@ func TestRetainedFullLicensesAreCanonical(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestArchiveNoticeTreesRejectDuplicatesAndNonTar(t *testing.T) {
+	c, err := Load("../../bundles/toolbox")
+	if err != nil {
+		t.Fatal(err)
+	}
+	p := c.Catalog.Packages["pinact"]
+	p.Install.ArchiveNoticeTrees = []string{"a", "a"}
+	c.Catalog.Packages["pinact"] = p
+	c.Bind()
+	if c.Validate() == nil {
+		t.Fatal("duplicate notice trees accepted")
+	}
+	p.Install.ArchiveNoticeTrees = []string{"third_party_licenses"}
+	p.Install.Kind = "raw"
+	c.Catalog.Packages["pinact"] = p
+	c.Bind()
+	if c.Validate() == nil {
+		t.Fatal("notice trees accepted on a non-tar recipe")
 	}
 }

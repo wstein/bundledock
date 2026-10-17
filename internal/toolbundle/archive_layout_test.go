@@ -148,3 +148,29 @@ func TestPinactRetainsThirdPartyLicenseTree(t *testing.T) {
 		t.Fatalf("mode: %v %v", info, err)
 	}
 }
+
+func TestNoticeTreeBoundaryAndCase(t *testing.T) {
+	_, found, err := extractLayout(t, "pinact",
+		member{"third_party_licenses/go/LICENSE", "bsd", 0444, 0},
+		member{"third_party_licensesX/LICENSE", "sibling", 0444, 0},
+		member{"Third_Party_Licenses/LICENSE", "case", 0444, 0},
+		member{"pinact", "exe", 0755, 0},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Join(found, ",") != "third_party_licenses/go/LICENSE" {
+		t.Fatalf("tree boundary or case leak: %v", found)
+	}
+}
+
+func TestDeclaredNoticeTreeWithoutFilesFails(t *testing.T) {
+	_, _, err := extractLayout(t, "pinact",
+		member{"Third_Party_Licenses/go/LICENSE", "case mismatch", 0444, 0},
+		member{"third_party_licensesX/LICENSE", "sibling", 0444, 0},
+		member{"pinact", "exe", 0755, 0},
+	)
+	if err == nil {
+		t.Fatal("a declared notice tree that retained nothing was accepted")
+	}
+}

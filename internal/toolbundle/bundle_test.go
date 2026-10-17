@@ -114,6 +114,9 @@ func fixture(t *testing.T) (map[string][]byte, map[string]Spec, *httptest.Server
 		for _, notice := range p.Install.ArchiveNotices {
 			files = append(files, member{"upstream/" + notice, name + " license", 0644, 0})
 		}
+		for _, tree := range p.Install.ArchiveNoticeTrees {
+			files = append(files, member{tree + "/pkg/LICENSE", "tree license", 0644, 0})
+		}
 		switch p.Install.Kind {
 		case "raw":
 			payloads[name] = []byte(name + " executable")
