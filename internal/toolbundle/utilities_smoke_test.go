@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -12,7 +13,7 @@ func TestUtilitiesSmokeRejectsWrongOutput(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, broken := range []string{"", "fzf", "bat", "lsd", "regctl", "actionlint", "hadolint", "pinact", "zizmor", "cosign", "git-cliff", "zoxide", "difft", "jsonschema-cli", "gh-stack", "gh", "fail:gh-stack", "dotted:gh-stack", "prefixed:gh-stack", "fail:actionlint", "fail:hadolint", "fail:pinact", "fail:zizmor", "fail:cosign", "fail:git-cliff", "fail:zoxide", "fail:difft", "fail:jsonschema-cli", "loose:zizmor", "dotted:actionlint", "dotted:hadolint", "dotted:pinact", "dotted:zizmor", "dotted:cosign", "dotted:git-cliff", "dotted:zoxide", "dotted:difft", "dotted:jsonschema-cli", "prefixed:actionlint", "prefixed:hadolint", "prefixed:pinact", "prefixed:zizmor", "prefixed:cosign", "prefixed:git-cliff", "prefixed:zoxide", "prefixed:difft", "prefixed:jsonschema-cli", "keyword:pinact"} {
+	for _, broken := range []string{"", "fzf", "bat", "lsd", "regctl", "actionlint", "hadolint", "pinact", "zizmor", "cosign", "git-cliff", "zoxide", "difft", "jsonschema-cli", "gh-stack", "gh", "fail:gh-stack", "fail:gh", "missing:gh-stack", "no-gh", "dotted:gh-stack", "prefixed:gh-stack", "fail:actionlint", "fail:hadolint", "fail:pinact", "fail:zizmor", "fail:cosign", "fail:git-cliff", "fail:zoxide", "fail:difft", "fail:jsonschema-cli", "loose:zizmor", "dotted:actionlint", "dotted:hadolint", "dotted:pinact", "dotted:zizmor", "dotted:cosign", "dotted:git-cliff", "dotted:zoxide", "dotted:difft", "dotted:jsonschema-cli", "prefixed:actionlint", "prefixed:hadolint", "prefixed:pinact", "prefixed:zizmor", "prefixed:cosign", "prefixed:git-cliff", "prefixed:zoxide", "prefixed:difft", "prefixed:jsonschema-cli", "keyword:pinact"} {
 		t.Run("broken-"+broken, func(t *testing.T) {
 			home := t.TempDir()
 			root := t.TempDir()
@@ -38,7 +39,7 @@ func TestUtilitiesSmokeRejectsWrongOutput(t *testing.T) {
 				"zoxide":         "case \"$*\" in --version) echo 'zoxide 0.10.0';; *) exit 2;; esac",
 				"difft":          "case \"$*\" in --version) echo 'Difftastic 0.71.0';; *) exit 2;; esac",
 				"jsonschema-cli": "case \"$*\" in --version) echo 'Version: 0.58.5';; *) exit 2;; esac",
-				"gh":             "case \"$*\" in 'stack --version') exec \"$XDG_DATA_HOME/gh/extensions/gh-stack/gh-stack\" --version;; *) exit 2;; esac",
+				"gh":             "test \"${GH_PROMPT_DISABLED:-}\" = 1 || exit 3; case \"$*\" in 'stack --version') exec \"$XDG_DATA_HOME/gh/extensions/gh-stack/gh-stack\" --version;; *) exit 2;; esac",
 				"gh-stack":       "case \"$*\" in --version) echo 'gh stack version 0.2.1';; *) exit 2;; esac",
 				"regctl":         "case \"$*\" in version) echo 'VCSTag: v0.11.6';; --help) echo help;; 'image digest --help') echo help;; 'ref --format {{.Repository}} example.invalid/team/image:v1') echo team/image;; *) exit 2;; esac",
 			}
@@ -46,6 +47,9 @@ func TestUtilitiesSmokeRejectsWrongOutput(t *testing.T) {
 				switch {
 				case name == broken:
 					body = "echo wrong"
+				case broken == "fail:gh" && name == "gh":
+					// gh reaches the extension but exits non-zero after printing the banner.
+					body = "case \"$*\" in 'stack --version') echo 'gh stack version 0.2.1'; exit 1;; *) exit 2;; esac"
 				case broken == "fail:"+name:
 					// Matching text with a failing exit status must not pass.
 					body = "case \"$*\" in -version|--version|version) " + versionEcho[name] + "; exit 1;; *) exit 2;; esac"
@@ -62,6 +66,9 @@ func TestUtilitiesSmokeRejectsWrongOutput(t *testing.T) {
 					// A glibc loader error contains a dotted number but is no version banner.
 					body = "echo '/lib/libc.so.6: version `GLIBC_2.34.0` not found' >&2; exit 1"
 				}
+				if broken == "no-gh" && name == "gh" || broken == "missing:gh-stack" && name == "gh-stack" {
+					continue
+				}
 				dir := bin
 				if name == "gh-stack" {
 					// The extension binary lives at libexec/gh-stack, beside bin.
@@ -72,8 +79,24 @@ func TestUtilitiesSmokeRejectsWrongOutput(t *testing.T) {
 				}
 			}
 			cmd := exec.Command("sh", script)
-			cmd.Env = append(os.Environ(), "HOME="+home, "BUNDLEDOCK_TOOLBOX="+root, "PATH="+bin+":"+os.Getenv("PATH"))
+			path := bin + ":" + os.Getenv("PATH")
+			if broken == "no-gh" {
+				// Without gh the discovery check is skipped with a message.
+				path = bin + ":/usr/bin:/bin"
+				for _, dir := range []string{"/usr/bin", "/bin"} {
+					if _, err := os.Stat(dir + "/gh"); err == nil {
+						t.Skip("gh is installed in a system directory")
+					}
+				}
+			}
+			cmd.Env = append(os.Environ(), "HOME="+home, "BUNDLEDOCK_TOOLBOX="+root, "PATH="+path)
 			out, err := cmd.CombinedOutput()
+			if broken == "no-gh" {
+				if err != nil || !strings.Contains(string(out), "skipping gh stack discovery check") {
+					t.Fatalf("missing gh must skip with a message: %v\n%s", err, out)
+				}
+				return
+			}
 			if broken == "" && err != nil {
 				t.Fatalf("valid synthetic tools failed: %v\n%s", err, out)
 			}
