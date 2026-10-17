@@ -196,6 +196,7 @@ networking disabled. Native smoke acceptance remains part of an approved build.
 | btop (`btop`) | 1.4.7 | [Homepage](https://github.com/aristocratos/btop) | [Source](https://github.com/aristocratos/btop) |
 | Cosign (`cosign`) | 3.1.3 | [Homepage](https://github.com/sigstore/cosign) | [Source](https://github.com/sigstore/cosign) |
 | delta (`delta`) | 0.20.1 | [Homepage](https://dandavison.github.io/delta/) | [Source](https://github.com/dandavison/delta) |
+| Difftastic (`difft`) | 0.71.0 | [Homepage](https://github.com/Wilfred/difftastic) | [Source](https://github.com/Wilfred/difftastic) |
 | fd (`fd`, `fdfind`) | 10.5.0 | [Homepage](https://github.com/sharkdp/fd) | [Source](https://github.com/sharkdp/fd) |
 | Fish (`fish`) | 4.9.3 | [Homepage](https://fishshell.com) | [Source](https://github.com/fish-shell/fish-shell) |
 | fzf (`fzf`) | 0.74.5 | [Homepage](https://junegunn.github.io/fzf/) | [Source](https://github.com/junegunn/fzf) |
@@ -480,6 +481,8 @@ and consumer activation remain unverified pending separate approval.
 `git-cliff` generates changelogs from Git history and Conventional Commits: `git-cliff --config cliff.toml`. Keep the configuration in the repository. Release archives also carry completions, man pages and `git-cliff-completions`/`git-cliff-mangen` generators; only the `git-cliff` executable, both licenses and README are installed.
 
 `zoxide` is a directory jumper. BundleDock installs the executable only: no shell hook, alias or `cd` replacement is added. To opt in, source `zoxide init <shell>` output from your own shell configuration. Its database lives in `$_ZO_DATA_DIR` or the XDG data directory under writable HOME, outside the read-only toolbox. The nested completion `README.md` is not extracted, to avoid a name clash with the top-level README.
+
+`difft` (Difftastic) compares files by syntax structure: `difft old.go new.go`. Use `--color never` for predictable output. As an optional Git external diff, set `GIT_EXTERNAL_DIFF=difft` in your own environment; BundleDock sets no Git configuration. The ARM64 release is the official GNU/Linux build (no musl asset exists); the archive carries only the executable, so the upstream MIT `LICENSE` is retained separately.
 
 ## Git Large File Storage
 
