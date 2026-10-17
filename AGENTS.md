@@ -4,7 +4,8 @@ BundleDock owns the Go CLI, declarative tool inputs, OCI build and smoke tests,
 license notices, publication workflow, and brand assets. Anchorage is the
 separate umbrella repository that owns consumer devcontainer integration.
 
-Run `make check` before handing over Go or build changes. Routine source tests,
+Run `make check` before handing over Go or build changes (with `umask 022`; a
+sandbox `umask 0000` breaks the Python tool-state checks). Routine source tests,
 vet and their compiler verification may run automatically. Obtain the user's
 explicit approval before any artifact, CLI release, OCI image, or documentation
 build outside the Pages automation exception and the CLI release workflow exception below, including `make build`,
