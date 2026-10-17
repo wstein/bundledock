@@ -263,8 +263,9 @@ activation.
 [The CI workflow](../.github/workflows/ci.yml) checks pushes, pull requests, and
 manual runs with formatting checks, the full source test suite, and `go vet`.
 Its test compilation verifies source without creating CLI release artifacts,
-OCI images, or a documentation site. Automatic native image and CLI artifact
-builds are disabled.
+OCI images, or a documentation site. A step vets the three CLI release platforms (compiler verification, no artifact).
+Automatic native image builds are disabled; CLI archives are built only by the
+[release workflow](../.github/workflows/release.yml) on an owner `bdock/v*` tag push or owner dry run.
 
 The [shared bundle publication flow](publication.md) accepts the actual human
 owner `wstein` merging an eligible bot updater PR as authorization for that

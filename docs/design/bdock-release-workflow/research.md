@@ -6,7 +6,7 @@ known limitations.
 
 ## D1 Tag namespace
 
-Checked: `git ls-remote --tags origin` lists 32 tags, all image tags `<bundle>/<version>`
+Checked: `git ls-remote --tags origin` lists 16 tags (32 lines with peeled entries), all image tags `<bundle>/<version>`
 (`agy`, `bun`, `claude`, `code-server`, `codex`, `node`, `node-current`, `opentofu`,
 `toolbox`), none starting with `bdock/`. Image tags are created by `scripts/bundle-git-tags.py`
 only for the exact name `<bundle>/<tag>` of a verified publication; no script enumerates tags.

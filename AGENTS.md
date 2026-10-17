@@ -7,7 +7,7 @@ separate umbrella repository that owns consumer devcontainer integration.
 Run `make check` before handing over Go or build changes. Routine source tests,
 vet and their compiler verification may run automatically. Obtain the user's
 explicit approval before any artifact, CLI release, OCI image, or documentation
-build outside the Pages automation exception below, including `make build`,
+build outside the Pages automation exception and the CLI release workflow exception below, including `make build`,
 `make release`, `make release-test`, `make docs`, `make docs-test`, `make docs-serve`, or Docker build/smoke checks. Report deferred
 checks and platform coverage accurately; a passing source check is not image or
 release readiness.
@@ -23,7 +23,7 @@ that SHA and the publication run attempt. Manual exact-SHA human dispatch remain
 available. This exception does not authorize OCI/CLI publication, source merges,
 workflow dispatches by agents or repository/environment settings changes.
 
-Builds and releases other than the Pages exception require explicit user approval
+Builds and releases other than the Pages exception and the CLI release workflow exception require explicit user approval
 of the intended operation and source revision. The approved bundle automation
 exception covers toolbox,
 code-server, Node LTS, Node Current, Bun, Codex, Antigravity, Claude and OpenTofu updater PRs authored by `github-actions[bot]`, changing
@@ -48,7 +48,7 @@ bot activity and local commits alone supply no artifact build approval outside
 the Pages-specific exception above.
 Tagging and publication must follow the explicitly authorized workflow scope (the CLI release workflow exception below is the only CLI one);
 consumer activation remains a separate explicit authorization. Successful approved
-publication includes one annotated `<bundle>/<immutable-version>` source tag,
+bundle publication includes one annotated `<bundle>/<immutable-version>` source tag,
 after verification of the final index and image aliases. Never overwrite source
 tags or create moving Git aliases. Backfills require separate explicit approval
 and independently verified deployed-image/source/workflow provenance. Do not perform
@@ -68,8 +68,9 @@ creating, moving or deleting any tag, starting a run (the owner does), `make rel
 any other artifact build by an agent, creating the `release` environment, variables or other
 repository settings, OCI images or their tags, consumer activation, or any other tag
 namespace. Tags are never re-created after a failed or wrong release; use the next patch
-version. That the decision stands for every later tag, not only the first, is an open owner
-confirmation (spec open decision 3), not a grant. Agents never start the workflow.
+version. The grant is the workflow's publication on the owner's own tag push under these gates.
+Whether the owner wants to re-confirm before each later release, rather than rely on this
+decision, is open decision 3 of the spec; no agent pushes tags either way. Agents never start the workflow.
 
 Third-party tools must use official stable prebuilt releases. Never build
 third-party tools from source or silently patch any tool binary or embedded
