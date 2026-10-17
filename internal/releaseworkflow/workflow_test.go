@@ -644,3 +644,27 @@ func TestReleaseWorkflowDoesNotTriggerOnOtherTags(t *testing.T) {
 		}
 	}
 }
+
+// CI vets every release platform (compiler verification only, no artifact), so a
+// platform-specific compile break is found on the push, not on the release tag.
+func TestCIVetsEveryReleasePlatform(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join(repoRoot(t), ".github", "workflows", "ci.yml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := parse(t, string(raw))
+	s, ok := stepNamed(w.Jobs["check"], "Vet the release platforms")
+	if !ok {
+		t.Fatal("ci.yml check job lacks the step \"Vet the release platforms\"")
+	}
+	for _, p := range platforms {
+		goos, goarch, _ := strings.Cut(p, "/")
+		want := "GOOS=" + goos + " GOARCH=" + goarch + " go vet ./cmd/... ./internal/..."
+		if !strings.Contains(s.Run, want) {
+			t.Errorf("step lacks %q", want)
+		}
+	}
+	if strings.Contains(s.Run, "go build") || strings.Contains(s.Run, "make ") {
+		t.Error("the CI platform step must not build artifacts")
+	}
+}
