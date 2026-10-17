@@ -46,13 +46,30 @@ retains exact full-SHA human dispatch. OpenTofu initial publication requires
 this manual gate; a bot updater cannot bootstrap an absent stable baseline. Source PRs, documentation PRs, schedules,
 bot activity and local commits alone supply no artifact build approval outside
 the Pages-specific exception above.
-Tagging and publication must follow the explicitly authorized workflow scope;
+Tagging and publication must follow the explicitly authorized workflow scope (the CLI release workflow exception below is the only CLI one);
 consumer activation remains a separate explicit authorization. Successful approved
 publication includes one annotated `<bundle>/<immutable-version>` source tag,
 after verification of the final index and image aliases. Never overwrite source
 tags or create moving Git aliases. Backfills require separate explicit approval
 and independently verified deployed-image/source/workflow provenance. Do not perform
 live merges, workflow runs, builds or settings changes while authoring source.
+
+CLI release workflow exception (owner decision, recorded here). On 2026-10-17
+Werner Stein asked in chat "what about https://github.com/wstein/bundledock/tree/main/cmd
+cli release?" and, asked whether `bdock` should be released like SheetMill with a
+tag-triggered CI release or prepared locally, decided: "bdock wie smill". Read as the
+SheetMill model: an owner-pushed annotated tag `bdock/vMAJOR.MINOR.PATCH` on a `main`
+commit with a successful `CI` push run is the publication approval for that tag's CLI
+archives (linux/amd64, linux/arm64, darwin/arm64) as GitHub Release assets, built and
+published only by `.github/workflows/release.yml`; a manual run is an owner-only dry run
+that never publishes. Design and review record: `docs/design/bdock-release-workflow/`;
+owner procedure: `docs/releasing.md`. This does not authorize: merging the workflow,
+creating, moving or deleting any tag, starting a run (the owner does), `make release` or
+any other artifact build by an agent, creating the `release` environment, variables or other
+repository settings, OCI images or their tags, consumer activation, or any other tag
+namespace. Tags are never re-created after a failed or wrong release; use the next patch
+version. That the decision stands for every later tag, not only the first, is an open owner
+confirmation (spec open decision 3), not a grant. Agents never start the workflow.
 
 Third-party tools must use official stable prebuilt releases. Never build
 third-party tools from source or silently patch any tool binary or embedded
