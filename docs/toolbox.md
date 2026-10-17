@@ -234,6 +234,7 @@ networking disabled. Native smoke acceptance remains part of an approved build.
 | Typst (`typst`) | 0.15.1 | [Homepage](https://typst.app) | [Source](https://github.com/typst/typst) |
 | uv (`uv`, `uvx`) | 0.13.1 | [Homepage](https://docs.astral.sh/uv) | [Source](https://github.com/astral-sh/uv) |
 | watchexec (`watchexec`) | 2.8.0 | [Homepage](https://watchexec.github.io) | [Source](https://github.com/watchexec/watchexec) |
+| zizmor (`zizmor`) | 1.31.1 | [Homepage](https://github.com/zizmorcore/zizmor) | [Source](https://github.com/zizmorcore/zizmor) |
 <!-- END GENERATED TOOL INVENTORY -->
 
 Nushell and tmux are opt-in commands. tmux pins the published stable
@@ -468,6 +469,8 @@ and consumer activation remain unverified pending separate approval.
 `hadolint` lints Dockerfiles: `hadolint Dockerfile`. Keep a project `.hadolint.yaml` in the repository. It is an unmodified official GPL-3.0 release binary; the full upstream `LICENSE` is retained under `licenses/hadolint/`.
 
 `pinact` pins GitHub Actions and reusable workflows to commit SHAs. `pinact run` rewrites workflow files and, unless offline, queries the GitHub API (set `GITHUB_TOKEN` in the environment); `pinact run --check` reports without writing. The release archive's `third_party_licenses/` tree is not extracted (the catalog retains notices by file name only), so the dependency licenses remain available only from the official release archive.
+
+`zizmor` statically audits GitHub Actions workflows for security issues: `zizmor --offline .github/workflows`. Online audits query the GitHub API with an optional `GH_TOKEN` or `GITHUB_TOKEN` from the environment. The official Linux archives are GNU/glibc builds; the archive carries only the executable, so the upstream MIT `LICENSE` is retained separately.
 
 ## Git Large File Storage
 

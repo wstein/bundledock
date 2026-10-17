@@ -12,7 +12,7 @@ func TestUtilitiesSmokeRejectsWrongOutput(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, broken := range []string{"", "fzf", "bat", "lsd", "regctl", "actionlint", "hadolint", "pinact"} {
+	for _, broken := range []string{"", "fzf", "bat", "lsd", "regctl", "actionlint", "hadolint", "pinact", "zizmor"} {
 		t.Run("broken-"+broken, func(t *testing.T) {
 			home := t.TempDir()
 			bin := t.TempDir()
@@ -23,6 +23,7 @@ func TestUtilitiesSmokeRejectsWrongOutput(t *testing.T) {
 				"actionlint": "case \"$*\" in -version) echo '1.7.12';; *) exit 2;; esac",
 				"hadolint":   "case \"$*\" in --version) echo 'Haskell Dockerfile Linter 2.15.1';; *) exit 2;; esac",
 				"pinact":     "case \"$*\" in --version) echo 'pinact version 5.0.0';; *) exit 2;; esac",
+				"zizmor":     "case \"$*\" in --version) echo 'zizmor 1.31.1';; *) exit 2;; esac",
 				"regctl":     "case \"$*\" in version) echo 'VCSTag: v0.11.6';; --help) echo help;; 'image digest --help') echo help;; 'ref --format {{.Repository}} example.invalid/team/image:v1') echo team/image;; *) exit 2;; esac",
 			}
 			for name, body := range stubs {

@@ -1212,6 +1212,31 @@
         "licenses/pinact/LICENSE",
         "licenses/pinact/SOURCE"
       ]
+    },
+    "zizmor": {
+      "provider": "github",
+      "repository": "zizmorcore/zizmor",
+      "tag_prefix": "v",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "x86_64",
+        "arm64": "aarch64"
+      },
+      "asset": "zizmor-{arch}-unknown-linux-gnu.tar.gz",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "tar.gz",
+        "members": {
+          "zizmor": "bin/zizmor"
+        }
+      },
+      "notices": [
+        "licenses/zizmor/LICENSE",
+        "licenses/zizmor/SOURCE"
+      ]
     }
   }
 }

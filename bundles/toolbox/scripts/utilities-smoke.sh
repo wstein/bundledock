@@ -4,6 +4,7 @@ fzf --version
 bat --version
 lsd --version
 regctl version
+case "$(zizmor --version 2>&1)" in *[0-9].[0-9]*.[0-9]*) ;; *) echo "unexpected zizmor version output" >&2; exit 1 ;; esac
 case "$(pinact --version 2>&1)" in *[0-9].[0-9]*.[0-9]*) ;; *) echo "unexpected pinact version output" >&2; exit 1 ;; esac
 case "$(hadolint --version 2>&1)" in *[0-9].[0-9]*.[0-9]*) ;; *) echo "unexpected hadolint version output" >&2; exit 1 ;; esac
 case "$(actionlint -version 2>&1)" in *[0-9].[0-9]*.[0-9]*) ;; *) echo "unexpected actionlint version output" >&2; exit 1 ;; esac
