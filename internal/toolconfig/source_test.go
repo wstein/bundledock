@@ -197,6 +197,18 @@ func TestSourceBlockValidation(t *testing.T) {
 		{"license expression closing before opening", func(s *Source) { s.Licenses = []string{"MIT) OR (Apache-2.0"} }},
 		{"license expression closing after an operator", func(s *Source) { s.Licenses = []string{"MIT OR) Apache-2.0"} }},
 		{"license expression opening after an identifier", func(s *Source) { s.Licenses = []string{"MIT (OR Apache-2.0)"} }},
+		{"license expression closing after an operator inside parentheses", func(s *Source) { s.Licenses = []string{"(MIT OR) Apache-2.0"} }},
+		{"license expression with OR in identifier position", func(s *Source) { s.Licenses = []string{"OR AND MIT"} }},
+		{"license expression with WITH in identifier position", func(s *Source) { s.Licenses = []string{"WITH AND MIT"} }},
+		{"tarball too long", func(s *Source) {
+			s.Upstream.Tarball = "https://github.com/a/b/archive/{lock_version}/" + strings.Repeat("x", maxSourceText-25)
+		}},
+		{"tarball with a dot path segment", func(s *Source) { s.Upstream.Tarball = "https://github.com/a/./{lock_version}.tar.gz" }},
+		{"tarball with an encoded C1 control", func(s *Source) { s.Upstream.Tarball = "https://github.com/a/b/archive/{lock_version}%C2%85.tar.gz" }},
+		{"tarball with an encoded bidi override", func(s *Source) { s.Upstream.Tarball = "https://github.com/a/b/archive/{lock_version}%E2%80%AE.tar.gz" }},
+		{"tarball with an encoded invalid UTF-8 byte", func(s *Source) { s.Upstream.Tarball = "https://github.com/a/b/archive/{lock_version}%FF.tar.gz" }},
+		{"tarball with a double encoded newline", func(s *Source) { s.Upstream.Tarball = "https://github.com/a/b/archive/{lock_version}%250a.tar.gz" }},
+		{"tarball with a triple encoded newline", func(s *Source) { s.Upstream.Tarball = "https://github.com/a/b/archive/{lock_version}%25250a.tar.gz" }},
 		{"license expression without an operator", func(s *Source) { s.Licenses = []string{"MIT Apache-2.0"} }},
 		{"tarball on an unlisted host", func(s *Source) { s.Upstream.Tarball = "https://example.com/a/b/{lock_version}.tar.gz" }},
 		{"tarball on an IP literal", func(s *Source) { s.Upstream.Tarball = "https://140.82.112.3/a/b/{lock_version}.tar.gz" }},
@@ -317,5 +329,19 @@ func TestCatalogRefusesPrefixRelatedProductNames(t *testing.T) {
 	err = c.Validate()
 	if err == nil || !strings.Contains(err.Error(), "product") {
 		t.Fatalf("accepted prefix-related product names: %v", err)
+	}
+}
+
+func TestSourceBlockAcceptsVersionOnlyTemplates(t *testing.T) {
+	for _, tarball := range []string{
+		"https://static.crates.io/crates/x/x-{version}.crate",
+		"https://github.com/a/b/archive/refs/tags/{lock_version}.tar.gz",
+		"https://api.github.com/repos/a/b/tarball/v{version}",
+	} {
+		s := validSource()
+		s.Upstream.Tarball = tarball
+		if err := withSource(t, "shellcheck", s); err != nil {
+			t.Errorf("%s: %v", tarball, err)
+		}
 	}
 }
