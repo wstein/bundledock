@@ -1,7 +1,6 @@
 package toolconfig
 
 import (
-	"strings"
 	"testing"
 )
 
@@ -43,25 +42,18 @@ func TestSourceVersionShape(t *testing.T) {
 	}
 }
 
-func TestCopyleftPackagesMustYieldANumericVersion(t *testing.T) {
-	copyleft := func(regex string) *Source {
-		s := validSource()
-		s.VersionRegex = regex
-		return s
-	}
-	if err := withSource(t, "lychee", copyleft("")); err == nil || !strings.Contains(err.Error(), "version-shape") {
-		t.Fatalf("lychee-v0.24.2 accepted without a regex: %v", err)
-	}
-	if err := withSource(t, "lychee", copyleft(`^lychee-v([0-9.]+)$`)); err != nil {
-		t.Fatalf("regex rejected: %v", err)
-	}
-	if err := withSource(t, "tmux", copyleft("")); err == nil || !strings.Contains(err.Error(), "version-shape") {
-		t.Fatalf("tmux v3.7c accepted: %v", err)
-	}
-	// Classes that need no mirror release are not blocked by the version shape.
-	for _, s := range []*Source{{Obligation: "undetermined"}, {Obligation: "none", Basis: "declared", Licenses: []string{"MIT"}}} {
-		if err := withSource(t, "tmux", s); err != nil {
-			t.Fatalf("%s blocked: %v", s.Obligation, err)
+// version-shape is emitted by pin and plan (spec.md, failure modes), never by
+// catalog validation: check stays report-only until WI8, so a lock version
+// without a numeric shape must not make Load, upgrade or publish fail.
+func TestValidateDoesNotEnforceVersionShape(t *testing.T) {
+	for _, name := range []string{"lychee", "tmux"} {
+		if err := withSource(t, name, validSource()); err != nil {
+			t.Fatalf("%s blocked by version shape: %v", name, err)
 		}
+	}
+	s := validSource()
+	s.VersionRegex = `^never-matches-([0-9.]+)$`
+	if err := withSource(t, "shellcheck", s); err != nil {
+		t.Fatalf("a regex that does not match the lock version blocked validation: %v", err)
 	}
 }
