@@ -48,4 +48,28 @@ check, any workflow, any tag operation. One scratch `go build -o` to a temporary
 
 ## Review rounds
 
-(See below; each round is an independent Opus review of a `git archive` extraction.)
+Each round is an independent Opus review (subagent type general-purpose) of a `git archive`
+extraction, read-only on the worktree, executing checks in a private scratch directory.
+
+### Round 1 (two reviewers on 96e2be3): both NOT READY, no run-time logic bug
+
+Runtime reviewer: every offline attack on verify/publish failed closed (wrong, lightweight,
+off-main, image and pre-release tags, existing/draft release, 404 vs 502, moved tag, actor
+mismatch); real double builds of all three platforms were byte-identical; 34 of 70 fresh
+mutants survived the tests. Policy reviewer: the general approval sentences contradicted the
+exception.
+
+| # | Sev | Finding | Resolution |
+| --- | --- | --- | --- |
+| 1 | high | AGENTS.md paragraphs 2 and 4 and CONTRIBUTING still demanded per-operation approval for all CLI release builds | Exception named beside Pages in all three places |
+| 2 | med | No golden change detector; 34/70 mutants alive | `testdata/release.golden.json` (change detector only), more rules |
+| 3 | med | Gate variables (`n`, `existing`, `remote`...) re-assignable; `update-ref` could redirect main | one assignment per variable, `:-`, `update-ref` and other ref edits banned |
+| 4 | med | Stale CI statement in development.md; security-reporting gap dropped wrongly | corrected; open decision 7 |
+| 5 | med | Exception paragraph contradicted itself on later tags | reworded: the grant is publication on the owner's tag; re-confirmation is open decision 3 |
+| 6 | low | `fail-fast` default passed; publish counted archives by glob only | `*bool` must be false; exact names checked in publish |
+| 7 | low | Script test gaps (shasum fallback, notes baseline/sort/pre-release, vet `\|\| true`) | tests added |
+| 8 | low | 32 tags is 16; placeholder section; failure handling; badge label; missing open decisions | fixed or added |
+| 9 | info | `release.sh` clears `GOFLAGS`; RELEASE_DIR inside the checkout makes the tree dirty | documented in the script header |
+
+Harmless survivors (fail closed at run time or equivalent) were not chased individually.
+
