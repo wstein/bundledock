@@ -129,7 +129,7 @@ describes the desired source inventory; published images retain their own pins:
 
 | Use | Tools |
 | --- | --- |
-| GitHub workflows | [GitHub CLI (`gh`)](https://github.com/cli/cli) |
+| GitHub workflows | [GitHub CLI (`gh`)](https://github.com/cli/cli), [`gh stack` extension](docs/toolbox.md#github-cli-extension-gh-stack) |
 | Search and structured data | [ripgrep (`rg`)](https://github.com/BurntSushi/ripgrep), [fd (`fd`, `fdfind`)](https://github.com/sharkdp/fd), [ast-grep](https://github.com/ast-grep/ast-grep), [jq](https://github.com/jqlang/jq), [yq](https://github.com/mikefarah/yq) |
 | Interactive filtering and file viewing | [fzf](https://github.com/junegunn/fzf), [bat](https://github.com/sharkdp/bat), [lsd](https://github.com/lsd-rs/lsd), [zoxide](https://github.com/ajeetdsouza/zoxide) |
 | Markdown preview | [Leaf](https://github.com/RivoLink/leaf) |
