@@ -1,7 +1,7 @@
 # Contract: `bdock tools sources check`
 
 ```text
-bdock tools sources check [--bundle toolbox] [--enforce] [--bundle-dir DIR] [--json]
+bdock tools sources check [--bundle toolbox] [--enforce] [--online] [--bundle-dir DIR] [--json]
 ```
 
 Offline; starts no process. Exit statuses as in the [command contract](sources-command.md#exit-status):
@@ -9,8 +9,9 @@ Offline; starts no process. Exit statuses as in the [command contract](sources-c
 
 ## Registry check (default)
 
-Reads the catalog, `packages.lock.json`, `sources.lock.json` and `licenses/*/{SOURCE,SOURCE-MIRROR}`. For
-every package of obligation `source-offer` or `file-level-source` and every locked version (both
+Reads the catalog, `packages.lock.json`, `sources.lock.json` and `licenses/*/{SOURCE,SOURCE-MIRROR}`.
+The scope is every catalog package; each code states its own narrower scope in the table (the mirror codes
+apply to packages of obligation `source-offer` or `file-level-source` and every locked version, both
 architectures):
 
 | Finding code | Condition | Level |
@@ -24,10 +25,20 @@ architectures):
 | `undetermined-package` | `obligation: undetermined` | warning (counted in the summary) |
 | `registry-orphan` | registry entry for a version no longer in the lock | informational (history allowed) |
 
+## Online check (`--online`)
+
+Network, read-only GETs to the mirror's release API; exits 3 (`network-disabled`) under
+`BDOCK_SOURCES_OFFLINE=1`. For every registry entry used by the lock: the release exists, is not a draft,
+its asset digests equal the registry, and the manifest `component` and `version` match. Codes
+`release-not-published`, `release-hash-mismatch` (spec failure table). The publication gate for a bundle
+runs `check --enforce --online`; `make check` never uses `--online`.
+
 ## Bundle check (`--bundle-dir`)
 
-Verifies a directory with the two bundle files (and, if present, a `SHA256SUMS` made by the release
-process, which must list every file of the directory and only those). Checks: manifest schema and the
+Verifies a directory with the two bundle files. Allowed extras: `SHA256SUMS` and `build-manifest.json`
+made by the release process (when `SHA256SUMS` is present it must list every file of the directory and only
+those). Failures use the codes `bundle-hash-mismatch`, `bundle-file-missing`, `bundle-file-extra`,
+`bundle-manifest-mismatch`, `sums-mismatch` of the spec failure table. Checks: manifest schema and the
 [limits](../spec.md#limits) (byte caps first); `asset_sha256` and `tar_sha256`; every `files[]` entry
 exists with its hash and size and no other entry exists, apart from `MANIFEST.json`, which is checked
 by parsing and comparing its non-standalone fields to the standalone manifest; every `dependencies[]` entry
