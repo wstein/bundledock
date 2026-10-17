@@ -36,14 +36,14 @@ Amendments recorded with WI1 (`internal/toolconfig`, implemented and tested ther
   list. The list is sorted and unique.
 - `upstream.tarball` must contain `{version}` or `{lock_version}`, no other placeholder, and after expansion must be
   https with a first-hop host from the [fetch hosts](#fetch-hosts) table and no userinfo, port, query (not even an
-  empty `?`), fragment (not even an empty `#`), backslash, space, `..` segment, control or format character
-  (bidi overrides, zero width) or percent-encoded control byte. The catalog check only sees a sample expansion:
+  empty `?`), fragment (not even an empty `#`), backslash, space, `.` or `..` segment, `%25`, or control or format
+  character (bidi overrides, zero width), literal or percent-encoded (the decoded path is checked). The catalog check only sees a sample expansion:
   `pin` and `plan` (WI5, WI6) must validate the URL again after expanding it with the real lock version, and must
   not fetch `upstream.repository` without its own host check.
 - Free-form text is bounded: at most 64 entries in `licenses`, `excluded` and `static_system_libs`, each at most 200
   bytes, `excluded` and `static_system_libs` without duplicates; `version_regex` at most 200 bytes.
-- `version_regex` has full-match semantics: the pattern must match the whole lock version (an unanchored pattern
-  cannot drop a prerelease suffix). `version-shape` is raised by `pin` and `plan` through
+- `version_regex` has full-match semantics: the pattern is applied as `^(?:pattern)$`, so it must match the whole lock version (an unanchored
+  pattern cannot drop a prerelease suffix) and alternatives are searched for a full match. `version-shape` is raised by `pin` and `plan` through
   `Package.SourceVersion`; catalog validation only checks that the pattern compiles with exactly one capture group.
 
 Example (hadolint; the tarball is the GitHub API tarball that PR #119 pins):
