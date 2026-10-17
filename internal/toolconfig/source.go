@@ -147,16 +147,18 @@ func validSourceTarball(template string) bool {
 	// A percent-encoded percent sign (%25) is refused outright: it is the way
 	// to smuggle an encoded control byte past a single decode. Other encoded
 	// control bytes are caught by the check of the decoded path below.
-	if !validSourceText(expanded) || strings.ContainsAny(expanded, "{}\\ ?#") || strings.Contains(expanded, "%25") {
+	if !strings.HasPrefix(expanded, "https://") || !validSourceText(expanded) || strings.ContainsAny(expanded, "{}\\ ?#") || strings.Contains(expanded, "%25") {
 		return false
 	}
 	u, err := url.Parse(expanded)
 	if err != nil || u.Scheme != "https" || u.User != nil || !slices.Contains(SourceFetchHosts, u.Host) {
 		return false
 	}
-	// The decoded path gets the same text rules (encoded C1 and format
-	// characters, invalid UTF-8).
-	if u.Path != "" && !validSourceText(u.Path) || !utf8.ValidString(u.Path) {
+	// The decoded path gets the same rules as the literal text: no control or
+	// format characters (also encoded C1), no invalid UTF-8, no space, no
+	// no-break space, backslash, question mark, hash or brace, and no empty
+	// segment. A trailing slash is accepted.
+	if !validSourceText(u.Path) || !utf8.ValidString(u.Path) || strings.ContainsAny(u.Path, "{}\\ \u00a0?#") || strings.Contains(u.Path, "//") {
 		return false
 	}
 	for _, segment := range strings.Split(u.Path, "/") {
