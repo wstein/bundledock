@@ -471,7 +471,7 @@ and consumer activation remain unverified pending separate approval.
 
 `actionlint` lints GitHub Actions workflow files statically: `actionlint .github/workflows/ci.yml`. It runs `shellcheck` and `pyflakes` only when they are on `PATH`. It needs no network access or user configuration.
 
-`hadolint` lints Dockerfiles: `hadolint Dockerfile`. Keep a project `.hadolint.yaml` in the repository. It is an unmodified official GPL-3.0 release binary; the full upstream `LICENSE` is retained under `licenses/hadolint/`.
+`hadolint` lints Dockerfiles: `hadolint Dockerfile`. Keep a project `.hadolint.yaml` in the repository. It is an unmodified official GPL-3.0 release binary; the full upstream `LICENSE`, the upstream `ThirdPartyNotices.txt` and a corresponding-source record (tarball URL and SHA256) are retained under `licenses/hadolint/`. The static binary links GPL-3.0-only ShellCheck, GPL-3.0-or-later language-docker and GPL-2.0-only HsYAML. **Owner acceptance required before publication:** the combined GPL license mix (including GPL-2.0-only HsYAML) has not been decided and must be accepted by the repository owner before any publication.
 
 `pinact` pins GitHub Actions and reusable workflows to commit SHAs. `pinact run` rewrites workflow files and, unless offline, queries the GitHub API (set `GITHUB_TOKEN` in the environment); `pinact run --check` reports without writing. The release archive's `third_party_licenses/` tree is not extracted (the catalog retains notices by file name only), so the dependency licenses remain available only from the official release archive.
 
