@@ -399,10 +399,15 @@ func (c Config) validate(strict bool) error {
 		if len(p.Install.ArchiveNoticeTrees) > 0 && p.Install.Preserve {
 			return fmt.Errorf("notice trees require a non-preserved recipe for %s", name)
 		}
+		if len(p.Install.ArchiveNoticeTrees) > 0 && p.Install.Kind != "tar.gz" && p.Install.Kind != "tar.xz" {
+			return fmt.Errorf("notice trees require a tar recipe for %s", name)
+		}
+		seenTrees := map[string]bool{}
 		for _, tree := range p.Install.ArchiveNoticeTrees {
-			if !validPath(tree) {
-				return fmt.Errorf("unsafe notice tree for %s", name)
+			if !validPath(tree) || seenTrees[tree] {
+				return fmt.Errorf("unsafe or duplicate notice tree for %s", name)
 			}
+			seenTrees[tree] = true
 		}
 		var first string
 		for _, arch := range []string{"amd64", "arm64"} {
