@@ -12,14 +12,18 @@ func TestUtilitiesSmokeRejectsWrongOutput(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, broken := range []string{"", "fzf", "bat", "lsd", "regctl", "actionlint", "hadolint", "pinact", "zizmor", "cosign", "git-cliff", "zoxide", "difft", "jsonschema-cli", "fail:actionlint", "fail:hadolint", "fail:pinact", "fail:zizmor", "fail:cosign", "fail:git-cliff", "fail:zoxide", "fail:difft", "fail:jsonschema-cli", "loose:zizmor", "dotted:actionlint", "dotted:hadolint", "dotted:pinact", "dotted:zizmor", "dotted:cosign", "dotted:git-cliff", "dotted:zoxide", "dotted:difft", "dotted:jsonschema-cli", "prefixed:actionlint", "prefixed:hadolint", "prefixed:pinact", "prefixed:zizmor", "prefixed:cosign", "prefixed:git-cliff", "prefixed:zoxide", "prefixed:difft", "prefixed:jsonschema-cli", "keyword:pinact"} {
+	for _, broken := range []string{"", "fzf", "bat", "lsd", "regctl", "actionlint", "hadolint", "pinact", "zizmor", "cosign", "git-cliff", "zoxide", "difft", "jsonschema-cli", "gh-stack", "gh", "fail:gh-stack", "dotted:gh-stack", "prefixed:gh-stack", "fail:actionlint", "fail:hadolint", "fail:pinact", "fail:zizmor", "fail:cosign", "fail:git-cliff", "fail:zoxide", "fail:difft", "fail:jsonschema-cli", "loose:zizmor", "dotted:actionlint", "dotted:hadolint", "dotted:pinact", "dotted:zizmor", "dotted:cosign", "dotted:git-cliff", "dotted:zoxide", "dotted:difft", "dotted:jsonschema-cli", "prefixed:actionlint", "prefixed:hadolint", "prefixed:pinact", "prefixed:zizmor", "prefixed:cosign", "prefixed:git-cliff", "prefixed:zoxide", "prefixed:difft", "prefixed:jsonschema-cli", "keyword:pinact"} {
 		t.Run("broken-"+broken, func(t *testing.T) {
 			home := t.TempDir()
-			bin := t.TempDir()
+			root := t.TempDir()
+			bin := filepath.Join(root, "bin")
+			if err := os.MkdirAll(filepath.Join(root, "libexec"), 0755); err != nil || os.MkdirAll(bin, 0755) != nil {
+				t.Fatal("cannot create toolbox layout")
+			}
 			versionEcho := map[string]string{
 				"actionlint": "printf '1.7.12\\ninstalled by downloading from release page\\nbuilt with go1.25.0 compiler for linux/amd64\\n'", "hadolint": "echo 'Haskell Dockerfile Linter 2.15.1'", "pinact": "echo 'pinact version 5.0.0'",
 				"zizmor": "echo 'zizmor 1.31.1'", "cosign": "echo 'GitVersion:    v3.1.3'", "git-cliff": "echo 'git-cliff 2.14.2'",
-				"zoxide": "echo 'zoxide 0.10.0'", "difft": "echo 'Difftastic 0.71.0'", "jsonschema-cli": "echo 'Version: 0.58.5'",
+				"zoxide": "echo 'zoxide 0.10.0'", "difft": "echo 'Difftastic 0.71.0'", "jsonschema-cli": "echo 'Version: 0.58.5'", "gh-stack": "echo 'gh stack version 0.2.1'",
 			}
 			stubs := map[string]string{
 				"fzf":            "case \"$*\" in --version) echo 0.74.5;; '--filter beta') cat >/dev/null; echo beta;; *) exit 2;; esac",
@@ -34,6 +38,8 @@ func TestUtilitiesSmokeRejectsWrongOutput(t *testing.T) {
 				"zoxide":         "case \"$*\" in --version) echo 'zoxide 0.10.0';; *) exit 2;; esac",
 				"difft":          "case \"$*\" in --version) echo 'Difftastic 0.71.0';; *) exit 2;; esac",
 				"jsonschema-cli": "case \"$*\" in --version) echo 'Version: 0.58.5';; *) exit 2;; esac",
+				"gh":             "case \"$*\" in 'stack --version') exec \"$XDG_DATA_HOME/gh/extensions/gh-stack/gh-stack\" --version;; *) exit 2;; esac",
+				"gh-stack":       "case \"$*\" in --version) echo 'gh stack version 0.2.1';; *) exit 2;; esac",
 				"regctl":         "case \"$*\" in version) echo 'VCSTag: v0.11.6';; --help) echo help;; 'image digest --help') echo help;; 'ref --format {{.Repository}} example.invalid/team/image:v1') echo team/image;; *) exit 2;; esac",
 			}
 			for name, body := range stubs {
@@ -56,12 +62,17 @@ func TestUtilitiesSmokeRejectsWrongOutput(t *testing.T) {
 					// A glibc loader error contains a dotted number but is no version banner.
 					body = "echo '/lib/libc.so.6: version `GLIBC_2.34.0` not found' >&2; exit 1"
 				}
-				if err := os.WriteFile(filepath.Join(bin, name), []byte("#!/bin/sh\nset -eu\n"+body+"\n"), 0755); err != nil {
+				dir := bin
+				if name == "gh-stack" {
+					// The extension binary lives at libexec/gh-stack, beside bin.
+					dir = filepath.Join(root, "libexec")
+				}
+				if err := os.WriteFile(filepath.Join(dir, name), []byte("#!/bin/sh\nset -eu\n"+body+"\n"), 0755); err != nil {
 					t.Fatal(err)
 				}
 			}
 			cmd := exec.Command("sh", script)
-			cmd.Env = append(os.Environ(), "HOME="+home, "PATH="+bin+":"+os.Getenv("PATH"))
+			cmd.Env = append(os.Environ(), "HOME="+home, "BUNDLEDOCK_TOOLBOX="+root, "PATH="+bin+":"+os.Getenv("PATH"))
 			out, err := cmd.CombinedOutput()
 			if broken == "" && err != nil {
 				t.Fatalf("valid synthetic tools failed: %v\n%s", err, out)
