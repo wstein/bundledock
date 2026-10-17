@@ -507,20 +507,24 @@ toolbox=/opt/bundledock/toolbox
 src="$toolbox/libexec/gh-stack"
 d="${XDG_DATA_HOME:-$HOME/.local/share}/gh/extensions/gh-stack"
 if [ ! -x "$src" ]; then
-	:   # older toolbox image without gh-stack: nothing to link
-elif [ -e "$d/gh-stack" ] || [ -L "$d/gh-stack" ] || [ -e "$d/manifest.yml" ]; then
+	echo "gh-stack not found at $src (older toolbox image or wrong toolbox value); nothing linked" >&2
+elif [ -L "$d/gh-stack" ] && [ ! -e "$d/gh-stack" ]; then
+	echo "dangling symlink at $d/gh-stack; leaving it untouched" >&2
+elif [ -e "$d/gh-stack" ] || [ -e "$d/manifest.yml" ]; then
 	:   # an extension is already installed here: leave it untouched
 elif [ -L "$d" ] && [ ! -e "$d" ]; then
 	echo "dangling symlink at $d; leaving it untouched" >&2
 else
 	mkdir -p "$d" && ln -sfn "$src" "$d/gh-stack"   # also repairs an empty or partial directory
 fi
-gh stack --version || true   # optional check; do not fail a seed on it
+# Optional check. Run it only if linked: gh offers to install a missing official
+# extension from upstream when it finds none, so also disable prompts and stdin.
+[ -x "$d/gh-stack" ] && GH_PROMPT_DISABLED=1 gh stack --version </dev/null || true
 ```
 
 No `manifest.yml` is needed: `gh` treats the directory as a local extension. It
-is therefore not upgradable through `gh`: `gh extension upgrade --all` skips it
-silently, `gh extension upgrade stack` exits 1 with "unable to retrieve latest
+is therefore not upgradable through `gh`: `gh extension upgrade --all` prints
+`[stack]: already up to date` and exits 0 without checking, `gh extension upgrade stack` exits 1 with "unable to retrieve latest
 version", and `gh extension list` shows no version. The version follows the
 toolbox lock; upgrade through BundleDock. The guard leaves an existing install,
 such as a user's own `gh extension install github/gh-stack`, untouched. A
