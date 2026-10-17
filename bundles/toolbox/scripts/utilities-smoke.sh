@@ -12,7 +12,7 @@ expect_version() {
 	out=$("$@") || { echo "$1 version probe failed" >&2; exit 1; }
 	printf '%s\n' "$out" | grep -Eq "$pattern" || { echo "unexpected $1 version output" >&2; exit 1; }
 }
-expect_version '^jsonschema-cli [0-9]+\.[0-9]+\.[0-9]+' jsonschema-cli --version
+expect_version '^Version: [0-9]+\.[0-9]+\.[0-9]+' jsonschema-cli --version
 expect_version '^Difftastic [0-9]+\.[0-9]+\.[0-9]+' difft --version
 expect_version '^zoxide [0-9]+\.[0-9]+\.[0-9]+' zoxide --version
 expect_version '^git-cliff [0-9]+\.[0-9]+\.[0-9]+' git-cliff --version
