@@ -272,6 +272,13 @@ func (c Config) validate(strict bool) error {
 	if len(c.Desired) != len(c.Catalog.Packages) || len(c.Lock.Platforms) != 2 {
 		return fmt.Errorf("desired tools, catalog and both lock architectures must agree")
 	}
+	names := make([]string, 0, len(c.Catalog.Packages))
+	for name := range c.Catalog.Packages {
+		names = append(names, name)
+	}
+	if err := ValidateProductNames(names); err != nil {
+		return err
+	}
 	for name, p := range c.Catalog.Packages {
 		constraint, ok := c.Desired[name]
 		if !ok {
