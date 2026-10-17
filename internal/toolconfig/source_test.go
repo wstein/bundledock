@@ -203,6 +203,19 @@ func TestSourceBlockValidation(t *testing.T) {
 		{"tarball too long", func(s *Source) {
 			s.Upstream.Tarball = "https://github.com/a/b/archive/{lock_version}/" + strings.Repeat("x", maxSourceText-25)
 		}},
+		{"tarball with an upper case scheme", func(s *Source) { s.Upstream.Tarball = "HTTPS://github.com/a/b/archive/{lock_version}.tar.gz" }},
+		{"tarball with an empty path segment", func(s *Source) { s.Upstream.Tarball = "https://github.com/a//b/archive/{lock_version}.tar.gz" }},
+		{"tarball with a leading empty path segment", func(s *Source) { s.Upstream.Tarball = "https://github.com//a/b/archive/{lock_version}.tar.gz" }},
+		{"tarball with an encoded slash pair", func(s *Source) { s.Upstream.Tarball = "https://github.com/a/b/archive/x%2F%2Fy/{lock_version}.tar.gz" }},
+		{"tarball with an encoded space", func(s *Source) { s.Upstream.Tarball = "https://github.com/a/b/archive/x%20y/{lock_version}.tar.gz" }},
+		{"tarball with an encoded backslash", func(s *Source) { s.Upstream.Tarball = "https://github.com/a/b/archive/x%5Cy/{lock_version}.tar.gz" }},
+		{"tarball with an encoded question mark", func(s *Source) { s.Upstream.Tarball = "https://github.com/a/b/archive/x%3Fy/{lock_version}.tar.gz" }},
+		{"tarball with an encoded hash", func(s *Source) { s.Upstream.Tarball = "https://github.com/a/b/archive/x%23y/{lock_version}.tar.gz" }},
+		{"tarball with an encoded brace", func(s *Source) {
+			s.Upstream.Tarball = "https://github.com/a/b/archive/x%7Bversion%7D/{lock_version}.tar.gz"
+		}},
+		{"tarball with an encoded no-break space", func(s *Source) { s.Upstream.Tarball = "https://github.com/a/b/archive/x%C2%A0y/{lock_version}.tar.gz" }},
+		{"tarball with a literal no-break space", func(s *Source) { s.Upstream.Tarball = "https://github.com/a/b/archive/x\u00a0y/{lock_version}.tar.gz" }},
 		{"version_regex with an unterminated quote", func(s *Source) { s.VersionRegex = `([0-9.]+)\Q` }},
 		{"tarball with a dot path segment", func(s *Source) { s.Upstream.Tarball = "https://github.com/a/./{lock_version}.tar.gz" }},
 		{"tarball with an encoded C1 control", func(s *Source) { s.Upstream.Tarball = "https://github.com/a/b/archive/{lock_version}%C2%85.tar.gz" }},
@@ -338,6 +351,26 @@ func TestSourceBlockAcceptsVersionOnlyTemplates(t *testing.T) {
 		"https://static.crates.io/crates/x/x-{version}.crate",
 		"https://github.com/a/b/archive/refs/tags/{lock_version}.tar.gz",
 		"https://api.github.com/repos/a/b/tarball/v{version}",
+	} {
+		s := validSource()
+		s.Upstream.Tarball = tarball
+		if err := withSource(t, "shellcheck", s); err != nil {
+			t.Errorf("%s: %v", tarball, err)
+		}
+	}
+}
+
+// Representative templates for every fetch host, including the Go proxy's
+// case-escaping (!) and @v, must stay valid.
+func TestSourceBlockAcceptsRealTarballShapes(t *testing.T) {
+	for _, tarball := range []string{
+		"https://static.crates.io/crates/serde/serde-{version}.crate",
+		"https://proxy.golang.org/github.com/!burnt!sushi/toml/@v/{lock_version}.zip",
+		"https://proxy.golang.org/golang.org/x/mod/@v/{lock_version}.mod",
+		"https://hackage.haskell.org/package/HsYAML-{version}/HsYAML-{version}.tar.gz",
+		"https://codeberg.org/owner/repo/archive/{lock_version}.tar.gz",
+		"https://api.github.com/repos/hadolint/hadolint/tarball/{lock_version}",
+		"https://github.com/owner/repo/releases/download/{lock_version}/repo-{version}.tar.gz",
 	} {
 		s := validSource()
 		s.Upstream.Tarball = tarball
