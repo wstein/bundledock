@@ -463,11 +463,6 @@ func (c Config) validate(strict bool) error {
 					return fmt.Errorf("invalid Helix release URL for %s", arch)
 				}
 			}
-			if strict && p.Source != nil && (p.Source.Obligation == "source-offer" || p.Source.Obligation == "file-level-source") {
-				if _, err := p.SourceVersion(s.Version); err != nil {
-					return fmt.Errorf("%s/%s: %w", arch, name, err)
-				}
-			}
 			v, err := p.Version(s.Version)
 			if err != nil || strict && !constraint.Contains(v) {
 				return fmt.Errorf("%s/%s version %q outside desired range", arch, name, s.Version)
