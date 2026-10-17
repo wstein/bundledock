@@ -95,8 +95,8 @@ the 1.25 minimum, see `docs/architecture.md`).
 
 ## D8 Environment and draft
 
-`environment: release` follows the SheetMill model; the tag is the approval and the workflow
-works unprotected. `BDOCK_RELEASE_DRAFT=true` makes the release a draft for a manual final
+`environment: release` follows the SheetMill model; the owner decided on no reviewer rule, so the
+workflow runs unprotected and the pushed tag publishes immediately. `BDOCK_RELEASE_DRAFT=true` makes the release a draft for a manual final
 look. The workflow creates neither the environment nor the variable.
 
 ## D9 Test dependency

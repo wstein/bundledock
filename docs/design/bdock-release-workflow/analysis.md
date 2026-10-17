@@ -111,3 +111,17 @@ six workflow mutants). The tag ruleset stays a setting the owner changes, docume
 `docs/releasing.md`. `SECURITY.md` is postponed by the owner (open decision 7 stays). The question
 whether the decision covers later tags is still open with the owner and is not recorded as a
 standing approval in `AGENTS.md`.
+
+### Round 4 (coordinator review of e0f36d8: NOT CLEAR, 4 findings) and owner decisions
+
+1. medium: `monotonic` failed open on empty or garbled input. Fixed: the listing must contain the
+   pushed tag itself exactly; empty, garbage, CRLF and leading-space inputs fail (tests added).
+2. low: pre-releases ignored is now pinned by a test (`1.0.0` over `2.0.0-rc1`).
+3. low: `publish` repeats the listing and the check with the write token (sees drafts); rules and
+   mutants added, golden regenerated.
+4. low: the docs state that re-pushing a version whose tag was deleted and that has no release
+   passes, and that only the tag ruleset guards against it.
+
+Owner decisions applied, as in SheetMill PR 49: no required-reviewer rule on the `release`
+environment (a Known limitation records that an owner tag push publishes immediately), and no
+standing approval (every tag and release needs the owner's explicit approval each time).
