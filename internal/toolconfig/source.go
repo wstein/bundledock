@@ -171,3 +171,25 @@ func validateSourceRecipe(name string, r *SourceRecipe) error {
 	}
 	return nil
 }
+
+var sourceProductName = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{0,31}$`)
+
+// ValidateProductNames enforces the Spec 026 product rules for the catalog
+// package names, which are the mirror components: every name is a valid product
+// id and no release tag prefix "<a>-v" is a prefix of another "<b>-v", so that
+// components such as gh and gh-v2 could not coexist.
+func ValidateProductNames(names []string) error {
+	for _, name := range names {
+		if !sourceProductName.MatchString(name) {
+			return fmt.Errorf("package name %q is not a valid product name", name)
+		}
+	}
+	for _, a := range names {
+		for _, b := range names {
+			if a != b && strings.HasPrefix(b+"-v", a+"-v") {
+				return fmt.Errorf("product tag prefixes overlap: %s-v is a prefix of %s-v", a, b)
+			}
+		}
+	}
+	return nil
+}

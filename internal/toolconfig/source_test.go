@@ -196,3 +196,51 @@ func TestSourceBlockObligationRules(t *testing.T) {
 		})
 	}
 }
+
+func TestSourceProductNames(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		names []string
+		ok    bool
+	}{
+		{"plain names", []string{"fd", "rg", "git-lfs", "jsonschema-cli", "uv"}, true},
+		{"digits first", []string{"7zip"}, true},
+		{"longest allowed", []string{strings.Repeat("a", 32)}, true},
+		{"too long", []string{strings.Repeat("a", 33)}, false},
+		{"empty", []string{""}, false},
+		{"upper case", []string{"Fish"}, false},
+		{"underscore", []string{"git_lfs"}, false},
+		{"dot", []string{"a.b"}, false},
+		{"leading hyphen", []string{"-fd"}, false},
+		{"slash", []string{"a/b"}, false},
+		{"-v prefix of another", []string{"gh", "gh-v2"}, false},
+		{"-v prefix in either order", []string{"gh-v2", "gh"}, false},
+		{"hyphen without v is not a prefix", []string{"gh", "gh-cli", "gh-x"}, true},
+		{"shared stem only", []string{"git", "git-lfs", "git-cliff"}, true},
+		{"v inside a longer word", []string{"git", "git-value"}, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if err := ValidateProductNames(tc.names); (err == nil) != tc.ok {
+				t.Fatalf("ok=%v, err=%v", tc.ok, err)
+			}
+		})
+	}
+}
+
+func TestCatalogRefusesPrefixRelatedProductNames(t *testing.T) {
+	c, err := Load("../../bundles/toolbox")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// The real catalog satisfies the rule; a clone named gh-v2 breaks it.
+	c.Catalog.Packages["gh-v2"] = c.Catalog.Packages["gh"]
+	c.Desired["gh-v2"] = c.Desired["gh"]
+	for _, arch := range []string{"amd64", "arm64"} {
+		c.Lock.Platforms[arch]["gh-v2"] = c.Lock.Platforms[arch]["gh"]
+	}
+	c.Bind()
+	err = c.Validate()
+	if err == nil || !strings.Contains(err.Error(), "product") {
+		t.Fatalf("accepted prefix-related product names: %v", err)
+	}
+}
