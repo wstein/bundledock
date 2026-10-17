@@ -57,7 +57,9 @@ Whether "bdock wie smill" is a standing approval for every later tag is open dec
   kind; on a tag push: fetch the tag object explicitly (forced refspec, `--no-tags`), require
   an annotated `bdock/v…` tag whose commit is an ancestor of `origin/main` and equals
   `GITHUB_SHA`; require a successful `ci.yml` run with `event=push` for the commit; require
-  that no release exists for the tag (HTTP 404 only; any other API answer fails closed). In
+  that no release exists for the tag (HTTP 404 only; any other API answer fails closed); require
+  the version to be numerically above every other strict `bdock/v` tag (`git ls-remote`) and
+  release tag (`gh api`) (`release-verify.sh monotonic`). In
   every run: `make check` and `go mod verify`. Outputs `version`, `tag`, `dry_run`, `commit`.
 - **FR-4 build** (`needs: verify`, `contents: read`). Matrix `linux/amd64`, `linux/arm64`,
   `darwin/arm64` on `ubuntu-24.04`. Each leg asserts `HEAD == COMMIT`, runs the single archive
@@ -149,7 +151,8 @@ tagging and merging.
    the owner confirming before the second release. Until confirmed it is a reading, not a grant.
 4. **`AGENTS.md` wording.** The CLI release exception is named beside the Pages exception in the
    build-approval sentences and has its own paragraph; the owner may prefer other phrasing.
-5. **Tag ruleset.** Block deletion and update of `bdock/v*` tags after release. Recommended.
+5. **Tag ruleset.** Block deletion and update of `bdock/v*` tags. A repository setting only the owner
+   changes; the click path is in `docs/releasing.md`. Recommended before the first tag.
 6. **Attestations** (build provenance) after the first release. Recommended later.
 7. **Security reporting.** There is no `SECURITY.md`; `CODE_OF_CONDUCT.md` has a contact for
    conduct reports only. Recommended: decide a vulnerability-reporting channel (or defer
@@ -158,8 +161,7 @@ tagging and merging.
    user can download them. Acceptable? Recommended: yes.
 9. **Vulnerability scanning of the CLI's own Go dependencies** (`govulncheck`) is not part of
    verify. Recommended: add later as a separate change; it needs network and a tool pin.
-10. **Monotonic versions.** Nothing checks that a new tag is above the highest existing
-    `bdock/v` tag; an older version pushed later would become GitHub's "Latest". Recommended:
-    the owner tags in order; add a verify rule if that proves fragile.
+10. **Monotonic versions.** Decided by the owner: `verify` fails unless the new version is above
+    every existing `bdock/v` tag and release. Done (`release-verify.sh monotonic`).
 11. **Review of the local TODO list** (`AGENTS.md`) before the first tag is a precondition the
    owner checks; no tool can check an untracked list.
