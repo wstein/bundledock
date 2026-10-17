@@ -4,6 +4,7 @@ fzf --version
 bat --version
 lsd --version
 regctl version
+case "$(jsonschema-cli --version 2>&1)" in *[0-9].[0-9]*.[0-9]*) ;; *) echo "unexpected jsonschema-cli version output" >&2; exit 1 ;; esac
 case "$(difft --version 2>&1)" in *[0-9].[0-9]*.[0-9]*) ;; *) echo "unexpected difft version output" >&2; exit 1 ;; esac
 case "$(zoxide --version 2>&1)" in *[0-9].[0-9]*.[0-9]*) ;; *) echo "unexpected zoxide version output" >&2; exit 1 ;; esac
 case "$(git-cliff --version 2>&1)" in *[0-9].[0-9]*.[0-9]*) ;; *) echo "unexpected git-cliff version output" >&2; exit 1 ;; esac

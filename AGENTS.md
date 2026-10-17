@@ -118,6 +118,7 @@ still pins an older image, so do not assume these commands exist in a running se
 | Jump to frequently used directories | `zoxide` (`eval "$(zoxide init bash)"` is an opt-in user choice). |
 | Query code structure | `ast-grep`; use the full binary name, never `sg`. |
 | Process structured data | `jq` for JSON; `yq` for YAML. |
+| Validate JSON instances against JSON Schema | `jsonschema-cli`. |
 | Manage Python environments and run Python tools | `uv` and `uvx`. |
 | GitHub workflows | `gh`. |
 | Work with Jujutsu repositories | `jj`. |
