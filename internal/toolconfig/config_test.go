@@ -36,7 +36,7 @@ func TestRepositoryIdentityAndBothArchitectures(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(c.Catalog.Packages) != 44 {
+	if len(c.Catalog.Packages) != 45 {
 		t.Fatal("catalog incomplete")
 	}
 	// Every tool is an official prebuilt release: no source recipe is allowed.

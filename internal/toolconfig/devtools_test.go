@@ -13,6 +13,7 @@ func TestDeveloperToolRecipes(t *testing.T) {
 		{"actionlint", "rhysd/actionlint", "tar.gz", "actionlint", "v"},
 		{"hadolint", "hadolint/hadolint", "raw", "hadolint", "v"},
 		{"pinact", "suzuki-shunsuke/pinact", "tar.gz", "pinact", "v"},
+		{"zizmor", "zizmorcore/zizmor", "tar.gz", "zizmor", "v"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			p, ok := c.Catalog.Packages[tc.name]

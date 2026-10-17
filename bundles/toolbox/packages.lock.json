@@ -1,7 +1,7 @@
 {
   "schema": 2,
-  "desired_digest": "d07ceaad351e46b0eace2e194af635a3f9353f3a45733537c658cf19470f6f5b",
-  "catalog_digest": "d3c5772ec80f8451a22408c60f81b8b114b70799c7d853fe7c1c48ecd1934bde",
+  "desired_digest": "bc45a214b59c2bd532e8376cf664d164f24e450e37aab0b933ce909e6af41dd4",
+  "catalog_digest": "d25c46e710ea5b1f08039044fcfc1347fcc248842b9a28668b808910a92c6525",
   "platforms": {
     "amd64": {
       "actionlint": {
@@ -266,6 +266,12 @@
         "version": "v4.54.1",
         "url": "https://github.com/mikefarah/yq/releases/download/v4.54.1/yq_linux_amd64",
         "sha256": "8e34fc298390875de416e6a4afcb8cabeceb25d9aa8506c1a2f9353cf702ea5f",
+        "verification": "publisher-sha256"
+      },
+      "zizmor": {
+        "version": "v1.31.1",
+        "url": "https://github.com/zizmorcore/zizmor/releases/download/v1.31.1/zizmor-x86_64-unknown-linux-gnu.tar.gz",
+        "sha256": "d185f726bdaf92df78273217dfdd24ebcd6b0ef48cf3ce776ff5762b6e138c99",
         "verification": "publisher-sha256"
       }
     },
@@ -532,6 +538,12 @@
         "version": "v4.54.1",
         "url": "https://github.com/mikefarah/yq/releases/download/v4.54.1/yq_linux_arm64",
         "sha256": "189088da0c6429ec5178dfaab1a114805f6cab0b61b165ab236efedf1d57a71b",
+        "verification": "publisher-sha256"
+      },
+      "zizmor": {
+        "version": "v1.31.1",
+        "url": "https://github.com/zizmorcore/zizmor/releases/download/v1.31.1/zizmor-aarch64-unknown-linux-gnu.tar.gz",
+        "sha256": "37eebbd5762a44f262d94875431b14a6d2402991e90a685113ea97b8b41be833",
         "verification": "publisher-sha256"
       }
     }
