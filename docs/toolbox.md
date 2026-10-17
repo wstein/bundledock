@@ -210,6 +210,7 @@ networking disabled. Native smoke acceptance remains part of an approved build.
 | Hugo (`hugo`, standard) | 0.168.0 | [Homepage](https://gohugo.io) | [Source](https://github.com/gohugoio/hugo) |
 | hyperfine (`hyperfine`) | 2.0.0 | [Homepage](https://github.com/sharkdp/hyperfine) | [Source](https://github.com/sharkdp/hyperfine) |
 | jq | 1.8.2 | [Homepage](https://jqlang.org) | [Source](https://github.com/jqlang/jq) |
+| jsonschema-cli (`jsonschema-cli`) | 0.58.5 | [Homepage](https://github.com/Stranger6667/jsonschema) | [Source](https://github.com/Stranger6667/jsonschema) |
 | Jujutsu (`jj`) | 0.46.0 | [Homepage](https://jj-vcs.dev) | [Source](https://github.com/jj-vcs/jj) |
 | just (`just`) | 1.59.0 | [Homepage](https://just.systems) | [Source](https://github.com/casey/just) |
 | lazygit (`lazygit`) | 0.66.2 | [Homepage](https://github.com/jesseduffield/lazygit) | [Source](https://github.com/jesseduffield/lazygit) |
@@ -483,6 +484,8 @@ and consumer activation remain unverified pending separate approval.
 `zoxide` is a directory jumper. BundleDock installs the executable only: no shell hook, alias or `cd` replacement is added. To opt in, source `zoxide init <shell>` output from your own shell configuration. Its database lives in `$_ZO_DATA_DIR` or the XDG data directory under writable HOME, outside the read-only toolbox. The nested completion `README.md` is not extracted, to avoid a name clash with the top-level README.
 
 `difft` (Difftastic) compares files by syntax structure: `difft old.go new.go`. Use `--color never` for predictable output. As an optional Git external diff, set `GIT_EXTERNAL_DIFF=difft` in your own environment; BundleDock sets no Git configuration. The ARM64 release is the official GNU/Linux build (no musl asset exists); the archive carries only the executable, so the upstream MIT `LICENSE` is retained separately.
+
+`jsonschema-cli` validates JSON instances against JSON Schema: `jsonschema-cli schema.json -i instance.json`. It is selected from the repository's `cli-v` releases, which are separate from the library's `rust-v`, `python-v` and `ruby-v` releases (the repository's latest-release marker points at a non-CLI release). Remote `$ref` resolution may use the network when a schema asks for it.
 
 ## Git Large File Storage
 

@@ -23,6 +23,7 @@ hugo>=0.167.0
 hyperfine>=2.0.0
 jj>=0.46.0
 jq>=1.8.2
+jsonschema-cli>=0.58.5
 just>=1.58.0
 lazygit>=0.66.1
 leaf>=1.29.0

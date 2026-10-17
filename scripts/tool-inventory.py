@@ -53,6 +53,7 @@ LABELS = (
     ("btop", "btop (`btop`)"),
     ("helix", "Helix (`hx`)"),
     ("hugo", "Hugo (`hugo`, standard)"),
+    ("jsonschema-cli", "jsonschema-cli (`jsonschema-cli`)"),
     ("difftastic", "Difftastic (`difft`)"),
     ("zoxide", "zoxide (`zoxide`)"),
     ("git-cliff", "git-cliff (`git-cliff`)"),

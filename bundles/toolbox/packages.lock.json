@@ -1,7 +1,7 @@
 {
   "schema": 2,
-  "desired_digest": "e02c5fac49cfd9c100daf71728b3f3d2d3a82bf4d4e6e0cbc1c45377755adff7",
-  "catalog_digest": "3c2c1c678865a723a65637428904e6f6da056931a79d3a6b825a58a4ba928c17",
+  "desired_digest": "52f3df69d26d83aad248d8f798c57baa5bc20cfbc29abbaa54efe58e683d8a8d",
+  "catalog_digest": "01376981cb2f9b625b1d87df9e251fd95ce6352be4795f1ab1a438f634945bb7",
   "platforms": {
     "amd64": {
       "actionlint": {
@@ -140,6 +140,12 @@
         "version": "jq-1.8.2",
         "url": "https://github.com/jqlang/jq/releases/download/jq-1.8.2/jq-linux-amd64",
         "sha256": "b1c22172dd303f3be49e935aa56aa48a8b7a46e0bc838b4997d3bb451495870f",
+        "verification": "publisher-sha256"
+      },
+      "jsonschema-cli": {
+        "version": "cli-v0.58.5",
+        "url": "https://github.com/Stranger6667/jsonschema/releases/download/cli-v0.58.5/jsonschema-cli-x86_64-unknown-linux-musl.tar.gz",
+        "sha256": "eae8798e2ad93e9ac0420cf111798696ca4ea554257ae5ac073a13ac9dc6a7a7",
         "verification": "publisher-sha256"
       },
       "just": {
@@ -436,6 +442,12 @@
         "version": "jq-1.8.2",
         "url": "https://github.com/jqlang/jq/releases/download/jq-1.8.2/jq-linux-arm64",
         "sha256": "8b85c817833814ddca00a144c33705546355afccf0cf39b188f3cdb48b852309",
+        "verification": "publisher-sha256"
+      },
+      "jsonschema-cli": {
+        "version": "cli-v0.58.5",
+        "url": "https://github.com/Stranger6667/jsonschema/releases/download/cli-v0.58.5/jsonschema-cli-aarch64-unknown-linux-musl.tar.gz",
+        "sha256": "f86b813851f61cc6ebd7edd6bdeb27e22f11f022fc49eff7f65910439ff21874",
         "verification": "publisher-sha256"
       },
       "just": {

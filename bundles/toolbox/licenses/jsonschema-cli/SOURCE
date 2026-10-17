@@ -1,0 +1,7 @@
+Upstream: https://github.com/Stranger6667/jsonschema
+Initial reviewed release: cli-v0.58.5
+License: MIT
+Source for corresponding release: https://github.com/Stranger6667/jsonschema/releases/tag/cli-v0.58.5
+Linux AMD64/ARM64 official musl archives, unchanged executable; selected by tag prefix 'cli-v'.
+Full upstream LICENSE retained from the tagged repository (the release archive does not carry it).
+Lock pins use the official release API SHA256 digests (checked 2026-10-17). No upstream binary was executed or modified; retained notices do not establish a complete transitive license audit.

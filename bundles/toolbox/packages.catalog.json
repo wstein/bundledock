@@ -1343,6 +1343,31 @@
         "licenses/difftastic/LICENSE",
         "licenses/difftastic/SOURCE"
       ]
+    },
+    "jsonschema-cli": {
+      "provider": "github",
+      "repository": "Stranger6667/jsonschema",
+      "tag_prefix": "cli-v",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "x86_64",
+        "arm64": "aarch64"
+      },
+      "asset": "jsonschema-cli-{arch}-unknown-linux-musl.tar.gz",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "tar.gz",
+        "members": {
+          "jsonschema-cli": "bin/jsonschema-cli"
+        }
+      },
+      "notices": [
+        "licenses/jsonschema-cli/LICENSE",
+        "licenses/jsonschema-cli/SOURCE"
+      ]
     }
   }
 }

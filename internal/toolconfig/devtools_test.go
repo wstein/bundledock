@@ -18,6 +18,7 @@ func TestDeveloperToolRecipes(t *testing.T) {
 		{"git-cliff", "orhun/git-cliff", "tar.gz", "git-cliff", "v"},
 		{"zoxide", "ajeetdsouza/zoxide", "tar.gz", "zoxide", "v"},
 		{"difftastic", "Wilfred/difftastic", "tar.gz", "difft", ""},
+		{"jsonschema-cli", "Stranger6667/jsonschema", "tar.gz", "jsonschema-cli", "cli-v"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			p, ok := c.Catalog.Packages[tc.name]
