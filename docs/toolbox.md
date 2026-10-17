@@ -188,6 +188,7 @@ networking disabled. Native smoke acceptance remains part of an approved build.
 <!-- BEGIN GENERATED TOOL INVENTORY -->
 | Tool | Pinned version | Homepage | Source |
 | --- | --- | --- | --- |
+| actionlint (`actionlint`) | 1.7.12 | [Homepage](https://github.com/rhysd/actionlint) | [Source](https://github.com/rhysd/actionlint) |
 | age (`age`, `age-keygen`, `age-inspect`, plugins) | 1.3.2 | [Homepage](https://age-encryption.org) | [Source](https://github.com/FiloSottile/age) |
 | ast-grep (`ast-grep`) | 0.51.0 | [Homepage](https://ast-grep.github.io/) | [Source](https://github.com/ast-grep/ast-grep) |
 | bat (`bat`) | 0.26.1 | [Homepage](https://github.com/sharkdp/bat) | [Source](https://github.com/sharkdp/bat) |
@@ -459,6 +460,8 @@ completion directory. regctl assets are raw executables. These recipes retain
 the existing extractor's rejection of archive links. Source tests use synthetic
 artifacts and smoke stubs. Native execution, OCI builds/smoke, vulnerability scans
 and consumer activation remain unverified pending separate approval.
+
+`actionlint` lints GitHub Actions workflow files statically: `actionlint .github/workflows/ci.yml`. It runs `shellcheck` and `pyflakes` only when they are on `PATH`. It needs no network access or user configuration.
 
 ## Git Large File Storage
 

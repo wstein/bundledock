@@ -141,6 +141,7 @@ still pins an older image, so do not assume these commands exist in a running se
 | Check spelling | `typos`. |
 | Check links | `lychee`. |
 | Detect secrets | `gitleaks`. |
+| Lint GitHub Actions workflows | `actionlint`. |
 | Scan Git history and files for credentials | `trufflehog` (disable verification for offline scans). |
 | Scan vulnerabilities and configuration | `trivy`. |
 | Generate software bills of materials | `syft`. |
