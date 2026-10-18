@@ -58,6 +58,20 @@ func TestParseRejectsUnsafeRows(t *testing.T) {
 		"after dashdash": "gx\tgit log -- --pretty='a b'\n",
 		"two quoted":     "gx\tgit log --pretty='a' --format='b'\n",
 		"git show":       "gx\tgit show --pretty='a b'\n",
+		// A bare option may take the next word as its argument (git reads
+		// `--grep --pretty='a b'` as a grep pattern), so only no-argument
+		// options may precede the quoted word.
+		"after grep":     "gx\tgit log --grep --pretty='a b'\n",
+		"after author":   "gx\tgit log --author --format='a b'\n",
+		"after n":        "gx\tgit log -n --pretty='a b'\n",
+		"end of options": "gx\tgit log --end-of-options --pretty='a b'\n",
+		"unknown option": "gx\tgit log --follow-me --pretty='a b'\n",
+		// One format decides the output: a second one, or --oneline, would override it.
+		"second pretty":  "gx\tgit log --pretty='a' --pretty=b\n",
+		"second format":  "gx\tgit log --pretty=format:'a' --format=b\n",
+		"oneline after":  "gx\tgit log --pretty='a' --oneline\n",
+		"oneline before": "gx\tgit log --oneline --pretty='a'\n",
+		"unquoted first": "gx\tgit log --pretty=b --format='a'\n",
 	} {
 		if _, err := Parse([]byte(row)); err == nil {
 			t.Errorf("%s: expected rejection of %q", name, row)
@@ -119,7 +133,7 @@ func TestQuotedValuesReachEveryShellIntact(t *testing.T) {
 		"qb\tgit log --graph --pretty=format:'%C(yellow)%h [%d] %s' --date=short",
 		"qc\tgit log --format=tformat:'%h > %s >> out' {branch}",
 		"qd\tgit log --pretty='%h<in %s' {default} --stat",
-		"qe\tgit log --pretty='a  b' --oneline",
+		"qe\tgit log --pretty='a  b' --stat",
 	}, "\n") + "\n"))
 	if err != nil {
 		t.Fatal(err)
