@@ -4,7 +4,8 @@
 # Usage: sh release-smoke.sh VERSION COMMIT OS ARCH ARCHIVE
 #
 # Run in the repository root. ARCHIVE is bdock_<version>_<os>_<arch>.tar.gz next to its
-# .sha256 sidecar. Only hermetic commands run: no network, no Docker, no registry.
+# .sha256 sidecar, or SourceSteward's global SHA256SUMS when no sidecar exists.
+# Only hermetic commands run: no network, no Docker, no registry.
 # Checks, in order: the checksum; the exact archive members; LICENSE equal to the
 # repository's; PROVENANCE for this version, commit, OS and architecture from an
 # unmodified checkout; `bdock --version`; `--help`; `tools --help`; `completion bash`.
@@ -33,12 +34,28 @@ archive=$(cd "$(dirname "$archive")" && pwd)/$(basename "$archive")
 file=$(basename "$archive")
 [ "$file" = "bdock_${version}_${os}_${arch}.tar.gz" ] || fail "unexpected archive name: $file"
 
-# Checksum written at build time (sha256sum on Linux, shasum on macOS).
-[ -f "$archive.sha256" ] || fail "checksum sidecar missing: $file.sha256"
-if command -v sha256sum >/dev/null 2>&1; then
-	(cd "$(dirname "$archive")" && sha256sum -c "$file.sha256" >/dev/null) || fail "checksum mismatch for $file"
+# Preserve legacy sidecar precedence, including refusal of a corrupt sidecar.
+# SourceSteward supplies a global file containing other targets and the manifest;
+# select exactly one canonical entry for this archive without writing beside it.
+if [ -e "$archive.sha256" ] || [ -L "$archive.sha256" ]; then
+	[ -f "$archive.sha256" ] || fail "invalid checksum sidecar: $file.sha256"
+	checksum=$(cat "$archive.sha256")
 else
-	(cd "$(dirname "$archive")" && shasum -a 256 -c "$file.sha256" >/dev/null) || fail "checksum mismatch for $file"
+	checksums=$(dirname "$archive")/SHA256SUMS
+	[ -f "$checksums" ] || fail "checksum sidecar or SHA256SUMS missing for $file"
+	checksum=$(awk -v name="$file" '
+		$2 == name || $2 == "*" name {
+			count++
+			if (length($1) != 64 || $1 !~ /^[0-9a-f]+$/ || $0 != $1 "  " name) invalid=1
+			entry=$0
+		}
+		END { if (count != 1 || invalid) exit 1; print entry }
+	' "$checksums") || fail "expected exactly one valid checksum for $file"
+fi
+if command -v sha256sum >/dev/null 2>&1; then
+	printf '%s\n' "$checksum" | (cd "$(dirname "$archive")" && sha256sum -c - >/dev/null) || fail "checksum mismatch for $file"
+else
+	printf '%s\n' "$checksum" | (cd "$(dirname "$archive")" && shasum -a 256 -c - >/dev/null) || fail "checksum mismatch for $file"
 fi
 
 members=$(tar -tzf "$archive" | LC_ALL=C sort | tr '\n' ' ') || fail "cannot list $file"
