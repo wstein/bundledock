@@ -98,11 +98,11 @@ func (r resolver) metadata(ctx context.Context, raw string) ([]byte, http.Header
 		return nil, nil, err
 	}
 	defer resp.Body.Close()
-	b, err := io.ReadAll(io.LimitReader(resp.Body, 8<<20+1))
+	b, err := io.ReadAll(io.LimitReader(resp.Body, 16<<20+1))
 	if err != nil {
 		return nil, nil, err
 	}
-	if len(b) > 8<<20 {
+	if len(b) > 16<<20 {
 		return nil, nil, fmt.Errorf("metadata too large")
 	}
 	return b, resp.Header, nil
@@ -131,7 +131,7 @@ func githubNextPage(raw, repository string) (string, error) {
 
 func (r resolver) github(ctx context.Context, p toolconfig.Package, c toolconfig.Constraint) (release, error) {
 	next := "https://api.github.com/repos/" + p.Repository + "/releases?per_page=20&page=1"
-	// Limit each response to 20 releases and 8 MiB, and discovery to 100 pages
+	// Limit each response to 20 releases and 16 MiB, and discovery to 100 pages
 	// (at most 2,000 releases). Exceeding either bound fails without a lock write.
 	seen := map[string]bool{}
 	var best release

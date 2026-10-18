@@ -87,10 +87,10 @@ func TestGitHubReleasePageSizeKeepsMetadataBounded(t *testing.T) {
 			http.Error(w, "invalid page size", http.StatusBadRequest)
 			return
 		}
-		// Release bodies/assets can make a 100-release page exceed 8 MiB.
+		// Release bodies/assets can make a 100-release page exceed 16 MiB.
 		page := make([]map[string]string, requested)
 		for i := range page {
-			page[i] = map[string]string{"tag_name": tag, "body": strings.Repeat("x", 90<<10)}
+			page[i] = map[string]string{"tag_name": tag, "body": strings.Repeat("x", 170<<10)}
 		}
 		json.NewEncoder(w).Encode(page)
 	})
@@ -134,5 +134,27 @@ func TestGitHubSmallerPagesRetainBoundedOlderPinDiscovery(t *testing.T) {
 				t.Fatalf("older exact pin was not discovered: tag %q, error %v", rel.Tag, err)
 			}
 		})
+	}
+}
+
+func TestGitHubReleasePageExceeding8MiBBound(t *testing.T) {
+	c, err := toolconfig.Load(checkout(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	p, constraint := c.Catalog.Packages["codex"], c.Desired["codex"]
+	tag := p.TagPrefix + constraint.Lower.String()
+	client := fixtureClient(t, func(w http.ResponseWriter, r *http.Request) {
+		// A 20-release page exceeding the historical 8 MiB bound (e.g. 10 MiB)
+		// must succeed within the 16 MiB bound.
+		page := make([]map[string]string, 20)
+		for i := range page {
+			page[i] = map[string]string{"tag_name": tag, "body": strings.Repeat("x", 500<<10)}
+		}
+		json.NewEncoder(w).Encode(page)
+	})
+	rel, err := (resolver{client: client}).github(context.Background(), p, constraint)
+	if err != nil || rel.Tag != tag {
+		t.Fatalf("expected release %q to succeed, got error: %v", tag, err)
 	}
 }
