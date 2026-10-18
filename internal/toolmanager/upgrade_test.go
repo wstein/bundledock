@@ -433,7 +433,7 @@ func TestClaudeCurrentReleaseIsDiscovered(t *testing.T) {
 	}
 }
 func TestMetadataErrorsLeaveLockUnchanged(t *testing.T) {
-	for _, kind := range []string{"malformed", "truncated", "pagination", "no-match", "prerelease", "invalid-digest", "redirect"} {
+	for _, kind := range []string{"malformed", "truncated", "pagination", "no-match", "prerelease", "invalid-digest", "redirect", "too-large"} {
 		t.Run(kind, func(t *testing.T) {
 			dir := checkout(t)
 			before := readLock(t, dir)
@@ -455,6 +455,8 @@ func TestMetadataErrorsLeaveLockUnchanged(t *testing.T) {
 					fmt.Fprint(w, `[{"tag_name":"v2.103.0","assets":[{"name":"gh_2.103.0_linux_amd64.tar.gz","browser_download_url":"https://github.com/asset","digest":"sha256:no"}]}]`)
 				case "redirect":
 					http.Redirect(w, r, "http://evil.example/artifact", http.StatusFound)
+				case "too-large":
+					w.Write(bytes.Repeat([]byte{'x'}, 16<<20+2))
 				}
 			})
 			if err := Upgrade(context.Background(), client, dir, "gh", &bytes.Buffer{}); err == nil {
