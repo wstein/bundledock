@@ -97,9 +97,7 @@ func testToolsUpgradeCommandHTTP(t *testing.T, override bool) {
 	defer server.Close()
 	base, _ := url.Parse(server.URL)
 	client := &http.Client{Transport: upgradeTestTransport{base, server.Client().Transport}}
-	cmd := newRootCommand()
-	cmd.RemoveCommand(cmd.Commands()[0])
-	cmd.AddCommand(newToolsCommandWithClient(client))
+	cmd := newRootCommandWithClient(client)
 	var out bytes.Buffer
 	cmd.SetOut(&out)
 	cmd.SetErr(&out)

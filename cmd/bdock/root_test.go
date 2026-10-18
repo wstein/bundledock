@@ -13,6 +13,7 @@ func TestBundleDockCommandIdentity(t *testing.T) {
 		want string
 	}{
 		{"help", []string{"--help"}, "bdock [flags]"},
+		{"publish help", []string{"publish", "--help"}, "bdock publish [bundle] [flags]"},
 		{"upgrade help", []string{"upgrade", "--help"}, "bdock upgrade [tool] [flags]"},
 		{"tools help", []string{"tools", "--help"}, "bdock tools [command]"},
 		{"version", []string{"--version"}, "bdock version dev\n"},
