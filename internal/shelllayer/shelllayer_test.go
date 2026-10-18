@@ -74,10 +74,13 @@ func TestParseRejectsUnsafeRows(t *testing.T) {
 		"unquoted first": "gx\tgit log --pretty=b --format='a'\n",
 		"quote in value": "gx\tgit log --pretty='a'b'c'\n",
 		// A quote in the command or subcommand word must be an error, never a panic.
-		"quoted git":     "gx\t'git' log\n",
-		"quoted log":     "gx\tgit 'log'\n",
-		"quoted log fmt": "gx\tgit 'log' --pretty='a'\n",
-		"quoted only":    "gx\t'git'\n",
+		"quoted git":      "gx\t'git' log\n",
+		"quoted log":      "gx\tgit 'log'\n",
+		"quoted log fmt":  "gx\tgit 'log' --pretty='a'\n",
+		"quoted only":     "gx\t'git'\n",
+		"bare pretty":     "gx\tgit log --pretty='a' --pretty\n",
+		"bare format":     "gx\tgit log --format='a' --format\n",
+		"bare format pre": "gx\tgit log --format --pretty='a'\n",
 	} {
 		if _, err := Parse([]byte(row)); err == nil {
 			t.Errorf("%s: expected rejection of %q", name, row)
@@ -93,6 +96,9 @@ func TestParseAcceptsQuotedFormatValues(t *testing.T) {
 		"gx\tgit log --graph --pretty='%C(auto)%d %s <%an>'\n":          {"git", "log", "--graph", "--pretty=%C(auto)%d %s <%an>"},
 		"gx\tgit log --pretty=format:'%C(yellow)%h %ad' --date=short\n": {"git", "log", "--pretty=format:%C(yellow)%h %ad", "--date=short"},
 		"gx\tgit log --format=tformat:'%h'\n":                           {"git", "log", "--format=tformat:%h"},
+		"gx\tgit log --date=short --pretty='%h'\n":                      {"git", "log", "--date=short", "--pretty=%h"},
+		"gx\tgit log {branch} --date=short --pretty='%h'\n":             {"git", "log", "{branch}", "--date=short", "--pretty=%h"},
+		"gx\tgit log --all --graph --decorate --stat --abbrev-commit --no-merges --first-parent --reverse -p --patch --pretty='%h'\n": {"git", "log", "--all", "--graph", "--decorate", "--stat", "--abbrev-commit", "--no-merges", "--first-parent", "--reverse", "-p", "--patch", "--pretty=%h"},
 	} {
 		shortcuts, err := Parse([]byte(row))
 		if err != nil {
