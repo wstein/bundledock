@@ -107,6 +107,25 @@ func TestRealArchiveLayoutsKeepNoticesWithoutBasenameCollisions(t *testing.T) {
 			}
 		}
 	})
+	t.Run("actionlint docs README does not collide when only LICENSE.txt is retained", func(t *testing.T) {
+		dst, found, err := extractLayout(t, "actionlint",
+			member{"LICENSE.txt", "mit license", 0644, 0},
+			member{"README.md", "top readme", 0644, 0},
+			member{"docs/README.md", "docs readme", 0644, 0},
+			member{"docs/usage.md", "usage", 0644, 0},
+			member{"man/actionlint.1", "man", 0644, 0},
+			member{"actionlint", "cli", 0755, 0},
+		)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if strings.Join(found, ",") != "LICENSE.txt" {
+			t.Fatalf("actionlint notices: %v", found)
+		}
+		if b, _ := os.ReadFile(filepath.Join(dst, "licenses/actionlint/LICENSE.txt")); string(b) != "mit license" {
+			t.Fatalf("LICENSE.txt: %q", b)
+		}
+	})
 }
 
 // A basename-matched archive notice must never silently pick one of several
