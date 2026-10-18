@@ -8,6 +8,9 @@ import (
 // Bundle is the bounded publication source selection; toolbox remains default.
 type Bundle struct{ Name, Directory, Workflow, Artifact, Repository, Aliases string }
 
+// CanonicalBundles lists all official bundle names in fixed order.
+var CanonicalBundles = []string{"toolbox", "code-server", "node", "node-current", "bun", "codex", "agy", "claude", "opentofu"}
+
 func SelectBundle(name string) (Bundle, error) {
 	if name == "" {
 		name = "toolbox"
