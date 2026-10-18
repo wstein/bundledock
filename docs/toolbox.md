@@ -520,7 +520,7 @@ and consumer activation remain unverified pending separate approval.
 
 `git-cliff` generates changelogs from Git history and Conventional Commits: `git-cliff --config cliff.toml`. Keep the configuration in the repository. Release archives also carry completions, man pages and `git-cliff-completions`/`git-cliff-mangen` generators; only the `git-cliff` executable, both licenses and README are installed.
 
-`zoxide` is a directory jumper. BundleDock installs the executable only: no shell hook, alias or `cd` replacement is added. To opt in, source `zoxide init <shell>` output from your own shell configuration. Its database lives in `$_ZO_DATA_DIR` or the XDG data directory under writable HOME, outside the read-only toolbox. The nested completion `README.md` is not extracted, to avoid a name clash with the top-level README.
+`zoxide` is a directory jumper. The shared shell layer initializes it interactively with the official `zoxide init <shell> --cmd cd`, providing `cd` and `cdi` in Bash, Zsh, Fish and Nushell. Set `BDOCK_ZOXIDE=0` before startup to keep your own navigation commands. Its database lives in `$_ZO_DATA_DIR` or the XDG data directory under writable HOME, outside the read-only toolbox. The nested completion `README.md` is not extracted, to avoid a name clash with the top-level README.
 
 `difft` (Difftastic) compares files by syntax structure: `difft old.go new.go`. Use `--color never` for predictable output. As an optional Git external diff, set `GIT_EXTERNAL_DIFF=difft` in your own environment; BundleDock sets no Git configuration. The ARM64 release is the official GNU/Linux build (no musl asset exists); the archive carries only the executable, so the upstream MIT `LICENSE` is retained separately.
 
@@ -752,14 +752,42 @@ only in interactive shells. The layer runs `fastfetch` once per interactive shel
 when the executable is present; repeated sourcing does not repeat the greeting.
 It leaves user Fastfetch configuration in control and tolerates a missing or
 failing executable. Set `BDOCK_FASTFETCH=0` to skip the greeting.
+
+The layer also initializes [zoxide](https://github.com/ajeetdsouza/zoxide)
+with its official `--cmd cd` option. `cd` accepts existing directory paths or
+queries the directory database for keywords; `cdi` uses upstream interactive
+selection (which requires `fzf`). Set `BDOCK_ZOXIDE=0` before startup to skip
+initialization and preserve existing `cd`/`cdi` definitions. This switch is
+independent of the shortcut and prompt switches. Noninteractive sourcing never
+initializes zoxide. A missing executable or a failed initializer leaves existing
+navigation alone; partial output from a failed initializer is never evaluated.
+No initializer files or caches are written by the layer, and it preserves
+`PATH`, user configuration and upstream `_ZO_*` settings.
+
+Bash, Zsh and Fish evaluate successful output directly. Nushell captures the
+same official output in memory and installs it through a tagged, one-shot
+`pre_prompt` string hook before the first prompt; this is supported by the
+pinned Nushell 0.116.1. The hook removes itself and checks the optout and any
+manual initialization again before installing definitions. This preserves
+unrelated hooks and avoids repeated initialization when the layer is sourced
+again before or after the first prompt. An existing manual zoxide initializer
+is left in control in all four shells; keep one initializer, with your desired
+command names and options, rather than also aliasing `cd` to `z` yourself.
+
+To bypass zoxide, use `builtin cd` in Bash, Zsh and Fish. Nushell retains the
+pre-initialization command as `__bdock_native_cd`, including native flags such
+as `__bdock_native_cd --physical /`. If you already customized `cd`, that alias
+captures your prior command. Nushell's alias is created only when the zoxide
+initializer actually runs. Scripts retain native `cd` behavior.
+
 `BDOCK_SHORTCUTS=0` skips the shortcuts,
 `BDOCK_STARSHIP=0` the prompt and `BDOCK_ZSH_EXPAND=0` zsh's expansion on space
 (Ctrl+Space inserts a plain space). A prompt already initialized by the user's
 own configuration (`STARSHIP_SHELL` set) is left alone. Nushell definitions
 cannot be conditional, so there the shortcuts are opted out by leaving the
-toolbox out of `XDG_DATA_DIRS`. Nushell's prompt setup is a static copy of what
-`starship init nu` produces, because autoload files cannot evaluate generated
-code.
+toolbox out of `XDG_DATA_DIRS`. Nushell's prompt setup retains a static copy of what
+`starship init nu` produces; its zoxide commands use the string hook described
+above.
 
 The generator renders the four files from the table and they are committed.
 The layer belongs to the toolbox alone: only the toolbox Dockerfile copies
@@ -775,8 +803,14 @@ shell against stub commands and requires identical arguments;
 Verified on 2026-10-15 with bash 5.2.37, zsh 5.9 and the pinned fish 4.9.3,
 Nushell 0.116.1 and starship 1.26.0, including starship initialization in all
 four shells, Nushell vendor autoload through `XDG_DATA_DIRS` and zsh's
-expansion in a pseudo-terminal. zsh is not part of the toolbox: no official
-upstream prebuilt release exists, so it comes from the consumer image.
+expansion in a pseudo-terminal. Zoxide initialization was checked on
+2026-10-18 with Bash, Zsh, Fish 4.9.3 and Nushell 0.116.1 using fake executables;
+Nushell's first-prompt command definitions, query arguments, native escape,
+optout and hook preservation were exercised in a real pseudo-terminal with
+initializer source derived from the official zoxide 0.10.0 template. These are
+source checks, not an OCI build or execution of the real zoxide binary.
+Zsh is not part of the toolbox: no official upstream prebuilt release exists,
+so it comes from the consumer image.
 
 ## Optional browser editor
 
