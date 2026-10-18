@@ -1,0 +1,10 @@
+Upstream: https://github.com/getsops/sops
+License: MPL-2.0
+License snapshot release: v3.13.3
+Reviewed release: https://github.com/getsops/sops/releases/tag/v3.13.3
+License snapshot source: https://raw.githubusercontent.com/getsops/sops/v3.13.3/LICENSE
+LICENSE SHA256: 1f256ecad192880510e84ad60474eab7589218784b9a50bc7ceee34c2b91f1d5
+
+The official latest-release API was checked on 2026-10-18: this snapshot release was stable and non-draft, and both Linux AMD64/ARM64 assets had publisher SHA256 digests. Those API digests supply the initial lock pins. No executable or archive was downloaded, extracted, inspected, or run. Native consumer compatibility remains unverified pending an explicitly approved image build and smoke run.
+
+This SOURCE records the reviewed license snapshot, not the current installed binary version. The bundle manifest and packages.lock.json record installed releases, URLs and checksums. Retain these historical bytes and inspect upstream license changes separately.

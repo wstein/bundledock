@@ -1,0 +1,10 @@
+Upstream: https://github.com/bootandy/dust
+License: Apache-2.0
+License snapshot release: v1.2.6
+Reviewed release: https://github.com/bootandy/dust/releases/tag/v1.2.6
+License snapshot source: https://raw.githubusercontent.com/bootandy/dust/v1.2.6/LICENSE
+LICENSE SHA256: aee6e2d13d3a55c7881630c09b41ca7b3b44bb1437b5d36695d22decc3655160
+
+The official latest-release API was checked on 2026-10-18: this snapshot release was stable and non-draft, and both Linux AMD64/ARM64 assets had publisher SHA256 digests. Those API digests supply the initial lock pins. No executable or archive was downloaded, extracted, inspected, or run. Native consumer compatibility remains unverified pending an explicitly approved image build and smoke run.
+
+This SOURCE records the reviewed license snapshot, not the current installed binary version. The bundle manifest and packages.lock.json record installed releases, URLs and checksums. Retain these historical bytes and inspect upstream license changes separately.
