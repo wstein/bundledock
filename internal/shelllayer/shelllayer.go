@@ -45,12 +45,77 @@ func (s Shortcut) Dynamic() bool {
 	return strings.Contains(s.Command, branchToken) || strings.Contains(s.Command, defaultToken)
 }
 
-// Words splits the command; tokens stay as single words.
-func (s Shortcut) Words() []string { return strings.Fields(s.Command) }
+// Words splits the command into the words a shell passes to the program: the
+// quotes of a quoted format value are removed, and {branch} and {default}
+// stay single words. Parse has already validated the command.
+func (s Shortcut) Words() []string {
+	words, _ := splitWords(s.Command)
+	return words
+}
+
+// token is one space-separated word of a command: raw as written in the table
+// and value as the program receives it.
+type token struct{ raw, value string }
+
+// tokenize splits a command on single spaces outside single quotes. It reports
+// empty words (double or edge spaces) and an unterminated quote; it does not
+// judge which words are allowed.
+func tokenize(command string) ([]token, error) {
+	var out []token
+	var raw, value strings.Builder
+	quoted := false
+	flush := func() error {
+		if raw.Len() == 0 {
+			return fmt.Errorf("command must be single-spaced words")
+		}
+		out = append(out, token{raw.String(), value.String()})
+		raw.Reset()
+		value.Reset()
+		return nil
+	}
+	for _, r := range command {
+		switch {
+		case r == '\'':
+			quoted = !quoted
+			raw.WriteRune(r)
+		case r == ' ' && !quoted:
+			if err := flush(); err != nil {
+				return nil, err
+			}
+		default:
+			raw.WriteRune(r)
+			value.WriteRune(r)
+		}
+	}
+	if quoted {
+		return nil, fmt.Errorf("unterminated quote")
+	}
+	if err := flush(); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// splitWords returns the unquoted word values of a command.
+func splitWords(command string) ([]string, error) {
+	tokens, err := tokenize(command)
+	if err != nil {
+		return nil, err
+	}
+	words := make([]string, len(tokens))
+	for i, t := range tokens {
+		words[i] = t.value
+	}
+	return words, nil
+}
 
 var (
 	validName = regexp.MustCompile(`^[a-z][a-z0-9]*$`)
-	validWord = regexp.MustCompile(`^(\{branch\}|\{default\}|[A-Za-z0-9][A-Za-z0-9._/:=-]*|-[A-Za-z0-9-]+(=[A-Za-z0-9._/:-]+)?)$`)
+	// A git log --pretty or --format value may be single-quoted, because a
+	// format string holds spaces. The alphabet excludes everything a shell could
+	// expand or chain, so the quotes behave the same in bash, zsh, fish and Nushell.
+	quotedWord = regexp.MustCompile(`^--(pretty|format)=((t?format):)?'[A-Za-z0-9 %()<>.,:@/=_\[\]-]+'$`)
+	validWord  = regexp.MustCompile(`^(\{branch\}|\{default\}|[A-Za-z0-9][A-Za-z0-9._/:=-]*|-[A-Za-z0-9-]+(=[A-Za-z0-9._/:-]+)?)$`)
 )
 
 // Shortcuts parses and validates the embedded table.
@@ -132,16 +197,20 @@ func Parse(data []byte) ([]Shortcut, error) {
 			return nil, fmt.Errorf("line %d: duplicate shortcut %q", line, name)
 		}
 		seen[name] = true
-		words := strings.Fields(command)
-		if len(words) == 0 || strings.Join(words, " ") != command {
-			return nil, fmt.Errorf("line %d: %s: command must be single-spaced words", line, name)
+		tokens, err := tokenize(command)
+		if err != nil {
+			return nil, fmt.Errorf("line %d: %s: %v", line, name, err)
 		}
-		if !allowedCommands[words[0]] {
+		if !allowedCommands[tokens[0].value] {
 			return nil, fmt.Errorf("line %d: %s: command must start with an allowed command", line, name)
 		}
-		for _, w := range words {
-			if !validWord.MatchString(w) {
-				return nil, fmt.Errorf("line %d: %s: unsupported word %q", line, name, w)
+		for _, t := range tokens {
+			quoted := strings.Contains(t.raw, "'")
+			switch {
+			case quoted && tokens[0].value == "git" && quotedWord.MatchString(t.raw):
+			case !quoted && validWord.MatchString(t.raw):
+			default:
+				return nil, fmt.Errorf("line %d: %s: unsupported word %q", line, name, t.raw)
 			}
 		}
 		out = append(out, Shortcut{name, command})
@@ -221,6 +290,18 @@ const header = "BundleDock shared shell layer. Generated from internal/shelllaye
 // the branch first and stop before running anything when that fails, so a
 // detached HEAD never turns into a push of an empty or commit-ID refspec.
 
+// posixQuote wraps text in single quotes for bash and zsh, closing and
+// reopening them around any single quote it holds (the table's quoted words).
+func posixQuote(text string) string {
+	return "'" + strings.ReplaceAll(text, "'", `'\''`) + "'"
+}
+
+// fishQuote wraps text in single quotes for fish, which escapes a quote or a
+// backslash with a backslash.
+func fishQuote(text string) string {
+	return "'" + strings.NewReplacer(`\`, `\\`, "'", `\'`).Replace(text) + "'"
+}
+
 // posixFunction renders a dynamic shortcut as a bash/zsh function.
 func posixFunction(s Shortcut) string {
 	var pre []string
@@ -240,7 +321,7 @@ func posixShortcuts(b *strings.Builder, shortcuts []Shortcut) {
 		if s.Dynamic() {
 			b.WriteString(posixFunction(s))
 		} else {
-			fmt.Fprintf(b, "alias %s='%s'\n", s.Name, s.Command)
+			fmt.Fprintf(b, "alias %s=%s\n", s.Name, posixQuote(s.Command))
 		}
 	}
 }
@@ -334,7 +415,7 @@ fi
 	b.WriteString("\ntypeset -gA __bdock_shortcuts\n__bdock_shortcuts=(\n")
 	for _, s := range shortcuts {
 		if !s.Dynamic() {
-			fmt.Fprintf(&b, "    %s '%s'\n", s.Name, s.Command)
+			fmt.Fprintf(&b, "    %s %s\n", s.Name, posixQuote(s.Command))
 		}
 	}
 	b.WriteString(")\n")
@@ -413,7 +494,7 @@ end
 `)
 	for _, s := range shortcuts {
 		if !s.Dynamic() {
-			fmt.Fprintf(&b, "abbr --add --global -- %s '%s'\n", s.Name, s.Command)
+			fmt.Fprintf(&b, "abbr --add --global -- %s %s\n", s.Name, fishQuote(s.Command))
 			continue
 		}
 		words := s.Words()

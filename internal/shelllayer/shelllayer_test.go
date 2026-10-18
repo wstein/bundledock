@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"strings"
 	"sync"
@@ -39,9 +40,42 @@ func TestParseRejectsUnsafeRows(t *testing.T) {
 		"chain":          "gx\tgit fetch ; git merge\n",
 		"double space":   "gx\tgit  fetch\n",
 		"no command":     "gx\n",
+		"other option":   "gx\tgit log --grep='x y'\n",
+		"quoted word":    "gx\tgit log '%h'\n",
+		"dollar":         "gx\tgit log --pretty='%h $(id)'\n",
+		"backtick":       "gx\tgit log --pretty='`id`'\n",
+		"backslash":      "gx\tgit log --pretty='a\\b'\n",
+		"double quote":   "gx\tgit log --pretty='a\"b'\n",
+		"semicolon":      "gx\tgit log --pretty='%h;id'\n",
+		"unterminated":   "gx\tgit log --pretty='%h\n",
+		"trailing text":  "gx\tgit log --pretty='%h'x\n",
+		"empty quotes":   "gx\tgit log --pretty=''\n",
+		"quote in rg":    "gx\trg --pretty='%h'\n",
+		"quote double":   "gx\tgit log --pretty='a' 'b'\n",
+		"space in quote": "gx\tgit log --pretty='a'  --stat\n",
 	} {
 		if _, err := Parse([]byte(row)); err == nil {
 			t.Errorf("%s: expected rejection of %q", name, row)
+		}
+	}
+}
+
+// A git log --pretty/--format value may be single-quoted so a format string with
+// spaces and placeholders stays one word. Nothing else may be quoted.
+func TestParseAcceptsQuotedFormatValues(t *testing.T) {
+	for row, want := range map[string][]string{
+		"gx\tgit log --pretty='%h %s'\n":                                {"git", "log", "--pretty=%h %s"},
+		"gx\tgit log --graph --pretty='%C(auto)%d %s <%an>'\n":          {"git", "log", "--graph", "--pretty=%C(auto)%d %s <%an>"},
+		"gx\tgit log --pretty=format:'%C(yellow)%h %ad' --date=short\n": {"git", "log", "--pretty=format:%C(yellow)%h %ad", "--date=short"},
+		"gx\tgit log --format=tformat:'%h'\n":                           {"git", "log", "--format=tformat:%h"},
+	} {
+		shortcuts, err := Parse([]byte(row))
+		if err != nil {
+			t.Errorf("%q: %v", row, err)
+			continue
+		}
+		if got := shortcuts[0].Words(); !reflect.DeepEqual(got, want) {
+			t.Errorf("%q: words %q, want %q", row, got, want)
 		}
 	}
 }
@@ -124,7 +158,10 @@ esac
 // expected is the argv each shortcut must produce when invoked with "EXTRA".
 func expected(s Shortcut) string {
 	r := strings.NewReplacer(branchToken, "feat", defaultToken, "trunk")
-	words := strings.Fields(r.Replace(s.Command))
+	words, err := splitWords(r.Replace(s.Command))
+	if err != nil {
+		panic(err)
+	}
 	return "ARGV " + words[0] + "|" + strings.Join(append(words[1:], "EXTRA"), "|")
 }
 
