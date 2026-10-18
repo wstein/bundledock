@@ -34,6 +34,12 @@ def next_release(tag, package):
     return prefix + newer, version, newer
 
 
+def exact_requirements(text):
+    # Match ParseDesired's comment removal and surrounding whitespace handling.
+    normalized = '\n'.join(line.split('#', 1)[0].strip() for line in text.splitlines())
+    return set(re.findall(r'^([a-z0-9-]+)\s*==', normalized, re.MULTILINE))
+
+
 def copy_repository(root):
     for name in ('bundles', 'scripts', '.config', '.github', 'docs', 'internal/toolconfig',
                  'internal/toolupgrade', 'internal/toolinventory', 'internal/toolmanager', 'cmd/tools-publish', 'internal/toolpublish', 'internal/toolbundle/python'):
@@ -52,16 +58,33 @@ def run_config_tests(root, pattern=None, packages=None):
 
 
 class RollingLockTests(unittest.TestCase):
+    def test_exact_requirements_normalize_comments_and_whitespace(self):
+        for exact in ('scc==4.1.1', '  scc == 4.1.1  # same exact pin',
+                      '\tscc\t==4.1.1\t# same exact pin'):
+            with self.subTest(exact=exact):
+                desired = '# comment==ignored\n' + exact + '\n  gh >= 2.0.0 # rolling\n'
+                self.assertEqual(exact_requirements(desired), {'scc'})
+
     def test_repository_config_tests_accept_future_stable_lock_only_updates(self):
         with tempfile.TemporaryDirectory(prefix='bundledock-future-locks-') as directory:
             root = Path(directory)
             copy_repository(root)
+            # The spelling changes no desired constraint or digest, and must
+            # still preserve the owner's exact SCC release during the upgrade.
+            desired_path = root / 'bundles/toolbox/packages.txt'
+            desired_path.write_text(desired_path.read_text().replace(
+                'scc==4.1.1', '  scc == 4.1.1  # same exact pin'))
             changed = []
             for catalog_path in sorted((root / 'bundles').glob('*/packages.catalog.json')):
                 catalog = json.loads(catalog_path.read_text())
                 path = catalog_path.with_name('packages.lock.json')
                 lock = json.loads(path.read_text())
+                # Exact owner-selected releases stay frozen; only rolling
+                # requirements authorize a synthetic future stable lock update.
+                exact = exact_requirements(catalog_path.with_name('packages.txt').read_text())
                 for name, package in catalog['packages'].items():
+                    if name in exact:
+                        continue
                     old = lock['platforms']['amd64'][name]['version']
                     new, old_version, new_version = next_release(old, package)
                     for arch in ('amd64', 'arm64'):
