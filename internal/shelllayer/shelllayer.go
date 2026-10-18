@@ -173,7 +173,9 @@ var allowedCommands = map[string]bool{
 
 // Parse reads name<TAB>command rows, skipping blank lines and # comments.
 // Names must be valid in every shell, unique and lowercase; command words are
-// restricted to characters that need no quoting in any of the four shells.
+// restricted to characters that need no quoting in any of the four shells, with
+// one exception: a `git log` row may carry one single-quoted --pretty= or
+// --format= value, before any bare `--` (see quotedWord).
 func Parse(data []byte) ([]Shortcut, error) {
 	var out []Shortcut
 	seen := map[string]bool{}
@@ -204,11 +206,14 @@ func Parse(data []byte) ([]Shortcut, error) {
 		if !allowedCommands[tokens[0].value] {
 			return nil, fmt.Errorf("line %d: %s: command must start with an allowed command", line, name)
 		}
+		quotedWords, pathsOnly := 0, false
 		for _, t := range tokens {
 			quoted := strings.Contains(t.raw, "'")
 			switch {
-			case quoted && tokens[0].value == "git" && quotedWord.MatchString(t.raw):
+			case quoted && isGitLog(tokens) && !pathsOnly && quotedWords == 0 && quotedWord.MatchString(t.raw):
+				quotedWords++
 			case !quoted && validWord.MatchString(t.raw):
+				pathsOnly = pathsOnly || t.raw == "--"
 			default:
 				return nil, fmt.Errorf("line %d: %s: unsupported word %q", line, name, t.raw)
 			}
@@ -222,6 +227,12 @@ func Parse(data []byte) ([]Shortcut, error) {
 		return nil, fmt.Errorf("no shortcuts")
 	}
 	return out, nil
+}
+
+// isGitLog reports whether the command is a git log: the only command whose
+// format values may be quoted.
+func isGitLog(tokens []token) bool {
+	return len(tokens) > 1 && tokens[0].value == "git" && tokens[1].value == "log"
 }
 
 // Bundle paths of the generated files, relative to the toolbox root. fish and
