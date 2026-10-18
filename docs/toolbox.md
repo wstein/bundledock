@@ -159,7 +159,7 @@ establish a complete transitive license audit.
 
 The default bundle lives in `bundles/toolbox/`: `packages.txt`,
 `packages.catalog.json`, `packages.lock.json`, its Dockerfile, smoke scripts and licenses.
-Shared Go code remains at the repository root. The source toolbox contains 41
+Shared Go code remains at the repository root. The source toolbox contains 55
 downloaded tools plus the two first-use Python launchers listed below. Codex, Antigravity and Claude are supplied by their separate
 [Codex](codex.md), [Antigravity](agy.md) and [Claude Code](claude.md) bundles.
 The published toolbox recorded above still includes those agents; this source
@@ -169,6 +169,19 @@ removal has not been built or published.
 and `arm64`; builds verify every download. Launcher versions come from their
 separate wheel inputs. Homepage and Source links are generated from reviewed
 upstream metadata and persist when the native lock is refreshed.
+
+The source catalog also includes `xh` for HTTP requests, `dust` for disk usage,
+`direnv` for opt-in directory environments, and SOPS (`sops`) for encrypted
+configuration. All four use official stable prebuilt Linux AMD64/ARM64 releases
+with publisher SHA256 pins and retained historical license snapshots. Inclusion
+of `direnv` does not install shell hooks or approve `.envrc` files; users choose
+and trust those separately. Keep configuration, credentials and writable state
+outside the read-only toolbox. SOPS key services require the user's own setup.
+
+The consumer smoke only checks these four tools' versions, disables SOPS version
+checks, and runs with networking disabled. Source tests use synthetic commands
+and do not establish native compatibility. These additions have not been built,
+published or activated; native consumer smoke awaits an approved image build.
 
 TruffleHog is included alongside Gitleaks, using official stable Linux AMD64 and
 ARM64 binaries. Its full AGPL-3.0 license and upstream README are retained under
@@ -197,6 +210,8 @@ networking disabled. Native smoke acceptance remains part of an approved build.
 | Cosign (`cosign`) | 3.1.3 | [Homepage](https://github.com/sigstore/cosign) | [Source](https://github.com/sigstore/cosign) |
 | delta (`delta`) | 0.20.1 | [Homepage](https://dandavison.github.io/delta/) | [Source](https://github.com/dandavison/delta) |
 | Difftastic (`difft`) | 0.71.0 | [Homepage](https://github.com/Wilfred/difftastic) | [Source](https://github.com/Wilfred/difftastic) |
+| direnv (`direnv`) | 2.38.2 | [Homepage](https://github.com/direnv/direnv) | [Source](https://github.com/direnv/direnv) |
+| dust (`dust`) | 1.2.6 | [Homepage](https://github.com/bootandy/dust) | [Source](https://github.com/bootandy/dust) |
 | fd (`fd`, `fdfind`) | 10.5.0 | [Homepage](https://github.com/sharkdp/fd) | [Source](https://github.com/sharkdp/fd) |
 | Fish (`fish`) | 4.9.3 | [Homepage](https://fishshell.com) | [Source](https://github.com/fish-shell/fish-shell) |
 | fzf (`fzf`) | 0.74.5 | [Homepage](https://junegunn.github.io/fzf/) | [Source](https://github.com/junegunn/fzf) |
@@ -228,6 +243,7 @@ networking disabled. Native smoke acceptance remains part of an approved build.
 | Ruff (`ruff`) | 0.17.1 | [Homepage](https://docs.astral.sh/ruff) | [Source](https://github.com/astral-sh/ruff) |
 | ShellCheck (`shellcheck`) | 0.11.0 | [Homepage](https://www.shellcheck.net) | [Source](https://github.com/koalaman/shellcheck) |
 | shfmt (`shfmt`) | 3.14.1 | [Homepage](https://pkg.go.dev/mvdan.cc/sh/v3) | [Source](https://github.com/mvdan/sh) |
+| SOPS (`sops`) | 3.13.3 | [Homepage](https://github.com/getsops/sops) | [Source](https://github.com/getsops/sops) |
 | Spec Kit (`specify`, first-use pip launcher) | 1.1.3 | [Homepage](https://github.github.io/spec-kit/) | [Source](https://github.com/github/spec-kit) |
 | Starship (`starship`) | 1.26.0 | [Homepage](https://starship.rs) | [Source](https://github.com/starship/starship) |
 | Syft (`syft`) | 1.54.1 | [Homepage](https://github.com/anchore/syft) | [Source](https://github.com/anchore/syft) |
@@ -239,6 +255,7 @@ networking disabled. Native smoke acceptance remains part of an approved build.
 | Typst (`typst`) | 0.15.1 | [Homepage](https://typst.app) | [Source](https://github.com/typst/typst) |
 | uv (`uv`, `uvx`) | 0.13.1 | [Homepage](https://docs.astral.sh/uv) | [Source](https://github.com/astral-sh/uv) |
 | watchexec (`watchexec`) | 2.8.0 | [Homepage](https://watchexec.github.io) | [Source](https://github.com/watchexec/watchexec) |
+| xh (`xh`) | 0.26.2 | [Homepage](https://github.com/ducaale/xh) | [Source](https://github.com/ducaale/xh) |
 | zizmor (`zizmor`) | 1.31.1 | [Homepage](https://github.com/zizmorcore/zizmor) | [Source](https://github.com/zizmorcore/zizmor) |
 | zoxide (`zoxide`) | 0.10.0 | [Homepage](https://github.com/ajeetdsouza/zoxide) | [Source](https://github.com/ajeetdsouza/zoxide) |
 <!-- END GENERATED TOOL INVENTORY -->
