@@ -23,5 +23,6 @@ func newRootCommandWithClient(client *http.Client) *cobra.Command {
 	}
 	root.AddCommand(newToolsCommandWithClient(client))
 	root.AddCommand(newUpgradeCommandWithClient(client))
+	root.AddCommand(newPublishCommandWithClient(client))
 	return root
 }
