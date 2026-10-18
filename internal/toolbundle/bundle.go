@@ -275,6 +275,7 @@ func extract(root *os.Root, tool string, p toolconfig.Package, source io.Reader,
 	archive := tar.NewReader(decoded)
 	seen := map[string]bool{}
 	installed := map[string]bool{}
+	unexecutable := map[string]bool{}
 	treeFiles := map[string]int{}
 	helixRoot := ""
 	for {
@@ -344,37 +345,46 @@ func extract(root *os.Root, tool string, p toolconfig.Package, source io.Reader,
 		}
 		target, selected := p.Install.Members[key]
 		if selected {
-			if installed[key] {
-				return fmt.Errorf("duplicate archive selection %q", key)
-			}
-			installed[key] = true
-			if entry.Mode&0111 == 0 {
-				return fmt.Errorf("%s entrypoint is not executable", tool)
-			}
-		} else if p.Install.Preserve {
-			target = name
-			if p.Install.Profile == "helix-runtime" {
-				target = "lib/helix/" + name
-			}
-		} else {
-			for _, tree := range p.Install.ArchiveNoticeTrees {
-				if strings.HasPrefix(name, tree+"/") {
-					target = "licenses/" + tool + "/" + name
-					treeFiles[tree]++
-					break
+			if !p.Install.Preserve && entry.Mode&0111 == 0 {
+				unexecutable[key] = true
+				selected = false
+				target = ""
+			} else {
+				if installed[key] {
+					return fmt.Errorf("duplicate archive selection %q", key)
+				}
+				installed[key] = true
+				if entry.Mode&0111 == 0 {
+					return fmt.Errorf("%s entrypoint is not executable", tool)
 				}
 			}
-			if target == "" {
-				for _, notice := range p.Install.ArchiveNotices {
-					if path.Base(name) == notice {
-						target = "licenses/" + tool + "/" + notice
+		}
+		if !selected {
+			if p.Install.Preserve {
+				target = name
+				if p.Install.Profile == "helix-runtime" {
+					target = "lib/helix/" + name
+				}
+			} else {
+				for _, tree := range p.Install.ArchiveNoticeTrees {
+					if strings.HasPrefix(name, tree+"/") {
+						target = "licenses/" + tool + "/" + name
+						treeFiles[tree]++
 						break
 					}
 				}
+				if target == "" {
+					for _, notice := range p.Install.ArchiveNotices {
+						if path.Base(name) == notice {
+							target = "licenses/" + tool + "/" + notice
+							break
+						}
+					}
+				}
 			}
-			if target == "" {
-				continue
-			}
+		}
+		if target == "" {
+			continue
 		}
 		mode := fs.FileMode(0644)
 		if selected || p.Install.Preserve && entry.Mode&0111 != 0 {
@@ -391,6 +401,11 @@ func extract(root *os.Root, tool string, p toolconfig.Package, source io.Reader,
 		return fmt.Errorf("XZ archive decompressed data too large")
 	}
 	if len(installed) != len(p.Install.Members) {
+		for key := range p.Install.Members {
+			if !installed[key] && unexecutable[key] {
+				return fmt.Errorf("%s entrypoint is not executable", tool)
+			}
+		}
 		return fmt.Errorf("expected %d %s executable(s), found %d", len(p.Install.Members), tool, len(installed))
 	}
 	for _, tree := range p.Install.ArchiveNoticeTrees {
