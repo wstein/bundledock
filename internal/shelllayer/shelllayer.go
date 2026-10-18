@@ -269,9 +269,14 @@ func renderBash(shortcuts []Shortcut) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "# %s\n", header)
 	b.WriteString(`# Source from an interactive bash (for example /etc/bash.bashrc).
-# Opt out: BDOCK_SHORTCUTS=0 (aliases), BDOCK_STARSHIP=0 (prompt).
+# Opt out: BDOCK_SHORTCUTS=0 (aliases), BDOCK_STARSHIP=0 (prompt), BDOCK_FASTFETCH=0 (startup greeting).
 [ -n "${BASH_VERSION-}" ] || return 0
 case $- in *i*) ;; *) return 0 ;; esac
+
+if [ "${BDOCK_FASTFETCH-1}" != 0 ] && [ "${__bdock_fastfetch_pid-}" != "$$" ] && command -v fastfetch >/dev/null 2>&1; then
+    __bdock_fastfetch_pid=$$
+    command fastfetch || :
+fi
 
 if [ "${BDOCK_STARSHIP-1}" != 0 ] && [ -z "${STARSHIP_SHELL-}" ] && command -v starship >/dev/null 2>&1; then
     eval "$(starship init bash)"
@@ -292,9 +297,15 @@ func renderZsh(shortcuts []Shortcut) string {
 	fmt.Fprintf(&b, "# %s\n", header)
 	b.WriteString(`# Source from an interactive zsh (for example /etc/zshrc or /etc/zsh/zshrc).
 # Opt out: BDOCK_SHORTCUTS=0 (aliases), BDOCK_STARSHIP=0 (prompt),
-# BDOCK_ZSH_EXPAND=0 (keep aliases, but do not expand them on space).
+# BDOCK_ZSH_EXPAND=0 (keep aliases, but do not expand them on space),
+# BDOCK_FASTFETCH=0 (startup greeting).
 [[ -n ${ZSH_VERSION-} ]] || return 0
 [[ -o interactive ]] || return 0
+
+if [[ ${BDOCK_FASTFETCH-1} != 0 && ${__bdock_fastfetch_pid-} != $$ ]] && (( $+commands[fastfetch] )); then
+    typeset -g __bdock_fastfetch_pid=$$
+    command fastfetch || :
+fi
 
 if [[ ${BDOCK_STARSHIP-1} != 0 && -z ${STARSHIP_SHELL-} ]] && (( $+commands[starship] )); then
     eval "$(starship init zsh)"
@@ -345,8 +356,13 @@ func renderFish(shortcuts []Shortcut) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "# %s\n", header)
 	b.WriteString(`# Loaded automatically when <toolbox>/share is in XDG_DATA_DIRS.
-# Opt out: BDOCK_SHORTCUTS=0 (abbreviations), BDOCK_STARSHIP=0 (prompt).
+# Opt out: BDOCK_SHORTCUTS=0 (abbreviations), BDOCK_STARSHIP=0 (prompt), BDOCK_FASTFETCH=0 (startup greeting).
 status is-interactive; or return 0
+
+if test "$BDOCK_FASTFETCH" != 0; and test "$__bdock_fastfetch_pid" != "$fish_pid"; and command -q fastfetch
+    set -g __bdock_fastfetch_pid $fish_pid
+    command fastfetch; or true
+end
 
 if test "$BDOCK_STARSHIP" != 0; and not set -q STARSHIP_SHELL; and command -q starship
     starship init fish | source
@@ -395,9 +411,15 @@ func renderNu(shortcuts []Shortcut) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "# %s\n", header)
 	b.WriteString(`# Loaded automatically by interactive Nushell when <toolbox>/share is in
-# XDG_DATA_DIRS. Opt out of the prompt with BDOCK_STARSHIP=0. Nushell
+# XDG_DATA_DIRS. Opt out with BDOCK_STARSHIP=0 (prompt) or
+# BDOCK_FASTFETCH=0 (startup greeting). Nushell
 # definitions cannot be conditional, so the shortcuts are always defined;
 # leave <toolbox>/share out of XDG_DATA_DIRS to skip this file entirely.
+
+if $nu.is-interactive and ($env.BDOCK_FASTFETCH? | default "1") != "0" and ($env.__bdock_fastfetch_pid? | default 0) != $nu.pid and (which fastfetch | is-not-empty) {
+    $env.__bdock_fastfetch_pid = $nu.pid
+    try { ^fastfetch } catch { null }
+}
 
 if ($env.BDOCK_STARSHIP? | default "1") != "0" and ($env.STARSHIP_SHELL? | is-empty) and (which starship | is-not-empty) {
     # Equivalent to ` + "`starship init nu`" + `, kept static because autoload files

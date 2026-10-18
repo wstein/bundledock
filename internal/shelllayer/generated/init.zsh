@@ -1,9 +1,15 @@
 # BundleDock shared shell layer. Generated from internal/shelllayer/shortcuts.tsv; do not edit.
 # Source from an interactive zsh (for example /etc/zshrc or /etc/zsh/zshrc).
 # Opt out: BDOCK_SHORTCUTS=0 (aliases), BDOCK_STARSHIP=0 (prompt),
-# BDOCK_ZSH_EXPAND=0 (keep aliases, but do not expand them on space).
+# BDOCK_ZSH_EXPAND=0 (keep aliases, but do not expand them on space),
+# BDOCK_FASTFETCH=0 (startup greeting).
 [[ -n ${ZSH_VERSION-} ]] || return 0
 [[ -o interactive ]] || return 0
+
+if [[ ${BDOCK_FASTFETCH-1} != 0 && ${__bdock_fastfetch_pid-} != $$ ]] && (( $+commands[fastfetch] )); then
+    typeset -g __bdock_fastfetch_pid=$$
+    command fastfetch || :
+fi
 
 if [[ ${BDOCK_STARSHIP-1} != 0 && -z ${STARSHIP_SHELL-} ]] && (( $+commands[starship] )); then
     eval "$(starship init zsh)"

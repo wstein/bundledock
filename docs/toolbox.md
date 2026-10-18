@@ -731,7 +731,11 @@ Shortcuts that need a branch (`gpsup`, `grbm`, `gswm`) are functions in every
 shell: they resolve the branch first and stop with `bdock: not on a branch
 (detached HEAD)` before running Git, which matters in jj-colocated repositories.
 The default branch is `origin/HEAD`, else `main`, else `master`. All files load
-only in interactive shells. `BDOCK_SHORTCUTS=0` skips the shortcuts,
+only in interactive shells. The layer runs `fastfetch` once per interactive shell
+when the executable is present; repeated sourcing does not repeat the greeting.
+It leaves user Fastfetch configuration in control and tolerates a missing or
+failing executable. Set `BDOCK_FASTFETCH=0` to skip the greeting.
+`BDOCK_SHORTCUTS=0` skips the shortcuts,
 `BDOCK_STARSHIP=0` the prompt and `BDOCK_ZSH_EXPAND=0` zsh's expansion on space
 (Ctrl+Space inserts a plain space). A prompt already initialized by the user's
 own configuration (`STARSHIP_SHELL` set) is left alone. Nushell definitions
