@@ -1524,6 +1524,92 @@
         "licenses/fastfetch/UNICODE-LICENSE",
         "licenses/fastfetch/SOURCE"
       ]
+    },
+    "scc": {
+      "provider": "github",
+      "repository": "wstein/scc-fork",
+      "normalization": "semver",
+      "tag_prefix": "v",
+      "architectures": {
+        "amd64": "x86_64",
+        "arm64": "arm64"
+      },
+      "asset": "scc_Linux_{arch}.tar.gz",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "sidecar": "checksums.txt",
+      "install": {
+        "kind": "tar.gz",
+        "members": {
+          "scc": "bin/scc"
+        }
+      },
+      "notices": [
+        "licenses/scc/LICENSE",
+        "licenses/scc/SOURCE",
+        "licenses/scc/dependencies/dario.cat__mergo__LICENSE",
+        "licenses/scc/dependencies/github.com__Microsoft__go-winio__LICENSE",
+        "licenses/scc/dependencies/github.com__ProtonMail__go-crypto__AUTHORS",
+        "licenses/scc/dependencies/github.com__ProtonMail__go-crypto__LICENSE",
+        "licenses/scc/dependencies/github.com__ProtonMail__go-crypto__PATENTS",
+        "licenses/scc/dependencies/github.com__agnivade__levenshtein__License.txt",
+        "licenses/scc/dependencies/github.com__boyter__gocodewalker__LICENSE",
+        "licenses/scc/dependencies/github.com__boyter__gocodewalker__go-gitignore__LICENSE",
+        "licenses/scc/dependencies/github.com__boyter__simplecache__LICENSE",
+        "licenses/scc/dependencies/github.com__clipperhouse__uax29__v2__LICENSE",
+        "licenses/scc/dependencies/github.com__cloudflare__circl__LICENSE",
+        "licenses/scc/dependencies/github.com__cyphar__filepath-securejoin__COPYING.md",
+        "licenses/scc/dependencies/github.com__cyphar__filepath-securejoin__LICENSE.BSD",
+        "licenses/scc/dependencies/github.com__cyphar__filepath-securejoin__LICENSE.MPL-2.0",
+        "licenses/scc/dependencies/github.com__danwakefield__fnmatch__LICENSE",
+        "licenses/scc/dependencies/github.com__emirpasic__gods__LICENSE",
+        "licenses/scc/dependencies/github.com__go-git__gcfg__LICENSE",
+        "licenses/scc/dependencies/github.com__go-git__go-billy__v5__LICENSE",
+        "licenses/scc/dependencies/github.com__go-git__go-git__v5__LICENSE",
+        "licenses/scc/dependencies/github.com__golang__groupcache__LICENSE",
+        "licenses/scc/dependencies/github.com__google__jsonschema-go__LICENSE",
+        "licenses/scc/dependencies/github.com__google__uuid__LICENSE",
+        "licenses/scc/dependencies/github.com__inconshreveable__mousetrap__LICENSE",
+        "licenses/scc/dependencies/github.com__jbenet__go-context__LICENSE",
+        "licenses/scc/dependencies/github.com__json-iterator__go__LICENSE",
+        "licenses/scc/dependencies/github.com__kevinburke__ssh_config__AUTHORS.txt",
+        "licenses/scc/dependencies/github.com__kevinburke__ssh_config__LICENSE",
+        "licenses/scc/dependencies/github.com__klauspost__cpuid__v2__LICENSE",
+        "licenses/scc/dependencies/github.com__mark3labs__mcp-go__LICENSE",
+        "licenses/scc/dependencies/github.com__mattn__go-colorable__LICENSE",
+        "licenses/scc/dependencies/github.com__mattn__go-isatty__LICENSE",
+        "licenses/scc/dependencies/github.com__mattn__go-runewidth__LICENSE",
+        "licenses/scc/dependencies/github.com__modern-go__concurrent__LICENSE",
+        "licenses/scc/dependencies/github.com__modern-go__reflect2__LICENSE",
+        "licenses/scc/dependencies/github.com__pjbgf__sha1cd__LICENSE",
+        "licenses/scc/dependencies/github.com__rs__zerolog__LICENSE",
+        "licenses/scc/dependencies/github.com__santhosh-tekuri__jsonschema__v6__LICENSE",
+        "licenses/scc/dependencies/github.com__sergi__go-diff__AUTHORS",
+        "licenses/scc/dependencies/github.com__sergi__go-diff__LICENSE",
+        "licenses/scc/dependencies/github.com__skeema__knownhosts__LICENSE",
+        "licenses/scc/dependencies/github.com__skeema__knownhosts__NOTICE",
+        "licenses/scc/dependencies/github.com__spf13__cast__LICENSE",
+        "licenses/scc/dependencies/github.com__spf13__cobra__LICENSE.txt",
+        "licenses/scc/dependencies/github.com__spf13__pflag__LICENSE",
+        "licenses/scc/dependencies/github.com__xanzy__ssh-agent__LICENSE",
+        "licenses/scc/dependencies/github.com__yosida95__uritemplate__v3__LICENSE",
+        "licenses/scc/dependencies/go.yaml.in__yaml__v2__LICENSE",
+        "licenses/scc/dependencies/go.yaml.in__yaml__v2__LICENSE.libyaml",
+        "licenses/scc/dependencies/go.yaml.in__yaml__v2__NOTICE",
+        "licenses/scc/dependencies/golang.org__x__crypto__LICENSE",
+        "licenses/scc/dependencies/golang.org__x__crypto__PATENTS",
+        "licenses/scc/dependencies/golang.org__x__net__LICENSE",
+        "licenses/scc/dependencies/golang.org__x__net__PATENTS",
+        "licenses/scc/dependencies/golang.org__x__sync__LICENSE",
+        "licenses/scc/dependencies/golang.org__x__sync__PATENTS",
+        "licenses/scc/dependencies/golang.org__x__sys__LICENSE",
+        "licenses/scc/dependencies/golang.org__x__sys__PATENTS",
+        "licenses/scc/dependencies/golang.org__x__text__LICENSE",
+        "licenses/scc/dependencies/golang.org__x__text__PATENTS",
+        "licenses/scc/dependencies/gopkg.in__warnings.v0__LICENSE"
+      ]
     }
   }
 }

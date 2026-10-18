@@ -1,0 +1,22 @@
+Upstream: https://github.com/wstein/scc-fork
+Original project: https://github.com/boyter/scc
+License: MIT; dependency licenses retained under dependencies/.
+Historical license snapshot: v4.1.1
+Annotated tag: 6115335874cf5e7c33d10b7deacbe65d39e580ff
+Source commit: 9bb762717271e08953a01cfe63981af21390d777
+License source: https://raw.githubusercontent.com/wstein/scc-fork/9bb762717271e08953a01cfe63981af21390d777/LICENSE
+LICENSE SHA256: 394715fd981d15253bdc4677286abfce01da356040381a0d9de7701bd7c8069c
+Source archive: https://api.github.com/repos/wstein/scc-fork/tarball/v4.1.1
+Source archive SHA256: 5df0c5461df0dca5a910d699fb09582dcd74c54d3ad49929fc960ec483ff8b4b
+All vendored LICENSE, COPYING, NOTICE, COPYRIGHT, AUTHORS and PATENTS files are
+retained byte-for-byte from this historical source archive, including nested notices.
+Each dependency filename is its vendor-relative source path with / replaced by __
+so the bundle notice copier retains unique basenames.
+Official fork release: https://github.com/wstein/scc-fork/releases/tag/v4.1.1
+Release published stable (not draft/prerelease) on 2026-10-18T17:28:30Z.
+Official Linux AMD64 and ARM64 archives were downloaded without rebuilding or
+patching binaries. Archive SHA256 values match publisher API asset digests and
+checksums.txt (SHA256 7076d581252bade65b8b766f508b469f601fbad4503bd286202a4befb286b7ed).
+Read-only ELF and Go build metadata inspection confirmed x86-64/AArch64,
+CGO_ENABLED=0, version 4.1.1 and the source commit above on 2026-10-18.
+No downloaded binary was executed; native consumer smoke remains unverified.

@@ -54,6 +54,7 @@ LABELS = (
     ("trivy", "Trivy (`trivy`)"),
     ("trufflehog", "TruffleHog (`trufflehog`)"),
     ("syft", "Syft (`syft`)"),
+    ("scc", "SCC (`scc`, wstein fork)"),
     ("fastfetch", "Fastfetch (`fastfetch`)"),
     ("bottom", "bottom (`btm`)"),
     ("btop", "btop (`btop`)"),

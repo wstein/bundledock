@@ -159,7 +159,7 @@ establish a complete transitive license audit.
 
 The default bundle lives in `bundles/toolbox/`: `packages.txt`,
 `packages.catalog.json`, `packages.lock.json`, its Dockerfile, smoke scripts and licenses.
-Shared Go code remains at the repository root. The source toolbox contains 56
+Shared Go code remains at the repository root. The source toolbox contains 57
 downloaded tools plus the two first-use Python launchers listed below. Codex, Antigravity and Claude are supplied by their separate
 [Codex](codex.md), [Antigravity](agy.md) and [Claude Code](claude.md) bundles.
 The published toolbox recorded above still includes those agents; this source
@@ -242,6 +242,7 @@ networking disabled. Native smoke acceptance remains part of an approved build.
 | regctl (`regctl`) | 0.11.6 | [Homepage](https://regclient.org) | [Source](https://github.com/regclient/regclient) |
 | ripgrep (`rg`) | 15.2.0 | [Homepage](https://github.com/BurntSushi/ripgrep) | [Source](https://github.com/BurntSushi/ripgrep) |
 | Ruff (`ruff`) | 0.17.1 | [Homepage](https://docs.astral.sh/ruff) | [Source](https://github.com/astral-sh/ruff) |
+| SCC (`scc`, wstein fork) | 4.1.1 | [Homepage](https://github.com/wstein/scc-fork) | [Source](https://github.com/wstein/scc-fork) |
 | ShellCheck (`shellcheck`) | 0.11.0 | [Homepage](https://www.shellcheck.net) | [Source](https://github.com/koalaman/shellcheck) |
 | shfmt (`shfmt`) | 3.14.1 | [Homepage](https://pkg.go.dev/mvdan.cc/sh/v3) | [Source](https://github.com/mvdan/sh) |
 | SOPS (`sops`) | 3.13.3 | [Homepage](https://github.com/getsops/sops) | [Source](https://github.com/getsops/sops) |
@@ -318,6 +319,22 @@ main CI. See the [owner-merge publication flow](publication.md). Unrelated sourc
 changes cannot enter this path. Source checks do not establish native image
 smoke coverage. Initial publication retains explicit full-SHA manual approval,
 and publication does not activate a consumer image.
+
+### SCC fork release
+
+The source lock includes exactly [wstein/scc-fork v4.1.1](https://github.com/wstein/scc-fork/releases/tag/v4.1.1),
+with `scc==4.1.1` preserving the requested fork release. Both Linux AMD64
+(`scc_Linux_x86_64.tar.gz`) and ARM64 (`scc_Linux_arm64.tar.gz`) archives were
+SHA256 checked against the publisher release API digests and `checksums.txt` on
+2026-10-18. Read-only ELF and Go build metadata inspection confirmed both native
+architectures, `CGO_ENABLED=0` and commit `9bb762717271e08953a01cfe63981af21390d777`.
+The catalog installs only `bin/scc`; the MIT license and full vendored dependency
+notices are retained from that historical source snapshot.
+
+The isolated consumer smoke uses only `scc --version`. Source tests use a stub;
+no downloaded SCC binary has been executed for this addition. Native consumer
+smoke, image build/publication and consumer activation remain pending separate
+owner authorization. The published image above retains its recorded source.
 
 ## Keep the source inventory consistent
 
