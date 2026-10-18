@@ -1,7 +1,7 @@
 {
   "schema": 2,
-  "desired_digest": "b16ae4cd2ad5aad7f9861fcd63725bff71e7545c0f815f565042d446f110bf22",
-  "catalog_digest": "b604dff7a84a0e0a32e615fe09a352bd97f14f8ba17c6922c6bbf7295b63dc60",
+  "desired_digest": "5d460180f665b3c7d6febedfd65b54f3d5e523faefbf66c3165d18bb781729bd",
+  "catalog_digest": "7107ae1619b1616fa7a484a0f638a83a36818eca0b07b7dbef08cf0b02181339",
   "platforms": {
     "amd64": {
       "actionlint": {
@@ -242,6 +242,12 @@
         "version": "0.17.1",
         "url": "https://github.com/astral-sh/ruff/releases/download/0.17.1/ruff-x86_64-unknown-linux-musl.tar.gz",
         "sha256": "2d9878b5e6a3d0dedadbfc01a64bfe54e72f560adbfd235937cd29e1fc9238e3",
+        "verification": "publisher-sha256"
+      },
+      "scc": {
+        "version": "v4.1.1",
+        "url": "https://github.com/wstein/scc-fork/releases/download/v4.1.1/scc_Linux_x86_64.tar.gz",
+        "sha256": "674aaf7420f4f9a3eba4ab146c5b0b9b9d597df21f9f201c775681c9d767de58",
         "verification": "publisher-sha256"
       },
       "shellcheck": {
@@ -580,6 +586,12 @@
         "version": "0.17.1",
         "url": "https://github.com/astral-sh/ruff/releases/download/0.17.1/ruff-aarch64-unknown-linux-musl.tar.gz",
         "sha256": "255404ccf2f7950ff6aad8858321a6f416fe2a840ae4e37dfb4c21cb8774f325",
+        "verification": "publisher-sha256"
+      },
+      "scc": {
+        "version": "v4.1.1",
+        "url": "https://github.com/wstein/scc-fork/releases/download/v4.1.1/scc_Linux_arm64.tar.gz",
+        "sha256": "b47e1acd699746db725c6beffba26225daadaff3534e6b8d39a7e7f4af7a7bf6",
         "verification": "publisher-sha256"
       },
       "shellcheck": {
