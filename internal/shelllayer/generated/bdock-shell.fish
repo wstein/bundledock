@@ -1,7 +1,12 @@
 # BundleDock shared shell layer. Generated from internal/shelllayer/shortcuts.tsv; do not edit.
 # Loaded automatically when <toolbox>/share is in XDG_DATA_DIRS.
-# Opt out: BDOCK_SHORTCUTS=0 (abbreviations), BDOCK_STARSHIP=0 (prompt).
+# Opt out: BDOCK_SHORTCUTS=0 (abbreviations), BDOCK_STARSHIP=0 (prompt), BDOCK_FASTFETCH=0 (startup greeting).
 status is-interactive; or return 0
+
+if test "$BDOCK_FASTFETCH" != 0; and test "$__bdock_fastfetch_pid" != "$fish_pid"; and command -q fastfetch
+    set -g __bdock_fastfetch_pid $fish_pid
+    command fastfetch; or true
+end
 
 if test "$BDOCK_STARSHIP" != 0; and not set -q STARSHIP_SHELL; and command -q starship
     starship init fish | source
