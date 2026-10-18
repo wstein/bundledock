@@ -1,0 +1,69 @@
+# CLI-only source preparation; release-build.yml and verified stw setup are pending.
+# This contract does not authorize a build, dispatch, tag or publication.
+schema_version = 1
+
+[project]
+name = "BundleDock"
+
+[version]
+scheme = "semver"
+tag_prefix = "bdock/"
+source = "input"
+
+[[build]]
+id = "cli"
+scope = "per-target"
+argv = ["sh", "scripts/release-stw.sh", "{os}", "{arch}", "{version_number}", "{output}"]
+# A future workflow must populate and verify these same caches before execution.
+# Keep the offline settings in the filtered child environment, not only the job.
+env_inherit = ["PATH", "HOME", "TMPDIR", "GOCACHE", "GOMODCACHE"]
+env_set = ["GOTOOLCHAIN=local", "GOPROXY=off", "GOSUMDB=off"]
+network = "none"
+timeout_seconds = 900
+
+[[target]]
+id = "linux-amd64"
+kind = "file"
+group = "cli"
+build = "cli"
+os = "linux"
+arch = "amd64"
+output = "dist/release/bdock_{version_number}_linux_amd64.tar.gz"
+runner = "ubuntu-24.04"
+smoke_argv = ["sh", ".github/scripts/release-smoke.sh", "{version_number}", "{commit}", "{os}", "{arch}", "{artifact}"]
+
+[[target]]
+id = "linux-arm64"
+kind = "file"
+group = "cli"
+build = "cli"
+os = "linux"
+arch = "arm64"
+output = "dist/release/bdock_{version_number}_linux_arm64.tar.gz"
+runner = "ubuntu-24.04-arm"
+smoke_argv = ["sh", ".github/scripts/release-smoke.sh", "{version_number}", "{commit}", "{os}", "{arch}", "{artifact}"]
+
+[[target]]
+id = "darwin-arm64"
+kind = "file"
+group = "cli"
+build = "cli"
+os = "darwin"
+arch = "arm64"
+output = "dist/release/bdock_{version_number}_darwin_arm64.tar.gz"
+runner = "macos-15"
+smoke_argv = ["sh", ".github/scripts/release-smoke.sh", "{version_number}", "{commit}", "{os}", "{arch}", "{artifact}"]
+
+[outputs]
+checksums = "SHA256SUMS"
+
+[reproducibility]
+policy = "required"
+source_date_epoch = "commit-time"
+
+[allowlist]
+paths = []
+
+[ci]
+workflows = ["ci.yml"]
+release_workflow = ".github/workflows/release-build.yml"
