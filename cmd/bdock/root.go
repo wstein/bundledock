@@ -1,10 +1,16 @@
 package main
 
-import "github.com/spf13/cobra"
+import (
+	"net/http"
+
+	"github.com/spf13/cobra"
+)
 
 var version = "dev"
 
-func newRootCommand() *cobra.Command {
+func newRootCommand() *cobra.Command { return newRootCommandWithClient(nil) }
+
+func newRootCommandWithClient(client *http.Client) *cobra.Command {
 	root := &cobra.Command{
 		Use:          "bdock",
 		Short:        "Build and manage OCI bundles",
@@ -15,6 +21,7 @@ func newRootCommand() *cobra.Command {
 			return cmd.Help()
 		},
 	}
-	root.AddCommand(newToolsCommand())
+	root.AddCommand(newToolsCommandWithClient(client))
+	root.AddCommand(newUpgradeCommandWithClient(client))
 	return root
 }
