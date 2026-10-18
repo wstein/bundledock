@@ -32,7 +32,7 @@ update; packaging revisions remain in the bundle guides.
 
 | Bundle | Purpose and guide | Published version | Publication workflow |
 | --- | --- | --- | --- |
-| Toolbox | [Development CLIs and common utilities](docs/toolbox.md) | [![Published toolbox version](https://img.shields.io/badge/dynamic/regex?url=https%3A%2F%2Fquay.io%2Fapi%2Fv1%2Frepository%2Fbundledock%2Ftoolbox%2Ftag%2F%3FonlyActiveTags%3Dtrue%26limit%3D100%26page%3D1&search=%22name%22%5Cs%2A%3A%5Cs%2A%22%28%5Cd%7B4%7D%5C.%5Cd%7B2%7D%5C.%5Cd%7B2%7D-%28%3F%3Ab%5Cd%2B%5C.%5Cd%2B%7C%5Cd%2B-%5Cd%2B%29%29%22&replace=%241&label=version&color=5eead4&labelColor=0b2545)](https://quay.io/repository/bundledock/toolbox?tab=tags) | [![Publish bundles](https://github.com/wstein/bundledock/actions/workflows/publish-bundles.yml/badge.svg?branch=main)](https://github.com/wstein/bundledock/actions/workflows/publish-bundles.yml) |
+| Toolbox | [Development CLIs and common utilities](docs/toolbox.md) | [![Published toolbox version](https://img.shields.io/badge/dynamic/regex?url=https%3A%2F%2Fquay.io%2Fapi%2Fv1%2Frepository%2Fbundledock%2Ftoolbox%2Ftag%2F%3FonlyActiveTags%3Dtrue%26limit%3D100%26page%3D1&search=%22name%22%5Cs%2A%3A%5Cs%2A%22%28%5Cd%7B4%7D%5C.%5Cd%7B2%7D%5C.%5Cd%7B2%7D-%28%3F%3Ab%5Cd%2B%28%3F%3A%5C.%5Cd%2B%29%3F%7C%5Cd%2B-%5Cd%2B%29%29%22&replace=%241&label=version&color=5eead4&labelColor=0b2545)](https://quay.io/repository/bundledock/toolbox?tab=tags) | [![Publish bundles](https://github.com/wstein/bundledock/actions/workflows/publish-bundles.yml/badge.svg?branch=main)](https://github.com/wstein/bundledock/actions/workflows/publish-bundles.yml) |
 
 ### Runtimes
 
@@ -63,10 +63,8 @@ update; packaging revisions remain in the bundle guides.
 | Codex | [Official Codex package](docs/codex.md) | [![Published codex version](https://img.shields.io/badge/dynamic/regex?url=https%3A%2F%2Fquay.io%2Fapi%2Fv1%2Frepository%2Fbundledock%2Fcodex%2Ftag%2F%3FonlyActiveTags%3Dtrue%26limit%3D100%26page%3D1&search=%22name%22%5Cs%2A%3A%5Cs%2A%22%28%5Cd%2B%5C.%5Cd%2B%5C.%5Cd%2B-b%5Cd%2B%7C%5Cd%7B4%7D%5C.%5Cd%7B2%7D%5C.%5Cd%7B2%7D-%28%3F%3Ab%5Cd%2B%5C.%5Cd%2B%7C%5Cd%2B-%5Cd%2B%29%29%22&replace=%241&label=version&color=5eead4&labelColor=0b2545)](https://quay.io/repository/bundledock/codex?tab=tags) | [![Publish bundles](https://github.com/wstein/bundledock/actions/workflows/publish-bundles.yml/badge.svg?branch=main)](https://github.com/wstein/bundledock/actions/workflows/publish-bundles.yml) |
 
 The three agent carriers have verified publication receipts in their guides.
-The current source toolbox excludes these agents; the published toolbox used
-below still contains them and predates the fzf, bat and regctl additions.
-A reduced toolbox image requires a separately approved publication. Consumer
-activation follows the consumer project’s instructions.
+The published toolbox below matches the current catalog without those agents.
+Consumer activation follows the consumer project’s instructions.
 
 **[Documentation](https://wstein.github.io/bundledock/)** — quick start and guides
 for using, maintaining, and publishing each bundle.
@@ -87,16 +85,15 @@ You need Docker running and a local clone of this repository. Pull the published
 toolbox by its immutable multi-platform index digest, then initialize its volume:
 
 ```sh
-TOOLBOX_IMAGE=quay.io/bundledock/toolbox@sha256:40bae37ef7fd7b8e7131803850801ed41cfb23a6ef774bc2e40f95ee81e59a1c
+TOOLBOX_IMAGE=quay.io/bundledock/toolbox@sha256:c7715f6a2cae2812dcaf847185427080f2ab73097aa392393d427e460afed402
 docker pull "$TOOLBOX_IMAGE"
 make bundle-volume BUNDLE=toolbox IMAGE="$TOOLBOX_IMAGE"
 ```
 
-This example is toolbox version `2026.10.10-b4.1`, published from
-[`812e7caac782595b9302292603bbe49e890ca96e`](https://github.com/wstein/bundledock/commit/812e7caac782595b9302292603bbe49e890ca96e)
-in [publication run 38088214128, attempt 1](https://github.com/wstein/bundledock/actions/runs/38088214128/attempts/1).
-It predates the source catalog additions of fzf, bat and regctl. The initializer
-prints `Volume: bundledock-toolbox-<full image ID>`; use that volume name below:
+This example is toolbox version `2026.10.18-b2`, published from
+[`dce172b73a78d3a816dbfbf60129415156ad6a31`](https://github.com/wstein/bundledock/commit/dce172b73a78d3a816dbfbf60129415156ad6a31)
+in [publication run 39156619187, attempt 1](https://github.com/wstein/bundledock/actions/runs/39156619187/attempts/1).
+The initializer prints `Volume: bundledock-toolbox-<full image ID>`; use that volume name below:
 
 ```sh
 docker run --rm -it \
