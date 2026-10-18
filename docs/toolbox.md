@@ -672,12 +672,17 @@ retained under `licenses/shell-layer`). The set is curated: no `--no-verify`,
 git-svn, git-flow or forge-specific entries and no irreversible clean or reset
 shortcuts. Names use `[a-z0-9]` only, so `gc!`-style names are not offered. Command
 words are plain, with one exception: a `git log` row may carry one `--pretty=` or
-`--format=` value (optionally `format:` or `tformat:` first) in single quotes, before any
-bare `--` (`glol`, `gloo`). The quoted text is limited to letters, digits, spaces and
-`% ( ) < > . , : @ / = _ [ ] -`, so a format string with spaces stays one word and means
-the same in all four shells. Any other quoted word, any quote in another command (including
-`git show` and `git config`) and a second quoted word are rejected. `gloo` uses `format:`,
-which separates entries with newlines but ends without one, so the prompt follows its last line.
+`--format=` value (optionally `format:` or `tformat:` first) in single quotes (`glol`, `gloo`).
+The quoted text is limited to letters, digits, spaces and `% ( ) < > . , : @ / = _ [ ] -`, so a
+format string with spaces stays one word and means the same in all four shells. Only
+self-contained options (such as `--date=short`) or these no-argument ones may come before it:
+`--all`, `--graph`, `--decorate`, `--stat`, `--abbrev-commit`, `--no-merges`, `--first-parent`,
+`--reverse`, `-p`, `--patch` (git would read the word after `--grep`, `--author`, `-n`,
+`--end-of-options` or `--` as that option's argument or a path, not as a format). The row may
+not also carry another `--pretty`, `--format` or `--oneline`, which would override it. Any other
+quoted word, any quote in another command (including `git show` and `git config`) and a second
+quoted word are rejected. `gloo` uses `format:`, which separates entries with newlines but ends
+without one, so the prompt follows its last line.
 
 The listing family is read-only and runs [lsd](https://github.com/lsd-rs/lsd),
 which the toolbox ships (`lsd` in `packages.txt`; a source test requires every
