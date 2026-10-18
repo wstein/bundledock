@@ -241,8 +241,8 @@ func Parse(data []byte) ([]Shortcut, error) {
 
 // noArgLogOptions are the bare git log options that take no separate argument.
 // Only these may come before the quoted word: git reads the word after any
-// other bare option (`--grep`, `--author`, `-n`, `--end-of-options`, `--`) as
-// that option's argument, not as a format.
+// other bare option as that option's argument (`--grep`, `--author`, `-n`), as
+// a revision (`--end-of-options`) or as a path (`--`), never as a format.
 var noArgLogOptions = map[string]bool{
 	"--all": true, "--graph": true, "--decorate": true, "--stat": true,
 	"--abbrev-commit": true, "--no-merges": true, "--first-parent": true,

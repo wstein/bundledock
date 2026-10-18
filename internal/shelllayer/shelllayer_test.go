@@ -177,9 +177,11 @@ func TestQuotedValuesReachEveryShellIntact(t *testing.T) {
 }
 
 // TestQuotedAlphabetIsExact pins every character of the quoted-value alphabet:
-// each listed character is accepted and every other printable ASCII character,
-// including the single quote itself, is rejected, so widening or narrowing
-// quotedWord fails here.
+// each listed character is accepted and every other printable ASCII character is
+// rejected, so widening or narrowing quotedWord by any of them fails here. The
+// single quote is the exception: a row with one inside the value is an
+// unterminated quote to the tokenizer however the class reads, so the "quote in
+// value" row of TestParseRejectsUnsafeRows is what pins it.
 func TestQuotedAlphabetIsExact(t *testing.T) {
 	const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 %()<>.,:@/=_[]-"
 	for c := rune(0x20); c <= 0x7e; c++ {

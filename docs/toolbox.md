@@ -677,8 +677,9 @@ The quoted text is limited to letters, digits, spaces and `% ( ) < > . , : @ / =
 format string with spaces stays one word and means the same in all four shells. Only
 self-contained options (such as `--date=short`) or these no-argument ones may come before it:
 `--all`, `--graph`, `--decorate`, `--stat`, `--abbrev-commit`, `--no-merges`, `--first-parent`,
-`--reverse`, `-p`, `--patch` (git would read the word after `--grep`, `--author`, `-n`,
-`--end-of-options` or `--` as that option's argument or a path, not as a format). The row may
+`--reverse`, `-p`, `--patch`; positional words such as `{branch}` may also come first. git reads the
+word after `--grep`, `--author` or `-n` as that option's argument, after `--end-of-options` as a
+revision and after `--` as a path, never as a format. The row may
 not also carry another `--pretty`, `--format` or `--oneline`, which would override it. Any other
 quoted word, any quote in another command (including `git show` and `git config`) and a second
 quoted word are rejected. `gloo` uses `format:`, which separates entries with newlines but ends
