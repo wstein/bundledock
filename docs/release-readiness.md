@@ -6,7 +6,7 @@ weight: 60
 
 # `bdock` CLI release readiness
 
-Updated 2026-10-17. This replaces the draft of 2026-10-10. It is a status note, not a release
+Updated 2026-10-18. This replaces the draft of 2026-10-10. It is a status note, not a release
 announcement and not approval to tag, publish or activate an image. The gap analysis against
 the earlier draft is in [the design analysis](design/bdock-release-workflow/analysis.md); the
 authoritative tool inventory is the [catalog and lock](toolbox.md).
@@ -17,9 +17,26 @@ authoritative tool inventory is the [catalog and lock](toolbox.md).
   (`.github/workflows/release.yml`), for linux/amd64, linux/arm64 and darwin/arm64. Tags are
   `bdock/vMAJOR.MINOR.PATCH`; the first planned version is `0.1.0`. The owner procedure is
   [releasing](releasing.md); the design is [docs/design/bdock-release-workflow](design/bdock-release-workflow/spec.md).
-- State: the workflow is **implemented on a branch and not merged**; no tag exists and no
-  workflow has run. Archive building, version injection (`-X main.version`), `PROVENANCE`
+- State: the tag-driven workflow is **merged on main**. The 2026-10-18 release audit found
+  no `bdock/` tag or GitHub Release. Archive building, version injection (`-X main.version`), `PROVENANCE`
   and `SHA256SUMS` are in `scripts/release.sh`, shared by local preparation and CI.
+- The requested first official `0.1.0` release through SourceSteward is pending. The
+  CLI-only `.stw/release.toml` and own-script adapter prepare the same three archive
+  targets; they do not connect the existing workflow to SourceSteward or authorize
+  a release. The contract expects numeric `0.1.0` in the CLI and archive names from
+  SourceSteward's version input `v0.1.0`, with tag `bdock/v0.1.0`.
+- SourceSteward's release work units WI4–WI10 must supply completed verification,
+  record, online/attestation, dispatch and build commands, reviewed workflow rules,
+  documentation activation and an official bootstrap release. BundleDock still needs
+  reviewed workflow migration and pinned, checksum- and attestation-verified official
+  SourceSteward setup. The adapter's declared child environment disables Go toolchain
+  and module downloads; future workflow setup must populate and verify the same
+  inherited `GOCACHE` and `GOMODCACHE` paths first. That setup is not implemented here.
+- The SourceSteward flow will add a global `SHA256SUMS`, `build-manifest.json` and
+  artifact attestations around those archives; an SBOM is not required for this CLI
+  migration. Native smoke, independent reproducibility and live publication remain
+  unverified. Separate owner operations must address the first-tag ruleset, release
+  environment, rehearsal, exact-source build dispatch and eventual annotated tag.
 - Unverified until the first real run: the GitHub-side tag path (annotated-tag fetch, CI-run
   query, release lookup, `gh release create`), runner labels such as `ubuntu-24.04-arm`, and
   the `release` environment. The workflow's dry run covers verify, build and smoke only.
