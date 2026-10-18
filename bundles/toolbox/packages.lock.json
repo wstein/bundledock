@@ -1,7 +1,7 @@
 {
   "schema": 2,
-  "desired_digest": "2ea6d43e3bdd5a103c60ca41bc438398fe2d6a2b5a4b24ba80772248c25f88ea",
-  "catalog_digest": "4bacb00526af5579ebb18a6495bd2d03055adeea0d86ee8be7287f8ebb8f5a3d",
+  "desired_digest": "b16ae4cd2ad5aad7f9861fcd63725bff71e7545c0f815f565042d446f110bf22",
+  "catalog_digest": "b604dff7a84a0e0a32e615fe09a352bd97f14f8ba17c6922c6bbf7295b63dc60",
   "platforms": {
     "amd64": {
       "actionlint": {
@@ -68,6 +68,12 @@
         "version": "v1.2.6",
         "url": "https://github.com/bootandy/dust/releases/download/v1.2.6/dust-v1.2.6-x86_64-unknown-linux-musl.tar.gz",
         "sha256": "cbf2cb5c9d6227e46fc4b29c03dc43b8632020dfc5cf269d263d6e29c399e044",
+        "verification": "publisher-sha256"
+      },
+      "fastfetch": {
+        "version": "2.70.0",
+        "url": "https://github.com/fastfetch-cli/fastfetch/releases/download/2.70.0/fastfetch-linux-amd64.tar.gz",
+        "sha256": "945b941b2a85e8de88b4c89714ad18ee6a7a129bb3c544bb448e9e0e027c226a",
         "verification": "publisher-sha256"
       },
       "fd": {
@@ -400,6 +406,12 @@
         "version": "v1.2.6",
         "url": "https://github.com/bootandy/dust/releases/download/v1.2.6/dust-v1.2.6-aarch64-unknown-linux-musl.tar.gz",
         "sha256": "a51cf42a4654864837cc116eaca914271d7a09a9c2a60de90ecc2187b8d855a7",
+        "verification": "publisher-sha256"
+      },
+      "fastfetch": {
+        "version": "2.70.0",
+        "url": "https://github.com/fastfetch-cli/fastfetch/releases/download/2.70.0/fastfetch-linux-aarch64.tar.gz",
+        "sha256": "fff4a127e4d76242e3bdac2a12430fc252fd6086d3eb30aee0382c3b0fece478",
         "verification": "publisher-sha256"
       },
       "fd": {

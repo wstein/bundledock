@@ -23,6 +23,7 @@ check() {
         --mount "type=bind,src=$script_dir/trufflehog-smoke.sh,dst=/trufflehog-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/quality-utilities-smoke.sh,dst=/quality-utilities-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/typst-smoke.sh,dst=/typst-smoke.sh,readonly" \
+        --mount "type=bind,src=$script_dir/fastfetch-smoke.sh,dst=/fastfetch-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/navi-smoke.sh,dst=/navi-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/mise-smoke.sh,dst=/mise-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/utilities-smoke.sh,dst=/utilities-smoke.sh,readonly" \
@@ -117,6 +118,8 @@ check() {
             test "$(uv --offline cache dir)" = "$UV_CACHE_DIR"
             stage "Typst version"
             sh /typst-smoke.sh
+            stage "Fastfetch version"
+            sh /fastfetch-smoke.sh
             stage "Navi version"
             sh /navi-smoke.sh
             stage "mise version"
