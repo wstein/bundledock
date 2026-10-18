@@ -73,6 +73,11 @@ func TestParseRejectsUnsafeRows(t *testing.T) {
 		"oneline before": "gx\tgit log --oneline --pretty='a'\n",
 		"unquoted first": "gx\tgit log --pretty=b --format='a'\n",
 		"quote in value": "gx\tgit log --pretty='a'b'c'\n",
+		// A quote in the command or subcommand word must be an error, never a panic.
+		"quoted git":     "gx\t'git' log\n",
+		"quoted log":     "gx\tgit 'log'\n",
+		"quoted log fmt": "gx\tgit 'log' --pretty='a'\n",
+		"quoted only":    "gx\t'git'\n",
 	} {
 		if _, err := Parse([]byte(row)); err == nil {
 			t.Errorf("%s: expected rejection of %q", name, row)
