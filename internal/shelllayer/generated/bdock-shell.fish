@@ -1,6 +1,6 @@
 # BundleDock shared shell layer. Generated from internal/shelllayer/shortcuts.tsv; do not edit.
 # Loaded automatically when <toolbox>/share is in XDG_DATA_DIRS.
-# Opt out: BDOCK_SHORTCUTS=0 (abbreviations), BDOCK_STARSHIP=0 (prompt), BDOCK_FASTFETCH=0 (startup greeting).
+# Opt out: BDOCK_SHORTCUTS=0 (abbreviations), BDOCK_STARSHIP=0 (prompt), BDOCK_FASTFETCH=0 (startup greeting), BDOCK_ZOXIDE=0 (cd/cdi).
 status is-interactive; or return 0
 
 if test "$BDOCK_FASTFETCH" != 0; and test "$__bdock_fastfetch_pid" != "$fish_pid"; and command -q fastfetch
@@ -10,6 +10,14 @@ end
 
 if test "$BDOCK_STARSHIP" != 0; and not set -q STARSHIP_SHELL; and command -q starship
     starship init fish | source
+end
+
+# Capture output before sourcing: a failing initializer may print partial code.
+if test "$BDOCK_ZOXIDE" != 0; and not functions -q __zoxide_z; and not functions -q __zoxide_hook; and command -q zoxide
+    set -l __bdock_zoxide_init (command zoxide init fish --cmd cd)
+    if test $status -eq 0
+        printf '%s\n' $__bdock_zoxide_init | source
+    end
 end
 
 test "$BDOCK_SHORTCUTS" != 0; or return 0

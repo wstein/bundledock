@@ -2,7 +2,7 @@
 # Source from an interactive zsh (for example /etc/zshrc or /etc/zsh/zshrc).
 # Opt out: BDOCK_SHORTCUTS=0 (aliases), BDOCK_STARSHIP=0 (prompt),
 # BDOCK_ZSH_EXPAND=0 (keep aliases, but do not expand them on space),
-# BDOCK_FASTFETCH=0 (startup greeting).
+# BDOCK_FASTFETCH=0 (startup greeting), BDOCK_ZOXIDE=0 (cd/cdi).
 [[ -n ${ZSH_VERSION-} ]] || return 0
 [[ -o interactive ]] || return 0
 
@@ -13,6 +13,14 @@ fi
 
 if [[ ${BDOCK_STARSHIP-1} != 0 && -z ${STARSHIP_SHELL-} ]] && (( $+commands[starship] )); then
     eval "$(starship init zsh)"
+fi
+
+# Keep manually initialized zoxide in control. Only evaluate successful output.
+if [[ ${BDOCK_ZOXIDE-1} != 0 ]] && (( ! $+functions[__zoxide_z] && ! $+functions[__zoxide_hook] && $+commands[zoxide] )); then
+    if __bdock_zoxide_init=$(command zoxide init zsh --cmd cd); then
+        eval "$__bdock_zoxide_init"
+    fi
+    unset __bdock_zoxide_init
 fi
 
 [[ ${BDOCK_SHORTCUTS-1} != 0 ]] || return 0
