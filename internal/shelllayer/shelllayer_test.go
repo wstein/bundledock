@@ -80,6 +80,25 @@ func TestParseAcceptsQuotedFormatValues(t *testing.T) {
 	}
 }
 
+func TestTableCarriesTheGitLogFormatShortcuts(t *testing.T) {
+	shortcuts, err := Shortcuts()
+	if err != nil {
+		t.Fatal(err)
+	}
+	have := map[string]string{}
+	for _, s := range shortcuts {
+		have[s.Name] = s.Command
+	}
+	for name, want := range map[string]string{
+		"glol": "git log --graph --pretty='%Cred%h%Creset -%C(auto)%d%Creset %s %Cgreen(%ar) %C(bold blue)<%an>%Creset'",
+		"gloo": "git log --pretty=format:'%C(yellow)%h %Cred%ad %Cblue%an%Cgreen%d %Creset%s' --date=short",
+	} {
+		if have[name] != want {
+			t.Errorf("%s = %q, want %q", name, have[name], want)
+		}
+	}
+}
+
 func TestGeneratedFilesAreCurrent(t *testing.T) {
 	shortcuts, err := Shortcuts()
 	if err != nil {
