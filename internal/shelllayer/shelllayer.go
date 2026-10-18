@@ -175,7 +175,9 @@ var allowedCommands = map[string]bool{
 // Names must be valid in every shell, unique and lowercase; command words are
 // restricted to characters that need no quoting in any of the four shells, with
 // one exception: a `git log` row may carry one single-quoted --pretty= or
-// --format= value, before any bare `--` (see quotedWord).
+// --format= value (see quotedWord), preceded only by self-contained options or
+// the no-argument ones in noArgLogOptions, and not combined with another
+// --pretty, --format or --oneline.
 func Parse(data []byte) ([]Shortcut, error) {
 	var out []Shortcut
 	seen := map[string]bool{}
@@ -206,16 +208,24 @@ func Parse(data []byte) ([]Shortcut, error) {
 		if !allowedCommands[tokens[0].value] {
 			return nil, fmt.Errorf("line %d: %s: command must start with an allowed command", line, name)
 		}
-		quotedWords, pathsOnly := 0, false
-		for _, t := range tokens {
+		quotedAt := -1
+		for i, t := range tokens {
 			quoted := strings.Contains(t.raw, "'")
 			switch {
-			case quoted && isGitLog(tokens) && !pathsOnly && quotedWords == 0 && quotedWord.MatchString(t.raw):
-				quotedWords++
+			case quoted && quotedAt < 0 && isGitLog(tokens) && quotedPositionOK(tokens, i) && quotedWord.MatchString(t.raw):
+				quotedAt = i
 			case !quoted && validWord.MatchString(t.raw):
-				pathsOnly = pathsOnly || t.raw == "--"
 			default:
 				return nil, fmt.Errorf("line %d: %s: unsupported word %q", line, name, t.raw)
+			}
+		}
+		if quotedAt >= 0 {
+			// One format decides the output: another --pretty, --format or --oneline would override it.
+			for i, t := range tokens {
+				if i != quotedAt && (t.raw == "--oneline" || t.raw == "--pretty" || t.raw == "--format" ||
+					strings.HasPrefix(t.raw, "--pretty=") || strings.HasPrefix(t.raw, "--format=")) {
+					return nil, fmt.Errorf("line %d: %s: %q conflicts with the quoted format", line, name, t.raw)
+				}
 			}
 		}
 		out = append(out, Shortcut{name, command})
@@ -227,6 +237,28 @@ func Parse(data []byte) ([]Shortcut, error) {
 		return nil, fmt.Errorf("no shortcuts")
 	}
 	return out, nil
+}
+
+// noArgLogOptions are the bare git log options that take no separate argument.
+// Only these may come before the quoted word: git reads the word after any
+// other bare option (`--grep`, `--author`, `-n`, `--end-of-options`, `--`) as
+// that option's argument, not as a format.
+var noArgLogOptions = map[string]bool{
+	"--all": true, "--graph": true, "--decorate": true, "--stat": true,
+	"--abbrev-commit": true, "--no-merges": true, "--first-parent": true,
+	"--reverse": true, "-p": true, "--patch": true,
+}
+
+// quotedPositionOK reports whether the word at index i may be a quoted format:
+// every earlier option is either self-contained (`--date=short`) or one of
+// noArgLogOptions. Positional words such as {branch} are fine.
+func quotedPositionOK(tokens []token, i int) bool {
+	for _, t := range tokens[2:i] {
+		if strings.HasPrefix(t.raw, "-") && !strings.Contains(t.raw, "=") && !noArgLogOptions[t.raw] {
+			return false
+		}
+	}
+	return true
 }
 
 // isGitLog reports whether the command is a git log: the only command whose
