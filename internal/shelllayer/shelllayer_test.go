@@ -85,6 +85,71 @@ func TestParseAcceptsQuotedFormatValues(t *testing.T) {
 	}
 }
 
+func TestQuotingHelpers(t *testing.T) {
+	for in, want := range map[string]string{
+		"plain": "'plain'",
+		"a b":   "'a b'",
+		"it's":  `'it'\''s'`,
+		"":      "''",
+	} {
+		if got := posixQuote(in); got != want {
+			t.Errorf("posixQuote(%q) = %s, want %s", in, got, want)
+		}
+	}
+	for in, want := range map[string]string{
+		"plain": "'plain'",
+		"a b":   "'a b'",
+		"it's":  `'it\'s'`,
+		`a\b`:   `'a\\b'`,
+	} {
+		if got := fishQuote(in); got != want {
+			t.Errorf("fishQuote(%q) = %s, want %s", in, got, want)
+		}
+	}
+}
+
+// TestQuotedValuesReachEveryShellIntact renders its own table, so it does not
+// depend on which rows shortcuts.tsv carries: quoted --pretty and --format
+// values with spaces and shell-significant characters must arrive as one
+// argument in bash, zsh, fish and Nushell, for static and branch-dependent
+// shortcuts alike.
+func TestQuotedValuesReachEveryShellIntact(t *testing.T) {
+	shortcuts, err := Parse([]byte(strings.Join([]string{
+		"qa\tgit log --pretty='%h %s <%an> (%ar)'",
+		"qb\tgit log --graph --pretty=format:'%C(yellow)%h [%d] %s' --date=short",
+		"qc\tgit log --format=tformat:'%h > %s >> out' {branch}",
+		"qd\tgit log --pretty='%h<in %s' {default} --stat",
+		"qe\tgit log --pretty='a  b' --oneline",
+	}, "\n") + "\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	for p, data := range Generate(shortcuts) {
+		full := filepath.Join(dir, p)
+		if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(full, data, 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	bin := stubs(t, false)
+	for _, sh := range shells {
+		t.Run(sh.name, func(t *testing.T) {
+			if _, err := exec.LookPath(sh.name); err != nil {
+				t.Skipf("%s not installed", sh.name)
+			}
+			got := runShell(t, sh, dir, bin, shortcuts)
+			for _, s := range shortcuts {
+				if got[s.Name] != expected(s) {
+					t.Errorf("%s: %s ran %q, want %q", sh.name, s.Name, got[s.Name], expected(s))
+				}
+			}
+		})
+	}
+}
+
 func TestTableCarriesTheGitLogFormatShortcuts(t *testing.T) {
 	shortcuts, err := Shortcuts()
 	if err != nil {
