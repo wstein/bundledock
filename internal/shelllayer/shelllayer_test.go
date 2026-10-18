@@ -53,6 +53,11 @@ func TestParseRejectsUnsafeRows(t *testing.T) {
 		"quote in rg":    "gx\trg --pretty='%h'\n",
 		"quote double":   "gx\tgit log --pretty='a' 'b'\n",
 		"space in quote": "gx\tgit log --pretty='a'  --stat\n",
+		"git config":     "gx\tgit config --format='x y'\n",
+		"before log":     "gx\tgit --format='a' log\n",
+		"after dashdash": "gx\tgit log -- --pretty='a b'\n",
+		"two quoted":     "gx\tgit log --pretty='a' --format='b'\n",
+		"git show":       "gx\tgit show --pretty='a b'\n",
 	} {
 		if _, err := Parse([]byte(row)); err == nil {
 			t.Errorf("%s: expected rejection of %q", name, row)
