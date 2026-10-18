@@ -38,7 +38,7 @@ update; packaging revisions remain in the bundle guides.
 
 | Bundle | Purpose and guide | Published version | Publication workflow |
 | --- | --- | --- | --- |
-| Bun | [Bun runtime and bunx](docs/bun.md) | [![Published bun version](https://img.shields.io/badge/dynamic/regex?url=https%3A%2F%2Fquay.io%2Fapi%2Fv1%2Frepository%2Fbundledock%2Fbun%2Ftag%2F%3FonlyActiveTags%3Dtrue%26limit%3D100%26page%3D1&search=%22name%22%5Cs%2A%3A%5Cs%2A%22%28%5Cd%2B%5C.%5Cd%2B%5C.%5Cd%2B-b%5Cd%2B%7C%5Cd%7B4%7D%5C.%5Cd%7B2%7D%5C.%5Cd%7B2%7D-%28%3F%3Ab%5Cd%2B%5C.%5Cd%2B%7C%5Cd%2B-%5Cd%2B%29%29%22&replace=%241&label=version&color=5eead4&labelColor=0b2545)](https://quay.io/repository/bundledock/bun?tab=tags) | [![Publish bundles](https://github.com/wstein/bundledock/actions/workflows/publish-bundles.yml/badge.svg?branch=main)](https://github.com/wstein/bundledock/actions/workflows/publish-bundles.yml) |
+| Bun | [Bun runtime and bunx](docs/bun.md) | [![Published bun version](https://img.shields.io/badge/dynamic/regex?url=https%3A%2F%2Fquay.io%2Fapi%2Fv1%2Frepository%2Fbundledock%2Fbun%2Ftag%2F%3FonlyActiveTags%3Dtrue%26limit%3D100%26page%3D1&search=%22name%22%5Cs%2A%3A%5Cs%2A%22%28%5Cd%7B4%7D%5C.%5Cd%7B2%7D%5C.%5Cd%7B2%7D-%28%3F%3Ab%5Cd%2B%5C.%5Cd%2B%7Cb%5Cd%2B%7C%5Cd%2B-%5Cd%2B%29%7C%5Cd%2B%5C.%5Cd%2B%5C.%5Cd%2B-b%5Cd%2B%29%22&replace=%241&label=version&color=5eead4&labelColor=0b2545)](https://quay.io/repository/bundledock/bun?tab=tags) | [![Publish bundles](https://github.com/wstein/bundledock/actions/workflows/publish-bundles.yml/badge.svg?branch=main)](https://github.com/wstein/bundledock/actions/workflows/publish-bundles.yml) |
 | Node.js | [Node.js LTS with npm/npx](docs/node.md) | [![Published Node LTS version](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fwstein%2Fbundledock%2Fmain%2Fdocs%2Fnode-published.json&query=%24.upstream_version&label=LTS&color=5eead4&labelColor=0b2545)](https://quay.io/repository/bundledock/node?tab=tags&tag=lts) | [![Publish bundles](https://github.com/wstein/bundledock/actions/workflows/publish-bundles.yml/badge.svg?branch=main)](https://github.com/wstein/bundledock/actions/workflows/publish-bundles.yml) |
 | Node.js Current | [Node.js Current with npm/npx](docs/node-current.md) | [![Published Node Current version](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fwstein%2Fbundledock%2Fmain%2Fdocs%2Fnode-current-published.json&query=%24.upstream_version&label=Current&color=5eead4&labelColor=0b2545)](https://quay.io/repository/bundledock/node?tab=tags&tag=current) | [![Publish bundles](https://github.com/wstein/bundledock/actions/workflows/publish-bundles.yml/badge.svg?branch=main)](https://github.com/wstein/bundledock/actions/workflows/publish-bundles.yml) |
 
@@ -46,13 +46,13 @@ update; packaging revisions remain in the bundle guides.
 
 | Bundle | Purpose and guide | Published version | Publication workflow |
 | --- | --- | --- | --- |
-| OpenTofu | [Official OpenTofu CLI — source prepared, publication pending](docs/opentofu.md) | [![Registry OpenTofu version (publication pending)](https://img.shields.io/badge/dynamic/regex?url=https%3A%2F%2Fquay.io%2Fapi%2Fv1%2Frepository%2Fbundledock%2Fopentofu%2Ftag%2F%3FonlyActiveTags%3Dtrue%26limit%3D100%26page%3D1&search=%22name%22%5Cs%2A%3A%5Cs%2A%22%28%5Cd%2B%5C.%5Cd%2B%5C.%5Cd%2B-b%5Cd%2B%7C%5Cd%7B4%7D%5C.%5Cd%7B2%7D%5C.%5Cd%7B2%7D-%28%3F%3Ab%5Cd%2B%5C.%5Cd%2B%7C%5Cd%2B-%5Cd%2B%29%29%22&replace=%241&label=version&color=5eead4&labelColor=0b2545)](https://quay.io/repository/bundledock/opentofu?tab=tags) | [![Publish bundles](https://github.com/wstein/bundledock/actions/workflows/publish-bundles.yml/badge.svg?branch=main)](https://github.com/wstein/bundledock/actions/workflows/publish-bundles.yml) |
+| OpenTofu | [Official OpenTofu CLI — source prepared, publication pending](docs/opentofu.md) | [![Registry OpenTofu version (publication pending)](https://img.shields.io/badge/dynamic/regex?url=https%3A%2F%2Fquay.io%2Fapi%2Fv1%2Frepository%2Fbundledock%2Fopentofu%2Ftag%2F%3FonlyActiveTags%3Dtrue%26limit%3D100%26page%3D1&search=%22name%22%5Cs%2A%3A%5Cs%2A%22%28%5Cd%7B4%7D%5C.%5Cd%7B2%7D%5C.%5Cd%7B2%7D-%28%3F%3Ab%5Cd%2B%5C.%5Cd%2B%7Cb%5Cd%2B%7C%5Cd%2B-%5Cd%2B%29%7C%5Cd%2B%5C.%5Cd%2B%5C.%5Cd%2B-b%5Cd%2B%29%22&replace=%241&label=version&color=5eead4&labelColor=0b2545)](https://quay.io/repository/bundledock/opentofu?tab=tags) | [![Publish bundles](https://github.com/wstein/bundledock/actions/workflows/publish-bundles.yml/badge.svg?branch=main)](https://github.com/wstein/bundledock/actions/workflows/publish-bundles.yml) |
 
 ### Editors
 
 | Bundle | Purpose and guide | Published version | Publication workflow |
 | --- | --- | --- | --- |
-| code-server | [Standalone browser editor](docs/code-server.md) | [![Published code-server version](https://img.shields.io/badge/dynamic/regex?url=https%3A%2F%2Fquay.io%2Fapi%2Fv1%2Frepository%2Fbundledock%2Fcode-server%2Ftag%2F%3FonlyActiveTags%3Dtrue%26limit%3D100%26page%3D1&search=%22name%22%5Cs%2A%3A%5Cs%2A%22%28%5Cd%2B%5C.%5Cd%2B%5C.%5Cd%2B-b%5Cd%2B%7C%5Cd%7B4%7D%5C.%5Cd%7B2%7D%5C.%5Cd%7B2%7D-%28%3F%3Ab%5Cd%2B%5C.%5Cd%2B%7C%5Cd%2B-%5Cd%2B%29%29%22&replace=%241&label=version&color=5eead4&labelColor=0b2545)](https://quay.io/repository/bundledock/code-server?tab=tags) | [![Publish bundles](https://github.com/wstein/bundledock/actions/workflows/publish-bundles.yml/badge.svg?branch=main)](https://github.com/wstein/bundledock/actions/workflows/publish-bundles.yml) |
+| code-server | [Standalone browser editor](docs/code-server.md) | [![Published code-server version](https://img.shields.io/badge/dynamic/regex?url=https%3A%2F%2Fquay.io%2Fapi%2Fv1%2Frepository%2Fbundledock%2Fcode-server%2Ftag%2F%3FonlyActiveTags%3Dtrue%26limit%3D100%26page%3D1&search=%22name%22%5Cs%2A%3A%5Cs%2A%22%28%5Cd%7B4%7D%5C.%5Cd%7B2%7D%5C.%5Cd%7B2%7D-%28%3F%3Ab%5Cd%2B%5C.%5Cd%2B%7Cb%5Cd%2B%7C%5Cd%2B-%5Cd%2B%29%7C%5Cd%2B%5C.%5Cd%2B%5C.%5Cd%2B-b%5Cd%2B%29%22&replace=%241&label=version&color=5eead4&labelColor=0b2545)](https://quay.io/repository/bundledock/code-server?tab=tags) | [![Publish bundles](https://github.com/wstein/bundledock/actions/workflows/publish-bundles.yml/badge.svg?branch=main)](https://github.com/wstein/bundledock/actions/workflows/publish-bundles.yml) |
 
 ### Agents
 
@@ -84,6 +84,7 @@ repository; OCI images are published separately.
 You need Docker running and a local clone of this repository. Pull the published
 toolbox by its immutable multi-platform index digest, then initialize its volume:
 
+<!-- BEGIN PUBLISHED QUICKSTART -->
 ```sh
 TOOLBOX_IMAGE=quay.io/bundledock/toolbox@sha256:c7715f6a2cae2812dcaf847185427080f2ab73097aa392393d427e460afed402
 docker pull "$TOOLBOX_IMAGE"
@@ -94,6 +95,7 @@ This example is toolbox version `2026.10.18-b2`, published from
 [`dce172b73a78d3a816dbfbf60129415156ad6a31`](https://github.com/wstein/bundledock/commit/dce172b73a78d3a816dbfbf60129415156ad6a31)
 in [publication run 39156619187, attempt 1](https://github.com/wstein/bundledock/actions/runs/39156619187/attempts/1).
 The initializer prints `Volume: bundledock-toolbox-<full image ID>`; use that volume name below:
+<!-- END PUBLISHED QUICKSTART -->
 
 ```sh
 docker run --rm -it \

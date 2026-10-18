@@ -21,6 +21,8 @@ _TAG_SPEC.loader.exec_module(_TAGS)
 BUNDLES = {name: _CONFIG.select_bundle(name)['inventory'] for name in _CONFIG.BUNDLES}
 BEGIN = '<!-- BEGIN PUBLISHED BUNDLE -->'
 END = '<!-- END PUBLISHED BUNDLE -->'
+QUICKSTART_BEGIN = '<!-- BEGIN PUBLISHED QUICKSTART -->'
+QUICKSTART_END = '<!-- END PUBLISHED QUICKSTART -->'
 SHA = r'[0-9a-f]{40}'
 DIGEST = r'sha256:[0-9a-f]{64}'
 TAG = r'(\d{4}\.\d{2}\.\d{2})-b([1-9]\d*)\.([1-9]\d*)'
@@ -111,6 +113,27 @@ def replacement(source, record):
     return prefix + BEGIN + render(record) + END + suffix
 
 
+def render_quickstart(record):
+    run = SOURCE + '/actions/runs/' + record['run_id'] + '/attempts/' + record['attempt']
+    return ('\n```sh\n'
+        'TOOLBOX_IMAGE=' + record['reference'] + '\n'
+        'docker pull "$TOOLBOX_IMAGE"\n'
+        'make bundle-volume BUNDLE=toolbox IMAGE="$TOOLBOX_IMAGE"\n'
+        '```\n\n'
+        'This example is toolbox version `' + record['tag'] + '`, published from\n'
+        '[`' + record['commit'] + '`](' + SOURCE + '/commit/' + record['commit'] + ')\n'
+        'in [publication run ' + record['run_id'] + ', attempt ' + record['attempt'] + '](' + run + ').\n'
+        'The initializer prints `Volume: bundledock-toolbox-<full image ID>`; use that volume name below:\n')
+
+
+def replacement_quickstart(source, record):
+    require(source.count(QUICKSTART_BEGIN) == 1 and source.count(QUICKSTART_END) == 1,
+            'Expected exactly one quickstart marker pair')
+    prefix, rest = source.split(QUICKSTART_BEGIN)
+    managed, suffix = rest.split(QUICKSTART_END)
+    return prefix + QUICKSTART_BEGIN + render_quickstart(record) + QUICKSTART_END + suffix
+
+
 def metadata_path(bundle):
     require(bundle in BUNDLES, 'Unknown bundle')
     return 'docs/' + bundle + '-published.json'
@@ -137,13 +160,20 @@ def metadata(bundle, record, previous='{}', evidence=None):
 def update(root, bundle, record, evidence=None):
     root = root.resolve(strict=True)
     paths = [BUNDLES[bundle], metadata_path(bundle)]
+    if bundle == 'toolbox' and (root / 'README.md').exists():
+        paths.append('README.md')
     changes = []
     for relative in paths:
         path = root / relative
         require(not path.is_symlink() and not path.parent.is_symlink(), 'Linked documentation path forbidden')
         require(path.resolve().is_relative_to(root), 'Documentation path escapes repository')
         source = path.read_bytes().decode('utf-8') if path.exists() else '{}'
-        result = replacement(source, record) if relative == BUNDLES[bundle] else metadata(bundle, record, source, evidence)
+        if relative == BUNDLES[bundle]:
+            result = replacement(source, record)
+        elif relative == 'README.md':
+            result = replacement_quickstart(source, record)
+        else:
+            result = metadata(bundle, record, source, evidence)
         if result != source:
             changes.append((path, result))
     for path, result in changes:
@@ -183,6 +213,12 @@ def propose(root, bundle, record, evidence=None):
     changes = []
     if desired != source:
         changes.append({'path': path, 'mode': '100644', 'type': 'blob', 'content': desired})
+    if bundle == 'toolbox':
+        readme_path = 'README.md'
+        readme_source = source_at(base, readme_path)
+        desired_readme = replacement_quickstart(readme_source, record)
+        if desired_readme != readme_source:
+            changes.append({'path': readme_path, 'mode': '100644', 'type': 'blob', 'content': desired_readme})
     receipt_path = metadata_path(bundle)
     # New bundle metadata may not exist on the base yet; list the exact
     # tree first rather than swallowing a failed Git read.

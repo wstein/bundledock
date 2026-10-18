@@ -112,6 +112,18 @@ class PublicationDocsTest(unittest.TestCase):
                     self.module.update(root, 'toolbox', self.validate())
                 self.assertEqual(path.read_text(), source)
 
+    def test_quickstart_markers_and_replacement(self):
+        record = self.validate()
+        readme = 'pre\n' + self.module.QUICKSTART_BEGIN + '\nold\n' + self.module.QUICKSTART_END + '\npost\n'
+        replaced = self.module.replacement_quickstart(readme, record)
+        self.assertIn(self.module.QUICKSTART_BEGIN, replaced)
+        self.assertIn('TOOLBOX_IMAGE=' + record['reference'], replaced)
+        self.assertIn(self.module.QUICKSTART_END, replaced)
+        self.assertEqual(self.module.replacement_quickstart(replaced, record), replaced)
+        for bad in ['no markers', self.module.QUICKSTART_BEGIN, self.module.QUICKSTART_END]:
+            with self.assertRaises(ValueError):
+                self.module.replacement_quickstart(bad, record)
+
     def test_atomic_proposal_races_idempotency_and_prose(self):
         record=self.validate()
         for mode in ['new','moved','identical','conflict','wrong-pr','topic-moved','current']:
@@ -120,6 +132,8 @@ class PublicationDocsTest(unittest.TestCase):
                 branch='publication-docs/toolbox/'+record['tag']
                 source='\n\nbefore  \n'+self.module.BEGIN+'\n'+self.module.END+'\nafter  \n\n'
                 desired=self.module.replacement(source,record)
+                readme_source='\n\nheader  \n'+self.module.QUICKSTART_BEGIN+'\n'+self.module.QUICKSTART_END+'\nfooter  \n\n'
+                desired_readme=self.module.replacement_quickstart(readme_source,record)
                 calls=[]; api_calls=[]
                 def fake(*args):
                     calls.append(args)
@@ -140,9 +154,12 @@ class PublicationDocsTest(unittest.TestCase):
                     if path=='git/commits/'+base: return {'tree':{'sha':'5'*40}}
                     if path=='git/trees':
                         self.assertEqual(payload['tree'],[dict(path='docs/toolbox.md',mode='100644',type='blob',content=desired),
+                            dict(path='README.md',mode='100644',type='blob',content=desired_readme),
                             dict(path='docs/toolbox-published.json',mode='100644',type='blob',content=self.module.metadata('toolbox',record))])
                         self.assertTrue(payload['tree'][0]['content'].startswith('\n\nbefore  \n'))
                         self.assertTrue(payload['tree'][0]['content'].endswith('\nafter  \n\n'))
+                        self.assertTrue(payload['tree'][1]['content'].startswith('\n\nheader  \n'))
+                        self.assertTrue(payload['tree'][1]['content'].endswith('\nfooter  \n\n'))
                         return {'sha':tree}
                     if path=='git/commits':
                         self.assertEqual(payload['parents'],[base]); self.assertIn('\n\n',payload['message'])
@@ -155,9 +172,13 @@ class PublicationDocsTest(unittest.TestCase):
                     if path=='git/ref/heads/'+branch: return {'object':{'sha':'6'*40 if mode=='topic-moved' else head}}
                     if path=='git/commits/'+head: return {'tree':{'sha':'7'*40 if mode=='conflict' else tree},'parents':[{'sha':base}]}
                     raise AssertionError(path)
+                def fake_source_at(base, path):
+                    if path.endswith('.json'): return self.module.metadata('toolbox',record)
+                    if path == 'README.md': return desired_readme if mode == 'current' else readme_source
+                    return desired if mode == 'current' else source
                 old=Path.cwd()
                 try:
-                    with patch.object(self.module,'command',side_effect=fake), patch.object(self.module,'api',side_effect=fake_api), patch.object(self.module,'source_at',side_effect=lambda base,path: self.module.metadata('toolbox',record) if path.endswith('.json') else (desired if mode=='current' else source)):
+                    with patch.object(self.module,'command',side_effect=fake), patch.object(self.module,'api',side_effect=fake_api), patch.object(self.module,'source_at',side_effect=fake_source_at):
                         if mode in ['moved','conflict','wrong-pr','topic-moved']:
                             with self.assertRaises(ValueError): self.module.propose(root,'toolbox',record)
                         else: self.module.propose(root,'toolbox',record)
