@@ -55,10 +55,9 @@ the published channels; see the guides for immutable digest references.
 | Claude Code (`claude`) | [Official Claude CLI](claude.md). | [Claude Code tags](https://quay.io/repository/bundledock/claude?tab=tags) |
 | Codex (`codex`) | [Official Codex package and native helpers](codex.md). | [Codex tags](https://quay.io/repository/bundledock/codex?tab=tags) |
 
-The agent carriers have published receipts in their guides. The current source
-toolbox excludes these agents; the older published toolbox still contains them.
-Choose the exact carrier recorded in the guide and follow your consumer
-project's adoption instructions.
+The agent carriers have published receipts in their guides. The published
+toolbox carrier excludes these agents. Choose the exact carrier recorded in the
+guide and follow your consumer project's adoption instructions.
 
 ## Source inventory and published images
 
@@ -68,9 +67,7 @@ source commit and publication run. These can differ: editing a lock or merging
 source does not rebuild an existing carrier. Follow those receipts when choosing
 an image; no overview table duplicates the managed package versions or digests.
 
-The current toolbox source adds utilities and removes agents relative to its
-recorded published image. Those source changes have not been published in that
-image. See each guide's published bundle section, including the
+See each guide's published bundle section, including the
 [OpenTofu receipt](opentofu.md#published-bundle), for the exact published source
 and immutable image reference.
 
