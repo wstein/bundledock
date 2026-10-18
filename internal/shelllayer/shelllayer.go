@@ -253,6 +253,9 @@ var noArgLogOptions = map[string]bool{
 // every earlier option is either self-contained (`--date=short`) or one of
 // noArgLogOptions. Positional words such as {branch} are fine.
 func quotedPositionOK(tokens []token, i int) bool {
+	if i < 2 {
+		return false
+	}
 	for _, t := range tokens[2:i] {
 		if strings.HasPrefix(t.raw, "-") && !strings.Contains(t.raw, "=") && !noArgLogOptions[t.raw] {
 			return false
@@ -264,7 +267,8 @@ func quotedPositionOK(tokens []token, i int) bool {
 // isGitLog reports whether the command is a git log: the only command whose
 // format values may be quoted.
 func isGitLog(tokens []token) bool {
-	return len(tokens) > 1 && tokens[0].value == "git" && tokens[1].value == "log"
+	// Compare the raw words: a quoted `'git'` or `'log'` has the same value but is not the command.
+	return len(tokens) > 1 && tokens[0].raw == "git" && tokens[1].raw == "log"
 }
 
 // Bundle paths of the generated files, relative to the toolbox root. fish and
