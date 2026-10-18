@@ -1,7 +1,8 @@
 # BundleDock shared shell shortcuts: one table for bash, zsh, fish and Nushell.
 #
 # Format: name<TAB>command. Names use [a-z0-9] only so every shell accepts them.
-# Commands are plain words; {branch} is the current Git branch (fails on a
+# Commands are plain words, except that a `git log` --pretty= or --format= value may be
+# single-quoted (glol, gloo) so a format string with spaces stays one word; {branch} is the current Git branch (fails on a
 # detached HEAD) and {default} is the default branch (origin/HEAD, else main,
 # else master). Extra arguments typed after a shortcut are appended.
 #
@@ -82,6 +83,8 @@ glg	git log --stat
 glo	git log --oneline --decorate
 glog	git log --oneline --decorate --graph
 gloga	git log --oneline --decorate --graph --all
+glol	git log --graph --pretty='%Cred%h%Creset -%C(auto)%d%Creset %s %Cgreen(%ar) %C(bold blue)<%an>%Creset'
+gloo	git log --pretty=format:'%C(yellow)%h %Cred%ad %Cblue%an%Cgreen%d %Creset%s' --date=short
 gm	git merge
 gma	git merge --abort
 grb	git rebase

@@ -662,7 +662,7 @@ require separately approved builds before release or consumer activation.
 ## Shared shell layer
 
 The toolbox carries one set of Git, Jujutsu, `lsd` listing, search, disk and
-directory shortcuts (95 in all), four navigation names and a
+directory shortcuts (97 in all), four navigation names and a
 starship prompt for bash, zsh, fish and Nushell. Every shell gets the same names, and each name
 runs the same command with the same arguments: `gst` is `git status`, `gpsup`
 pushes the current branch with an upstream, `jst` is `jj status`, in all four.
@@ -670,7 +670,11 @@ The table is `internal/shelllayer/shortcuts.tsv`; Git names follow
 [jhillyerd/plugin-git](https://github.com/jhillyerd/plugin-git) (MIT, notice
 retained under `licenses/shell-layer`). The set is curated: no `--no-verify`,
 git-svn, git-flow or forge-specific entries and no irreversible clean or reset
-shortcuts. Names use `[a-z0-9]` only, so `gc!`-style names are not offered.
+shortcuts. Names use `[a-z0-9]` only, so `gc!`-style names are not offered. Command
+words are plain, with one exception: a `git log` `--pretty=` or `--format=` value may be
+single-quoted (`glol`, `gloo`), limited to letters, digits, spaces and `% ( ) < > . , : @ / = _ [ ] -`,
+so a format string with spaces stays one word and means the same in all four shells.
+Any other quoted word is rejected.
 
 The listing family is read-only and runs [lsd](https://github.com/lsd-rs/lsd),
 which the toolbox ships (`lsd` in `packages.txt`; a source test requires every
