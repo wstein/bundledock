@@ -3,5 +3,5 @@ Initial reviewed release: v1.7.12
 License: MIT
 Source for corresponding release: https://github.com/rhysd/actionlint/releases/tag/v1.7.12
 Linux AMD64/ARM64 official archives, unchanged executable; selected by tag prefix 'v'.
-Full license files are retained from each official release archive: LICENSE.txt, README.md.
+Full license files are retained from each official release archive: LICENSE.txt.
 Lock pins use the official release API SHA256 digests (checked 2026-10-17). No upstream binary was executed or modified; retained notices do not establish a complete transitive license audit.

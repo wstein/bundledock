@@ -1155,8 +1155,7 @@
           "actionlint": "bin/actionlint"
         },
         "archive_notices": [
-          "LICENSE.txt",
-          "README.md"
+          "LICENSE.txt"
         ]
       },
       "notices": [
