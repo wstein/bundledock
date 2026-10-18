@@ -1,0 +1,10 @@
+Upstream: https://github.com/ducaale/xh
+License: MIT
+License snapshot release: v0.26.2
+Reviewed release: https://github.com/ducaale/xh/releases/tag/v0.26.2
+License snapshot source: https://raw.githubusercontent.com/ducaale/xh/v0.26.2/LICENSE
+LICENSE SHA256: 6b564376135d00cc681d7b97107955b64d8906389a96946d125e357ec258e0ce
+
+The official latest-release API was checked on 2026-10-18: this snapshot release was stable and non-draft, and both Linux AMD64/ARM64 assets had publisher SHA256 digests. Those API digests supply the initial lock pins. No executable or archive was downloaded, extracted, inspected, or run. Native consumer compatibility remains unverified pending an explicitly approved image build and smoke run.
+
+This SOURCE records the reviewed license snapshot, not the current installed binary version. The bundle manifest and packages.lock.json record installed releases, URLs and checksums. Retain these historical bytes and inspect upstream license changes separately.

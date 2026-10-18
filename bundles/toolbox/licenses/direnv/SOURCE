@@ -1,0 +1,10 @@
+Upstream: https://github.com/direnv/direnv
+License: MIT
+License snapshot release: v2.38.2
+Reviewed release: https://github.com/direnv/direnv/releases/tag/v2.38.2
+License snapshot source: https://raw.githubusercontent.com/direnv/direnv/v2.38.2/LICENSE
+LICENSE SHA256: 573de0461625352c50c47a63e7506873bf93d1a8a96bd29c3fef115ff3ed6b48
+
+The official latest-release API was checked on 2026-10-18: this snapshot release was stable and non-draft, and both Linux AMD64/ARM64 assets had publisher SHA256 digests. Those API digests supply the initial lock pins. No executable or archive was downloaded, extracted, inspected, or run. Native consumer compatibility remains unverified pending an explicitly approved image build and smoke run.
+
+This SOURCE records the reviewed license snapshot, not the current installed binary version. The bundle manifest and packages.lock.json record installed releases, URLs and checksums. Retain these historical bytes and inspect upstream license changes separately.

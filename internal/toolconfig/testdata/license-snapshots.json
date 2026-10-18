@@ -1,4 +1,8 @@
 [
   {"name":"leaf","bundle":"toolbox","repository":"RivoLink/leaf","version":"1.29.0","source_url":"https://raw.githubusercontent.com/RivoLink/leaf/1.29.0/LICENSE","license_sha256":"98c9cd0ac4bcc0b30d8cbb7c09a311196dea27b158c65d6caadfb073c090af71"},
-  {"name":"gh","bundle":"toolbox","repository":"cli/cli","version":"v2.102.0","source_url":"https://api.github.com/repos/cli/cli/tarball/v2.102.0","source_sha256":"38f988355fc4bb786bdd02b9ad033b492886efa419417476fd1af52edefadfa8","license_sha256":"6da4adc42392c8485e40b4251c7e332fc3352df1947c9ffade71dd60b14a7a4f"}
+  {"name":"gh","bundle":"toolbox","repository":"cli/cli","version":"v2.102.0","source_url":"https://api.github.com/repos/cli/cli/tarball/v2.102.0","source_sha256":"38f988355fc4bb786bdd02b9ad033b492886efa419417476fd1af52edefadfa8","license_sha256":"6da4adc42392c8485e40b4251c7e332fc3352df1947c9ffade71dd60b14a7a4f"},
+  {"name":"xh","bundle":"toolbox","repository":"ducaale/xh","version":"v0.26.2","source_url":"https://raw.githubusercontent.com/ducaale/xh/v0.26.2/LICENSE","license_sha256":"6b564376135d00cc681d7b97107955b64d8906389a96946d125e357ec258e0ce"},
+  {"name":"dust","bundle":"toolbox","repository":"bootandy/dust","version":"v1.2.6","source_url":"https://raw.githubusercontent.com/bootandy/dust/v1.2.6/LICENSE","license_sha256":"aee6e2d13d3a55c7881630c09b41ca7b3b44bb1437b5d36695d22decc3655160"},
+  {"name":"direnv","bundle":"toolbox","repository":"direnv/direnv","version":"v2.38.2","source_url":"https://raw.githubusercontent.com/direnv/direnv/v2.38.2/LICENSE","license_sha256":"573de0461625352c50c47a63e7506873bf93d1a8a96bd29c3fef115ff3ed6b48"},
+  {"name":"sops","bundle":"toolbox","repository":"getsops/sops","version":"v3.13.3","source_url":"https://raw.githubusercontent.com/getsops/sops/v3.13.3/LICENSE","license_sha256":"1f256ecad192880510e84ad60474eab7589218784b9a50bc7ceee34c2b91f1d5"}
 ]

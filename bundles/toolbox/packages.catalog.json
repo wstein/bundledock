@@ -1397,6 +1397,107 @@
         "licenses/gh-stack/LICENSE",
         "licenses/gh-stack/SOURCE"
       ]
+    },
+    "xh": {
+      "provider": "github",
+      "repository": "ducaale/xh",
+      "tag_prefix": "v",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "x86_64",
+        "arm64": "aarch64"
+      },
+      "asset": "xh-v{version}-{arch}-unknown-linux-musl.tar.gz",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "tar.gz",
+        "members": {
+          "xh": "bin/xh"
+        }
+      },
+      "notices": [
+        "licenses/xh/LICENSE",
+        "licenses/xh/SOURCE"
+      ]
+    },
+    "dust": {
+      "provider": "github",
+      "repository": "bootandy/dust",
+      "tag_prefix": "v",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "x86_64",
+        "arm64": "aarch64"
+      },
+      "asset": "dust-v{version}-{arch}-unknown-linux-musl.tar.gz",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "tar.gz",
+        "members": {
+          "dust": "bin/dust"
+        }
+      },
+      "notices": [
+        "licenses/dust/LICENSE",
+        "licenses/dust/SOURCE"
+      ]
+    },
+    "direnv": {
+      "provider": "github",
+      "repository": "direnv/direnv",
+      "tag_prefix": "v",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "amd64",
+        "arm64": "arm64"
+      },
+      "asset": "direnv.linux-{arch}",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "raw",
+        "members": {
+          "direnv": "bin/direnv"
+        }
+      },
+      "notices": [
+        "licenses/direnv/LICENSE",
+        "licenses/direnv/SOURCE"
+      ]
+    },
+    "sops": {
+      "provider": "github",
+      "repository": "getsops/sops",
+      "tag_prefix": "v",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "amd64",
+        "arm64": "arm64"
+      },
+      "asset": "sops-v{version}.linux.{arch}",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "raw",
+        "members": {
+          "sops": "bin/sops"
+        }
+      },
+      "notices": [
+        "licenses/sops/LICENSE",
+        "licenses/sops/SOURCE"
+      ],
+      "sidecar": "sops-v{version}.checksums.txt"
     }
   }
 }
