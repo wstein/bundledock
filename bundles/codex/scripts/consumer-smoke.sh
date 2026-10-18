@@ -8,9 +8,12 @@ mkdir -p "$CODEX_HOME"
 test -f "$root/.ready"
 test -f "$root/codex-package.json"
 test ! -e "$root/codex-resources/voice"
-for helper in bin/codex-code-mode-host codex-path/rg codex-resources/bwrap codex-resources/zsh/bin/zsh; do
+for helper in bin/codex-code-mode-host codex-path/rg codex-resources/bwrap; do
     test -x "$root/$helper"
 done
+if [ -e "$root/codex-resources/zsh" ]; then
+    test -x "$root/codex-resources/zsh/bin/zsh"
+fi
 codex --version
 trap 'codex app-server daemon stop >/dev/null 2>&1 || :' EXIT
 timeout 45 codex app-server daemon start

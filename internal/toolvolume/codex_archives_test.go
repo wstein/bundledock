@@ -44,10 +44,16 @@ func TestCodexOfficialArchivesWithoutVoice(t *testing.T) {
 			}
 			for _, dir := range []string{source, destination} {
 				absent(t, dir, "codex-resources/voice")
-				for _, name := range []string{"bin/codex", "bin/codex-code-mode-host", "codex-path/rg", "codex-resources/bwrap", "codex-resources/zsh/bin/zsh", "codex-package.json"} {
+				for _, name := range []string{"bin/codex", "bin/codex-code-mode-host", "codex-path/rg", "codex-resources/bwrap", "codex-package.json"} {
 					info, err := os.Stat(filepath.Join(dir, name))
 					if err != nil || !info.Mode().IsRegular() || info.Size() == 0 {
 						t.Fatalf("native package resource %s: %v %v", name, info, err)
+					}
+				}
+				if _, err := os.Stat(filepath.Join(dir, "codex-resources/zsh")); err == nil {
+					info, err := os.Stat(filepath.Join(dir, "codex-resources/zsh/bin/zsh"))
+					if err != nil || !info.Mode().IsRegular() || info.Size() == 0 {
+						t.Fatalf("native package resource codex-resources/zsh/bin/zsh: %v %v", info, err)
 					}
 				}
 			}

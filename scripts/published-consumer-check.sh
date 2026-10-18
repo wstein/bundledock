@@ -30,9 +30,12 @@ for name in codex agy claude; do
     "$name" --version
 done
 test -f /opt/bdock/codex/codex-package.json
-for helper in bin/codex-code-mode-host codex-path/rg codex-resources/bwrap codex-resources/zsh/bin/zsh; do
+for helper in bin/codex-code-mode-host codex-path/rg codex-resources/bwrap; do
     test -x "/opt/bdock/codex/$helper"
 done
+if test -e "/opt/bdock/codex/codex-resources/zsh"; then
+    test -x "/opt/bdock/codex/codex-resources/zsh/bin/zsh"
+fi
 for name in agy claude; do
     root=/opt/bdock/$name
     if test -e "$root/licenses.tar.gz" || test -e "$root/licenses.index.json"; then

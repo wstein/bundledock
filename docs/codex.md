@@ -44,7 +44,7 @@ publisher's GitHub asset SHA256 digests and the existing toolbox pins. Each
 archive contains 54 members, solely regular files and directories, with the
 same resource graph on both architectures. Source checks preserve the complete
 package layout: `bin/codex`, `bin/codex-code-mode-host`, `codex-package.json`,
-`codex-path/rg`, `codex-resources/bwrap` and `codex-resources/zsh/bin/zsh`.
+`codex-path/rg`, `codex-resources/bwrap` and `codex-resources/zsh/bin/zsh` (when bundled).
 The existing approved `codex-resources/voice` exclusion is retained. Helpers and
 package resources remain beside the native executable; no wrapper relocates
 or patches them. The package license, NOTICE and provenance are retained under
