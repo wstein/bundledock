@@ -1,0 +1,5 @@
+zoxide-0.10.0.nu is rendered from the official zoxide v0.10.0 Nushell
+template for the default prompt hook, --cmd cd, _ZO_ECHO unset:
+https://github.com/ajeetdsouza/zoxide/blob/v0.10.0/templates/nushell.txt
+It is a source-only fake initializer fixture. No upstream binary was run.
+Its upstream MIT license is retained in zoxide-LICENSE.

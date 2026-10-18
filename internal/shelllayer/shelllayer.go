@@ -269,7 +269,7 @@ func renderBash(shortcuts []Shortcut) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "# %s\n", header)
 	b.WriteString(`# Source from an interactive bash (for example /etc/bash.bashrc).
-# Opt out: BDOCK_SHORTCUTS=0 (aliases), BDOCK_STARSHIP=0 (prompt), BDOCK_FASTFETCH=0 (startup greeting).
+# Opt out: BDOCK_SHORTCUTS=0 (aliases), BDOCK_STARSHIP=0 (prompt), BDOCK_FASTFETCH=0 (startup greeting), BDOCK_ZOXIDE=0 (cd/cdi).
 [ -n "${BASH_VERSION-}" ] || return 0
 case $- in *i*) ;; *) return 0 ;; esac
 
@@ -280,6 +280,14 @@ fi
 
 if [ "${BDOCK_STARSHIP-1}" != 0 ] && [ -z "${STARSHIP_SHELL-}" ] && command -v starship >/dev/null 2>&1; then
     eval "$(starship init bash)"
+fi
+
+# Keep manually initialized zoxide in control. Only evaluate successful output.
+if [ "${BDOCK_ZOXIDE-1}" != 0 ] && ! declare -F __zoxide_z >/dev/null && ! declare -F __zoxide_hook >/dev/null && command -v zoxide >/dev/null 2>&1; then
+    if __bdock_zoxide_init=$(command zoxide init bash --cmd cd); then
+        eval "$__bdock_zoxide_init"
+    fi
+    unset __bdock_zoxide_init
 fi
 
 [ "${BDOCK_SHORTCUTS-1}" != 0 ] || return 0
@@ -298,7 +306,7 @@ func renderZsh(shortcuts []Shortcut) string {
 	b.WriteString(`# Source from an interactive zsh (for example /etc/zshrc or /etc/zsh/zshrc).
 # Opt out: BDOCK_SHORTCUTS=0 (aliases), BDOCK_STARSHIP=0 (prompt),
 # BDOCK_ZSH_EXPAND=0 (keep aliases, but do not expand them on space),
-# BDOCK_FASTFETCH=0 (startup greeting).
+# BDOCK_FASTFETCH=0 (startup greeting), BDOCK_ZOXIDE=0 (cd/cdi).
 [[ -n ${ZSH_VERSION-} ]] || return 0
 [[ -o interactive ]] || return 0
 
@@ -309,6 +317,14 @@ fi
 
 if [[ ${BDOCK_STARSHIP-1} != 0 && -z ${STARSHIP_SHELL-} ]] && (( $+commands[starship] )); then
     eval "$(starship init zsh)"
+fi
+
+# Keep manually initialized zoxide in control. Only evaluate successful output.
+if [[ ${BDOCK_ZOXIDE-1} != 0 ]] && (( ! $+functions[__zoxide_z] && ! $+functions[__zoxide_hook] && $+commands[zoxide] )); then
+    if __bdock_zoxide_init=$(command zoxide init zsh --cmd cd); then
+        eval "$__bdock_zoxide_init"
+    fi
+    unset __bdock_zoxide_init
 fi
 
 [[ ${BDOCK_SHORTCUTS-1} != 0 ]] || return 0
@@ -356,7 +372,7 @@ func renderFish(shortcuts []Shortcut) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "# %s\n", header)
 	b.WriteString(`# Loaded automatically when <toolbox>/share is in XDG_DATA_DIRS.
-# Opt out: BDOCK_SHORTCUTS=0 (abbreviations), BDOCK_STARSHIP=0 (prompt), BDOCK_FASTFETCH=0 (startup greeting).
+# Opt out: BDOCK_SHORTCUTS=0 (abbreviations), BDOCK_STARSHIP=0 (prompt), BDOCK_FASTFETCH=0 (startup greeting), BDOCK_ZOXIDE=0 (cd/cdi).
 status is-interactive; or return 0
 
 if test "$BDOCK_FASTFETCH" != 0; and test "$__bdock_fastfetch_pid" != "$fish_pid"; and command -q fastfetch
@@ -366,6 +382,14 @@ end
 
 if test "$BDOCK_STARSHIP" != 0; and not set -q STARSHIP_SHELL; and command -q starship
     starship init fish | source
+end
+
+# Capture output before sourcing: a failing initializer may print partial code.
+if test "$BDOCK_ZOXIDE" != 0; and not functions -q __zoxide_z; and not functions -q __zoxide_hook; and command -q zoxide
+    set -l __bdock_zoxide_init (command zoxide init fish --cmd cd)
+    if test $status -eq 0
+        printf '%s\n' $__bdock_zoxide_init | source
+    end
 end
 
 test "$BDOCK_SHORTCUTS" != 0; or return 0
@@ -412,7 +436,7 @@ func renderNu(shortcuts []Shortcut) string {
 	fmt.Fprintf(&b, "# %s\n", header)
 	b.WriteString(`# Loaded automatically by interactive Nushell when <toolbox>/share is in
 # XDG_DATA_DIRS. Opt out with BDOCK_STARSHIP=0 (prompt) or
-# BDOCK_FASTFETCH=0 (startup greeting). Nushell
+# BDOCK_FASTFETCH=0 (startup greeting), BDOCK_ZOXIDE=0 (cd/cdi). Nushell
 # definitions cannot be conditional, so the shortcuts are always defined;
 # leave <toolbox>/share out of XDG_DATA_DIRS to skip this file entirely.
 
@@ -421,9 +445,32 @@ if $nu.is-interactive and ($env.BDOCK_FASTFETCH? | default "1") != "0" and ($env
     try { ^fastfetch } catch { null }
 }
 
+# Nushell parses string hooks into the persistent session scope. Capture the
+# official initializer now, then install it once before the first prompt.
+let __bdock_zoxide_hooks = ($env.config?.hooks?.pre_prompt? | default [])
+if $nu.is-interactive and ($env.BDOCK_ZOXIDE? | default "1") != "0" and (which __zoxide_z | is-empty) and not ($__bdock_zoxide_hooks | any { try { get __zoxide_hook } catch { false } }) and not ($__bdock_zoxide_hooks | any { try { get __bdock_zoxide_init } catch { false } }) and (which zoxide | is-not-empty) {
+    let init = (try { do { ^zoxide init nushell --cmd cd } | complete } catch { null })
+    if $init != null and $init.exit_code == 0 {
+        $env.config = ($env.config? | default {} | upsert hooks { default {} } | upsert hooks.pre_prompt { default [] })
+        $env.config.hooks.pre_prompt = ($env.config.hooks.pre_prompt | append {
+            __bdock_zoxide_init: true,
+            condition: {||
+                # Remove this bootstrap even if an optout or manual initializer
+                # appeared after autoload. Preserve every unrelated hook.
+                $env.config.hooks.pre_prompt = ($env.config.hooks.pre_prompt | where {|hook| not (try { $hook.__bdock_zoxide_init } catch { false }) })
+                $nu.is-interactive and ($env.BDOCK_ZOXIDE? | default "1") != "0" and (which __zoxide_z | is-empty) and not ($env.config.hooks.pre_prompt | any { try { get __zoxide_hook } catch { false } }) and (which zoxide | is-not-empty)
+            },
+            # The active pre_prompt list is a snapshot: run only the newly
+            # installed official hook now so it records the initial directory.
+            code: ('alias __bdock_native_cd = cd' + (char nl) + $init.stdout + (char nl) + '$env.config.hooks.pre_prompt | where { try { get __zoxide_hook } catch { false } } | each {|hook| do $hook.code } | ignore')
+        })
+    }
+}
+
 if ($env.BDOCK_STARSHIP? | default "1") != "0" and ($env.STARSHIP_SHELL? | is-empty) and (which starship | is-not-empty) {
-    # Equivalent to ` + "`starship init nu`" + `, kept static because autoload files
-    # cannot evaluate generated code.
+    # Keep the existing static equivalent of ` + "`starship init nu`" + ` here.
+    # Generated definitions need persistent parsing through a string hook,
+    # as used for zoxide above, rather than direct runtime source evaluation.
     $env.STARSHIP_SHELL = "nu"
     $env.STARSHIP_SESSION_KEY = (random chars -l 16)
     $env.PROMPT_MULTILINE_INDICATOR = (^starship prompt --continuation)

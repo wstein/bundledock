@@ -1,6 +1,6 @@
 # BundleDock shared shell layer. Generated from internal/shelllayer/shortcuts.tsv; do not edit.
 # Source from an interactive bash (for example /etc/bash.bashrc).
-# Opt out: BDOCK_SHORTCUTS=0 (aliases), BDOCK_STARSHIP=0 (prompt), BDOCK_FASTFETCH=0 (startup greeting).
+# Opt out: BDOCK_SHORTCUTS=0 (aliases), BDOCK_STARSHIP=0 (prompt), BDOCK_FASTFETCH=0 (startup greeting), BDOCK_ZOXIDE=0 (cd/cdi).
 [ -n "${BASH_VERSION-}" ] || return 0
 case $- in *i*) ;; *) return 0 ;; esac
 
@@ -11,6 +11,14 @@ fi
 
 if [ "${BDOCK_STARSHIP-1}" != 0 ] && [ -z "${STARSHIP_SHELL-}" ] && command -v starship >/dev/null 2>&1; then
     eval "$(starship init bash)"
+fi
+
+# Keep manually initialized zoxide in control. Only evaluate successful output.
+if [ "${BDOCK_ZOXIDE-1}" != 0 ] && ! declare -F __zoxide_z >/dev/null && ! declare -F __zoxide_hook >/dev/null && command -v zoxide >/dev/null 2>&1; then
+    if __bdock_zoxide_init=$(command zoxide init bash --cmd cd); then
+        eval "$__bdock_zoxide_init"
+    fi
+    unset __bdock_zoxide_init
 fi
 
 [ "${BDOCK_SHORTCUTS-1}" != 0 ] || return 0
