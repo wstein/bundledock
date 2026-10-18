@@ -1,10 +1,11 @@
 # BundleDock shared shell shortcuts: one table for bash, zsh, fish and Nushell.
 #
 # Format: name<TAB>command. Names use [a-z0-9] only so every shell accepts them.
-# Commands are plain words, except that a `git log` --pretty= or --format= value may be
-# single-quoted (glol, gloo) so a format string with spaces stays one word; {branch} is the current Git branch (fails on a
-# detached HEAD) and {default} is the default branch (origin/HEAD, else main,
-# else master). Extra arguments typed after a shortcut are appended.
+# Commands are plain words, except that a `git log` row may carry one single-quoted
+# --pretty= or --format= value (glol, gloo) so a format string with spaces stays one
+# word; {branch} is the current Git branch (fails on a detached HEAD) and {default}
+# is the default branch (origin/HEAD, else main, else master). Extra arguments
+# typed after a shortcut are appended.
 #
 # Git names follow jhillyerd/plugin-git (MIT, see licenses/shell-layer). The set
 # is curated: no --no-verify, git-svn, git-flow or forge-specific entries and no
