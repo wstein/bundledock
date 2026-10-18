@@ -72,6 +72,7 @@ func TestParseRejectsUnsafeRows(t *testing.T) {
 		"oneline after":  "gx\tgit log --pretty='a' --oneline\n",
 		"oneline before": "gx\tgit log --oneline --pretty='a'\n",
 		"unquoted first": "gx\tgit log --pretty=b --format='a'\n",
+		"quote in value": "gx\tgit log --pretty='a'b'c'\n",
 	} {
 		if _, err := Parse([]byte(row)); err == nil {
 			t.Errorf("%s: expected rejection of %q", name, row)
@@ -161,6 +162,21 @@ func TestQuotedValuesReachEveryShellIntact(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// TestQuotedAlphabetIsExact pins every character of the quoted-value alphabet:
+// each listed character is accepted and every other printable ASCII character,
+// including the single quote itself, is rejected, so widening or narrowing
+// quotedWord fails here.
+func TestQuotedAlphabetIsExact(t *testing.T) {
+	const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 %()<>.,:@/=_[]-"
+	for c := rune(0x20); c <= 0x7e; c++ {
+		row := "gx\tgit log --pretty='a" + string(c) + "b'\n"
+		_, err := Parse([]byte(row))
+		if want := strings.ContainsRune(alphabet, c); (err == nil) != want {
+			t.Errorf("%q: accepted=%v, want %v", c, err == nil, want)
+		}
 	}
 }
 
