@@ -123,7 +123,7 @@ still pins an older image, so do not assume these commands exist in a running se
 | List directory contents | `lsd`. |
 | Inspect OCI registries | `regctl`. |
 | Find files by name | `fd` or its `fdfind` alias. |
-| Jump to frequently used directories | `zoxide` (`eval "$(zoxide init bash)"` is an opt-in user choice). |
+| Jump to frequently used directories | `zoxide`; the opted-in shared shell layer initializes interactive `cd`/`cdi` (disable with `BDOCK_ZOXIDE=0`). |
 | Query code structure | `ast-grep`; use the full binary name, never `sg`. |
 | Process structured data | `jq` for JSON; `yq` for YAML. |
 | Validate JSON instances against JSON Schema | `jsonschema-cli`. |
