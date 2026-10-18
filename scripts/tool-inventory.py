@@ -12,6 +12,10 @@ END = "<!-- END GENERATED TOOL INVENTORY -->"
 # Existing display labels only. Versions come exclusively from the
 # lock; exact catalog coverage prevents a new tool from being silently omitted.
 LABELS = (
+    ("xh", "xh (`xh`)"),
+    ("dust", "dust (`dust`)"),
+    ("direnv", "direnv (`direnv`)"),
+    ("sops", "SOPS (`sops`)"),
     ("git-lfs", "Git LFS (`git-lfs`)"),
     ("lazygit", "lazygit (`lazygit`)"),
     ("leaf", "Leaf (`leaf`)"),

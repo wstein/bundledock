@@ -31,6 +31,7 @@ check() {
         --mount "type=bind,src=$script_dir/leaf-smoke.sh,dst=/leaf-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/jujutsu-smoke.sh,dst=/jujutsu-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/hugo-smoke.sh,dst=/hugo-smoke.sh,readonly" \
+        --mount "type=bind,src=$script_dir/http-disk-env-secrets-smoke.sh,dst=/http-disk-env-secrets-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/process-monitors-smoke.sh,dst=/process-monitors-smoke.sh,readonly" \
         --env HOME=/home/bundledock --env DISABLE_UPDATES=1 --env DISABLE_AUTOUPDATER=1 \
         --entrypoint /bin/sh "$consumer" -ec '
@@ -138,6 +139,8 @@ check() {
             sh /quality-security-smoke.sh
             stage "TruffleHog offline synthetic detection"
             sh /trufflehog-smoke.sh
+            stage "HTTP, disk usage, environment and secrets versions"
+            sh /http-disk-env-secrets-smoke.sh
             stage "process monitors"
             sh /process-monitors-smoke.sh
             stage "read-only toolbox volume"
