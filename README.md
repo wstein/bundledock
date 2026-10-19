@@ -46,7 +46,7 @@ update; packaging revisions remain in the bundle guides.
 
 | Bundle | Purpose and guide | Published version | Publication workflow |
 | --- | --- | --- | --- |
-| OpenTofu | [Official OpenTofu CLI — source prepared, publication pending](docs/opentofu.md) | [![Registry OpenTofu version (publication pending)](https://img.shields.io/badge/dynamic/regex?url=https%3A%2F%2Fquay.io%2Fapi%2Fv1%2Frepository%2Fbundledock%2Fopentofu%2Ftag%2F%3FonlyActiveTags%3Dtrue%26limit%3D100%26page%3D1&search=%22name%22%5Cs%2A%3A%5Cs%2A%22%28%5Cd%7B4%7D%5C.%5Cd%7B2%7D%5C.%5Cd%7B2%7D-%28%3F%3Ab%5Cd%2B%5C.%5Cd%2B%7Cb%5Cd%2B%7C%5Cd%2B-%5Cd%2B%29%7C%5Cd%2B%5C.%5Cd%2B%5C.%5Cd%2B-b%5Cd%2B%29%22&replace=%241&label=version&color=5eead4&labelColor=0b2545)](https://quay.io/repository/bundledock/opentofu?tab=tags) | [![Publish bundles](https://github.com/wstein/bundledock/actions/workflows/publish-bundles.yml/badge.svg?branch=main)](https://github.com/wstein/bundledock/actions/workflows/publish-bundles.yml) |
+| OpenTofu | [Official OpenTofu CLI](docs/opentofu.md) | [![Published opentofu version](https://img.shields.io/badge/dynamic/regex?url=https%3A%2F%2Fquay.io%2Fapi%2Fv1%2Frepository%2Fbundledock%2Fopentofu%2Ftag%2F%3FonlyActiveTags%3Dtrue%26limit%3D100%26page%3D1&search=%22name%22%5Cs%2A%3A%5Cs%2A%22%28%5Cd%7B4%7D%5C.%5Cd%7B2%7D%5C.%5Cd%7B2%7D-%28%3F%3Ab%5Cd%2B%5C.%5Cd%2B%7Cb%5Cd%2B%7C%5Cd%2B-%5Cd%2B%29%7C%5Cd%2B%5C.%5Cd%2B%5C.%5Cd%2B-b%5Cd%2B%29%22&replace=%241&label=version&color=5eead4&labelColor=0b2545)](https://quay.io/repository/bundledock/opentofu?tab=tags) | [![Publish bundles](https://github.com/wstein/bundledock/actions/workflows/publish-bundles.yml/badge.svg?branch=main)](https://github.com/wstein/bundledock/actions/workflows/publish-bundles.yml) |
 
 ### Editors
 
