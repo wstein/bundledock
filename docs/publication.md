@@ -477,6 +477,26 @@ leaves the older attempt pending. This covers CI artifact retention, not permane
 archival of live GitHub job history or registry content; deleted/inaccessible live
 proof remains pending.
 
+## List unpublished updaters
+
+`reconcile` verifies one known attempt. To find which bundles still need one, run
+the read-only survey (Python standard library and an already configured `gh`):
+
+```sh
+python3 -B scripts/publication-pending.py [--bundle claude ...]
+```
+
+For each bundle it compares the lock on `main` with the lock at the source commit
+of the recorded publication (`docs/<bundle>-published.json`) or of its newest
+annotated source tags; a tag proves publication before the documentation PR is
+merged. It prints one JSON line per bundle: `published`, `unpublished` (with the
+latest lock commit and its pull requests), `no-baseline` (never published; first
+publication needs the manual gate) or `pending` (evidence unavailable). The exit
+status is `0` only when every selected bundle is `published`, otherwise `2`.
+A matching lock is evidence of the lock, not of a verified registry image: use
+`publication-reconcile.py` for exact attempts. The survey never dispatches,
+builds, tags, writes or merges.
+
 ## Staging tag cleanup
 
 Successful publication removes only its two `staging-<version>-<architecture>`
