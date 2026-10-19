@@ -5,17 +5,17 @@
   "platforms": {
     "amd64": {
       "claude": {
-        "version": "2.1.303",
-        "url": "https://downloads.claude.ai/claude-code-releases/2.1.303/linux-x64/claude",
-        "sha256": "375988f457756524234695cf2d8f64ace99c5f68682e47ea24862a843c191450",
+        "version": "2.1.304",
+        "url": "https://downloads.claude.ai/claude-code-releases/2.1.304/linux-x64/claude",
+        "sha256": "ea0f135784631619a7a409d07322ecec964f9cc4fd377508ed1ba3f141f27912",
         "verification": "publisher-sha256"
       }
     },
     "arm64": {
       "claude": {
-        "version": "2.1.303",
-        "url": "https://downloads.claude.ai/claude-code-releases/2.1.303/linux-arm64/claude",
-        "sha256": "f384f49826336d4ac0484ac6ac9d8d16f64d244d186ce227cbd7cc088c03315d",
+        "version": "2.1.304",
+        "url": "https://downloads.claude.ai/claude-code-releases/2.1.304/linux-arm64/claude",
+        "sha256": "c487117526509ab6d2ee6013e14f181faf68d6d6afe6bb0d4b2b4a9feca5ecb3",
         "verification": "publisher-sha256"
       }
     }
