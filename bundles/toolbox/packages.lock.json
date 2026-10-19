@@ -203,9 +203,9 @@
         "verification": "publisher-sha256"
       },
       "mise": {
-        "version": "v2026.10.13",
-        "url": "https://github.com/jdx/mise/releases/download/v2026.10.13/mise-v2026.10.13-linux-x64-musl",
-        "sha256": "6766ee30f68cea686dae555ea999c8e11abb1dc2acc50c41fcf5c0442b5eb9fb",
+        "version": "v2026.10.15",
+        "url": "https://github.com/jdx/mise/releases/download/v2026.10.15/mise-v2026.10.15-linux-x64-musl",
+        "sha256": "5daa5f70c1588bb27ffecb275b46dbafcab0f6fc93a893138ba4d8cae6074b60",
         "verification": "publisher-sha256"
       },
       "navi": {
@@ -547,9 +547,9 @@
         "verification": "publisher-sha256"
       },
       "mise": {
-        "version": "v2026.10.13",
-        "url": "https://github.com/jdx/mise/releases/download/v2026.10.13/mise-v2026.10.13-linux-arm64-musl",
-        "sha256": "600bfc6f10542455aae93b3780627b5301e6e688779f09f4ef42852c54ce11df",
+        "version": "v2026.10.15",
+        "url": "https://github.com/jdx/mise/releases/download/v2026.10.15/mise-v2026.10.15-linux-arm64-musl",
+        "sha256": "823b94a7425c4781d475357cb2064bfafddc13cf66b7f2927b65d96f49bbe73c",
         "verification": "publisher-sha256"
       },
       "navi": {
