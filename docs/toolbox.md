@@ -29,6 +29,120 @@ docker pull quay.io/bundledock/toolbox@sha256:19bdcb015ea2497b9772678d8aa2443da1
 The source inventory below describes the current lock; this publication retains its exact source revision.
 <!-- END PUBLISHED BUNDLE -->
 
+## Source inventory
+
+<!-- BEGIN GENERATED TOOL INVENTORY -->
+| Tool | Pinned version | Homepage | Source |
+| --- | --- | --- | --- |
+| actionlint (`actionlint`) | 1.7.12 | [Homepage](https://github.com/rhysd/actionlint) | [Source](https://github.com/rhysd/actionlint) |
+| age (`age`, `age-keygen`, `age-inspect`, plugins) | 1.3.2 | [Homepage](https://age-encryption.org) | [Source](https://github.com/FiloSottile/age) |
+| ast-grep (`ast-grep`) | 0.51.0 | [Homepage](https://ast-grep.github.io/) | [Source](https://github.com/ast-grep/ast-grep) |
+| bat (`bat`) | 0.26.1 | [Homepage](https://github.com/sharkdp/bat) | [Source](https://github.com/sharkdp/bat) |
+| bottom (`btm`) | 0.14.9 | [Homepage](https://bottom.pages.dev) | [Source](https://github.com/ClementTsang/bottom) |
+| btop (`btop`) | 1.4.7 | [Homepage](https://github.com/aristocratos/btop) | [Source](https://github.com/aristocratos/btop) |
+| Cosign (`cosign`) | 3.1.3 | [Homepage](https://github.com/sigstore/cosign) | [Source](https://github.com/sigstore/cosign) |
+| delta (`delta`) | 0.20.1 | [Homepage](https://dandavison.github.io/delta/) | [Source](https://github.com/dandavison/delta) |
+| Difftastic (`difft`) | 0.71.0 | [Homepage](https://github.com/Wilfred/difftastic) | [Source](https://github.com/Wilfred/difftastic) |
+| direnv (`direnv`) | 2.38.2 | [Homepage](https://github.com/direnv/direnv) | [Source](https://github.com/direnv/direnv) |
+| dust (`dust`) | 1.2.6 | [Homepage](https://github.com/bootandy/dust) | [Source](https://github.com/bootandy/dust) |
+| Fastfetch (`fastfetch`) | 2.70.0 | [Homepage](https://github.com/fastfetch-cli/fastfetch) | [Source](https://github.com/fastfetch-cli/fastfetch) |
+| fd (`fd`, `fdfind`) | 10.5.0 | [Homepage](https://github.com/sharkdp/fd) | [Source](https://github.com/sharkdp/fd) |
+| Fish (`fish`) | 4.9.3 | [Homepage](https://fishshell.com) | [Source](https://github.com/fish-shell/fish-shell) |
+| fzf (`fzf`) | 0.74.5 | [Homepage](https://junegunn.github.io/fzf/) | [Source](https://github.com/junegunn/fzf) |
+| Git LFS (`git-lfs`) | 3.8.0 | [Homepage](https://git-lfs.com) | [Source](https://github.com/git-lfs/git-lfs) |
+| git-cliff (`git-cliff`) | 2.14.2 | [Homepage](https://github.com/orhun/git-cliff) | [Source](https://github.com/orhun/git-cliff) |
+| GitHub CLI | 2.102.0 | [Homepage](https://cli.github.com) | [Source](https://github.com/cli/cli) |
+| GitHub CLI Stacked PRs (`gh stack`) | 0.2.1 | [Homepage](https://gh.io/stacks) | [Source](https://github.com/github/gh-stack) |
+| Gitleaks (`gitleaks`) | 8.30.1 | [Homepage](https://gitleaks.io) | [Source](https://github.com/gitleaks/gitleaks) |
+| Hadolint (`hadolint`) | 2.15.1 | [Homepage](https://github.com/hadolint/hadolint) | [Source](https://github.com/hadolint/hadolint) |
+| Helix (`hx`) | 25.07.1 | [Homepage](https://helix-editor.com) | [Source](https://github.com/helix-editor/helix) |
+| Herdr (`herdr`) | 0.9.5 | [Homepage](https://herdr.dev) | [Source](https://github.com/herdrdev/herdr) |
+| Hugo (`hugo`, standard) | 0.168.0 | [Homepage](https://gohugo.io) | [Source](https://github.com/gohugoio/hugo) |
+| hyperfine (`hyperfine`) | 2.0.0 | [Homepage](https://github.com/sharkdp/hyperfine) | [Source](https://github.com/sharkdp/hyperfine) |
+| jq | 1.8.2 | [Homepage](https://jqlang.org) | [Source](https://github.com/jqlang/jq) |
+| jsonschema-cli (`jsonschema-cli`) | 0.58.5 | [Homepage](https://github.com/Stranger6667/jsonschema) | [Source](https://github.com/Stranger6667/jsonschema) |
+| Jujutsu (`jj`) | 0.46.0 | [Homepage](https://jj-vcs.dev) | [Source](https://github.com/jj-vcs/jj) |
+| just (`just`) | 1.59.0 | [Homepage](https://just.systems) | [Source](https://github.com/casey/just) |
+| lazygit (`lazygit`) | 0.66.2 | [Homepage](https://github.com/jesseduffield/lazygit) | [Source](https://github.com/jesseduffield/lazygit) |
+| Leaf (`leaf`) | 1.29.1 | [Homepage](https://leaf.rivolink.mg) | [Source](https://github.com/RivoLink/leaf) |
+| lsd (`lsd`) | 1.2.0 | [Homepage](https://github.com/lsd-rs/lsd) | [Source](https://github.com/lsd-rs/lsd) |
+| lychee (`lychee`) | 0.24.2 | [Homepage](https://lychee.cli.rs) | [Source](https://github.com/lycheeverse/lychee) |
+| Mike Farah yq (`yq`) | 4.54.1 | [Homepage](https://mikefarah.gitbook.io/yq/) | [Source](https://github.com/mikefarah/yq) |
+| mise (`mise`) | 2026.10.15 | [Homepage](https://mise.jdx.dev) | [Source](https://github.com/jdx/mise) |
+| navi (`navi`) | 2.24.0 | [Homepage](https://github.com/denisidoro/navi) | [Source](https://github.com/denisidoro/navi) |
+| Nushell (`nu`) | 0.116.1 | [Homepage](https://www.nushell.sh/) | [Source](https://github.com/nushell/nushell) |
+| pinact (`pinact`) | 5.0.0 | [Homepage](https://github.com/suzuki-shunsuke/pinact) | [Source](https://github.com/suzuki-shunsuke/pinact) |
+| regctl (`regctl`) | 0.11.6 | [Homepage](https://regclient.org) | [Source](https://github.com/regclient/regclient) |
+| ripgrep (`rg`) | 15.2.0 | [Homepage](https://github.com/BurntSushi/ripgrep) | [Source](https://github.com/BurntSushi/ripgrep) |
+| Ruff (`ruff`) | 0.17.1 | [Homepage](https://docs.astral.sh/ruff) | [Source](https://github.com/astral-sh/ruff) |
+| SCC (`scc`, wstein fork) | 4.1.1 | [Homepage](https://github.com/wstein/scc-fork) | [Source](https://github.com/wstein/scc-fork) |
+| ShellCheck (`shellcheck`) | 0.11.0 | [Homepage](https://www.shellcheck.net) | [Source](https://github.com/koalaman/shellcheck) |
+| shfmt (`shfmt`) | 3.14.1 | [Homepage](https://pkg.go.dev/mvdan.cc/sh/v3) | [Source](https://github.com/mvdan/sh) |
+| SOPS (`sops`) | 3.13.3 | [Homepage](https://github.com/getsops/sops) | [Source](https://github.com/getsops/sops) |
+| Spec Kit (`specify`, first-use pip launcher) | 1.1.3 | [Homepage](https://github.github.io/spec-kit/) | [Source](https://github.com/github/spec-kit) |
+| Starship (`starship`) | 1.27.0 | [Homepage](https://starship.rs) | [Source](https://github.com/starship/starship) |
+| Syft (`syft`) | 1.54.1 | [Homepage](https://github.com/anchore/syft) | [Source](https://github.com/anchore/syft) |
+| tldr (`tldr`, first-use pip launcher) | 3.4.4 | [Homepage](https://pypi.org/project/tldr/) | [Source](https://github.com/tldr-pages/tldr-python-client) |
+| tmux (`tmux`) | 3.7c (official static builds) | [Homepage](https://github.com/tmux/tmux-builds) | [Source](https://github.com/tmux/tmux-builds) |
+| Trivy (`trivy`) | 0.76.0 | [Homepage](https://trivy.dev) | [Source](https://github.com/aquasecurity/trivy) |
+| TruffleHog (`trufflehog`) | 3.99.2 | [Homepage](https://github.com/trufflesecurity/trufflehog) | [Source](https://github.com/trufflesecurity/trufflehog) |
+| typos (`typos`) | 1.51.1 | [Homepage](https://github.com/crate-ci/typos) | [Source](https://github.com/crate-ci/typos) |
+| Typst (`typst`) | 0.15.1 | [Homepage](https://typst.app) | [Source](https://github.com/typst/typst) |
+| uv (`uv`, `uvx`) | 0.13.1 | [Homepage](https://docs.astral.sh/uv) | [Source](https://github.com/astral-sh/uv) |
+| watchexec (`watchexec`) | 2.8.0 | [Homepage](https://watchexec.github.io) | [Source](https://github.com/watchexec/watchexec) |
+| xh (`xh`) | 0.26.2 | [Homepage](https://github.com/ducaale/xh) | [Source](https://github.com/ducaale/xh) |
+| zizmor (`zizmor`) | 1.31.1 | [Homepage](https://github.com/zizmorcore/zizmor) | [Source](https://github.com/zizmorcore/zizmor) |
+| zoxide (`zoxide`) | 0.10.0 | [Homepage](https://github.com/ajeetdsouza/zoxide) | [Source](https://github.com/ajeetdsouza/zoxide) |
+<!-- END GENERATED TOOL INVENTORY -->
+
+The default bundle lives in `bundles/toolbox/`: `packages.txt`,
+`packages.catalog.json`, `packages.lock.json`, its Dockerfile, smoke scripts and licenses.
+Shared Go code remains at the repository root. The source toolbox contains 57
+downloaded tools plus the two first-use Python launchers listed above. Codex, Antigravity and Claude are supplied by their separate
+[Codex](codex.md), [Antigravity](agy.md) and [Claude Code](claude.md) bundles.
+The published toolbox recorded above still includes those agents; this source
+removal has not been built or published.
+
+`packages.lock.json` pins vendor artifact URLs and checksums for Linux `amd64`
+and `arm64`; builds verify every download. Launcher versions come from their
+separate wheel inputs. Homepage and Source links are generated from reviewed
+upstream metadata and persist when the native lock is refreshed.
+
+The source catalog also includes `xh` for HTTP requests, `dust` for disk usage,
+`direnv` for opt-in directory environments, and SOPS (`sops`) for encrypted
+configuration. All four use official stable prebuilt Linux AMD64/ARM64 releases
+with publisher SHA256 pins and retained historical license snapshots. Inclusion
+of `direnv` does not install shell hooks or approve `.envrc` files; users choose
+and trust those separately. Keep configuration, credentials and writable state
+outside the read-only toolbox. SOPS key services require the user's own setup.
+
+The consumer smoke only checks these four tools' versions, disables SOPS version
+checks, and runs with networking disabled. Source tests use synthetic commands
+and do not establish native compatibility. These additions have not been built,
+published or activated; native consumer smoke awaits an approved image build.
+
+TruffleHog is included alongside Gitleaks, using official stable Linux AMD64 and
+ARM64 binaries. Its full AGPL-3.0 license and upstream README are retained under
+`licenses/trufflehog`. For a local scan without update checks or credential
+verification requests:
+
+```sh
+trufflehog filesystem --no-update --no-verification --fail --json /path/to/project
+```
+
+Without `--no-verification`, TruffleHog can contact providers to verify detected
+credentials. Gitleaks configurations and rules do not transfer automatically.
+The consumer smoke uses only a synthetic custom detector and clean control,
+isolated configuration and HOME, with updates/verification disabled and consumer
+networking disabled. Native smoke acceptance remains part of an approved build.
+
+Nushell and tmux are opt-in commands. tmux pins the published stable
+[official static build](https://github.com/tmux/tmux-builds/releases/tag/v3.7c),
+3.7c, while the upstream source release is 3.8. Its provider resolves that static
+build feed; release suffixes compare numerically (`3.7a` = `3.7.1`, `3.7c` =
+`3.7.3`, `3.8` = `3.8.0`) while lock versions and asset URLs retain the upstream tag.
+No plugins or user configuration are installed for either alternative.
+
 ## Spec Kit launcher (source)
 
 The source supplies an owned `specify` launcher for `specify-cli==1.1.3`,
@@ -154,120 +268,6 @@ avoiding ambiguous basenames across packages. The helper checks the index/archiv
 checksums, member hashes and sizes, rejects unsafe or duplicate paths, and
 bounds expansion before printing bytes. Retaining these notices does not
 establish a complete transitive license audit.
-
-## Source inventory
-
-The default bundle lives in `bundles/toolbox/`: `packages.txt`,
-`packages.catalog.json`, `packages.lock.json`, its Dockerfile, smoke scripts and licenses.
-Shared Go code remains at the repository root. The source toolbox contains 57
-downloaded tools plus the two first-use Python launchers listed below. Codex, Antigravity and Claude are supplied by their separate
-[Codex](codex.md), [Antigravity](agy.md) and [Claude Code](claude.md) bundles.
-The published toolbox recorded above still includes those agents; this source
-removal has not been built or published.
-
-`packages.lock.json` pins vendor artifact URLs and checksums for Linux `amd64`
-and `arm64`; builds verify every download. Launcher versions come from their
-separate wheel inputs. Homepage and Source links are generated from reviewed
-upstream metadata and persist when the native lock is refreshed.
-
-The source catalog also includes `xh` for HTTP requests, `dust` for disk usage,
-`direnv` for opt-in directory environments, and SOPS (`sops`) for encrypted
-configuration. All four use official stable prebuilt Linux AMD64/ARM64 releases
-with publisher SHA256 pins and retained historical license snapshots. Inclusion
-of `direnv` does not install shell hooks or approve `.envrc` files; users choose
-and trust those separately. Keep configuration, credentials and writable state
-outside the read-only toolbox. SOPS key services require the user's own setup.
-
-The consumer smoke only checks these four tools' versions, disables SOPS version
-checks, and runs with networking disabled. Source tests use synthetic commands
-and do not establish native compatibility. These additions have not been built,
-published or activated; native consumer smoke awaits an approved image build.
-
-TruffleHog is included alongside Gitleaks, using official stable Linux AMD64 and
-ARM64 binaries. Its full AGPL-3.0 license and upstream README are retained under
-`licenses/trufflehog`. For a local scan without update checks or credential
-verification requests:
-
-```sh
-trufflehog filesystem --no-update --no-verification --fail --json /path/to/project
-```
-
-Without `--no-verification`, TruffleHog can contact providers to verify detected
-credentials. Gitleaks configurations and rules do not transfer automatically.
-The consumer smoke uses only a synthetic custom detector and clean control,
-isolated configuration and HOME, with updates/verification disabled and consumer
-networking disabled. Native smoke acceptance remains part of an approved build.
-
-<!-- BEGIN GENERATED TOOL INVENTORY -->
-| Tool | Pinned version | Homepage | Source |
-| --- | --- | --- | --- |
-| actionlint (`actionlint`) | 1.7.12 | [Homepage](https://github.com/rhysd/actionlint) | [Source](https://github.com/rhysd/actionlint) |
-| age (`age`, `age-keygen`, `age-inspect`, plugins) | 1.3.2 | [Homepage](https://age-encryption.org) | [Source](https://github.com/FiloSottile/age) |
-| ast-grep (`ast-grep`) | 0.51.0 | [Homepage](https://ast-grep.github.io/) | [Source](https://github.com/ast-grep/ast-grep) |
-| bat (`bat`) | 0.26.1 | [Homepage](https://github.com/sharkdp/bat) | [Source](https://github.com/sharkdp/bat) |
-| bottom (`btm`) | 0.14.9 | [Homepage](https://bottom.pages.dev) | [Source](https://github.com/ClementTsang/bottom) |
-| btop (`btop`) | 1.4.7 | [Homepage](https://github.com/aristocratos/btop) | [Source](https://github.com/aristocratos/btop) |
-| Cosign (`cosign`) | 3.1.3 | [Homepage](https://github.com/sigstore/cosign) | [Source](https://github.com/sigstore/cosign) |
-| delta (`delta`) | 0.20.1 | [Homepage](https://dandavison.github.io/delta/) | [Source](https://github.com/dandavison/delta) |
-| Difftastic (`difft`) | 0.71.0 | [Homepage](https://github.com/Wilfred/difftastic) | [Source](https://github.com/Wilfred/difftastic) |
-| direnv (`direnv`) | 2.38.2 | [Homepage](https://github.com/direnv/direnv) | [Source](https://github.com/direnv/direnv) |
-| dust (`dust`) | 1.2.6 | [Homepage](https://github.com/bootandy/dust) | [Source](https://github.com/bootandy/dust) |
-| Fastfetch (`fastfetch`) | 2.70.0 | [Homepage](https://github.com/fastfetch-cli/fastfetch) | [Source](https://github.com/fastfetch-cli/fastfetch) |
-| fd (`fd`, `fdfind`) | 10.5.0 | [Homepage](https://github.com/sharkdp/fd) | [Source](https://github.com/sharkdp/fd) |
-| Fish (`fish`) | 4.9.3 | [Homepage](https://fishshell.com) | [Source](https://github.com/fish-shell/fish-shell) |
-| fzf (`fzf`) | 0.74.5 | [Homepage](https://junegunn.github.io/fzf/) | [Source](https://github.com/junegunn/fzf) |
-| Git LFS (`git-lfs`) | 3.8.0 | [Homepage](https://git-lfs.com) | [Source](https://github.com/git-lfs/git-lfs) |
-| git-cliff (`git-cliff`) | 2.14.2 | [Homepage](https://github.com/orhun/git-cliff) | [Source](https://github.com/orhun/git-cliff) |
-| GitHub CLI | 2.102.0 | [Homepage](https://cli.github.com) | [Source](https://github.com/cli/cli) |
-| GitHub CLI Stacked PRs (`gh stack`) | 0.2.1 | [Homepage](https://gh.io/stacks) | [Source](https://github.com/github/gh-stack) |
-| Gitleaks (`gitleaks`) | 8.30.1 | [Homepage](https://gitleaks.io) | [Source](https://github.com/gitleaks/gitleaks) |
-| Hadolint (`hadolint`) | 2.15.1 | [Homepage](https://github.com/hadolint/hadolint) | [Source](https://github.com/hadolint/hadolint) |
-| Helix (`hx`) | 25.07.1 | [Homepage](https://helix-editor.com) | [Source](https://github.com/helix-editor/helix) |
-| Herdr (`herdr`) | 0.9.5 | [Homepage](https://herdr.dev) | [Source](https://github.com/herdrdev/herdr) |
-| Hugo (`hugo`, standard) | 0.168.0 | [Homepage](https://gohugo.io) | [Source](https://github.com/gohugoio/hugo) |
-| hyperfine (`hyperfine`) | 2.0.0 | [Homepage](https://github.com/sharkdp/hyperfine) | [Source](https://github.com/sharkdp/hyperfine) |
-| jq | 1.8.2 | [Homepage](https://jqlang.org) | [Source](https://github.com/jqlang/jq) |
-| jsonschema-cli (`jsonschema-cli`) | 0.58.5 | [Homepage](https://github.com/Stranger6667/jsonschema) | [Source](https://github.com/Stranger6667/jsonschema) |
-| Jujutsu (`jj`) | 0.46.0 | [Homepage](https://jj-vcs.dev) | [Source](https://github.com/jj-vcs/jj) |
-| just (`just`) | 1.59.0 | [Homepage](https://just.systems) | [Source](https://github.com/casey/just) |
-| lazygit (`lazygit`) | 0.66.2 | [Homepage](https://github.com/jesseduffield/lazygit) | [Source](https://github.com/jesseduffield/lazygit) |
-| Leaf (`leaf`) | 1.29.1 | [Homepage](https://leaf.rivolink.mg) | [Source](https://github.com/RivoLink/leaf) |
-| lsd (`lsd`) | 1.2.0 | [Homepage](https://github.com/lsd-rs/lsd) | [Source](https://github.com/lsd-rs/lsd) |
-| lychee (`lychee`) | 0.24.2 | [Homepage](https://lychee.cli.rs) | [Source](https://github.com/lycheeverse/lychee) |
-| Mike Farah yq (`yq`) | 4.54.1 | [Homepage](https://mikefarah.gitbook.io/yq/) | [Source](https://github.com/mikefarah/yq) |
-| mise (`mise`) | 2026.10.15 | [Homepage](https://mise.jdx.dev) | [Source](https://github.com/jdx/mise) |
-| navi (`navi`) | 2.24.0 | [Homepage](https://github.com/denisidoro/navi) | [Source](https://github.com/denisidoro/navi) |
-| Nushell (`nu`) | 0.116.1 | [Homepage](https://www.nushell.sh/) | [Source](https://github.com/nushell/nushell) |
-| pinact (`pinact`) | 5.0.0 | [Homepage](https://github.com/suzuki-shunsuke/pinact) | [Source](https://github.com/suzuki-shunsuke/pinact) |
-| regctl (`regctl`) | 0.11.6 | [Homepage](https://regclient.org) | [Source](https://github.com/regclient/regclient) |
-| ripgrep (`rg`) | 15.2.0 | [Homepage](https://github.com/BurntSushi/ripgrep) | [Source](https://github.com/BurntSushi/ripgrep) |
-| Ruff (`ruff`) | 0.17.1 | [Homepage](https://docs.astral.sh/ruff) | [Source](https://github.com/astral-sh/ruff) |
-| SCC (`scc`, wstein fork) | 4.1.1 | [Homepage](https://github.com/wstein/scc-fork) | [Source](https://github.com/wstein/scc-fork) |
-| ShellCheck (`shellcheck`) | 0.11.0 | [Homepage](https://www.shellcheck.net) | [Source](https://github.com/koalaman/shellcheck) |
-| shfmt (`shfmt`) | 3.14.1 | [Homepage](https://pkg.go.dev/mvdan.cc/sh/v3) | [Source](https://github.com/mvdan/sh) |
-| SOPS (`sops`) | 3.13.3 | [Homepage](https://github.com/getsops/sops) | [Source](https://github.com/getsops/sops) |
-| Spec Kit (`specify`, first-use pip launcher) | 1.1.3 | [Homepage](https://github.github.io/spec-kit/) | [Source](https://github.com/github/spec-kit) |
-| Starship (`starship`) | 1.27.0 | [Homepage](https://starship.rs) | [Source](https://github.com/starship/starship) |
-| Syft (`syft`) | 1.54.1 | [Homepage](https://github.com/anchore/syft) | [Source](https://github.com/anchore/syft) |
-| tldr (`tldr`, first-use pip launcher) | 3.4.4 | [Homepage](https://pypi.org/project/tldr/) | [Source](https://github.com/tldr-pages/tldr-python-client) |
-| tmux (`tmux`) | 3.7c (official static builds) | [Homepage](https://github.com/tmux/tmux-builds) | [Source](https://github.com/tmux/tmux-builds) |
-| Trivy (`trivy`) | 0.76.0 | [Homepage](https://trivy.dev) | [Source](https://github.com/aquasecurity/trivy) |
-| TruffleHog (`trufflehog`) | 3.99.2 | [Homepage](https://github.com/trufflesecurity/trufflehog) | [Source](https://github.com/trufflesecurity/trufflehog) |
-| typos (`typos`) | 1.51.1 | [Homepage](https://github.com/crate-ci/typos) | [Source](https://github.com/crate-ci/typos) |
-| Typst (`typst`) | 0.15.1 | [Homepage](https://typst.app) | [Source](https://github.com/typst/typst) |
-| uv (`uv`, `uvx`) | 0.13.1 | [Homepage](https://docs.astral.sh/uv) | [Source](https://github.com/astral-sh/uv) |
-| watchexec (`watchexec`) | 2.8.0 | [Homepage](https://watchexec.github.io) | [Source](https://github.com/watchexec/watchexec) |
-| xh (`xh`) | 0.26.2 | [Homepage](https://github.com/ducaale/xh) | [Source](https://github.com/ducaale/xh) |
-| zizmor (`zizmor`) | 1.31.1 | [Homepage](https://github.com/zizmorcore/zizmor) | [Source](https://github.com/zizmorcore/zizmor) |
-| zoxide (`zoxide`) | 0.10.0 | [Homepage](https://github.com/ajeetdsouza/zoxide) | [Source](https://github.com/ajeetdsouza/zoxide) |
-<!-- END GENERATED TOOL INVENTORY -->
-
-Nushell and tmux are opt-in commands. tmux pins the published stable
-[official static build](https://github.com/tmux/tmux-builds/releases/tag/v3.7c),
-3.7c, while the upstream source release is 3.8. Its provider resolves that static
-build feed; release suffixes compare numerically (`3.7a` = `3.7.1`, `3.7c` =
-`3.7.3`, `3.8` = `3.8.0`) while lock versions and asset URLs retain the upstream tag.
-No plugins or user configuration are installed for either alternative.
 
 ## Propose upgrades with GitHub Actions
 
