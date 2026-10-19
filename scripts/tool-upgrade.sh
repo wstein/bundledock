@@ -144,25 +144,69 @@ case "${1:-}" in
     git config user.name 'github-actions[bot]'
     git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
     git add -- "${paths[@]}"
-    title='chore(toolbox): upgrade stable toolbox lock'
-    if [[ ${bundles[0]} != toolbox ]]; then title="chore(${bundles[0]}): upgrade stable runtime lock"; fi
-    git commit -m "$title"
+    body="$UPGRADE_RESULT/pr-body.md"
+    commit_msg_file=$(mktemp)
+    trap 'rm -f "$commit_msg_file"' EXIT
+    title=$(python3 - "${bundles[0]}" "$proposal_base" "$body" "$commit_msg_file" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" <<'PYTHON'
+import json, subprocess, sys
+from pathlib import Path
+
+bundle, base, pr_body_path, commit_msg_path, repo, run_id, attempt = sys.argv[1:]
+lock_path = Path('bundles') / bundle / 'packages.lock.json'
+catalog_path = Path('bundles') / bundle / 'packages.catalog.json'
+old_lock = json.loads(subprocess.check_output(['git', 'show', f'{base}:{lock_path}'], text=True))
+new_lock = json.loads(lock_path.read_text())
+catalog = json.loads(catalog_path.read_text())['packages']
+
+changes = []
+for tool in sorted(new_lock['platforms']['amd64']):
+    old_raw = old_lock['platforms']['amd64'][tool]['version']
+    new_raw = new_lock['platforms']['amd64'][tool]['version']
+    if old_raw == new_raw:
+        continue
+    pkg = catalog.get(tool, {})
+    prefix = pkg.get('tag_prefix', '')
+    old_ver = old_raw.removeprefix(prefix)
+    new_ver = new_raw.removeprefix(prefix)
+    provider = pkg.get('provider', '')
+    upstream = pkg.get('repository', '')
+    if provider == 'github' and upstream:
+        source = f'[{upstream}@{new_raw}](https://github.com/{upstream}/releases/tag/{new_raw})'
+    elif upstream:
+        source = f'[{upstream}](https://github.com/{upstream})'
+    elif provider == 'node':
+        source = f'[nodejs.org@{new_raw}](https://nodejs.org/dist/{new_raw}/)'
+    else:
+        source = f'`{new_raw}`'
+    changes.append((tool, old_ver, new_ver, source))
+
+if not changes:
+    title = f'chore({bundle}): sync generated tool inventory'
+    commit_msg = title + '\n'
+    table = f'Sync generated `docs/{bundle}.md` inventory with `{lock_path}`.'
+else:
+    if len(changes) <= 3:
+        title = f'chore({bundle}): upgrade ' + ', '.join(f'{t} {o} -> {n}' for t, o, n, _ in changes)
+    else:
+        title = f'chore({bundle}): upgrade {len(changes)} tools (' + ', '.join(t for t, _, _, _ in changes) + ')'
+    if len(changes) == 1:
+        commit_msg = title + '\n'
+    else:
+        bullets = '\n'.join(f'- {t}: {o} -> {n}' for t, o, n, _ in changes)
+        commit_msg = f'{title}\n\n{bullets}\n'
+    rows = ['| Tool | Previous | New | Source |', '| --- | --- | --- | --- |']
+    rows.extend(f'| `{t}` | `{o}` | `{n}` | {src} |' for t, o, n, src in changes)
+    table = '\n'.join(rows)
+
+Path(commit_msg_path).write_text(commit_msg)
+Path(pr_body_path).write_text(f'{table}\n\nRun: https://github.com/{repo}/actions/runs/{run_id} (attempt {attempt})\n')
+print(title)
+PYTHON
+)
+    git commit -F "$commit_msg_file"
     if ! git push origin "HEAD:refs/heads/$branch"; then
       echo 'Topic push failed. An administrator must explicitly permit GITHUB_TOKEN contents:write under repository/organization Actions policy. This workflow does not change permissions or use a PAT.' >&2; exit 1
     fi
-    body="$UPGRADE_RESULT/pr-body.md"
-    cat > "$body" <<BODY
-Resolve official stable releases within the selected bundles' existing packages.txt constraints and update only their locks and generated source version inventories. Selected bundles: ${bundles[*]}. Both supported architectures were resolved and verified by the existing BundleDock manager, and transferred locks were revalidated before this proposal.
-
-Review the lock diff and run the required source checks. After an established published baseline, the actual human owner wstein merging this eligible updater authorizes frozen-lock publication after successful CI on the exact merged main source. Source merges remain human operations after the required checks pass. Authorization covers only this updater lock and generated inventory. First publication requires separate explicit approval of the exact full source revision and intended build/publication operation; this updater cannot bootstrap an absent baseline. This proposal performs no artifact build; CLI releases, documentation builds, and consumer activation require separate explicit authorization.
-
-Run: https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID (attempt $GITHUB_RUN_ATTEMPT).
-
-Keep source/test fixes in separate PRs. If main advances, rebase this updater or refresh it by merging main, then rerun source checks before human merge. Automatic publication accepts one updater commit followed only by verified main refresh merges (at most 16 commits total), with the final diff limited to this bundle's lock and generated inventory. Additional source commits or foreign merge ancestry reject publication. Recovery after main has advanced requires separately approved exact-SHA manual publication of current main.
-
-GitHub may suppress or hold ordinary pull_request runs for bot-created proposals before jobs start. The proposer explicitly dispatches source-only CI for the exact fresh bot PR head after validating its repository, branch, main ancestry and own-file scope. Wait for the required source checks before human merge. Successful CI on the exact owner-merged main revision starts the read-only publication planner, which verifies actual owner merge identity, exact source/tree and own-file scope before frozen-lock publication. Main movement, unavailable provenance or source inconsistencies stop automatic publication.
-
-BODY
     if ! url=$(gh pr create --repo "$GITHUB_REPOSITORY" --base "$DEFAULT_BRANCH" --head "$branch" --title "$title" --body-file "$body" 2>&1); then
       printf '%s\n' "$url" >&2
       echo 'PR creation failed. An administrator must explicitly permit GITHUB_TOKEN contents:write and pull-requests:write, and enable Settings > Actions > General > Workflow permissions > Allow GitHub Actions to create and approve pull requests (subject to organization policy). This workflow never changes those settings or uses a PAT. The topic branch may already exist; inspect it before retrying.' >&2; exit 1
