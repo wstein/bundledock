@@ -357,7 +357,6 @@ class ReadmePublishedBundleRowsTest(unittest.TestCase):
         self.assertTrue(receipts)
         for receipt in receipts:
             bundle = receipt.name.removesuffix('-published.json')
-            if bundle == 'toolbox': continue
             with self.subTest(bundle=bundle):
                 matching = [row for row in rows if f'docs/{bundle}.md)' in row]
                 self.assertEqual(len(matching), 1)
