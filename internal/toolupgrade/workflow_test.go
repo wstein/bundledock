@@ -358,35 +358,106 @@ func TestResolveAndPublish(t *testing.T) {
 	if branch := must(t, dir, nil, "git", "branch", "--show-current"); branch != "automation/toolbox-upgrade-123-1\n" {
 		t.Fatal(branch)
 	}
-	if title := must(t, dir, nil, "git", "log", "-1", "--format=%s"); title != "chore(toolbox): upgrade stable toolbox lock\n" {
-		t.Fatal(title)
+	beforeNorm := strings.TrimPrefix(before, "v")
+	afterNorm := strings.TrimPrefix(after, "v")
+	wantTitle := "chore(toolbox): upgrade gh " + beforeNorm + " -> " + afterNorm
+	if title := must(t, dir, nil, "git", "log", "-1", "--format=%s"); title != wantTitle+"\n" {
+		t.Fatalf("got %q, want %q", title, wantTitle+"\n")
 	}
 	body, err := os.ReadFile(filepath.Join(value(env, "UPGRADE_RESULT"), "pr-body.md"))
-	if err == nil && !strings.Contains(string(body), "First publication requires separate explicit approval of the exact full source revision and intended build/publication operation") {
-		t.Fatal("updater PR body omits first-publication approval boundary")
-	}
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, text := range []string{"wstein", "exact merged main source", "successful CI", "human operations", "frozen-lock publication", "after the required checks pass", "explicitly dispatches source-only CI"} {
+	wantRow := "| `gh` | `" + beforeNorm + "` | `" + afterNorm + "` | [cli/cli@" + after + "](https://github.com/cli/cli/releases/tag/" + after + ") |"
+	for _, text := range []string{
+		"| Tool | Previous | New | Source |",
+		wantRow,
+		"Run: https://github.com/wstein/bundledock/actions/runs/123 (attempt 1)",
+	} {
 		if !strings.Contains(string(body), text) {
-			t.Fatalf("approval body missing %q: %s", text, body)
+			t.Fatalf("PR body missing %q:\n%s", text, body)
 		}
 	}
-	if strings.Contains(string(body), "Run CI manually") || strings.Contains(string(body), "Those operations need separate explicit approval") {
-		t.Fatalf("approval body contradicts single approval: %s", body)
+	for _, boilerplate := range []string{"Resolve official stable releases", "First publication requires", "GitHub may suppress"} {
+		if strings.Contains(string(body), boilerplate) {
+			t.Fatalf("PR body still contains boilerplate %q:\n%s", boilerplate, body)
+		}
 	}
 	calls, err := os.ReadFile(value(env, "CALLS"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(calls), "pr create --repo wstein/bundledock --base main --head automation/toolbox-upgrade-123-1 --title chore(toolbox): upgrade stable toolbox lock") {
+	if !strings.Contains(string(calls), "pr create --repo wstein/bundledock --base main --head automation/toolbox-upgrade-123-1 --title "+wantTitle) {
 		t.Fatalf("calls %s", calls)
 	}
 	head := strings.TrimSpace(must(t, dir, nil, "git", "rev-parse", "HEAD"))
 	if !strings.Contains(string(calls), "api repos/wstein/bundledock/actions/workflows/ci.yml/dispatches --method POST --input -") ||
 		!strings.Contains(string(calls), `"ref": "automation/toolbox-upgrade-123-1", "inputs": {"expected_head_sha": "`+head+`"}`) {
 		t.Fatalf("missing exact pushed-head source CI dispatch: %s", calls)
+	}
+}
+func TestMultiToolUpgradeCommitAndPRBody(t *testing.T) {
+	dir, env := fixture(t)
+	syftBefore := strings.TrimPrefix(fixtureBaseline(t, dir, "toolbox", "syft"), "v")
+	truffleBefore := strings.TrimPrefix(fixtureBaseline(t, dir, "toolbox", "trufflehog"), "v")
+	uvBefore := fixtureBaseline(t, dir, "toolbox", "uv")
+	must(t, dir, nil, "python3", "-c", `import json
+from pathlib import Path
+p = Path('bundles/toolbox/packages.lock.json')
+lock = json.loads(p.read_text())
+for tool in ('syft', 'trufflehog', 'uv'):
+    cur = lock['platforms']['amd64'][tool]['version']
+    prefix = 'v' if cur.startswith('v') else ''
+    maj, mn, pat = map(int, cur.removeprefix(prefix).split('.'))
+    nxt = f'{prefix}{maj}.{mn}.{pat+1}'
+    for arch in ('amd64', 'arm64'):
+        lock['platforms'][arch][tool]['version'] = nxt
+p.write_text(json.dumps(lock, indent=2) + '\n')`)
+	must(t, dir, nil, "python3", "scripts/tool-inventory.py", "--bundle", "toolbox")
+	result := value(env, "UPGRADE_RESULT")
+	for _, pair := range [][2]string{{"bundles/toolbox/packages.lock.json", "toolbox.lock.json"}, {"docs/toolbox.md", "toolbox.md"}} {
+		b, err := os.ReadFile(filepath.Join(dir, pair[0]))
+		if err != nil {
+			t.Fatal(err)
+		}
+		write(t, filepath.Join(result, pair[1]), string(b))
+	}
+	syftAfter := strings.TrimPrefix(fixtureBaseline(t, dir, "toolbox", "syft"), "v")
+	truffleAfter := strings.TrimPrefix(fixtureBaseline(t, dir, "toolbox", "trufflehog"), "v")
+	uvAfter := fixtureBaseline(t, dir, "toolbox", "uv")
+	must(t, dir, nil, "git", "restore", "bundles/toolbox/packages.lock.json", "docs/toolbox.md")
+	remote := filepath.Join(t.TempDir(), "remote.git")
+	must(t, dir, nil, "git", "init", "--bare", remote)
+	must(t, dir, nil, "git", "remote", "add", "origin", remote)
+	if out, err := adapter(t, dir, env, "publish"); err != nil {
+		t.Fatalf("publish: %v\n%s", err, out)
+	}
+	wantTitle := "chore(toolbox): upgrade syft " + syftBefore + " -> " + syftAfter + ", trufflehog " + truffleBefore + " -> " + truffleAfter + ", uv " + uvBefore + " -> " + uvAfter
+	if title := must(t, dir, nil, "git", "log", "-1", "--format=%s"); title != wantTitle+"\n" {
+		t.Fatalf("got %q, want %q", title, wantTitle+"\n")
+	}
+	commitBody := must(t, dir, nil, "git", "log", "-1", "--format=%b")
+	for _, line := range []string{
+		"- syft: " + syftBefore + " -> " + syftAfter,
+		"- trufflehog: " + truffleBefore + " -> " + truffleAfter,
+		"- uv: " + uvBefore + " -> " + uvAfter,
+	} {
+		if !strings.Contains(commitBody, line) {
+			t.Fatalf("commit body missing %q:\n%s", line, commitBody)
+		}
+	}
+	prBody, err := os.ReadFile(filepath.Join(result, "pr-body.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, row := range []string{
+		"| `syft` | `" + syftBefore + "` | `" + syftAfter + "` | [anchore/syft@v" + syftAfter + "](https://github.com/anchore/syft/releases/tag/v" + syftAfter + ") |",
+		"| `trufflehog` | `" + truffleBefore + "` | `" + truffleAfter + "` | [trufflesecurity/trufflehog@v" + truffleAfter + "](https://github.com/trufflesecurity/trufflehog/releases/tag/v" + truffleAfter + ") |",
+		"| `uv` | `" + uvBefore + "` | `" + uvAfter + "` | [astral-sh/uv@" + uvAfter + "](https://github.com/astral-sh/uv/releases/tag/" + uvAfter + ") |",
+	} {
+		if !strings.Contains(string(prBody), row) {
+			t.Fatalf("PR body missing %q:\n%s", row, prBody)
+		}
 	}
 }
 func TestResolveFailuresAndNoChange(t *testing.T) {
