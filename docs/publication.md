@@ -43,8 +43,11 @@ refreshing the branch and before the human merge.
 
 An already merged ineligible updater cannot be repaired retroactively; use a
 separately approved exact-SHA manual publication of current `main`. Rerunning an
-old publication does not bypass current-main checks. Once `main` has advanced,
-recovery also requires this manual path even for an otherwise eligible updater.
+old publication does not bypass current-main checks. `main` may advance during a
+long native build (for example another bundle's updater merge) while the exact
+approved source stays authorized, provided that source remains an ancestor of
+`main` and the bundle's own lock is byte-identical there. A diverged or rewritten
+`main`, or a changed own lock, stops publication and requires this manual path.
 
 1. Successful **CI** on the exact merged `main` revision starts **Publish bundles**.
    Its read-only planner identifies the associated updater using the full PR API
@@ -69,7 +72,7 @@ under `2026-03-10` and recovered the exact SHA under `2022-11-28`; retries of a
 removed field cannot restore that contract. This explains the reproduced source
 of missing proof, without establishing the cause of every historical failure.
 
-A main advance or source inconsistency stops this sequence. When a trusted
+A non-ancestor main or source inconsistency stops this sequence. When a trusted
 owner-merged bot PR is closed but its merge SHA is missing, a matching closed
 association permits at most two further reads of that same full PR, two seconds
 apart. The association may name the exact source or lack its merge SHA; it never
