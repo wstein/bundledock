@@ -353,6 +353,15 @@ class OwnerMergeTests(unittest.TestCase):
     with self.assertRaises(subprocess.CalledProcessError):gate.main()
     os.environ['APPROVED_SHA']=A;self.data['/git/ref/heads/main']['object']['sha']=B
     with self.assertRaises(ValueError):gate.main()
+ def test_rejection_detail_is_single_line_bounded_output(self):
+  import tempfile
+  with tempfile.TemporaryDirectory() as directory:
+   output=Path(directory)/'output'
+   with patch.dict(os.environ,{'GITHUB_OUTPUT':str(output)},clear=True),patch.object(gate,'main',side_effect=ValueError('Source is no longer an ancestor\nof current main '+'x'*400)),self.assertRaises(SystemExit):gate.run()
+   lines=[line for line in output.read_text().splitlines() if line.startswith('detail=')]
+   self.assertEqual(len(lines),1)
+   self.assertTrue(lines[0].startswith('detail=Source is no longer an ancestor of current main'))
+   self.assertLessEqual(len(lines[0]),len('detail=')+300)
  def test_rejected_and_pending_execution_emit_explicit_outcomes(self):
   import tempfile
   for error,status in ((gate.OwnerMergeRequired('owner missing'),'blocked_owner_merge'),(ValueError('source mismatch'),'rejected'),(OSError('unavailable'),'pending')):

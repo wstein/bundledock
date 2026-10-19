@@ -104,7 +104,9 @@ jobs** to produce artifacts for the current attempt.
 
 The shared helper validates provenance; variables such as `PUBLICATION_SHA`
 are not authorization evidence. Summaries distinguish ineligible source,
-blocked owner merge, pending or rejected provenance, unchanged published assets,
+blocked owner merge, pending or rejected provenance, a promotion gate that
+rejected the approved source after a successful build (`source-rejected`, with the
+reason and the manual-dispatch recovery), unchanged published assets,
 and published output. A successful no-op workflow does not mean publication.
 Tests cover exact source/head/attempt/caller and check application identity,
 the REST transport contract, full PR versus list-summary evidence, bounded

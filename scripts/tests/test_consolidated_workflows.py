@@ -97,3 +97,52 @@ class ConsolidatedWorkflowsTests(unittest.TestCase):
                            RESULTS=json.dumps(needs), GITHUB_STEP_SUMMARY=str(summary))
                 subprocess.run(['python3', '-c', program], env=env, check=True)
                 self.assertEqual(summary.read_text(), 'Bundle node: **' + expected + '**\n')
+
+    def run_outcome(self, needs, **extra):
+        import json
+        import os
+        import re
+        import subprocess
+        import tempfile
+        import textwrap
+        source = (ROOT / '.github/workflows/bundle-publish.yml').read_text()
+        program = textwrap.dedent(re.search("python3 - <<'PYTHON'\\n(.*?)\\n          PYTHON", source, re.S).group(1))
+        with tempfile.TemporaryDirectory() as temporary:
+            summary = Path(temporary) / 'summary'
+            env = dict(os.environ, BUNDLE='claude', ELIGIBLE='true', STATUS='eligible', PUBLISH='true',
+                       RESULTS=json.dumps(needs), GITHUB_STEP_SUMMARY=str(summary), **extra)
+            subprocess.run(['python3', '-c', program], env=env, check=True)
+            return summary.read_text()
+
+    def needs_after_promote_gate(self, status):
+        needs = {name: {'result': 'success'} for name in ('preflight', 'resolve', 'native', 'tag', 'documentation')}
+        needs['promote'] = {'result': 'failure', 'outputs': {'gate_status': status, 'gate_detail': 'Source is no longer an ancestor of current main'}}
+        return needs
+
+    def test_promote_gate_rejection_is_reported_as_source_rejected_with_recovery(self):
+        sha = 'a' * 40
+        for status in ('rejected', 'pending', 'blocked_owner_merge'):
+            with self.subTest(status=status):
+                text = self.run_outcome(self.needs_after_promote_gate(status), SOURCE_SHA=sha)
+                self.assertIn('Bundle claude: **source-rejected**', text)
+                self.assertNotIn('build-failed', text)
+                self.assertIn('Source is no longer an ancestor of current main', text)
+                self.assertIn('manual dispatch', text)
+                self.assertIn('bundle=claude', text)
+                self.assertIn('current main', text)
+
+    def test_promote_failure_without_gate_rejection_stays_build_failed(self):
+        needs = self.needs_after_promote_gate('')
+        needs['promote']['outputs'] = {'gate_status': '', 'gate_detail': ''}
+        self.assertIn('Bundle claude: **build-failed**', self.run_outcome(needs, SOURCE_SHA='a' * 40))
+        del needs['promote']['outputs']
+        self.assertIn('Bundle claude: **build-failed**', self.run_outcome(needs, SOURCE_SHA='a' * 40))
+
+    def test_promote_gate_outputs_are_exported_and_consumed(self):
+        source = (ROOT / '.github/workflows/bundle-publish.yml').read_text()
+        self.assertIn('gate_status: ${{ steps.final_gate.outputs.status || steps.early_gate.outputs.status }}', source)
+        self.assertIn('id: final_gate', source)
+        self.assertIn('id: early_gate', source)
+        self.assertIn('gate_detail: ${{ steps.final_gate.outputs.detail || steps.early_gate.outputs.detail }}', source)
+        self.assertIn('SOURCE_SHA: ${{ needs.preflight.outputs.sha }}', source)
+

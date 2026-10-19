@@ -238,6 +238,9 @@ jobs:
        (github.event_name == 'workflow_run')) &&
       needs.resolve.result == 'success' && needs.native.result == 'success' &&
       needs.resolve.outputs.publish == 'true'
+    outputs:
+      gate_status: ${{ steps.final_gate.outputs.status || steps.early_gate.outputs.status }}
+      gate_detail: ${{ steps.final_gate.outputs.detail || steps.early_gate.outputs.detail }}
     env:
       PUBLICATION_SHA: ${{ needs.preflight.outputs.sha }}
       BUNDLE: ${{ inputs.bundle }}
@@ -264,6 +267,7 @@ jobs:
           TRIGGERING_ACTOR: ${{ github.triggering_actor }}
         run: sh scripts/approve-publication.sh
       - name: Revalidate approved merged bundle source before compiling
+        id: early_gate
         if: github.event_name == 'workflow_run'
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -290,6 +294,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: '"$RUNNER_TEMP/tools-publish" newest --bundle "$BUNDLE"'
       - name: Revalidate approved source immediately before promotion
+        id: final_gate
         if: github.event_name == 'workflow_run'
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -440,14 +445,20 @@ jobs:
           ELIGIBLE: ${{ needs.preflight.outputs.eligible }}
           STATUS: ${{ needs.preflight.outputs.status }}
           PUBLISH: ${{ needs.resolve.outputs.publish }}
+          SOURCE_SHA: ${{ needs.preflight.outputs.sha }}
           RESULTS: ${{ toJSON(needs) }}
         run: |
           python3 - <<'PYTHON'
           import json, os
           results = json.loads(os.environ['RESULTS'])
           failed = any(item['result'] in ('failure', 'cancelled') for name, item in results.items() if name != 'cleanup')
+          promote = results.get('promote', {})
+          gate = (promote.get('outputs') or {}).get('gate_status', '')
+          detail = ' '.join(str((promote.get('outputs') or {}).get('gate_detail', '')).split())[:300]
           if os.environ['STATUS'] in ('rejected', 'pending', 'blocked_owner_merge', 'ineligible'):
               outcome = os.environ['STATUS']
+          elif promote.get('result') == 'failure' and gate in ('rejected', 'pending', 'blocked_owner_merge'):
+              outcome = 'source-rejected'
           elif failed:
               outcome = 'build-failed'
           elif os.environ['ELIGIBLE'] != 'true':
@@ -460,6 +471,9 @@ jobs:
               outcome = 'build-failed'
           with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
               summary.write('Bundle ' + os.environ['BUNDLE'] + ': **' + outcome + '**\n')
+              if outcome == 'source-rejected':
+                  summary.write('The promotion gate rejected the approved source; nothing was promoted and no build failed. Reason: ' + (detail or gate) + '\n')
+                  summary.write('Recovery: owner manual dispatch of Publish bundles with bundle=' + os.environ['BUNDLE'] + ' and approved_sha set to the full current main SHA (approved source was ' + os.environ['SOURCE_SHA'] + ').\n')
               if 'cleanup' in results:
                   summary.write('Staging cleanup: **' + results['cleanup']['result'] + '**\n')
           PYTHON
