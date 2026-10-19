@@ -347,3 +347,18 @@ class CurrentPublicationDocsTest(PublicationDocsTest):
         for item in [self.receipt,*self.receipt['platforms']]:
             item.pop('bundle',None);item['tag']='2026.10.12-b1.1'
         validate()
+
+
+class ReadmePublishedBundleRowsTest(unittest.TestCase):
+    def test_published_bundle_is_not_described_as_pending_in_readme(self):
+        root = Path(__file__).resolve().parent.parent
+        rows = [line for line in (root / 'README.md').read_text().splitlines() if line.startswith('| ')]
+        receipts = sorted((root / 'docs').glob('*-published.json'))
+        self.assertTrue(receipts)
+        for receipt in receipts:
+            bundle = receipt.name.removesuffix('-published.json')
+            if bundle == 'toolbox': continue
+            with self.subTest(bundle=bundle):
+                matching = [row for row in rows if f'docs/{bundle}.md)' in row]
+                self.assertEqual(len(matching), 1)
+                self.assertNotRegex(matching[0].lower(), r'publication pending|source prepared')
