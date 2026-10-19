@@ -110,11 +110,28 @@ class OwnerMergeTests(unittest.TestCase):
     if kind=='workflow':self.run['workflow_id']=8
     if kind=='event':self.run['event']='pull_request'
     if kind=='head':self.run['head_sha']=B
-    if kind=='main':self.data['/git/ref/heads/main']['object']['sha']=B
+    if kind=='main':self.data['/git/ref/heads/main']['object']['sha']=B;self.data['/compare/'+A+'...'+B]={'status':'diverged','merge_base_commit':{'sha':T}}
     if kind=='app':self.data['/check-runs/99']['app']['id']=42
     if kind=='check':self.data['/check-runs/99']['head_sha']=B
     if kind=='job':self.data['/actions/runs/123/attempts/2/jobs?per_page=100&page=1']['jobs'][0]['conclusion']='failure'
     with self.assertRaises(ValueError):gate.validate(self.event,self.get)
+ def advance_main(self,status='ahead',base=A,lock='bmV3'):
+  newer='e'*40
+  self.data['/git/ref/heads/main']['object']['sha']=newer
+  self.data['/compare/'+A+'...'+newer]={'status':status,'merge_base_commit':{'sha':base}}
+  self.data['/contents/'+self.bundle['lock']+'?ref='+newer]={'encoding':'base64','content':lock}
+ def test_unrelated_main_advance_keeps_exact_source_authorized(self):
+  self.advance_main()
+  self.assertEqual(gate.validate(self.event,self.get),(A,self.pr['html_url']))
+ def test_main_advance_rejects_non_ancestor_or_changed_bundle_lock(self):
+  for kind,arguments in (('diverged',{'status':'diverged'}),('behind',{'status':'behind'}),('identical',{'status':'identical'}),('wrong-base',{'base':B}),('lock',{'lock':'b3RoZXI='})):
+   with self.subTest(kind=kind):
+    self.setUp();self.advance_main(**arguments)
+    with self.assertRaises(ValueError):gate.validate(self.event,self.get)
+ def test_main_advance_with_unavailable_evidence_fails_closed(self):
+  self.advance_main()
+  del self.data['/compare/'+A+'...'+'e'*40]
+  with self.assertRaises(KeyError):gate.validate(self.event,self.get)
  def test_old_success_cannot_authorize_after_newer_ci_attempt(self):
   for change in ({'run_attempt':3,'status':'in_progress','conclusion':None},{'run_attempt':3,'status':'completed','conclusion':'failure'},{'run_attempt':3,'status':'completed','conclusion':'success'},{'head_sha':B},{'status':'in_progress','conclusion':None}):
    with self.subTest(change=change):
@@ -225,7 +242,7 @@ class OwnerMergeTests(unittest.TestCase):
     if kind=='files':self.files[1]['filename']='.github/workflows/ci.yml'
     if kind=='tree':self.data['/commits/'+A]['commit']['tree']['sha']=B
     if kind=='lock':self.data['/contents/'+self.bundle['lock']+'?ref='+A]['content']='b2xk'
-    if kind=='main':self.data['/git/ref/heads/main']['object']['sha']=B
+    if kind=='main':self.data['/git/ref/heads/main']['object']['sha']=B;self.data['/compare/'+A+'...'+B]={'status':'diverged','merge_base_commit':{'sha':T}}
     if kind=='ci':self.data['/check-runs/99']['app']['id']=42
     with patch('time.sleep'),self.assertRaises(ValueError):gate.validate(self.event,get)
  def test_missing_merge_recovery_rechecks_current_ci_after_delayed_reads(self):

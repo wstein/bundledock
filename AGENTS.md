@@ -35,9 +35,11 @@ no review-triggered controller may merge or dispatch builds. The successful
 exact merged-main CI and required GitHub Actions `check` must cover that source.
 The publisher verifies the actual `merged_by` identity, bot author, branch and
 own-file scope, exact merged source and updater-head tree equality, frozen lock,
-and current main before build jobs and promotion. Changed heads, a main advance,
-unrelated files, ambiguous or unavailable API evidence, and differing trees stop
-automatic publication. Existing branch protection and required checks remain.
+and current main before build jobs and promotion. Main may advance during a
+build only if the approved source remains its ancestor and the bundle's own lock
+is byte-identical there. Changed heads, a diverged or rewritten main, a changed
+own lock, unrelated files, ambiguous or unavailable API evidence, and differing
+trees stop automatic publication. Existing branch protection and required checks remain.
 There is no later environment
 approval. Initial publication of Node Current, Codex, Antigravity, Claude and OpenTofu carriers requires
 separate explicit approval of the exact full source revision and intended

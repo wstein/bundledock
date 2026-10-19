@@ -202,6 +202,22 @@ def associated_updaters(revision, get):
     return claimed
 
 
+def source_on_main(get, name, revision):
+    """The approved source stays valid while main advances only past it.
+
+    Another bundle's updater or an unrelated merge during a long native build
+    must not discard approved work. Main must still descend from the exact
+    source and this bundle's own frozen lock must be byte-identical there.
+    """
+    head = sha(get('/git/ref/heads/main')['object']['sha'])
+    if head == revision:
+        return
+    comparison = get('/compare/' + revision + '...' + head)
+    require(comparison['status'] == 'ahead' and sha(comparison['merge_base_commit']['sha']) == revision, 'Source is no longer an ancestor of current main')
+    bundle = config.select_bundle(name)
+    require(lock_bytes(get, bundle, head) == lock_bytes(get, bundle, revision), 'Bundle lock changed on current main')
+
+
 def validate(event, get, name='toolbox', allow_ineligible=False):
     if name is not None:
         config.select_bundle(name)
@@ -223,7 +239,7 @@ def validate(event, get, name='toolbox', allow_ineligible=False):
         require(allow_ineligible, 'Exactly one merged updater PR required')
         return None
     actual, pr = claimed[0]
-    require(get('/git/ref/heads/main')['object']['sha'] == revision, 'Source is no longer current main')
+    source_on_main(get, actual, revision)
     required_ci_check(source, revision, get)
     pr = merged_updater(pr, actual, get, revision)
     if name is not None and actual != name:
