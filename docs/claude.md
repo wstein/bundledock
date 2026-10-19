@@ -36,7 +36,7 @@ The source inventory below describes the current lock; this publication retains 
 <!-- BEGIN GENERATED TOOL INVENTORY -->
 | Tool | Pinned version |
 | --- | --- |
-| claude | 2.1.302 |
+| claude | 2.1.303 |
 <!-- END GENERATED TOOL INVENTORY -->
 
 The official [2.1.296 manifest](https://downloads.claude.ai/claude-code-releases/2.1.296/manifest.json),
