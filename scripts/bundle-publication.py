@@ -328,8 +328,8 @@ def run():
             status, reason = 'pending', 'Required API or source provenance unavailable; no publication authorized'
         else:
             status, reason = 'rejected', 'Source or approval provenance rejected; no publication authorized'
-        emit({'eligible':'false', 'status':status, 'reason':reason})
         detail = str(error) if isinstance(error, (ValueError, MergeMetadataPending)) else reason
+        emit({'eligible':'false', 'status':status, 'reason':reason, 'detail':' '.join(detail.split())[:300]})
         raise SystemExit('Bundle publication ' + status + ': ' + detail)
 
 
