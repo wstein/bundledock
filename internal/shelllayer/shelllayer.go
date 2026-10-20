@@ -397,9 +397,25 @@ func renderBash(shortcuts []Shortcut) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "# %s\n", header)
 	b.WriteString(`# Source from an interactive bash (for example /etc/bash.bashrc).
-# Opt out: BDOCK_SHORTCUTS=0 (aliases), BDOCK_STARSHIP=0 (prompt), BDOCK_FASTFETCH=0 (startup greeting), BDOCK_ZOXIDE=0 (cd/cdi).
+# Opt out: BDOCK_SHORTCUTS=0 (aliases), BDOCK_STARSHIP=0 (prompt), BDOCK_FASTFETCH=0 (startup greeting), BDOCK_ZOXIDE=0 (cd/cdi), BDOCK_UMASK=0, BDOCK_HISTORY=0, BDOCK_EDITOR=0.
 [ -n "${BASH_VERSION-}" ] || return 0
 case $- in *i*) ;; *) return 0 ;; esac
+
+if [ "${BDOCK_UMASK-1}" != 0 ]; then
+    case $(umask) in
+        0000 | 000) umask 022 ;;
+    esac
+fi
+
+if [ "${BDOCK_HISTORY-1}" != 0 ]; then
+    HISTCONTROL=ignoreboth:erasedups
+    export HISTCONTROL
+fi
+
+if [ "${BDOCK_EDITOR-1}" != 0 ] && [ -z "${EDITOR-}" ] && [ "${TERM_PROGRAM-}" != vscode ] && [ -z "${VSCODE_IPC_HOOK_CLI-}" ] && [ "${TERMINAL_EMULATOR-}" != JetBrains-JediTerm ] && [ -z "${JETBRAINS_REMOTE_RUN-}" ] && [ -z "${IDEA_INITIAL_DIRECTORY-}" ] && command -v hx >/dev/null 2>&1; then
+    EDITOR=hx
+    export EDITOR
+fi
 
 if [ "${BDOCK_FASTFETCH-1}" != 0 ] && [ "${__bdock_fastfetch_pid-}" != "$$" ] && command -v fastfetch >/dev/null 2>&1; then
     __bdock_fastfetch_pid=$$
@@ -434,9 +450,27 @@ func renderZsh(shortcuts []Shortcut) string {
 	b.WriteString(`# Source from an interactive zsh (for example /etc/zshrc or /etc/zsh/zshrc).
 # Opt out: BDOCK_SHORTCUTS=0 (aliases), BDOCK_STARSHIP=0 (prompt),
 # BDOCK_ZSH_EXPAND=0 (keep aliases, but do not expand them on space),
-# BDOCK_FASTFETCH=0 (startup greeting), BDOCK_ZOXIDE=0 (cd/cdi).
+# BDOCK_FASTFETCH=0 (startup greeting), BDOCK_ZOXIDE=0 (cd/cdi),
+# BDOCK_UMASK=0, BDOCK_HISTORY=0, BDOCK_EDITOR=0.
 [[ -n ${ZSH_VERSION-} ]] || return 0
 [[ -o interactive ]] || return 0
+
+if [[ ${BDOCK_UMASK-1} != 0 ]]; then
+    case $(umask) in
+        0000 | 000) umask 022 ;;
+    esac
+fi
+
+if [[ ${BDOCK_HISTORY-1} != 0 ]]; then
+    setopt HIST_IGNORE_ALL_DUPS HIST_SAVE_NO_DUPS HIST_IGNORE_SPACE
+fi
+
+if [[ ${BDOCK_EDITOR-1} != 0 && -z ${EDITOR-} ]] &&
+    [[ ${TERM_PROGRAM-} != vscode && -z ${VSCODE_IPC_HOOK_CLI-} ]] &&
+    [[ ${TERMINAL_EMULATOR-} != JetBrains-JediTerm && -z ${JETBRAINS_REMOTE_RUN-} && -z ${IDEA_INITIAL_DIRECTORY-} ]] &&
+    (( $+commands[hx] )); then
+    export EDITOR=hx
+fi
 
 if [[ ${BDOCK_FASTFETCH-1} != 0 && ${__bdock_fastfetch_pid-} != $$ ]] && (( $+commands[fastfetch] )); then
     typeset -g __bdock_fastfetch_pid=$$
@@ -500,8 +534,19 @@ func renderFish(shortcuts []Shortcut) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "# %s\n", header)
 	b.WriteString(`# Loaded automatically when <toolbox>/share is in XDG_DATA_DIRS.
-# Opt out: BDOCK_SHORTCUTS=0 (abbreviations), BDOCK_STARSHIP=0 (prompt), BDOCK_FASTFETCH=0 (startup greeting), BDOCK_ZOXIDE=0 (cd/cdi).
+# Opt out: BDOCK_SHORTCUTS=0 (abbreviations), BDOCK_STARSHIP=0 (prompt), BDOCK_FASTFETCH=0 (startup greeting), BDOCK_ZOXIDE=0 (cd/cdi), BDOCK_UMASK=0, BDOCK_EDITOR=0.
 status is-interactive; or return 0
+
+if test "$BDOCK_UMASK" != 0
+    switch (umask)
+        case 0000 000
+            umask 022
+    end
+end
+
+if test "$BDOCK_EDITOR" != 0; and test -z "$EDITOR"; and test "$TERM_PROGRAM" != vscode; and test -z "$VSCODE_IPC_HOOK_CLI"; and test "$TERMINAL_EMULATOR" != JetBrains-JediTerm; and test -z "$JETBRAINS_REMOTE_RUN"; and test -z "$IDEA_INITIAL_DIRECTORY"; and command -q hx
+    set -gx EDITOR hx
+end
 
 if test "$BDOCK_FASTFETCH" != 0; and test "$__bdock_fastfetch_pid" != "$fish_pid"; and command -q fastfetch
     set -g __bdock_fastfetch_pid $fish_pid
@@ -564,9 +609,18 @@ func renderNu(shortcuts []Shortcut) string {
 	fmt.Fprintf(&b, "# %s\n", header)
 	b.WriteString(`# Loaded automatically by interactive Nushell when <toolbox>/share is in
 # XDG_DATA_DIRS. Opt out with BDOCK_STARSHIP=0 (prompt) or
-# BDOCK_FASTFETCH=0 (startup greeting), BDOCK_ZOXIDE=0 (cd/cdi). Nushell
+# BDOCK_FASTFETCH=0 (startup greeting), BDOCK_ZOXIDE=0 (cd/cdi),
+# BDOCK_UMASK=0, BDOCK_EDITOR=0. Nushell
 # definitions cannot be conditional, so the shortcuts are always defined;
 # leave <toolbox>/share out of XDG_DATA_DIRS to skip this file entirely.
+
+if $nu.is-interactive and ($env.BDOCK_UMASK? | default "1") != "0" and (umask) == 'rwxrwxrwx' {
+    umask rwxr-xr-x | ignore
+}
+
+if $nu.is-interactive and ($env.BDOCK_EDITOR? | default "1") != "0" and ($env.EDITOR? | is-empty) and ($env.TERM_PROGRAM? != "vscode") and ($env.VSCODE_IPC_HOOK_CLI? | is-empty) and ($env.TERMINAL_EMULATOR? != "JetBrains-JediTerm") and ($env.JETBRAINS_REMOTE_RUN? | is-empty) and ($env.IDEA_INITIAL_DIRECTORY? | is-empty) and (which hx | is-not-empty) {
+    $env.EDITOR = "hx"
+}
 
 if $nu.is-interactive and ($env.BDOCK_FASTFETCH? | default "1") != "0" and ($env.__bdock_fastfetch_pid? | default 0) != $nu.pid and (which fastfetch | is-not-empty) {
     $env.__bdock_fastfetch_pid = $nu.pid

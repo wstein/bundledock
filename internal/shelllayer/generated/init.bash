@@ -1,8 +1,24 @@
 # BundleDock shared shell layer. Generated from internal/shelllayer/shortcuts.tsv; do not edit.
 # Source from an interactive bash (for example /etc/bash.bashrc).
-# Opt out: BDOCK_SHORTCUTS=0 (aliases), BDOCK_STARSHIP=0 (prompt), BDOCK_FASTFETCH=0 (startup greeting), BDOCK_ZOXIDE=0 (cd/cdi).
+# Opt out: BDOCK_SHORTCUTS=0 (aliases), BDOCK_STARSHIP=0 (prompt), BDOCK_FASTFETCH=0 (startup greeting), BDOCK_ZOXIDE=0 (cd/cdi), BDOCK_UMASK=0, BDOCK_HISTORY=0, BDOCK_EDITOR=0.
 [ -n "${BASH_VERSION-}" ] || return 0
 case $- in *i*) ;; *) return 0 ;; esac
+
+if [ "${BDOCK_UMASK-1}" != 0 ]; then
+    case $(umask) in
+        0000 | 000) umask 022 ;;
+    esac
+fi
+
+if [ "${BDOCK_HISTORY-1}" != 0 ]; then
+    HISTCONTROL=ignoreboth:erasedups
+    export HISTCONTROL
+fi
+
+if [ "${BDOCK_EDITOR-1}" != 0 ] && [ -z "${EDITOR-}" ] && [ "${TERM_PROGRAM-}" != vscode ] && [ -z "${VSCODE_IPC_HOOK_CLI-}" ] && [ "${TERMINAL_EMULATOR-}" != JetBrains-JediTerm ] && [ -z "${JETBRAINS_REMOTE_RUN-}" ] && [ -z "${IDEA_INITIAL_DIRECTORY-}" ] && command -v hx >/dev/null 2>&1; then
+    EDITOR=hx
+    export EDITOR
+fi
 
 if [ "${BDOCK_FASTFETCH-1}" != 0 ] && [ "${__bdock_fastfetch_pid-}" != "$$" ] && command -v fastfetch >/dev/null 2>&1; then
     __bdock_fastfetch_pid=$$

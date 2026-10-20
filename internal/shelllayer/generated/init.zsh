@@ -2,9 +2,27 @@
 # Source from an interactive zsh (for example /etc/zshrc or /etc/zsh/zshrc).
 # Opt out: BDOCK_SHORTCUTS=0 (aliases), BDOCK_STARSHIP=0 (prompt),
 # BDOCK_ZSH_EXPAND=0 (keep aliases, but do not expand them on space),
-# BDOCK_FASTFETCH=0 (startup greeting), BDOCK_ZOXIDE=0 (cd/cdi).
+# BDOCK_FASTFETCH=0 (startup greeting), BDOCK_ZOXIDE=0 (cd/cdi),
+# BDOCK_UMASK=0, BDOCK_HISTORY=0, BDOCK_EDITOR=0.
 [[ -n ${ZSH_VERSION-} ]] || return 0
 [[ -o interactive ]] || return 0
+
+if [[ ${BDOCK_UMASK-1} != 0 ]]; then
+    case $(umask) in
+        0000 | 000) umask 022 ;;
+    esac
+fi
+
+if [[ ${BDOCK_HISTORY-1} != 0 ]]; then
+    setopt HIST_IGNORE_ALL_DUPS HIST_SAVE_NO_DUPS HIST_IGNORE_SPACE
+fi
+
+if [[ ${BDOCK_EDITOR-1} != 0 && -z ${EDITOR-} ]] &&
+    [[ ${TERM_PROGRAM-} != vscode && -z ${VSCODE_IPC_HOOK_CLI-} ]] &&
+    [[ ${TERMINAL_EMULATOR-} != JetBrains-JediTerm && -z ${JETBRAINS_REMOTE_RUN-} && -z ${IDEA_INITIAL_DIRECTORY-} ]] &&
+    (( $+commands[hx] )); then
+    export EDITOR=hx
+fi
 
 if [[ ${BDOCK_FASTFETCH-1} != 0 && ${__bdock_fastfetch_pid-} != $$ ]] && (( $+commands[fastfetch] )); then
     typeset -g __bdock_fastfetch_pid=$$
