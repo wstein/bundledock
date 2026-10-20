@@ -83,9 +83,13 @@ func TestShellLayerDefaults(t *testing.T) {
 							cmd.Env = append(cmd.Env, "BDOCK_UMASK=0")
 						}
 
-						out, err := cmd.CombinedOutput()
+						out, err := cmd.Output()
 						if err != nil {
-							t.Fatalf("cmd failed: %v, output: %s", err, string(out))
+							var stderr string
+							if exitErr, ok := err.(*exec.ExitError); ok {
+								stderr = string(exitErr.Stderr)
+							}
+							t.Fatalf("cmd failed: %v, stderr: %s, stdout: %s", err, stderr, string(out))
 						}
 						got := strings.TrimSpace(string(out))
 						// nu umask outputs symbolic format like rwxr-xr-x
@@ -179,9 +183,13 @@ func TestShellLayerDefaults(t *testing.T) {
 							cmd.Env = append(cmd.Env, "BDOCK_EDITOR=0")
 						}
 
-						out, err := cmd.CombinedOutput()
+						out, err := cmd.Output()
 						if err != nil {
-							t.Fatalf("cmd failed: %v, output: %s", err, string(out))
+							var stderr string
+							if exitErr, ok := err.(*exec.ExitError); ok {
+								stderr = string(exitErr.Stderr)
+							}
+							t.Fatalf("cmd failed: %v, stderr: %s, stdout: %s", err, stderr, string(out))
 						}
 						got := strings.TrimSpace(string(out))
 						want := "EDITOR=" + tc.wantEditor
@@ -234,9 +242,13 @@ func TestShellLayerDefaults(t *testing.T) {
 								cmd.Env = append(cmd.Env, "BDOCK_HISTORY=0")
 							}
 
-							out, err := cmd.CombinedOutput()
+							out, err := cmd.Output()
 							if err != nil {
-								t.Fatalf("cmd failed: %v, output: %s", err, string(out))
+								var stderr string
+								if exitErr, ok := err.(*exec.ExitError); ok {
+									stderr = string(exitErr.Stderr)
+								}
+								t.Fatalf("cmd failed: %v, stderr: %s, stdout: %s", err, stderr, string(out))
 							}
 							got := strings.TrimSpace(string(out))
 							if sh.name == "bash" {
