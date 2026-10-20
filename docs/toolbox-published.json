@@ -1,20 +1,20 @@
 {
   "bundle": "toolbox",
-  "commit": "16744fea8b66f649492f0b79629054b9aaf063a5",
-  "digest": "sha256:3ce4c984741d0abc7152327123521ae04eef82a0a28ab6b2baa7d534668bb1e5",
+  "commit": "982a0f540d906abd70e1edc957ff3f37362b4b5e",
+  "digest": "sha256:c84e2e79315393b62a156cc3529a29229da71d9c44b1341be0a3e6dfc1d1afb6",
   "image": "quay.io/bundledock/toolbox",
   "publication_evidence": {
     "attempt": {
-      "event": "workflow_run",
-      "head_sha": "16744fea8b66f649492f0b79629054b9aaf063a5",
-      "id": 39431405844,
+      "event": "workflow_dispatch",
+      "head_sha": "982a0f540d906abd70e1edc957ff3f37362b4b5e",
+      "id": 39442904957,
       "jobs": [
         {
           "conclusion": "success",
-          "head_sha": "16744fea8b66f649492f0b79629054b9aaf063a5",
-          "id": 118662472382,
+          "head_sha": "982a0f540d906abd70e1edc957ff3f37362b4b5e",
+          "id": 118697967158,
           "name": "publication / native (amd64, ubuntu-24.04)",
-          "run_id": 39431405844,
+          "run_id": 39442904957,
           "status": "completed",
           "steps": [
             {
@@ -26,10 +26,10 @@
         },
         {
           "conclusion": "success",
-          "head_sha": "16744fea8b66f649492f0b79629054b9aaf063a5",
-          "id": 118662472407,
+          "head_sha": "982a0f540d906abd70e1edc957ff3f37362b4b5e",
+          "id": 118697967253,
           "name": "publication / native (arm64, ubuntu-24.04-arm)",
-          "run_id": 39431405844,
+          "run_id": 39442904957,
           "status": "completed",
           "steps": [
             {
@@ -41,10 +41,10 @@
         },
         {
           "conclusion": "success",
-          "head_sha": "16744fea8b66f649492f0b79629054b9aaf063a5",
-          "id": 118665022869,
+          "head_sha": "982a0f540d906abd70e1edc957ff3f37362b4b5e",
+          "id": 118700564138,
           "name": "publication / promote",
-          "run_id": 39431405844,
+          "run_id": 39442904957,
           "status": "completed",
           "steps": [
             {
@@ -57,55 +57,55 @@
       ],
       "path": ".github/workflows/publish-bundles.yml",
       "run_attempt": 1,
-      "run_number": 433
+      "run_number": 448
     },
     "receipt": {
       "bundle": "toolbox",
-      "commit": "16744fea8b66f649492f0b79629054b9aaf063a5",
-      "created": "2026-10-20T13:43:57Z",
-      "digest": "sha256:3ce4c984741d0abc7152327123521ae04eef82a0a28ab6b2baa7d534668bb1e5",
+      "commit": "982a0f540d906abd70e1edc957ff3f37362b4b5e",
+      "created": "2026-10-20T14:51:56Z",
+      "digest": "sha256:c84e2e79315393b62a156cc3529a29229da71d9c44b1341be0a3e6dfc1d1afb6",
       "image": "quay.io/bundledock/toolbox",
       "lock_sha256": "a71fce03a2cc90fcda40f0104df5fa3fc7d5e2c5f5aa45999d8b7d478ed923e9",
       "platforms": [
         {
           "architecture": "amd64",
           "bundle": "toolbox",
-          "commit": "16744fea8b66f649492f0b79629054b9aaf063a5",
-          "created": "2026-10-20T13:43:57Z",
-          "digest": "sha256:7bb1375c45743b1d0df537be4e56c34771888941a12761c6500176b11d989e18",
+          "commit": "982a0f540d906abd70e1edc957ff3f37362b4b5e",
+          "created": "2026-10-20T14:51:56Z",
+          "digest": "sha256:9887d3184ad380dba0b2072468404733811360c1abefde00f408face7c5c0acb",
           "image": "quay.io/bundledock/toolbox",
-          "image_id": "sha256:6b88cb005cd353ca280048f91a30c034d258d19ed7db8f31506203c5760844b7",
+          "image_id": "sha256:e14a9aa5b6d8cf971dc045a66b5150d15a99f2b01cfb2a809414b769b13cc11d",
           "lock_sha256": "a71fce03a2cc90fcda40f0104df5fa3fc7d5e2c5f5aa45999d8b7d478ed923e9",
           "run_attempt": "1",
-          "run_id": "39431405844",
+          "run_id": "39442904957",
           "smoked": true,
           "source": "https://github.com/wstein/bundledock",
-          "tag": "2026.10.20-b1"
+          "tag": "2026.10.20-b2"
         },
         {
           "architecture": "arm64",
           "bundle": "toolbox",
-          "commit": "16744fea8b66f649492f0b79629054b9aaf063a5",
-          "created": "2026-10-20T13:43:57Z",
-          "digest": "sha256:536578ae741b6e07ab5d036ff0c1a7c561adb5dc2d6b82500dbb9e11fe2ed97d",
+          "commit": "982a0f540d906abd70e1edc957ff3f37362b4b5e",
+          "created": "2026-10-20T14:51:56Z",
+          "digest": "sha256:8de4d3afef076af5a000ec355b954e7ac9a67ce9e3c8637b02dc06c7bd7029b7",
           "image": "quay.io/bundledock/toolbox",
-          "image_id": "sha256:4b50de1c1ed65bc3fe7205da201aab21f630251444516b76e0625756b401449c",
+          "image_id": "sha256:520106a8067258c27ad611e3dc19f5252dc403c2b1339b89fa88e18b23ca5ced",
           "lock_sha256": "a71fce03a2cc90fcda40f0104df5fa3fc7d5e2c5f5aa45999d8b7d478ed923e9",
           "run_attempt": "1",
-          "run_id": "39431405844",
+          "run_id": "39442904957",
           "smoked": true,
           "source": "https://github.com/wstein/bundledock",
-          "tag": "2026.10.20-b1"
+          "tag": "2026.10.20-b2"
         }
       ],
-      "reference": "quay.io/bundledock/toolbox@sha256:3ce4c984741d0abc7152327123521ae04eef82a0a28ab6b2baa7d534668bb1e5",
+      "reference": "quay.io/bundledock/toolbox@sha256:c84e2e79315393b62a156cc3529a29229da71d9c44b1341be0a3e6dfc1d1afb6",
       "run_attempt": "1",
-      "run_id": "39431405844",
+      "run_id": "39442904957",
       "source": "https://github.com/wstein/bundledock",
-      "tag": "2026.10.20-b1"
+      "tag": "2026.10.20-b2"
     }
   },
-  "run_id": "39431405844",
-  "tag": "2026.10.20-b1",
+  "run_id": "39442904957",
+  "tag": "2026.10.20-b2",
   "upstream_version": "unknown"
 }

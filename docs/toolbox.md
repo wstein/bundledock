@@ -9,21 +9,21 @@ weight: 20
 [Back to BundleDock](../README.md) · [All bundles](bundles.md)
 
 <!-- BEGIN PUBLISHED BUNDLE -->
-<!-- publication-record: {"attempt":"1","bundle":"toolbox","commit":"16744fea8b66f649492f0b79629054b9aaf063a5","created":"2026-10-20T13:43:57Z","digest":"sha256:3ce4c984741d0abc7152327123521ae04eef82a0a28ab6b2baa7d534668bb1e5","image":"quay.io/bundledock/toolbox","lock_sha256":"a71fce03a2cc90fcda40f0104df5fa3fc7d5e2c5f5aa45999d8b7d478ed923e9","reference":"quay.io/bundledock/toolbox@sha256:3ce4c984741d0abc7152327123521ae04eef82a0a28ab6b2baa7d534668bb1e5","run_attempt":"1","run_id":"39431405844","source":"https://github.com/wstein/bundledock","tag":"2026.10.20-b1"} -->
+<!-- publication-record: {"attempt":"1","bundle":"toolbox","commit":"982a0f540d906abd70e1edc957ff3f37362b4b5e","created":"2026-10-20T14:51:56Z","digest":"sha256:c84e2e79315393b62a156cc3529a29229da71d9c44b1341be0a3e6dfc1d1afb6","image":"quay.io/bundledock/toolbox","lock_sha256":"a71fce03a2cc90fcda40f0104df5fa3fc7d5e2c5f5aa45999d8b7d478ed923e9","reference":"quay.io/bundledock/toolbox@sha256:c84e2e79315393b62a156cc3529a29229da71d9c44b1341be0a3e6dfc1d1afb6","run_attempt":"1","run_id":"39442904957","source":"https://github.com/wstein/bundledock","tag":"2026.10.20-b2"} -->
 ## Published bundle
 
-Version: `2026.10.20-b1`
+Version: `2026.10.20-b2`
 
-Index digest: `sha256:3ce4c984741d0abc7152327123521ae04eef82a0a28ab6b2baa7d534668bb1e5`
+Index digest: `sha256:c84e2e79315393b62a156cc3529a29229da71d9c44b1341be0a3e6dfc1d1afb6`
 
-Source: [`16744fea8b66f649492f0b79629054b9aaf063a5`](https://github.com/wstein/bundledock/commit/16744fea8b66f649492f0b79629054b9aaf063a5)
+Source: [`982a0f540d906abd70e1edc957ff3f37362b4b5e`](https://github.com/wstein/bundledock/commit/982a0f540d906abd70e1edc957ff3f37362b4b5e)
 
-Publication: [run 39431405844, attempt 1](https://github.com/wstein/bundledock/actions/runs/39431405844/attempts/1)
+Publication: [run 39442904957, attempt 1](https://github.com/wstein/bundledock/actions/runs/39442904957/attempts/1)
 
 Pull this published carrier by its immutable index digest:
 
 ```sh
-docker pull quay.io/bundledock/toolbox@sha256:3ce4c984741d0abc7152327123521ae04eef82a0a28ab6b2baa7d534668bb1e5
+docker pull quay.io/bundledock/toolbox@sha256:c84e2e79315393b62a156cc3529a29229da71d9c44b1341be0a3e6dfc1d1afb6
 ```
 
 The source inventory below describes the current lock; this publication retains its exact source revision.
