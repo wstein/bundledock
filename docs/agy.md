@@ -13,21 +13,21 @@ prebuilt with its own catalog, lock, carrier image, volume and
 toolbox split. The source toolbox no longer includes this agent.
 
 <!-- BEGIN PUBLISHED BUNDLE -->
-<!-- publication-record: {"attempt":"1","bundle":"agy","commit":"540a5582b819157c8d801794887725eeaa08329f","created":"2026-10-19T23:40:05Z","digest":"sha256:7ffbc901990e9a6b3bce26de55325fb504be59dcb80deddfe91b0d90deda6c91","image":"quay.io/bundledock/agy","lock_sha256":"55f09cf8d280b87f159745a299fbc37d661aec450e78927d9df350b7769d2d38","reference":"quay.io/bundledock/agy@sha256:7ffbc901990e9a6b3bce26de55325fb504be59dcb80deddfe91b0d90deda6c91","run_attempt":"1","run_id":"39342806946","source":"https://github.com/wstein/bundledock","tag":"1.4.2-b2"} -->
+<!-- publication-record: {"attempt":"1","bundle":"agy","commit":"7c00bfb2e87c7f6419817f69f292fa2451d35c52","created":"2026-10-20T13:45:56Z","digest":"sha256:bb3a9e59c2dc97e2f3336d2f33c00f3e225da2a2bb66edeebc6e7eb1ff53e764","image":"quay.io/bundledock/agy","lock_sha256":"159334fb00d015c689233d684ac6384136c4be79ded749ef9d01fa68c40dc790","reference":"quay.io/bundledock/agy@sha256:bb3a9e59c2dc97e2f3336d2f33c00f3e225da2a2bb66edeebc6e7eb1ff53e764","run_attempt":"1","run_id":"39432714276","source":"https://github.com/wstein/bundledock","tag":"1.4.3-b1"} -->
 ## Published bundle
 
-Version: `1.4.2-b2`
+Version: `1.4.3-b1`
 
-Index digest: `sha256:7ffbc901990e9a6b3bce26de55325fb504be59dcb80deddfe91b0d90deda6c91`
+Index digest: `sha256:bb3a9e59c2dc97e2f3336d2f33c00f3e225da2a2bb66edeebc6e7eb1ff53e764`
 
-Source: [`540a5582b819157c8d801794887725eeaa08329f`](https://github.com/wstein/bundledock/commit/540a5582b819157c8d801794887725eeaa08329f)
+Source: [`7c00bfb2e87c7f6419817f69f292fa2451d35c52`](https://github.com/wstein/bundledock/commit/7c00bfb2e87c7f6419817f69f292fa2451d35c52)
 
-Publication: [run 39342806946, attempt 1](https://github.com/wstein/bundledock/actions/runs/39342806946/attempts/1)
+Publication: [run 39432714276, attempt 1](https://github.com/wstein/bundledock/actions/runs/39432714276/attempts/1)
 
 Pull this published carrier by its immutable index digest:
 
 ```sh
-docker pull quay.io/bundledock/agy@sha256:7ffbc901990e9a6b3bce26de55325fb504be59dcb80deddfe91b0d90deda6c91
+docker pull quay.io/bundledock/agy@sha256:bb3a9e59c2dc97e2f3336d2f33c00f3e225da2a2bb66edeebc6e7eb1ff53e764
 ```
 
 The source inventory below describes the current lock; this publication retains its exact source revision.
