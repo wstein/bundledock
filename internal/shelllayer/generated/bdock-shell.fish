@@ -1,7 +1,18 @@
 # BundleDock shared shell layer. Generated from internal/shelllayer/shortcuts.tsv; do not edit.
 # Loaded automatically when <toolbox>/share is in XDG_DATA_DIRS.
-# Opt out: BDOCK_SHORTCUTS=0 (abbreviations), BDOCK_STARSHIP=0 (prompt), BDOCK_FASTFETCH=0 (startup greeting), BDOCK_ZOXIDE=0 (cd/cdi).
+# Opt out: BDOCK_SHORTCUTS=0 (abbreviations), BDOCK_STARSHIP=0 (prompt), BDOCK_FASTFETCH=0 (startup greeting), BDOCK_ZOXIDE=0 (cd/cdi), BDOCK_UMASK=0, BDOCK_EDITOR=0.
 status is-interactive; or return 0
+
+if test "$BDOCK_UMASK" != 0
+    switch (umask)
+        case 0000 000
+            umask 022
+    end
+end
+
+if test "$BDOCK_EDITOR" != 0; and test -z "$EDITOR"; and test "$TERM_PROGRAM" != vscode; and test -z "$VSCODE_IPC_HOOK_CLI"; and test "$TERMINAL_EMULATOR" != JetBrains-JediTerm; and test -z "$JETBRAINS_REMOTE_RUN"; and test -z "$IDEA_INITIAL_DIRECTORY"; and command -q hx
+    set -gx EDITOR hx
+end
 
 if test "$BDOCK_FASTFETCH" != 0; and test "$__bdock_fastfetch_pid" != "$fish_pid"; and command -q fastfetch
     set -g __bdock_fastfetch_pid $fish_pid

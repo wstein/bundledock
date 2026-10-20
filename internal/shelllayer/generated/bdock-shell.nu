@@ -1,9 +1,18 @@
 # BundleDock shared shell layer. Generated from internal/shelllayer/shortcuts.tsv; do not edit.
 # Loaded automatically by interactive Nushell when <toolbox>/share is in
 # XDG_DATA_DIRS. Opt out with BDOCK_STARSHIP=0 (prompt) or
-# BDOCK_FASTFETCH=0 (startup greeting), BDOCK_ZOXIDE=0 (cd/cdi). Nushell
+# BDOCK_FASTFETCH=0 (startup greeting), BDOCK_ZOXIDE=0 (cd/cdi),
+# BDOCK_UMASK=0, BDOCK_EDITOR=0. Nushell
 # definitions cannot be conditional, so the shortcuts are always defined;
 # leave <toolbox>/share out of XDG_DATA_DIRS to skip this file entirely.
+
+if $nu.is-interactive and ($env.BDOCK_UMASK? | default "1") != "0" and (umask) == 'rwxrwxrwx' {
+    umask rwxr-xr-x | ignore
+}
+
+if $nu.is-interactive and ($env.BDOCK_EDITOR? | default "1") != "0" and ($env.EDITOR? | is-empty) and ($env.TERM_PROGRAM? != "vscode") and ($env.VSCODE_IPC_HOOK_CLI? | is-empty) and ($env.TERMINAL_EMULATOR? != "JetBrains-JediTerm") and ($env.JETBRAINS_REMOTE_RUN? | is-empty) and ($env.IDEA_INITIAL_DIRECTORY? | is-empty) and (which hx | is-not-empty) {
+    $env.EDITOR = "hx"
+}
 
 if $nu.is-interactive and ($env.BDOCK_FASTFETCH? | default "1") != "0" and ($env.__bdock_fastfetch_pid? | default 0) != $nu.pid and (which fastfetch | is-not-empty) {
     $env.__bdock_fastfetch_pid = $nu.pid
