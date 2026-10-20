@@ -311,9 +311,9 @@
         "verification": "publisher-sha256"
       },
       "uv": {
-        "version": "0.13.2",
-        "url": "https://github.com/astral-sh/uv/releases/download/0.13.2/uv-x86_64-unknown-linux-musl.tar.gz",
-        "sha256": "aba5d9e0af3662ee85772c5da147c3824cd6728a50bce6c507ae20672df7e83e",
+        "version": "0.13.3",
+        "url": "https://github.com/astral-sh/uv/releases/download/0.13.3/uv-x86_64-unknown-linux-musl.tar.gz",
+        "sha256": "a36fca4c151d1ac13707984a88a4e2742edec0f2bc1b3e1c18c1c751e4679fd3",
         "verification": "publisher-sha256"
       },
       "watchexec": {
@@ -655,9 +655,9 @@
         "verification": "publisher-sha256"
       },
       "uv": {
-        "version": "0.13.2",
-        "url": "https://github.com/astral-sh/uv/releases/download/0.13.2/uv-aarch64-unknown-linux-musl.tar.gz",
-        "sha256": "b7444ae484d951d856b1ea0bae8224bf0ea856e9cefe8bd67c6d3f5d98375c78",
+        "version": "0.13.3",
+        "url": "https://github.com/astral-sh/uv/releases/download/0.13.3/uv-aarch64-unknown-linux-musl.tar.gz",
+        "sha256": "4a58785768ab0577497ca7940be2f9fd5a34e48c3fd37923692fc0a81d71ac9f",
         "verification": "publisher-sha256"
       },
       "watchexec": {
