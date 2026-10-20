@@ -106,8 +106,11 @@ Use test-driven development (TDD): write a failing test before implementing beha
 
 ## Pull requests and history
 
-Agents push only their own topic branches and open pull requests for reviewed
-work within the requested task. They never push the default branch or tags, never
+Agents push only their own topic branches, rewrite their own branches with an
+explicit lease (a rewritten head of a branch that changes code, tests, scripts or generated
+files is independently reviewed at its exact new SHA before the lease push; a branch
+that changes only specs or documentation needs before it only checks and, for a pure
+rebase, `git range-diff` equality), and open pull requests for reviewed work within the requested task. They never push the default branch or tags, never
 merge, and never rewrite commits they did not author. The owner merges. A containing
 workspace may add owner-workflow rules in its own `AGENTS.md`; follow them when present.
 
