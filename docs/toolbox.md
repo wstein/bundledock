@@ -766,6 +766,36 @@ when the executable is present; repeated sourcing does not repeat the greeting.
 It leaves user Fastfetch configuration in control and tolerates a missing or
 failing executable. Set `BDOCK_FASTFETCH=0` to skip the greeting.
 
+Two more names resync a clone after GitHub rebase-merges rewrite SHAs. They are
+not table rows: a row is one plain command, so both run the single POSIX `sh`
+script `internal/shelllayer/gsync.sh` through a small function in each shell, and
+bash, zsh, fish and Nushell behave the same (`sh` must be on `PATH`). They follow
+`BDOCK_SHORTCUTS=0` like the shortcuts (Nushell, as above, always defines them).
+
+- `gsync` is `git fetch --prune --all && git pull --rebase --autostash`, with
+  `--prune` explicit even where `fetch.prune` is set; extra arguments go to the
+  pull. A rebase-merged upstream is handled by the rebase, which drops local
+  commits whose change is already upstream under another SHA. It stops with a
+  message and exit status 1, before any Git network command, outside a work tree
+  (`gsync: not inside a Git work tree`) and while a rebase, merge, cherry-pick or
+  revert is unfinished (`gsync: rebase in progress: ...`). On a detached HEAD it
+  says so (`gsync: detached HEAD: fetched and pruned, but not pulling; ...`),
+  fetches and prunes, does not pull and exits 1.
+- `gsync-all`, run in a workspace root such as the Anchorage umbrella, prints one
+  line per repository, the root as `.` and then each path in `.gitmodules`:
+  `<dir>: <branch>, ahead A/behind B of <upstream>, dirty|clean` (`no upstream`
+  or `detached HEAD at <sha>` where that applies; an uninitialized submodule
+  prints `not checked out`). It runs only `git fetch --prune` in each; it never
+  pulls, rebases, checks out, resets or stashes, and never changes a gitlink.
+  Where a repository is behind it prints the owner-side command, for example
+  `git -C sub pull --rebase --autostash`. A failed fetch or a path that is not a
+  work tree makes the exit status 1; being behind does not.
+
+A test runs both in every installed shell against temporary origin and clone
+fixtures (behind by N, rebase-merged upstream with a pruned remote branch, dirty
+tree, each in-progress operation, detached HEAD, no work tree, and an umbrella
+with a submodule whose Git calls are logged to prove only `fetch --prune` ran).
+
 The layer also initializes [zoxide](https://github.com/ajeetdsouza/zoxide)
 with its official `--cmd cd` option. `cd` accepts existing directory paths or
 queries the directory database for keywords; `cdi` uses upstream interactive
