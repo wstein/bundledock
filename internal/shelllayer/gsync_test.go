@@ -296,8 +296,8 @@ func TestGsyncDetachedHeadSaysSo(t *testing.T) {
 		f.git(clone, "checkout", "-q", "--detach")
 		head := f.git(clone, "rev-parse", "HEAD")
 		out, code := run(f, clone, "gsync")
-		if code == 0 || !strings.Contains(out, "detached HEAD") {
-			t.Fatalf("want a detached HEAD message and a non-zero exit, got %d\n%s", code, out)
+		if code != 2 || !strings.Contains(out, "detached HEAD") {
+			t.Fatalf("want a detached HEAD message and exit 2, got %d\n%s", code, out)
 		}
 		if f.git(clone, "rev-parse", "HEAD") != head {
 			t.Error("HEAD moved")
@@ -331,6 +331,11 @@ func TestGsyncNotAWorkTree(t *testing.T) {
 // published to bare origins, and returns the umbrella clone and the submodule
 // seed (a second clone of the submodule's origin, used to move it ahead).
 func (f *gsyncFixture) umbrella() (root, subSeed string) {
+	return f.umbrellaAt("sub")
+}
+
+// umbrellaAt is umbrella with the submodule at path (which may need quoting).
+func (f *gsyncFixture) umbrellaAt(path string) (root, subSeed string) {
 	f.t.Helper()
 	subOrigin, subSeed := f.path("sub.git"), f.path("sub-seed")
 	f.git(f.root, "init", "-q", "--bare", subOrigin)
@@ -341,13 +346,13 @@ func (f *gsyncFixture) umbrella() (root, subSeed string) {
 	f.git(f.root, "init", "-q", "--bare", umbOrigin)
 	f.git(f.root, "clone", "-q", umbOrigin, umbSeed)
 	f.commit(umbSeed, "u.txt", "u\n", "umbrella one")
-	f.git(umbSeed, "submodule", "add", "-q", subOrigin, "sub")
+	f.git(umbSeed, "submodule", "add", "-q", subOrigin, path)
 	f.git(umbSeed, "commit", "-q", "-m", "add sub")
 	f.git(umbSeed, "push", "-q", "origin", "main")
 	root = f.path("umb")
 	f.git(f.root, "clone", "-q", "--recurse-submodules", umbOrigin, root)
 	// A submodule checkout is detached; put it on its branch like the owner's.
-	f.git(filepath.Join(root, "sub"), "switch", "-q", "main")
+	f.git(filepath.Join(root, path), "switch", "-q", "main")
 	return root, subSeed
 }
 
@@ -421,12 +426,12 @@ func TestGsyncAllMarksUninitializedSubmodule(t *testing.T) {
 	})
 }
 
-// The script is embedded in single quotes (and a Nushell raw string), so it
-// must not hold a single quote or a backslash; its names must not collide with
+// The script is embedded in quoted strings (and a Nushell raw string), so it
+// must not hold a quote followed by a hash sign; its names must not collide with
 // a table shortcut or a Nushell built-in.
 func TestGsyncScriptIsEmbeddable(t *testing.T) {
-	if strings.ContainsAny(GsyncScript(), "'\\") {
-		t.Error("gsync.sh must contain no single quote and no backslash")
+	if strings.Contains(GsyncScript(), "'#") {
+		t.Error("gsync.sh must not contain a single quote followed by # (it would end the Nushell raw string)")
 	}
 	shortcuts, err := Shortcuts()
 	if err != nil {
@@ -448,5 +453,142 @@ func TestGsyncScriptIsEmbeddable(t *testing.T) {
 		if out, err := exec.Command(sh, "-n", filepath.Join("gsync.sh")).CombinedOutput(); err != nil {
 			t.Errorf("sh -n gsync.sh: %v\n%s", err, out)
 		}
+	}
+}
+
+func TestGsyncTakesNoArguments(t *testing.T) {
+	eachShell(t, func(t *testing.T, _ gsyncShell, run func(*gsyncFixture, string, string) (string, int)) {
+		f := newGsyncFixture(t)
+		root, _ := f.umbrella()
+		_ = os.Remove(f.log)
+		for _, c := range []string{"gsync -X theirs", "gsync --no-rebase", "gsync-all extra"} {
+			out, code := run(f, root, c)
+			if code != 1 || !strings.Contains(out, "takes no arguments") {
+				t.Errorf("%s: want a usage refusal and exit 1, got %d\n%s", c, code, out)
+			}
+		}
+		if logged, _ := os.ReadFile(f.log); len(logged) != 0 {
+			t.Errorf("git ran despite refused arguments:\n%s", logged)
+		}
+	})
+}
+
+func TestGsyncAllDistinguishesGoneFromNoUpstream(t *testing.T) {
+	eachShell(t, func(t *testing.T, _ gsyncShell, run func(*gsyncFixture, string, string) (string, int)) {
+		f := newGsyncFixture(t)
+		origin, _, clone := f.pair()
+		f.git(clone, "switch", "-q", "-c", "gone")
+		f.git(clone, "push", "-q", "-u", "origin", "gone")
+		f.git(origin, "branch", "-q", "-D", "gone")
+		out, code := run(f, clone, "gsync-all")
+		if code != 0 || !strings.Contains(out, "gone: upstream gone") && !strings.Contains(out, ": gone, upstream gone, clean") {
+			t.Errorf("want upstream gone, got %d\n%s", code, out)
+		}
+		f.git(clone, "switch", "-q", "-c", "local")
+		out, _ = run(f, clone, "gsync-all")
+		if !strings.Contains(out, ": local, no upstream, clean") {
+			t.Errorf("want no upstream, got\n%s", out)
+		}
+	})
+}
+
+func TestGsyncAllQuotesPrintedCommands(t *testing.T) {
+	eachShell(t, func(t *testing.T, _ gsyncShell, run func(*gsyncFixture, string, string) (string, int)) {
+		f := newGsyncFixture(t)
+		path := "we ird'$(touch PWNED)"
+		root, subSeed := f.umbrellaAt(path)
+		f.commit(subSeed, "s2.txt", "s2\n", "sub two")
+		f.git(subSeed, "push", "-q", "origin", "main")
+		out, code := run(f, root, "gsync-all")
+		if code != 0 {
+			t.Fatalf("exit %d\n%s", code, out)
+		}
+		want := "git -C 'we ird'\\''$(touch PWNED)' pull --rebase --autostash"
+		if !strings.Contains(out, want) {
+			t.Fatalf("output lacks %q:\n%s", want, out)
+		}
+		// Pasting the printed command must run exactly that command.
+		cmd := exec.Command("sh", "-c", want)
+		cmd.Dir, cmd.Env = root, gsyncEnv(f.home, f.bin)
+		if b, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("pasted command failed: %v\n%s", err, b)
+		}
+		if _, err := os.Stat(filepath.Join(root, "PWNED")); err == nil {
+			t.Error("the path text was executed")
+		}
+		if got, want := f.git(filepath.Join(root, path), "rev-parse", "HEAD"), f.git(subSeed, "rev-parse", "HEAD"); got != want {
+			t.Errorf("pasted command did not update the submodule: %s vs %s", got, want)
+		}
+	})
+}
+
+func TestGsyncAllConfinesSubmodulePaths(t *testing.T) {
+	eachShell(t, func(t *testing.T, _ gsyncShell, run func(*gsyncFixture, string, string) (string, int)) {
+		f := newGsyncFixture(t)
+		root, _ := f.umbrella()
+		outside := f.path("outside")
+		f.git(f.root, "clone", "-q", f.path("sub.git"), outside)
+		if err := os.Symlink(outside, filepath.Join(root, "link")); err != nil {
+			t.Fatal(err)
+		}
+		bad := []string{outside, "../outside", "sub/../../outside", "link", "-x"}
+		for i, p := range bad {
+			f.git(root, "config", "--file", ".gitmodules", "submodule.bad"+string(rune('a'+i))+".path", p)
+		}
+		_ = os.Remove(f.log)
+		out, code := run(f, root, "gsync-all")
+		if code != 1 {
+			t.Errorf("want exit 1 for skipped paths, got %d\n%s", code, out)
+		}
+		for _, p := range bad {
+			if !strings.Contains(out, p+": skipped (path is outside the workspace root)") {
+				t.Errorf("no skip line for %q:\n%s", p, out)
+			}
+		}
+		if !strings.Contains(out, "sub: main,") {
+			t.Errorf("the confined submodule was not reported:\n%s", out)
+		}
+		logged, _ := os.ReadFile(f.log)
+		for _, p := range bad {
+			if strings.Contains(string(logged), "-C "+p) {
+				t.Errorf("git touched %q:\n%s", p, logged)
+			}
+		}
+	})
+}
+
+func TestGsyncAllWorksFromSubdirectory(t *testing.T) {
+	eachShell(t, func(t *testing.T, _ gsyncShell, run func(*gsyncFixture, string, string) (string, int)) {
+		f := newGsyncFixture(t)
+		root, subSeed := f.umbrella()
+		f.commit(subSeed, "s2.txt", "s2\n", "sub two")
+		f.git(subSeed, "push", "-q", "origin", "main")
+		deep := filepath.Join(root, "docs")
+		if err := os.MkdirAll(deep, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		out, code := run(f, deep, "gsync-all")
+		if code != 0 {
+			t.Fatalf("exit %d\n%s", code, out)
+		}
+		for _, want := range []string{"workspace root " + root, "sub: main, ahead 0/behind 1 of origin/main, clean"} {
+			if !strings.Contains(out, want) {
+				t.Errorf("output lacks %q:\n%s", want, out)
+			}
+		}
+	})
+}
+
+// Measured: a Nushell function passes the exit status of an external command
+// through to nu -c, so exit codes other than 1 survive.
+func TestNushellPassesExternalExitCodes(t *testing.T) {
+	nu, err := exec.LookPath("nu")
+	if err != nil {
+		t.Skip("nu not installed")
+	}
+	cmd := exec.Command(nu, "--no-config-file", "--no-history", "-c", "def --wrapped f [...r] { ^sh -c 'exit 3' x ...$r }; f")
+	err = cmd.Run()
+	if ee, ok := err.(*exec.ExitError); !ok || ee.ExitCode() != 3 {
+		t.Errorf("want exit 3 from nu, got %v", err)
 	}
 }

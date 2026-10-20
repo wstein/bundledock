@@ -773,28 +773,43 @@ bash, zsh, fish and Nushell behave the same (`sh` must be on `PATH`). They follo
 `BDOCK_SHORTCUTS=0` like the shortcuts (Nushell, as above, always defines them).
 
 - `gsync` is `git fetch --prune --all && git pull --rebase --autostash`, with
-  `--prune` explicit even where `fetch.prune` is set; extra arguments go to the
-  pull. A rebase-merged upstream is handled by the rebase, which drops local
-  commits whose change is already upstream under another SHA. It stops with a
-  message and exit status 1, before any Git network command, outside a work tree
-  (`gsync: not inside a Git work tree`) and while a rebase, merge, cherry-pick or
-  revert is unfinished (`gsync: rebase in progress: ...`). On a detached HEAD it
-  says so (`gsync: detached HEAD: fetched and pruned, but not pulling; ...`),
-  fetches and prunes, does not pull and exits 1.
-- `gsync-all`, run in a workspace root such as the Anchorage umbrella, prints one
-  line per repository, the root as `.` and then each path in `.gitmodules`:
+  `--prune` explicit even where `fetch.prune` is set. It takes no arguments: any
+  argument (`-X theirs`, `--no-rebase`) is refused with a usage line and exit
+  status 1, before Git runs. A rebase-merged upstream is handled by the rebase,
+  which drops local commits whose change is already upstream under another SHA.
+  It stops with a message and exit status 1, before any Git network command,
+  outside a work tree (`gsync: not inside a Git work tree`) and while a rebase,
+  merge, cherry-pick or revert is unfinished (`gsync: rebase in progress: ...`).
+  On a detached HEAD it says so (`gsync: detached HEAD: fetched and pruned, but
+  not pulling; ...`), fetches and prunes, does not pull and exits 2.
+- `gsync-all` takes no arguments either. It resolves the workspace root with
+  `git rev-parse --show-toplevel`, so it works from a subdirectory, and says which
+  root it uses (`gsync-all: workspace root <path>`). It then prints one line per
+  repository, the root as `.` and then each path in `.gitmodules`:
   `<dir>: <branch>, ahead A/behind B of <upstream>, dirty|clean` (`no upstream`
-  or `detached HEAD at <sha>` where that applies; an uninitialized submodule
-  prints `not checked out`). It runs only `git fetch --prune` in each; it never
-  pulls, rebases, checks out, resets or stashes, and never changes a gitlink.
-  Where a repository is behind it prints the owner-side command, for example
-  `git -C sub pull --rebase --autostash`. A failed fetch or a path that is not a
-  work tree makes the exit status 1; being behind does not.
+  when none is configured, `upstream gone` when one is configured but no longer
+  exists, `detached HEAD at <sha>` where that applies; an uninitialized submodule
+  prints `not checked out`). A `.gitmodules` path is skipped with a message and
+  exit status 1 when it is absolute, starts with `-`, has a `..` component or
+  resolves (through a symlink) outside the root. It runs only `git fetch --prune`
+  in each repository; it never pulls, rebases, checks out, resets or stashes, and
+  never changes a gitlink. Where a repository is behind it prints the owner-side
+  command, with the directory single-quoted when it is not plain, so it is safe
+  to paste (`git -C sub pull --rebase --autostash`). A failed fetch, a skipped
+  path or a path that is not a work tree makes the exit status 1; being behind
+  does not.
+
+Exit statuses are not limited to 1 by the shells: measured on Nushell 0.116.1, a
+function that runs `sh -c 'exit 3'` makes `nu -c` exit 3 (a test keeps this), so
+the statuses above (1 for a refusal or failure, 2 for the detached HEAD) reach the
+caller in all four shells.
 
 A test runs both in every installed shell against temporary origin and clone
 fixtures (behind by N, rebase-merged upstream with a pruned remote branch, dirty
-tree, each in-progress operation, detached HEAD, no work tree, and an umbrella
-with a submodule whose Git calls are logged to prove only `fetch --prune` ran).
+tree, each in-progress operation, detached HEAD, no work tree, refused arguments,
+and an umbrella with a submodule whose Git calls are logged to prove only
+`fetch --prune` ran; also gone upstreams, hostile submodule paths and running
+from a subdirectory).
 
 The layer also initializes [zoxide](https://github.com/ajeetdsouza/zoxide)
 with its official `--cmd cd` option. `cd` accepts existing directory paths or
