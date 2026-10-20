@@ -802,6 +802,11 @@ toolbox out of `XDG_DATA_DIRS`. Nushell's prompt setup retains a static copy of 
 `starship init nu` produces; its zoxide commands use the string hook described
 above.
 
+The layer also sets safe interactive session defaults before shortcuts or greetings:
+- **Umask widening**: If `umask` is overly permissive (`0000` or `000` as created by some container engines or runtimes), the layer tightens it to standard `022` (`rwxr-xr-x` in Nushell). More restrictive umasks (such as `0027` or `0077`) are preserved untouched. Set `BDOCK_UMASK=0` to opt out.
+- **History deduplication**: In Bash and Zsh, duplicate history entries are suppressed (`HISTCONTROL=ignoreboth:erasedups` in Bash; `setopt HIST_IGNORE_ALL_DUPS HIST_SAVE_NO_DUPS HIST_IGNORE_SPACE` in Zsh). Set `BDOCK_HISTORY=0` to opt out.
+- **Default editor**: If `EDITOR` is not set and the shell is running outside an IDE terminal (`TERM_PROGRAM != vscode`, `TERMINAL_EMULATOR != JetBrains-JediTerm`, etc.), and `hx` (Helix) is available on `PATH`, the layer sets `EDITOR=hx`. Existing `EDITOR` settings and IDE environments are preserved. Set `BDOCK_EDITOR=0` to opt out.
+
 The generator renders the four files from the table and they are committed.
 The layer belongs to the toolbox alone: only the toolbox Dockerfile copies
 `internal/shelllayer` into its build and passes it to `tools-bundle --shell-layer`,
