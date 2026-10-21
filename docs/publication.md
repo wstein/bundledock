@@ -14,7 +14,15 @@ manual runs select one bundle and the explicitly approved full source SHA.
 Bundle-specific native smoke checks, artifacts and source tag namespaces remain.
 **Propose upgrades** (`propose-upgrades.yml`) shares the source-only updater,
 retains the daily 06:50 UTC schedule, and offers manual bundle selection with
-dry runs enabled by default. Scheduled runs keep one independent PR per bundle.
+dry runs enabled by default. Each bundle resolves independently, then one PR
+per run carries every bundle that changed in a single commit on
+`automation/upgrades-<run>-<attempt>`; the title lists the bundles and the body
+has one table per bundle. If a bundle's resolution fails, the others are still
+proposed and the failure is named in the PR body and run summary. A run that
+changes one bundle keeps that bundle's own `automation/<bundle>-upgrade-...`
+topic, so its owner merge still authorizes publication as described below. The
+automatic approval flow does not recognise the combined topic: after merging a
+multi-bundle PR, publish each bundle by manual full-SHA dispatch.
 
 The [Codex](codex.md), [Antigravity](agy.md) and [Claude Code](claude.md)
 guides record their verified initial publications and native AMD64/ARM64 smoke
