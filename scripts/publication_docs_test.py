@@ -268,6 +268,17 @@ class PublicationDocsTest(unittest.TestCase):
                 self.assertFalse(any(call[:3] in (('gh', 'workflow', 'run'), ('gh', 'pr', 'create'), ('gh', 'pr', 'edit')) for call in state['calls']))
                 self.assertFalse(any(call[2] == 'PATCH' or (call[0] == 'git/refs' and name != 'creation race') for call in state['api']))
 
+    def test_pending_records_are_validated_and_conflicting_same_version_refused(self):
+        module, _, _, claude, *_ = self.forge()
+        for key, value in (('commit', 'zz'), ('digest', 'sha256:bad'), ('reference', 'quay.io/x@sha256:' + 'f'*64), ('source', 'https://evil.test'), ('run_id', '0'), ('tag', 'garbage')):
+            with self.subTest(key=key):
+                result, state = self.propose('toolbox', 'toolbox', pending={'claude': dict(claude, **{key: value})})
+                self.assertIsInstance(result, ValueError)
+                self.assertFalse(any(call[:3] in (('gh', 'workflow', 'run'), ('gh', 'pr', 'edit')) for call in state['calls']))
+        with self.assertRaisesRegex(ValueError, 'conflicting'):
+            module.merge_entry({'claude': (claude, None)}, 'claude', dict(claude, digest='sha256:' + 'a'*64, reference=claude['image'] + '@sha256:' + 'a'*64), None)
+        self.assertIn('claude', module.merge_entry({'claude': (claude, None)}, 'claude', dict(claude), None))
+
     def test_proposal_paths_are_limited_to_publication_markdown_and_metadata(self):
         allowed = self.module.allowed_paths()
         self.assertIn('docs/toolbox.md', allowed); self.assertIn('README.md', allowed)
@@ -281,7 +292,7 @@ class PublicationDocsTest(unittest.TestCase):
     def test_rolling_job_serialises_runs(self):
         workflow = (Path(__file__).resolve().parents[1] / '.github/workflows/bundle-publish.yml').read_text()
         docs = workflow.split('\n  documentation:\n')[1].split('\n  cleanup:\n')[0]
-        self.assertIn('group: bundledock-publication-docs', docs)
+        self.assertEqual([line.strip() for line in docs.splitlines() if 'group:' in line], ['group: bundledock-publication-docs'])
         self.assertIn('cancel-in-progress: false', docs)
         self.assertIn('queue: max', docs)
 
