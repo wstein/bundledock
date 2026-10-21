@@ -1,7 +1,7 @@
 {
   "schema": 2,
-  "desired_digest": "ef0a863c3e236cf442bf1b2209e1d038976d5df7cfb0f9d2a5b4140351efd3a9",
-  "catalog_digest": "120e8d423bf3b3d053f47311cd631184a1a8a0dbc7b728c15505f5291b3bde6a",
+  "desired_digest": "800999deb3680ef53d6fbc5649c412e08aa0a0bd850db193774988648f33388c",
+  "catalog_digest": "237454026c20c7f5cf9fc1ceec0361cf7a2640daf1b3b15485771fea0db26fb5",
   "platforms": {
     "amd64": {
       "actionlint": {
@@ -344,6 +344,12 @@
         "version": "v1.31.1",
         "url": "https://github.com/zizmorcore/zizmor/releases/download/v1.31.1/zizmor-x86_64-unknown-linux-gnu.tar.gz",
         "sha256": "d185f726bdaf92df78273217dfdd24ebcd6b0ef48cf3ce776ff5762b6e138c99",
+        "verification": "publisher-sha256"
+      },
+      "zk": {
+        "version": "v0.15.7",
+        "url": "https://github.com/zk-org/zk/releases/download/v0.15.7/zk-v0.15.7-linux-amd64.tar.gz",
+        "sha256": "9339cf4643159cfc80ee6b9c232abf84076ea154a057bf8926eb71cab37d3abe",
         "verification": "publisher-sha256"
       },
       "zoxide": {
@@ -694,6 +700,12 @@
         "version": "v1.31.1",
         "url": "https://github.com/zizmorcore/zizmor/releases/download/v1.31.1/zizmor-aarch64-unknown-linux-gnu.tar.gz",
         "sha256": "37eebbd5762a44f262d94875431b14a6d2402991e90a685113ea97b8b41be833",
+        "verification": "publisher-sha256"
+      },
+      "zk": {
+        "version": "v0.15.7",
+        "url": "https://github.com/zk-org/zk/releases/download/v0.15.7/zk-v0.15.7-linux-arm64.tar.gz",
+        "sha256": "8404716171c04e131759feebb551e5946162732f20c178cc38099af10d0ce800",
         "verification": "publisher-sha256"
       },
       "zoxide": {

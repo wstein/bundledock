@@ -93,12 +93,13 @@ The source inventory below describes the current lock; this publication retains 
 | watchexec (`watchexec`) | 2.8.0 | [Homepage](https://watchexec.github.io) | [Source](https://github.com/watchexec/watchexec) |
 | xh (`xh`) | 0.26.3 | [Homepage](https://github.com/ducaale/xh) | [Source](https://github.com/ducaale/xh) |
 | zizmor (`zizmor`) | 1.31.1 | [Homepage](https://github.com/zizmorcore/zizmor) | [Source](https://github.com/zizmorcore/zizmor) |
+| zk (`zk`) | 0.15.7 | [Homepage](https://github.com/zk-org/zk) | [Source](https://github.com/zk-org/zk) |
 | zoxide (`zoxide`) | 0.10.0 | [Homepage](https://github.com/ajeetdsouza/zoxide) | [Source](https://github.com/ajeetdsouza/zoxide) |
 <!-- END GENERATED TOOL INVENTORY -->
 
 The default bundle lives in `bundles/toolbox/`: `packages.txt`,
 `packages.catalog.json`, `packages.lock.json`, its Dockerfile, smoke scripts and licenses.
-Shared Go code remains at the repository root. The source toolbox contains 58
+Shared Go code remains at the repository root. The source toolbox contains 59
 downloaded tools plus the two first-use Python launchers listed above. Codex, Antigravity and Claude are supplied by their separate
 [Codex](codex.md), [Antigravity](agy.md) and [Claude Code](claude.md) bundles.
 The published toolbox recorded above still includes those agents; this source
@@ -361,6 +362,28 @@ corresponding source tag and the source-on-request offer EUPL-1.2 calls for.
 v0.1.1 binary was executed once that way for this addition. Native consumer
 smoke, image build/publication and consumer activation remain pending separate
 owner authorization. The published image above retains its recorded source.
+
+### zk release
+
+The source lock includes [zk-org/zk v0.15.7](https://github.com/zk-org/zk/releases/tag/v0.15.7)
+(`zk>=0.15.7`), the `zk` Zettelkasten command-line tool. It is placed in the
+toolbox because it is a small, self-contained prebuilt CLI with no runtime,
+state volume or independent release cadence. A future updater run resolves new
+stable releases through the normal toolbox path (tag prefix `v`, asset
+`zk-v{version}-linux-{arch}.tar.gz`). The release publishes no checksum file, so the
+lock records the release API digests, which equal the hashes of the downloaded
+Linux AMD64 and ARM64 archives (checked on 2026-10-21). The glibc `linux-*`
+archives are used, not the `alpine-*` ones; the binaries need glibc 2.34 or newer,
+so Alpine and other musl-based images are unsupported. The archives carry only
+the executable, so the upstream GPL-3.0 `LICENSE` is retained separately under
+`licenses/zk/`, next to a `SOURCE` record. The unmodified binary is shipped and
+only executed as a separate program.
+
+The isolated consumer smoke runs only `zk --version` (expected `zk X.Y.Z`) with
+an empty home. The linux/arm64 v0.15.7 binary was executed once that way for this
+addition; the linux/amd64 binary was not executed. Native consumer smoke, image
+build/publication and consumer activation remain pending separate owner
+authorization.
 
 ## Keep the source inventory consistent
 

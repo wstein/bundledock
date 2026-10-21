@@ -1639,6 +1639,31 @@
       "notices": [
         "licenses/smill/SOURCE"
       ]
+    },
+    "zk": {
+      "provider": "github",
+      "repository": "zk-org/zk",
+      "tag_prefix": "v",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "amd64",
+        "arm64": "arm64"
+      },
+      "asset": "zk-v{version}-linux-{arch}.tar.gz",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "tar.gz",
+        "members": {
+          "zk": "bin/zk"
+        }
+      },
+      "notices": [
+        "licenses/zk/LICENSE",
+        "licenses/zk/SOURCE"
+      ]
     }
   }
 }
