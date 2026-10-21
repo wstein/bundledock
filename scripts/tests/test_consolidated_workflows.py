@@ -55,7 +55,9 @@ class ConsolidatedWorkflowsTests(unittest.TestCase):
         for text in ('contents: write', 'setup-go', 'go build', 'docker '):
             self.assertNotIn(text, plan)
         self.assertIn("needs.plan.outputs.eligible == 'true'", source)
-        self.assertIn('bundle: ${{ needs.plan.outputs.bundle }}', source)
+        self.assertIn('bundle: ${{ matrix.bundle }}', source)
+        self.assertIn('fromJSON(needs.plan.outputs.bundles)', source)
+        self.assertIn('fail-fast: false', source.split('\n  publication:\n')[1])
         for name in config.BUNDLES:
             self.assertFalse((ROOT / '.github/workflows' / ('bundledock-' + name + '.yml')).exists())
             self.assertFalse((ROOT / '.github/workflows' / (name + '-upgrade.yml')).exists())

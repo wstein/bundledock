@@ -48,7 +48,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
-      bundle: ${{ steps.source.outputs.bundle }}
+      bundles: ${{ steps.source.outputs.bundles }}
       sha: ${{ steps.source.outputs.sha }}
       eligible: ${{ steps.source.outputs.eligible }}
       status: ${{ steps.source.outputs.status }}
@@ -60,7 +60,7 @@ jobs:
           persist-credentials: false
           # Planner executes trusted default-branch code, never CI payload source.
           ref: ${{ github.sha }}
-      - name: Select one eligible bundle without compiling artifacts
+      - name: Select the eligible bundles without compiling artifacts
         id: source
         env:
           BUNDLE: ${{ inputs.bundle || '' }}
@@ -79,9 +79,17 @@ jobs:
       contents: write
       actions: write
       pull-requests: write
+    # An owner-merged combined updater PR changes several bundles; each is
+    # verified and published independently (the shared workflow serialises
+    # bundles that share an output repository).
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        bundle: ${{ fromJSON(needs.plan.outputs.bundles) }}
     uses: ./.github/workflows/bundle-publish.yml
     with:
-      bundle: ${{ needs.plan.outputs.bundle }}
+      bundle: ${{ matrix.bundle }}
       approved_sha: ${{ inputs.approved_sha || '' }}
     secrets:
       REPOSITORY_TOKEN: ${{ secrets.REPOSITORY_TOKEN }}

@@ -34,10 +34,12 @@ def lock_bytes(get, bundle, revision):
     return base64.b64decode(content['content'].replace('\n', ''), validate=True)
 
 
-def safe_files(files, pr, bundle):
+def safe_files(files, pr, bundles):
+    """Every listed bundle's lock changed; nothing but their locks and inventories did."""
     names = [item['filename'] for item in files]
-    require(len(files) == pr['changed_files'] and 0 < len(files) <= 2, 'Missing or truncated files')
-    require(len(set(names)) == len(names) and bundle['lock'] in names and set(names) <= {bundle['lock'], bundle['inventory']}, 'Only own lock and inventory may change')
+    require(len(files) == pr['changed_files'] and 0 < len(files) <= 2 * len(bundles), 'Missing or truncated files')
+    allowed = {path for bundle in bundles for path in (bundle['lock'], bundle['inventory'])}
+    require(len(set(names)) == len(names) and all(bundle['lock'] in names for bundle in bundles) and set(names) <= allowed, 'Only own lock and inventory may change')
     require(all(item['status'] == 'modified' and item['changes'] > 0 and 'previous_filename' not in item for item in files), 'Renamed, deleted or unchanged files forbidden')
     return set(names)
 
@@ -76,8 +78,21 @@ def updater_history(pr, get, base):
     require(previous == pr['head']['sha'], 'Updater history does not end at exact PR head')
 
 
-def merged_updater(pr, name, get, revision):
-    bundle = config.select_bundle(name)
+def updater_members(pr, name, get):
+    """Bundles an updater PR claims: its own for a per-bundle topic, else those whose lock it changed."""
+    if name != COMBINED:
+        return [name]
+    files = get('/pulls/' + str(pr['number']) + '/files?per_page=100&page=1')
+    require(isinstance(files, list) and len(files) == pr['changed_files'], 'Missing or truncated files')
+    changed = {item['filename'] for item in files}
+    members = [member for member in config.BUNDLES if config.select_bundle(member)['lock'] in changed]
+    require(members, 'Combined updater changes no bundle lock')
+    return members
+
+
+def merged_updater(pr, name, get, revision, members=None):
+    members = members or [name]
+    bundles = [config.select_bundle(member) for member in members]
     number = pr['number']
     require(isinstance(number, int) and number > 0, 'Invalid PR number')
     repository = get('')
@@ -92,15 +107,16 @@ def merged_updater(pr, name, get, revision):
         raise OwnerMergeRequired('Eligible updater requires actual wstein human merge; pr=' + str(number) + ' expected_source=' + revision)
     require(pr['merged'] is True and pr['state'] == 'closed' and pr['merge_commit_sha'] == revision, 'Closed exact-source merged PR required')
     files = get('/pulls/' + str(number) + '/files?per_page=100&page=1')
-    names = safe_files(files, pr, bundle)
+    names = safe_files(files, pr, bundles)
     head_tree = sha(get('/git/commits/' + head)['tree']['sha'])
     commit = get('/commits/' + revision)
     require(sha(commit['commit']['tree']['sha']) == head_tree, 'Merged tree differs from updater head tree')
-    require(safe_files(commit['files'], pr, bundle) == names, 'Merged files differ from updater PR')
+    require(safe_files(commit['files'], pr, bundles) == names, 'Merged files differ from updater PR')
     require(len(commit['parents']) == 1, 'Expected linear merge commit')
     base = sha(commit['parents'][0]['sha'])
     updater_history(pr, get, base)
-    require(lock_bytes(get, bundle, revision) != lock_bytes(get, bundle, base), 'Lock is unchanged')
+    for bundle in bundles:
+        require(lock_bytes(get, bundle, revision) != lock_bytes(get, bundle, base), 'Lock is unchanged')
     return pr
 
 
@@ -125,7 +141,14 @@ def validate_caller(get, bundle, event_name='workflow_run'):
     require(run['repository']['full_name'] == run['head_repository']['full_name'] == REPOSITORY, 'Wrong publisher repository')
 
 
+COMBINED = 'upgrades'
+
+
 def bundle_for_branch(branch):
+    """A bundle name for its own updater topic, COMBINED for the shared one, else None."""
+    if re.fullmatch(r'automation/upgrades-[1-9][0-9]*-[1-9][0-9]*', branch):
+        return COMBINED
+    require(not re.match(r'automation/upgrades', branch), 'Malformed combined updater branch')
     for name in config.BUNDLES:
         prefix = '(?:toolbox|tool)' if name == 'toolbox' else re.escape(name)
         if re.fullmatch('automation/' + prefix + r'-upgrade-[1-9][0-9]*-[1-9][0-9]*', branch):
@@ -239,14 +262,16 @@ def validate(event, get, name='toolbox', allow_ineligible=False):
         require(allow_ineligible, 'Exactly one merged updater PR required')
         return None
     actual, pr = claimed[0]
-    source_on_main(get, actual, revision)
+    members = updater_members(pr, actual, get)
+    for member in members if name is None else [member for member in members if member == name]:
+        source_on_main(get, member, revision)
     required_ci_check(source, revision, get)
-    pr = merged_updater(pr, actual, get, revision)
-    if name is not None and actual != name:
+    pr = merged_updater(pr, actual, get, revision, members)
+    if name is not None and name not in members:
         require(allow_ineligible, 'Merged updater belongs to another bundle')
         return None
     if name is None:
-        return actual, revision, pr['html_url']
+        return members, revision, pr['html_url']
     return revision, pr['html_url']
 
 
@@ -291,7 +316,7 @@ def main():
         revision = sha(os.environ['APPROVED_SHA'])
         require(api.request('/git/ref/heads/main')['object']['sha'] == revision, 'Source is no longer current main')
         require(subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip() == revision, 'Checkout differs from authorized source')
-        output = dict(bundle, bundle=name, sha=revision, eligible='true', status='eligible', reason='Exact full-SHA human manual dispatch verified')
+        output = dict(bundle, bundle=name, bundles=json.dumps([name]), sha=revision, eligible='true', status='eligible', reason='Exact full-SHA human manual dispatch verified')
     else:
         require(os.environ['GITHUB_EVENT_NAME'] == 'workflow_run', 'Only CI completion is automatic publication authority')
         validate_caller(api.request, config.select_bundle(args.bundle))
@@ -300,10 +325,12 @@ def main():
         if candidate is None:
             output = {'eligible':'false', 'status':'ineligible', 'reason':'No matching merged bundle updater'}
         else:
-            name, revision, url = candidate if planning else (args.bundle, *candidate)
+            names, revision, url = candidate if planning else ([args.bundle], *candidate)
             require(not os.environ.get('PUBLICATION_SHA') or os.environ['PUBLICATION_SHA'] == revision, 'Authorized source changed')
             require(subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip() == revision, 'Checkout differs from authorized source')
-            output = dict(config.select_bundle(name), bundle=name, sha=revision, pr_url=url, eligible='true', status='eligible', reason='Exact owner-merged updater and main CI verified')
+            output = dict(bundles=json.dumps(names), sha=revision, pr_url=url, eligible='true', status='eligible', reason='Exact owner-merged updater and main CI verified')
+            if not planning:
+                output = dict(config.select_bundle(args.bundle), bundle=args.bundle, **output)
     emit(output)
 
 

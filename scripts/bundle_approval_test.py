@@ -312,7 +312,7 @@ class OwnerMergeTests(unittest.TestCase):
     os.environ['PUBLICATION_SHA']=B
     with self.assertRaisesRegex(ValueError,'Authorized source changed'):gate.main()
     self.assertEqual(output.read_text(),accepted)
-   self.assertIn('bundle=toolbox',output.read_text())
+   self.assertIn('bundles=["toolbox"]',output.read_text())
    self.assertIn('eligible=true',output.read_text())
  def test_publication_fixtures_ignore_ambient_environment(self):
   import tempfile
@@ -371,6 +371,69 @@ class OwnerMergeTests(unittest.TestCase):
     self.assertIn('eligible=false',output.read_text())
     self.assertIn('status='+status,output.read_text())
     self.assertIn(status,summary.read_text())
+
+class CombinedUpdaterTests(unittest.TestCase):
+ """One owner merge of automation/upgrades-<run>-<attempt> plans every bundle it changed."""
+ setUp=OwnerMergeTests.setUp
+ get=OwnerMergeTests.get
+ def combine(self,names=('agy','node')):
+  self.pr['head']['ref']='automation/upgrades-123-1'
+  self.files[:]=[]
+  for name in names:
+   bundle=gate.config.select_bundle(name)
+   self.files.extend([{'filename':bundle['lock'],'status':'modified','changes':2},{'filename':bundle['inventory'],'status':'modified','changes':2}])
+   for revision,content in ((A,'bmV3'),(B,'b2xk')):self.data['/contents/'+bundle['lock']+'?ref='+revision]={'encoding':'base64','content':content}
+  self.pr['changed_files']=len(self.files)
+ def test_plan_lists_every_changed_bundle_in_canonical_order(self):
+  self.combine(('agy','node','toolbox'))
+  self.assertEqual(gate.validate(self.event,self.get,None),(['toolbox','node','agy'],A,self.pr['html_url']))
+ def test_each_bundle_leg_authorizes_only_members(self):
+  self.combine()
+  for name in ('agy','node'):self.assertEqual(gate.validate(self.event,self.get,name),(A,self.pr['html_url']))
+  with self.assertRaises(ValueError):gate.validate(self.event,self.get,'claude')
+  self.assertIsNone(gate.validate(self.event,self.get,'claude',allow_ineligible=True))
+ def test_plan_command_emits_json_bundle_list(self):
+  import tempfile
+  import json
+  self.combine()
+  with tempfile.TemporaryDirectory() as directory:
+   event=Path(directory)/'event';event.write_text(json.dumps(self.event));output=Path(directory)/'output'
+   env={'GITHUB_REPOSITORY':REPO['full_name'],'GITHUB_EVENT_NAME':'workflow_run','GITHUB_EVENT_PATH':str(event),'GITHUB_TOKEN':'fixture','GITHUB_OUTPUT':str(output)}
+   with patch.dict(os.environ,env,clear=True),patch.object(sys,'argv',['gate','--mode','plan']),patch.object(gate,'GitHub') as api,patch.object(gate,'validate_caller'),patch.object(gate.subprocess,'check_output',return_value=A):
+    api.return_value.request.side_effect=self.get
+    gate.main()
+   self.assertIn('bundles=["node", "agy"]',output.read_text())
+ def test_combined_scope_lock_and_branch_guards(self):
+  for kind in ('outside-file','unchanged-lock','bad-branch','no-lock','count','single-topic','workflow','renamed'):
+   with self.subTest(kind=kind):
+    self.setUp();self.combine()
+    if kind=='outside-file':
+     self.files.append({'filename':gate.config.select_bundle('claude')['inventory'],'status':'modified','changes':2});self.pr['changed_files']=5
+    if kind=='unchanged-lock':self.data['/contents/'+gate.config.select_bundle('agy')['lock']+'?ref='+A]['content']='b2xk'
+    if kind=='bad-branch':self.pr['head']['ref']='automation/upgrades-tampered'
+    if kind=='no-lock':
+     self.files[:]=[{'filename':gate.config.select_bundle('agy')['inventory'],'status':'modified','changes':2}];self.pr['changed_files']=1
+    if kind=='count':self.pr['changed_files']=2
+    if kind=='single-topic':self.pr['head']['ref']='automation/agy-upgrade-123-1'
+    if kind=='workflow':self.files[1]['filename']='.github/workflows/ci.yml'
+    if kind=='renamed':self.files[0]['status']='renamed'
+    for name in (None,'agy'):
+     with self.assertRaises(ValueError):gate.validate(self.event,self.get,name)
+ def test_malformed_combined_topic_is_rejected_not_ignored(self):
+  self.combine()
+  for branch in ('automation/upgrades-tampered','automation/upgrades-1-1-1','automation/upgrades-0-1'):
+   self.pr['head']['ref']=branch
+   with self.assertRaises(ValueError):gate.validate(self.event,self.get,None,allow_ineligible=True)
+ def test_main_advance_checks_own_lock_per_leg(self):
+  self.combine()
+  newer='e'*40
+  self.data['/git/ref/heads/main']['object']['sha']=newer
+  self.data['/compare/'+A+'...'+newer]={'status':'ahead','merge_base_commit':{'sha':A}}
+  self.data['/contents/'+gate.config.select_bundle('agy')['lock']+'?ref='+newer]={'encoding':'base64','content':'bmV3'}
+  self.data['/contents/'+gate.config.select_bundle('node')['lock']+'?ref='+newer]={'encoding':'base64','content':'Y2hhbmdlZA=='}
+  self.assertEqual(gate.validate(self.event,self.get,'agy'),(A,self.pr['html_url']))
+  with self.assertRaises(ValueError):gate.validate(self.event,self.get,'node')
+  with self.assertRaises(ValueError):gate.validate(self.event,self.get,None)
 
 class WorkflowResultTests(unittest.TestCase):
  def test_shared_job_conditions_fail_closed(self):
