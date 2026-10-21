@@ -604,8 +604,10 @@ func TestWorkflowDailyAndManualWriteGates(t *testing.T) {
 	if strings.Count(s, "- cron: '50 6 * * *'") != 1 {
 		t.Fatal("expected exactly one daily 06:50 UTC schedule")
 	}
-	for _, changed := range []string{"steps.resolve.outputs.changed", "needs.resolve.outputs.changed"} {
-		gate := "if: ${{ " + changed + " == 'true' && (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && !inputs.dry_run)) }}"
+	for _, gate := range []string{
+		"if: ${{ steps.resolve.outputs.changed == 'true' && (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && !inputs.dry_run)) }}",
+		"if: ${{ !cancelled() && needs.plan.result == 'success' && (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && !inputs.dry_run)) }}",
+	} {
 		if !strings.Contains(s, gate) {
 			t.Errorf("missing explicit changed-and-event write gate %q", gate)
 		}
