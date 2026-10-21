@@ -13,30 +13,30 @@ BRANCH = 'automation/agy-upgrade-123-1'
 URL = 'https://github.com/' + REPO + '/pull/42'
 
 
-def evidence():
-    files = [{'filename': path, 'status': 'modified'} for path in
-             ('bundles/agy/packages.lock.json', 'docs/agy.md')]
+def evidence(bundles=('agy',), branch=BRANCH):
+    files = [{'filename': path, 'status': 'modified'} for name in bundles for path in
+             ('bundles/' + name + '/packages.lock.json', 'docs/' + name + '.md')]
     return {
         '': {'full_name': REPO, 'default_branch': 'main'},
         '/pulls/42': {'number': 42, 'state': 'open', 'draft': False, 'merged': False,
                       'user': {'login': 'github-actions[bot]', 'type': 'Bot'},
-                      'head': {'sha': HEAD, 'ref': BRANCH, 'repo': {'full_name': REPO}},
+                      'head': {'sha': HEAD, 'ref': branch, 'repo': {'full_name': REPO}},
                       'base': {'sha': BASE, 'ref': 'main', 'repo': {'full_name': REPO}},
-                      'commits': 1, 'changed_files': 2, 'html_url': URL},
+                      'commits': 1, 'changed_files': len(files), 'html_url': URL},
         '/git/ref/heads/main': {'object': {'sha': BASE}},
-        '/git/ref/heads/' + BRANCH: {'object': {'sha': HEAD}},
+        '/git/ref/heads/' + branch: {'object': {'sha': HEAD}},
         '/pulls/42/files?per_page=100&page=1': files,
         '/compare/' + BASE + '...' + HEAD: {
             'status': 'ahead', 'ahead_by': 1, 'behind_by': 0, 'total_commits': 1,
             'commits': [{'sha': HEAD, 'parents': [{'sha': BASE, 'url': 'https://api.github.com/repos/' + REPO + '/commits/' + BASE, 'html_url': 'https://github.com/' + REPO + '/commit/' + BASE}]}], 'files': files},
         '/actions/workflows/ci.yml': {'id': 7, 'path': '.github/workflows/ci.yml', 'state': 'active'},
-        '/actions/workflows/ci.yml/runs?branch=' + BRANCH + '&event=workflow_dispatch&per_page=100&page=1':
+        '/actions/workflows/ci.yml/runs?branch=' + branch + '&event=workflow_dispatch&per_page=100&page=1':
             {'total_count': 0, 'workflow_runs': []},
     }
 
 
 class UpdaterSourceCITests(unittest.TestCase):
-    def run_dispatch(self, data=None, env_changes=None, arguments=None):
+    def run_dispatch(self, data=None, env_changes=None, arguments=None, bundles='agy', branch=BRANCH):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             (root / 'evidence.json').write_text(json.dumps(data or evidence()))
@@ -65,7 +65,7 @@ else:
                        GITHUB_RUN_ATTEMPT='1')
             env.update(env_changes or {})
             command = ['python3', '-B', str(ROOT / 'scripts/updater-source-ci.py'),
-                       '--bundle', 'agy', '--branch', BRANCH, '--base', BASE,
+                       '--bundles', bundles, '--branch', branch, '--base', BASE,
                        '--head', HEAD, '--pr-url', URL]
             for key, value in (arguments or {}).items():
                 command[command.index('--' + key) + 1] = value
@@ -123,7 +123,7 @@ else:
 
     def test_ref_url_and_revision_inputs_cannot_select_other_source(self):
         for arguments in ({'branch': 'main'}, {'branch': 'automation/agy-upgrade-999-1'},
-                          {'branch': 'automation/agy-upgrade-123-1;bad'}, {'bundle': 'unknown'},
+                          {'branch': 'automation/agy-upgrade-123-1;bad'}, {'bundles': 'unknown'},
                           {'pr-url': 'https://github.com/other/repo/pull/42'},
                           {'pr-url': URL + '/extra'}, {'head': 'b' * 7}, {'base': 'a' * 7}):
             with self.subTest(arguments=arguments):
@@ -144,6 +144,80 @@ else:
                 result, calls = self.run_dispatch(data)
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertEqual(any('--method' in call['args'] for call in calls), dispatch)
+
+    def test_combined_proposal_for_several_bundles_gets_one_dispatch(self):
+        branch = 'automation/upgrades-123-1'
+        data = evidence(('agy', 'node', 'toolbox'), branch)
+        result, calls = self.run_dispatch(data, bundles='agy,node,toolbox', branch=branch)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        writes = [call for call in calls if '--method' in call['args']]
+        self.assertEqual(len(writes), 1)
+        self.assertEqual(json.loads(writes[0]['payload']), {'ref': branch, 'inputs': {'expected_head_sha': HEAD}})
+
+    def test_combined_proposal_may_leave_a_bundle_inventory_untouched(self):
+        branch = 'automation/upgrades-123-1'
+        data = evidence(('agy', 'node'), branch)
+        files = data['/pulls/42/files?per_page=100&page=1'][:3]
+        data['/pulls/42/files?per_page=100&page=1'] = files
+        data['/pulls/42']['changed_files'] = 3
+        data['/compare/' + BASE + '...' + HEAD]['files'] = files
+        result, _ = self.run_dispatch(data, bundles='agy,node', branch=branch)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_branch_name_must_match_the_bundle_count(self):
+        # One bundle keeps its own name (publication recognises it); several use the combined name.
+        for bundles, branch in [('agy,node', BRANCH), ('agy,node', 'automation/node-upgrade-123-1'),
+                                ('agy', 'automation/upgrades-123-1'), ('agy,node', 'automation/upgrades-999-1'),
+                                ('agy,node', 'automation/upgrades-123-1;bad')]:
+            with self.subTest(bundles=bundles, branch=branch):
+                result, calls = self.run_dispatch(evidence(bundles.split(','), branch), bundles=bundles, branch=branch)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertFalse(calls)
+
+    def test_bundle_list_must_be_known_unique_and_nonempty(self):
+        branch = 'automation/upgrades-123-1'
+        for bundles in ('', 'agy,agy', 'agy,unknown', 'agy,', ',agy', 'agy node'):
+            with self.subTest(bundles=bundles):
+                result, calls = self.run_dispatch(evidence(('agy', 'node'), branch), bundles=bundles, branch=branch)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertFalse(calls)
+
+    def test_file_outside_the_union_of_selected_bundles_is_refused(self):
+        branch = 'automation/upgrades-123-1'
+        for extra in ('docs/claude.md', 'bundles/claude/packages.lock.json', '.github/workflows/ci.yml'):
+            with self.subTest(extra=extra):
+                data = evidence(('agy', 'node'), branch)
+                item = {'filename': extra, 'status': 'modified'}
+                for key in ('/pulls/42/files?per_page=100&page=1',):
+                    data[key] = data[key][:3] + [item]
+                data['/compare/' + BASE + '...' + HEAD]['files'] = data['/pulls/42/files?per_page=100&page=1']
+                result, calls = self.run_dispatch(data, bundles='agy,node', branch=branch)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertFalse(any('--method' in call['args'] for call in calls))
+
+    def test_combined_proposal_must_stay_one_commit(self):
+        branch = 'automation/upgrades-123-1'
+        data = evidence(('agy', 'node'), branch)
+        data['/pulls/42']['commits'] = 2
+        result, calls = self.run_dispatch(data, bundles='agy,node', branch=branch)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertFalse(any('--method' in call['args'] for call in calls))
+        data = evidence(('agy', 'node'), branch)
+        data['/compare/' + BASE + '...' + HEAD]['ahead_by'] = 2
+        result, calls = self.run_dispatch(data, bundles='agy,node', branch=branch)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertFalse(any('--method' in call['args'] for call in calls))
+
+    def test_combined_proposal_skips_duplicate_dispatch(self):
+        branch = 'automation/upgrades-123-1'
+        data = evidence(('agy', 'node'), branch)
+        data['/actions/workflows/ci.yml/runs?branch=' + branch + '&event=workflow_dispatch&per_page=100&page=1'] = {
+            'total_count': 1, 'workflow_runs': [{'id': 9, 'workflow_id': 7, 'path': '.github/workflows/ci.yml',
+            'head_sha': HEAD, 'head_branch': branch, 'event': 'workflow_dispatch', 'status': 'queued', 'conclusion': None,
+            'repository': {'full_name': REPO}, 'head_repository': {'full_name': REPO}}]}
+        result, calls = self.run_dispatch(data, bundles='agy,node', branch=branch)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertFalse(any('--method' in call['args'] for call in calls))
 
     def test_dispatch_failure_is_not_success(self):
         result, _ = self.run_dispatch(env_changes={'FAIL_DISPATCH': '1'})
