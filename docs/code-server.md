@@ -122,7 +122,7 @@ bdock tools upgrade --directory bundles/code-server
 
 The **Propose upgrades** workflow with `bundle=code-server` runs daily at 06:50 UTC and offers
 manual dry runs by default. It proposes only this lock and its generated source
-inventory. Each bundle retains a separate proposal PR. The upgrade workflow never
+inventory. Bundles that change in the same run share one proposal PR (see [publication](publication.md)). The upgrade workflow never
 builds or publishes images. Future stable archives must pass
 the same structural profile; changed archive layouts fail closed until reviewed.
 

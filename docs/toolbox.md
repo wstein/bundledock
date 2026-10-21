@@ -273,8 +273,9 @@ establish a complete transitive license audit.
 
 The **Propose upgrades** workflow with `bundle=toolbox` (`.github/workflows/propose-upgrades.yml`)
 runs daily at **06:50 UTC** from the repository default branch. Scheduled runs
-resolve all desired stable tools within `packages.txt` constraints and open a
-reviewable PR only when the lock or its generated inventory changes. GitHub
+resolve all desired stable tools within `packages.txt` constraints and open one
+reviewable PR, shared with the other bundles that changed in the same run, only
+when the lock or its generated inventory changes. GitHub
 may delay scheduled runs; the cron time is not a delivery guarantee. The
 schedule starts after a human merges this workflow onto the default branch.
 
@@ -295,8 +296,9 @@ a change even when the lock versions are already current.
 For manual runs, set `dry_run=false` when you want a reviewable lock and
 inventory PR; scheduled runs already propose actual changes. A separate job
 requests `contents: write` and `pull-requests: write`, transfers only the
-resolved lock and generated inventory from that same run attempt, and creates its own
-`automation/toolbox-upgrade-<run-id>-<attempt>` branch. It never force-pushes,
+resolved locks and generated inventories from that same run attempt, and creates its own
+`automation/toolbox-upgrade-<run-id>-<attempt>` branch (or, when several bundles
+changed, one `automation/upgrades-<run-id>-<attempt>` branch and one PR for all). It never force-pushes,
 reuses another branch, merges a PR, publishes tools, or activates a consumer
 image. Rerunning a changed attempt creates a separate topic; review
 existing topics before rerunning. An unsuccessful PR creation may leave its
