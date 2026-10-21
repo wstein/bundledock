@@ -54,10 +54,11 @@ jobs:
           path: ${{ runner.temp }}/bundle-upgrade/
           if-no-files-found: error
           retention-days: 1
-      # The combined proposal still includes the other bundles; it names this one as failed.
+      # Any failed step of this job (checkout, setup, resolve, upload) marks the bundle failed;
+      # the combined proposal still includes the other bundles and names this one.
       - name: Record the failed resolution for the combined proposal
         id: failed
-        if: ${{ failure() && steps.resolve.outcome == 'failure' && (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && !inputs.dry_run)) }}
+        if: ${{ failure() && (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && !inputs.dry_run)) }}
         env:
           BUNDLE: ${{ inputs.bundle }}
         run: mkdir -p "$RUNNER_TEMP/bundle-failed" && printf '%s\n' "$BUNDLE" > "$RUNNER_TEMP/bundle-failed/$BUNDLE"
