@@ -55,6 +55,7 @@ LABELS = (
     ("trufflehog", "TruffleHog (`trufflehog`)"),
     ("syft", "Syft (`syft`)"),
     ("scc", "SCC (`scc`, wstein fork)"),
+    ("smill", "SheetMill (`smill`)"),
     ("fastfetch", "Fastfetch (`fastfetch`)"),
     ("bottom", "bottom (`btm`)"),
     ("btop", "btop (`btop`)"),

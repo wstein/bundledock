@@ -1,0 +1,10 @@
+Upstream: https://github.com/wstein/sheetmill
+License: EUPL-1.2 (full LICENSE and README.md retained from each official release archive; LICENSE SHA256 49f83599832256fdceb27c2f5e63ce8bc4ffc599e98038bbb23bda41f1cfb68c)
+Initial reviewed release: v0.1.1 (stable, not a draft or pre-release), published 2026-10-21T14:25:19Z
+Source for corresponding release: https://github.com/wstein/sheetmill/releases/tag/v0.1.1
+Tag v0.1.1 resolves to commit 1e23aa97cfbef116414b90dbab452a3e4561c820 (annotated tag object a425b747e3dd4628de79332280fb6668bf232830).
+Source archive: https://github.com/wstein/sheetmill/archive/refs/tags/v0.1.1.tar.gz
+Linux AMD64/ARM64: official stable prebuilt archives smill_0.1.1_linux_{amd64,arm64}.tar.gz, unchanged executable. The release also ships a darwin/arm64 archive, which BundleDock does not use. Release binaries are unsigned and not notarized.
+Archive SHA256 values match the publisher SHA256SUMS and the release API digests (checked 2026-10-21). The archives nest their files below smill_<version>_linux_<arch>/.
+smill has no --version flag; the smoke test runs `smill version`, which prints "smill v0.1.1". The linux/amd64 binary was executed once in an isolated empty home on 2026-10-21 for that check; native consumer smoke remains part of an approved build.
+EUPL-1.2 is a copyleft licence. BundleDock gives any recipient of the toolbox the corresponding source of smill on request, by pointing to the tagged release above. This is not legal advice.

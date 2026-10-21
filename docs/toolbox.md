@@ -76,6 +76,7 @@ The source inventory below describes the current lock; this publication retains 
 | ripgrep (`rg`) | 15.2.0 | [Homepage](https://github.com/BurntSushi/ripgrep) | [Source](https://github.com/BurntSushi/ripgrep) |
 | Ruff (`ruff`) | 0.17.1 | [Homepage](https://docs.astral.sh/ruff) | [Source](https://github.com/astral-sh/ruff) |
 | SCC (`scc`, wstein fork) | 4.1.1 | [Homepage](https://github.com/wstein/scc-fork) | [Source](https://github.com/wstein/scc-fork) |
+| SheetMill (`smill`) | 0.1.1 | [Homepage](https://github.com/wstein/sheetmill) | [Source](https://github.com/wstein/sheetmill) |
 | ShellCheck (`shellcheck`) | 0.11.0 | [Homepage](https://www.shellcheck.net) | [Source](https://github.com/koalaman/shellcheck) |
 | shfmt (`shfmt`) | 3.14.1 | [Homepage](https://pkg.go.dev/mvdan.cc/sh/v3) | [Source](https://github.com/mvdan/sh) |
 | SOPS (`sops`) | 3.13.3 | [Homepage](https://github.com/getsops/sops) | [Source](https://github.com/getsops/sops) |
@@ -97,7 +98,7 @@ The source inventory below describes the current lock; this publication retains 
 
 The default bundle lives in `bundles/toolbox/`: `packages.txt`,
 `packages.catalog.json`, `packages.lock.json`, its Dockerfile, smoke scripts and licenses.
-Shared Go code remains at the repository root. The source toolbox contains 57
+Shared Go code remains at the repository root. The source toolbox contains 58
 downloaded tools plus the two first-use Python launchers listed above. Codex, Antigravity and Claude are supplied by their separate
 [Codex](codex.md), [Antigravity](agy.md) and [Claude Code](claude.md) bundles.
 The published toolbox recorded above still includes those agents; this source
@@ -335,6 +336,29 @@ notices are retained from that historical source snapshot.
 
 The isolated consumer smoke uses only `scc --version`. Source tests use a stub;
 no downloaded SCC binary has been executed for this addition. Native consumer
+smoke, image build/publication and consumer activation remain pending separate
+owner authorization. The published image above retains its recorded source.
+
+### SheetMill release
+
+The source lock includes [wstein/sheetmill v0.1.1](https://github.com/wstein/sheetmill/releases/tag/v0.1.1)
+(`smill>=0.1.1`), the `smill` command-line tool from the separately pinned
+SheetMill repository. It is placed in the toolbox rather than in a bundle of its
+own: it is a small, self-contained Go binary like the other prebuilt utilities,
+has no runtime, no state volume and no release cadence that must be decoupled
+from the toolbox. A future updater run resolves new stable SheetMill releases
+through the normal toolbox path (tag prefix `v`, asset
+`smill_{version}_linux_{arch}.tar.gz`, publisher `SHA256SUMS`).
+Linux AMD64 and ARM64 archives were checked against `SHA256SUMS` and the release
+API digests on 2026-10-21; the darwin/arm64 archive is not used. The release
+binaries are unsigned and not notarized. The catalog installs only `bin/smill`;
+the full EUPL-1.2 `LICENSE` and `README.md` are retained from each release
+archive under `licenses/smill/`, next to a `SOURCE` record that names the
+corresponding source tag and the source-on-request offer EUPL-1.2 calls for.
+
+`smill` has no `--version` flag. The isolated consumer smoke runs only
+`smill version` (expected `smill vX.Y.Z`) with an empty home. The linux/amd64
+v0.1.1 binary was executed once that way for this addition. Native consumer
 smoke, image build/publication and consumer activation remain pending separate
 owner authorization. The published image above retains its recorded source.
 

@@ -1,7 +1,7 @@
 {
   "schema": 2,
-  "desired_digest": "5d460180f665b3c7d6febedfd65b54f3d5e523faefbf66c3165d18bb781729bd",
-  "catalog_digest": "7107ae1619b1616fa7a484a0f638a83a36818eca0b07b7dbef08cf0b02181339",
+  "desired_digest": "ef0a863c3e236cf442bf1b2209e1d038976d5df7cfb0f9d2a5b4140351efd3a9",
+  "catalog_digest": "120e8d423bf3b3d053f47311cd631184a1a8a0dbc7b728c15505f5291b3bde6a",
   "platforms": {
     "amd64": {
       "actionlint": {
@@ -260,6 +260,12 @@
         "version": "v3.14.1",
         "url": "https://github.com/mvdan/sh/releases/download/v3.14.1/shfmt_v3.14.1_linux_amd64",
         "sha256": "76e77641faa025814b77f153b29796b8e6fa2fca03e0c76a691608b86c7ea7bf",
+        "verification": "publisher-sha256"
+      },
+      "smill": {
+        "version": "v0.1.1",
+        "url": "https://github.com/wstein/sheetmill/releases/download/v0.1.1/smill_0.1.1_linux_amd64.tar.gz",
+        "sha256": "c50180f8220d683edf2bbbbf25cb15d81b0bc7733f5ee9e44d2d1f69805475dc",
         "verification": "publisher-sha256"
       },
       "sops": {
@@ -604,6 +610,12 @@
         "version": "v3.14.1",
         "url": "https://github.com/mvdan/sh/releases/download/v3.14.1/shfmt_v3.14.1_linux_arm64",
         "sha256": "5f2db09dae91fca848f7adbdd014632e921a383863a2ad7e0450ad3aba0c6489",
+        "verification": "publisher-sha256"
+      },
+      "smill": {
+        "version": "v0.1.1",
+        "url": "https://github.com/wstein/sheetmill/releases/download/v0.1.1/smill_0.1.1_linux_arm64.tar.gz",
+        "sha256": "fd2fb9b35f405e43c56e1e8cb413e9c1efb519e42c168aefc1d1eae03ee9268d",
         "verification": "publisher-sha256"
       },
       "sops": {
