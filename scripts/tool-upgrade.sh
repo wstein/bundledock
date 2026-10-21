@@ -4,11 +4,19 @@ set -euo pipefail
 : "${UPGRADE_RESULT:?set UPGRADE_RESULT to a temporary directory}"
 : "${GITHUB_OUTPUT:?set GITHUB_OUTPUT}"
 : "${GITHUB_STEP_SUMMARY:?set GITHUB_STEP_SUMMARY}"
-case "${BUNDLE:-toolbox}" in
-  toolbox) bundles=(toolbox) ;;
-  code-server|node|node-current|bun|codex|agy|claude|opentofu) bundles=("$BUNDLE") ;;
-  *) echo 'BUNDLE must be toolbox, code-server, node, node-current, bun, codex, agy, claude or opentofu.' >&2; exit 1 ;;
-esac
+all_bundles=(toolbox code-server node node-current bun codex agy claude opentofu)
+is_bundle() { local name; for name in "${all_bundles[@]}"; do [[ $1 != "$name" ]] || return 0; done; return 1; }
+# resolve handles the one BUNDLE of its matrix job. publish combines every
+# bundle whose resolved lock is in the result directory (canonical order).
+bundles=()
+if [[ ${1:-} == publish ]]; then
+  for bundle in "${all_bundles[@]}"; do
+    if [[ -e ${UPGRADE_RESULT:-}/$bundle.lock.json || -L ${UPGRADE_RESULT:-}/$bundle.lock.json ]]; then bundles+=("$bundle"); fi
+  done
+else
+  is_bundle "${BUNDLE:-toolbox}" || { echo 'BUNDLE must be toolbox, code-server, node, node-current, bun, codex, agy, claude or opentofu.' >&2; exit 1; }
+  bundles=("${BUNDLE:-toolbox}")
+fi
 locks=() inventories=() artifacts=()
 for bundle in "${bundles[@]}"; do
   locks+=("bundles/$bundle/packages.lock.json")
@@ -22,7 +30,9 @@ for bundle in "${bundles[@]}"; do
 done
 paths=("${locks[@]}" "${inventories[@]}")
 proposal_name=tool
-if [[ ${bundles[0]} == toolbox ]]; then proposal_name=toolbox; fi
+if [[ ${bundles[0]:-} == toolbox ]]; then proposal_name=toolbox; fi
+needs_base=false
+for bundle in "${bundles[@]}"; do [[ $bundle == toolbox ]] || needs_base=true; done
 
 require_clean() {
   if [[ -n $(git status --porcelain --untracked-files=all) ]]; then
@@ -57,6 +67,7 @@ if sys.argv[2]=='resolve':
 else:
     expected=set(sys.argv[3:])
     if any(name.endswith(".lock.json") and name != "toolbox.lock.json" for name in expected): expected.add("base.sha")
+    if not root.exists() and not expected: raise SystemExit(0)
     if not root.is_dir(): raise SystemExit('Missing artifact directory')
     actual={p.name for p in root.iterdir()}
     if not expected<=actual or actual-expected-{'lock.diff'}: raise SystemExit('Unexpected or missing artifact files')
@@ -117,7 +128,24 @@ case "${1:-}" in
     : "${GITHUB_RUN_ATTEMPT:?set GITHUB_RUN_ATTEMPT}"
     [[ $GITHUB_RUN_ID =~ ^[0-9]+$ && $GITHUB_RUN_ATTEMPT =~ ^[0-9]+$ ]] || exit 1
     check_result publish
-    if [[ ${bundles[0]} != toolbox ]]; then
+    # Bundles whose resolution failed leave one marker file named after them.
+    # They are not part of the proposal; report them and keep the rest.
+    failed=()
+    if [[ -n ${FAILED_BUNDLES:-} && -d $FAILED_BUNDLES ]]; then
+      for marker in "$FAILED_BUNDLES"/*; do
+        [[ -e $marker ]] || continue
+        is_bundle "$(basename "$marker")" || { echo 'Refusing unknown failed-bundle marker.' >&2; exit 1; }
+      done
+      for bundle in "${all_bundles[@]}"; do [[ ! -e $FAILED_BUNDLES/$bundle ]] || failed+=("$bundle"); done
+    fi
+    failed_list=$(IFS=,; echo "${failed[*]}")
+    if [[ ${#failed[@]} -gt 0 ]]; then
+      echo "Resolution failed for: ${failed_list//,/, }. The other bundles are still proposed; a later run retries these." >> "$GITHUB_STEP_SUMMARY"
+    fi
+    if [[ ${#bundles[@]} -eq 0 ]]; then
+      echo 'No lock or inventory changes; no branch or pull request will be created.' >> "$GITHUB_STEP_SUMMARY"; exit 0
+    fi
+    if [[ $needs_base == true ]]; then
       base=$(cat "$UPGRADE_RESULT/base.sha")
       if [[ ! $base =~ ^[0-9a-f]{40}$ || $base != "$(git rev-parse HEAD)" ]]; then
         echo 'Refusing stale proposal: artifact base differs from checkout.' >&2; exit 1
@@ -135,11 +163,15 @@ case "${1:-}" in
     done
     require_changes_only "${paths[@]}"
     if git diff --quiet -- "${paths[@]}"; then
-      echo "No $proposal_name lock or inventory changes; no branch or pull request will be created." >> "$GITHUB_STEP_SUMMARY"; exit 0
+      echo 'No lock or inventory changes; no branch or pull request will be created.' >> "$GITHUB_STEP_SUMMARY"; exit 0
     fi
     proposal_base=$(git rev-parse HEAD)
-    branch="automation/toolbox-upgrade-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
-    if [[ ${bundles[0]} != toolbox ]]; then branch="automation/${bundles[0]}-upgrade-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"; fi
+    # One bundle keeps its own topic name (publication recognises it); several share one.
+    branch="automation/upgrades-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+    if [[ ${#bundles[@]} -eq 1 ]]; then
+      branch="automation/${bundles[0]}-upgrade-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+      if [[ ${bundles[0]} == toolbox ]]; then branch="automation/toolbox-upgrade-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"; fi
+    fi
     git switch -c "$branch"
     git config user.name 'github-actions[bot]'
     git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
@@ -147,57 +179,69 @@ case "${1:-}" in
     body="$UPGRADE_RESULT/pr-body.md"
     commit_msg_file=$(mktemp)
     trap 'rm -f "$commit_msg_file"' EXIT
-    title=$(python3 - "${bundles[0]}" "$proposal_base" "$body" "$commit_msg_file" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" <<'PYTHON'
+    bundle_list=$(IFS=,; echo "${bundles[*]}")
+    title=$(python3 - "$bundle_list" "$proposal_base" "$body" "$commit_msg_file" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$failed_list" <<'PYTHON'
 import json, subprocess, sys
 from pathlib import Path
 
-bundle, base, pr_body_path, commit_msg_path, repo, run_id, attempt = sys.argv[1:]
-lock_path = Path('bundles') / bundle / 'packages.lock.json'
-catalog_path = Path('bundles') / bundle / 'packages.catalog.json'
-old_lock = json.loads(subprocess.check_output(['git', 'show', f'{base}:{lock_path}'], text=True))
-new_lock = json.loads(lock_path.read_text())
-catalog = json.loads(catalog_path.read_text())['packages']
+bundle_list, base, pr_body_path, commit_msg_path, repo, run_id, attempt, failed_list = sys.argv[1:]
+bundles = bundle_list.split(',')
 
-changes = []
-for tool in sorted(new_lock['platforms']['amd64']):
-    old_raw = old_lock['platforms']['amd64'][tool]['version']
-    new_raw = new_lock['platforms']['amd64'][tool]['version']
-    if old_raw == new_raw:
-        continue
-    pkg = catalog.get(tool, {})
-    prefix = pkg.get('tag_prefix', '')
-    old_ver = old_raw.removeprefix(prefix)
-    new_ver = new_raw.removeprefix(prefix)
-    provider = pkg.get('provider', '')
-    upstream = pkg.get('repository', '')
-    if provider == 'github' and upstream:
-        source = f'[{upstream}@{new_raw}](https://github.com/{upstream}/releases/tag/{new_raw})'
-    elif upstream:
-        source = f'[{upstream}](https://github.com/{upstream})'
-    elif provider == 'node':
-        source = f'[nodejs.org@{new_raw}](https://nodejs.org/dist/{new_raw}/)'
-    else:
-        source = f'`{new_raw}`'
-    changes.append((tool, old_ver, new_ver, source))
 
-if not changes:
-    title = f'chore({bundle}): sync generated tool inventory'
-    commit_msg = title + '\n'
-    table = f'Sync generated `docs/{bundle}.md` inventory with `{lock_path}`.'
-else:
+def describe(bundle):
+    """Return (title, commit message, table, bullets) for one bundle."""
+    lock_path = Path('bundles') / bundle / 'packages.lock.json'
+    catalog_path = Path('bundles') / bundle / 'packages.catalog.json'
+    old_lock = json.loads(subprocess.check_output(['git', 'show', f'{base}:{lock_path}'], text=True))
+    new_lock = json.loads(lock_path.read_text())
+    catalog = json.loads(catalog_path.read_text())['packages']
+
+    changes = []
+    for tool in sorted(new_lock['platforms']['amd64']):
+        old_raw = old_lock['platforms']['amd64'][tool]['version']
+        new_raw = new_lock['platforms']['amd64'][tool]['version']
+        if old_raw == new_raw:
+            continue
+        pkg = catalog.get(tool, {})
+        prefix = pkg.get('tag_prefix', '')
+        old_ver = old_raw.removeprefix(prefix)
+        new_ver = new_raw.removeprefix(prefix)
+        provider = pkg.get('provider', '')
+        upstream = pkg.get('repository', '')
+        if provider == 'github' and upstream:
+            source = f'[{upstream}@{new_raw}](https://github.com/{upstream}/releases/tag/{new_raw})'
+        elif upstream:
+            source = f'[{upstream}](https://github.com/{upstream})'
+        elif provider == 'node':
+            source = f'[nodejs.org@{new_raw}](https://nodejs.org/dist/{new_raw}/)'
+        else:
+            source = f'`{new_raw}`'
+        changes.append((tool, old_ver, new_ver, source))
+
+    if not changes:
+        title = f'chore({bundle}): sync generated tool inventory'
+        return title, title + '\n', f'Sync generated `docs/{bundle}.md` inventory with `{lock_path}`.', ['- sync generated inventory']
     if len(changes) <= 3:
         title = f'chore({bundle}): upgrade ' + ', '.join(f'{t} {o} -> {n}' for t, o, n, _ in changes)
     else:
         title = f'chore({bundle}): upgrade {len(changes)} tools (' + ', '.join(t for t, _, _, _ in changes) + ')'
-    if len(changes) == 1:
-        commit_msg = title + '\n'
-    else:
-        bullets = '\n'.join(f'- {t}: {o} -> {n}' for t, o, n, _ in changes)
-        commit_msg = f'{title}\n\n{bullets}\n'
+    bullets = [f'- {t}: {o} -> {n}' for t, o, n, _ in changes]
+    commit_msg = title + '\n' if len(changes) == 1 else title + '\n\n' + '\n'.join(bullets) + '\n'
     rows = ['| Tool | Previous | New | Source |', '| --- | --- | --- | --- |']
     rows.extend(f'| `{t}` | `{o}` | `{n}` | {src} |' for t, o, n, src in changes)
-    table = '\n'.join(rows)
+    return title, commit_msg, '\n'.join(rows), bullets
 
+
+parts = [describe(bundle) for bundle in bundles]
+if len(bundles) == 1:
+    title, commit_msg, table, _ = parts[0]
+else:
+    title = 'chore(upgrades): upgrade ' + ', '.join(bundles)
+    sections = [f'{name}:\n' + '\n'.join(part[3]) for name, part in zip(bundles, parts)]
+    commit_msg = title + '\n\n' + '\n\n'.join(sections) + '\n'
+    table = '\n\n'.join(f'### {name}\n\n{part[2]}' for name, part in zip(bundles, parts))
+if failed_list:
+    table += f'\n\nResolution failed for: {failed_list.replace(",", ", ")}. These bundles are not part of this pull request; a later run retries them.'
 Path(commit_msg_path).write_text(commit_msg)
 Path(pr_body_path).write_text(f'{table}\n\nRun: https://github.com/{repo}/actions/runs/{run_id} (attempt {attempt})\n')
 print(title)
@@ -212,7 +256,7 @@ PYTHON
       echo 'PR creation failed. An administrator must explicitly permit GITHUB_TOKEN contents:write and pull-requests:write, and enable Settings > Actions > General > Workflow permissions > Allow GitHub Actions to create and approve pull requests (subject to organization policy). This workflow never changes those settings or uses a PAT. The topic branch may already exist; inspect it before retrying.' >&2; exit 1
     fi
     printf '%s\n' "$url" >> "$GITHUB_STEP_SUMMARY"
-    python3 scripts/updater-source-ci.py --bundles "$(IFS=,; echo "${bundles[*]}")" --branch "$branch" \
+    python3 scripts/updater-source-ci.py --bundles "$bundle_list" --branch "$branch" \
       --base "$proposal_base" --head "$(git rev-parse HEAD)" --pr-url "$url" \
       >> "$GITHUB_STEP_SUMMARY"
     ;;
