@@ -348,8 +348,9 @@ the `bundledock-publication-docs` concurrency group). Each run rebuilds that
 topic as a single commit on current `main` from the pending entries plus its
 own, updates the PR title and table, and dispatches source CI for the new head.
 It refuses a topic that has a merge commit or touches anything but publication
-Markdown and metadata, and replaces the topic only if it is still the head it
-read. If the topic exists without an open PR, delete it and rerun. For the
+Markdown and metadata. It re-reads the topic head just before the forced
+update, but that check is not atomic; the concurrency group is what keeps runs
+from overlapping. If the topic exists without an open PR, delete it and rerun.
 The bundle guide's managed publication section records the immutable version,
 index digest, exact source SHA, workflow run and digest-pinned pull example.
 The generated tool table remains the current source inventory, separate from

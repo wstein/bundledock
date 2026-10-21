@@ -352,7 +352,8 @@ def propose(root, bundle, record, evidence=None):
             except subprocess.CalledProcessError as error:
                 raise ValueError('Pending topic appeared concurrently') from error
         else:
-            # Lease: replace the topic only if it is still the head just read.
+            # Best-effort lease (read, then update; not atomic): the workflow
+            # concurrency group is what serialises writers.
             require(api('git/ref/heads/' + branch)['object']['sha'] == head, 'Topic moved before update')
             api('git/refs/heads/' + branch, {'sha': new, 'force': True}, 'PATCH')
     require(api('git/ref/heads/' + branch)['object']['sha'] == new, 'Topic moved before PR update')
