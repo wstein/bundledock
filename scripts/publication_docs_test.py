@@ -124,72 +124,166 @@ class PublicationDocsTest(unittest.TestCase):
             with self.assertRaises(ValueError):
                 self.module.replacement_quickstart(bad, record)
 
-    def test_atomic_proposal_races_idempotency_and_prose(self):
-        record=self.validate()
-        for mode in ['new','moved','identical','conflict','wrong-pr','topic-moved','current']:
-            with self.subTest(mode=mode), tempfile.TemporaryDirectory() as directory:
-                root=Path(directory); base='1'*40; head='2'*40; tree='3'*40
-                branch='publication-docs/toolbox/'+record['tag']
-                source='\n\nbefore  \n'+self.module.BEGIN+'\n'+self.module.END+'\nafter  \n\n'
-                desired=self.module.replacement(source,record)
-                readme_source='\n\nheader  \n'+self.module.QUICKSTART_BEGIN+'\n'+self.module.QUICKSTART_END+'\nfooter  \n\n'
-                desired_readme=self.module.replacement_quickstart(readme_source,record)
-                calls=[]; api_calls=[]
-                def fake(*args):
-                    calls.append(args)
-                    if args[:3]==('git','status','--porcelain'): return ''
-                    if args[:2]==('gh','api'): return 'main'
-                    if args[:4]==('git','remote','get-url','origin'): return self.module.SOURCE+'.git'
-                    if args[:2]==('git','fetch'): return ''
-                    if args[:2]==('git','ls-tree'): return 'docs/toolbox-published.json' if mode == 'current' else ''
-                    if args[:3]==('git','rev-parse','origin/main'): return base
-                    if args[:2]==('git','ls-remote'): return ('4'*40 if mode=='moved' else base)+'\trefs/heads/main'
-                    if args[:3]==('gh','pr','list'):
-                        if mode=='new': return '[]'
-                        return json.dumps([dict(number=1,headRefName=branch,headRefOid=head,baseRefName='other' if mode=='wrong-pr' else 'main',isCrossRepository=False)])
-                    if args[:3] in [('gh','pr','create'),('gh','workflow','run')]: return 'ok'
-                    raise AssertionError(args)
-                def fake_api(path,payload=None):
-                    api_calls.append((path,payload))
-                    if path=='git/commits/'+base: return {'tree':{'sha':'5'*40}}
-                    if path=='git/trees':
-                        self.assertEqual(payload['tree'],[dict(path='docs/toolbox.md',mode='100644',type='blob',content=desired),
-                            dict(path='README.md',mode='100644',type='blob',content=desired_readme),
-                            dict(path='docs/toolbox-published.json',mode='100644',type='blob',content=self.module.metadata('toolbox',record))])
-                        self.assertTrue(payload['tree'][0]['content'].startswith('\n\nbefore  \n'))
-                        self.assertTrue(payload['tree'][0]['content'].endswith('\nafter  \n\n'))
-                        self.assertTrue(payload['tree'][1]['content'].startswith('\n\nheader  \n'))
-                        self.assertTrue(payload['tree'][1]['content'].endswith('\nfooter  \n\n'))
-                        return {'sha':tree}
-                    if path=='git/commits':
-                        self.assertEqual(payload['parents'],[base]); self.assertIn('\n\n',payload['message'])
-                        return {'sha':head}
-                    if path=='git/refs':
-                        self.assertEqual(payload,{'ref':'refs/heads/'+branch,'sha':head})
-                        if mode in ['identical','conflict','wrong-pr']:
-                            raise subprocess.CalledProcessError(1,['gh'],stderr='HTTP 422')
-                        return {'object':{'sha':head}}
-                    if path=='git/ref/heads/'+branch: return {'object':{'sha':'6'*40 if mode=='topic-moved' else head}}
-                    if path=='git/commits/'+head: return {'tree':{'sha':'7'*40 if mode=='conflict' else tree},'parents':[{'sha':base}]}
-                    raise AssertionError(path)
-                def fake_source_at(base, path):
-                    if path.endswith('.json'): return self.module.metadata('toolbox',record)
-                    if path == 'README.md': return desired_readme if mode == 'current' else readme_source
-                    return desired if mode == 'current' else source
-                old=Path.cwd()
-                try:
-                    with patch.object(self.module,'command',side_effect=fake), patch.object(self.module,'api',side_effect=fake_api), patch.object(self.module,'source_at',side_effect=fake_source_at):
-                        if mode in ['moved','conflict','wrong-pr','topic-moved']:
-                            with self.assertRaises(ValueError): self.module.propose(root,'toolbox',record)
-                        else: self.module.propose(root,'toolbox',record)
-                finally: self.module.os.chdir(old)
-                self.assertFalse(any(call[:2]==('git','push') for call in calls))
-                if mode=='current': self.assertEqual(api_calls,[])
-                if mode in ['moved','conflict','wrong-pr','topic-moved']:
-                    self.assertFalse(any(call[:3]==('gh','workflow','run') for call in calls))
-                else:
-                    if mode!='current': self.assertTrue(any('expected_head_sha='+head in call for call in calls))
-                if mode=='identical': self.assertFalse(any(call[:3]==('gh','pr','create') for call in calls))
+    def forge(self, **options):
+        """A credential-free fake of git, gh and the Git data API for the rolling topic."""
+        module = self.module
+        base, head, new_head, tree = '1'*40, '2'*40, '8'*40, '3'*40
+        record = self.validate()
+        other = dict(record, tag='2026.10.13-b1.1', run_id='124', commit='9'*40, digest='sha256:'+'f'*64,
+                     reference='quay.io/bundledock/toolbox@sha256:'+'f'*64, image='quay.io/bundledock/toolbox')
+        claude = dict(other, image='quay.io/bundledock/claude', tag='2.1.3-b1', attempt='1', run_attempt='1', bundle='claude',
+                      reference='quay.io/bundledock/claude@sha256:'+'f'*64)
+        begin = lambda name: '\npre-' + name + '\n' + module.BEGIN + '\n' + module.END + '\npost\n'
+        sources = {(base, path): begin(name) for name, path in module.BUNDLES.items()}
+        sources[(base, 'README.md')] = '\nhead\n' + module.QUICKSTART_BEGIN + '\n' + module.QUICKSTART_END + '\nfoot\n'
+        pending = options.get('pending')
+        if pending:
+            for name, rec in pending.items():
+                sources[(head, module.BUNDLES[name])] = module.replacement(sources[(base, module.BUNDLES[name])], rec)
+                sources[(head, module.metadata_path(name))] = module.metadata(name, rec)
+        state = dict(calls=[], api=[], branch_sha=head if pending else None)
+        def source_at(revision, path):
+            if (revision, path) in sources: return sources[(revision, path)]
+            if revision == head and (base, path) in sources: return sources[(base, path)]
+            raise subprocess.CalledProcessError(128, ['git'])
+        def command(*args):
+            state['calls'].append(args)
+            if args[:3] == ('git', 'status', '--porcelain'): return ''
+            if args[:2] == ('gh', 'api'): return 'main'
+            if args[:4] == ('git', 'remote', 'get-url', 'origin'): return module.SOURCE + '.git'
+            if args[:2] == ('git', 'fetch'): return ''
+            if args[:3] == ('git', 'rev-parse', 'origin/main'): return base
+            if args[:3] == ('git', 'rev-parse', 'FETCH_HEAD'): return head
+            if args[:2] == ('git', 'rev-parse') and args[2].endswith('^'): return base if options.get('parent', base) == base else '5'*40
+            if args[:2] == ('git', 'rev-list'): return head + ' ' + base + (' ' + '4'*40 if options.get('merge') else '')
+            if args[:2] == ('git', 'diff-tree'): return '\n'.join(options.get('touched', ['docs/toolbox.md']))
+            if args[:2] == ('git', 'ls-tree'): return ''
+            if args[:2] == ('git', 'ls-remote'): return ('4'*40 if options.get('moved') else base) + '\trefs/heads/main'
+            if args[:3] == ('gh', 'pr', 'list'):
+                if not pending: return '[]'
+                return json.dumps([dict(number=7, headRefName=options.get('ref', module.PENDING), headRefOid=head,
+                                        baseRefName='other' if options.get('wrong_pr') else 'main', isCrossRepository=False)])
+            if args[:3] in (('gh', 'pr', 'create'), ('gh', 'pr', 'edit'), ('gh', 'workflow', 'run')): return 'ok'
+            raise AssertionError(args)
+        def api(path, payload=None, method='POST'):
+            state['api'].append((path, payload, method))
+            if path == 'git/commits/' + base: return {'tree': {'sha': '5'*40}}
+            if path == 'git/commits/' + head: return {'tree': {'sha': options.get('head_tree', '6'*40)}}
+            if path == 'git/trees':
+                state['tree'] = payload['tree']
+                return {'sha': options.get('tree', tree)}
+            if path == 'git/commits':
+                self.assertEqual(payload['parents'], [base])
+                return {'sha': new_head}
+            if path == 'git/refs':
+                if options.get('race'): raise subprocess.CalledProcessError(1, ['gh'], stderr='HTTP 422')
+                state['branch_sha'] = new_head
+                return {}
+            if path == 'git/refs/heads/' + module.PENDING:
+                self.assertEqual((payload, method), ({'sha': new_head, 'force': True}, 'PATCH'))
+                state['branch_sha'] = new_head
+                return {}
+            if path == 'git/ref/heads/' + module.PENDING:
+                if state['branch_sha'] is None and not options.get('stale'):
+                    raise subprocess.CalledProcessError(1, ['gh'], stderr='HTTP 404')
+                state['reads'] = state.get('reads', 0) + 1
+                late = options.get('lease_late') and state['reads'] >= 2
+                return {'object': {'sha': '7'*40 if options.get('lease') or late else (state['branch_sha'] or head)}}
+            raise AssertionError(path)
+        return module, record, other, claude, state, source_at, command, api
+
+    def propose(self, bundle, record, **options):
+        module, base_record, other, claude, state, source_at, command, api = self.forge(**options)
+        records = {'toolbox': base_record, 'other': other, 'claude': claude}
+        record = records[record] if isinstance(record, str) else record
+        old = Path.cwd()
+        try:
+            with tempfile.TemporaryDirectory() as directory, patch.object(module, 'command', side_effect=command), patch.object(module, 'api', side_effect=api), patch.object(module, 'source_at', side_effect=source_at):
+                try: result = module.propose(Path(directory), bundle, record)
+                except ValueError as error: result = error
+        finally: module.os.chdir(old)
+        return result, state
+
+    def forge_pending(self, **options):
+        module, base_record, other, claude, *_ = self.forge()
+        return {'claude': claude}
+
+    def test_first_publication_opens_the_rolling_topic_and_dispatches_ci_once(self):
+        result, state = self.propose('toolbox', 'toolbox')
+        self.assertEqual(result, 'ok')
+        paths = [change['path'] for change in state['tree']]
+        self.assertEqual(paths, ['docs/toolbox.md', 'README.md', 'docs/toolbox-published.json'])
+        self.assertIn(('git/refs', {'ref': 'refs/heads/publication-docs/pending', 'sha': '8'*40}, 'POST'), state['api'])
+        creates = [call for call in state['calls'] if call[:3] == ('gh', 'pr', 'create')]
+        self.assertEqual(len(creates), 1)
+        self.assertEqual(creates[0][creates[0].index('--head') + 1], 'publication-docs/pending')
+        self.assertTrue(creates[0][creates[0].index('--title') + 1].startswith('docs(toolbox): record publication 2026.10.12-b5.1'))
+        runs = [call for call in state['calls'] if call[:3] == ('gh', 'workflow', 'run')]
+        self.assertEqual(len(runs), 1)
+        self.assertIn('expected_head_sha=' + '8'*40, runs[0])
+        self.assertFalse(any(call[:2] == ('git', 'push') for call in state['calls']))
+
+    def test_later_publication_rebuilds_one_commit_with_every_pending_bundle(self):
+        module, _, _, claude, *_ = self.forge()
+        result, state = self.propose('toolbox', 'toolbox', pending={'claude': claude})
+        self.assertEqual(result, 'Updated publication PR')
+        paths = sorted(change['path'] for change in state['tree'])
+        self.assertEqual(paths, ['README.md', 'docs/claude-published.json', 'docs/claude.md', 'docs/toolbox-published.json', 'docs/toolbox.md'])
+        self.assertIn(('git/refs/heads/publication-docs/pending', {'sha': '8'*40, 'force': True}, 'PATCH'), state['api'])
+        edits = [call for call in state['calls'] if call[:3] == ('gh', 'pr', 'edit')]
+        self.assertEqual(len(edits), 1)
+        title, body = edits[0][edits[0].index('--title') + 1], edits[0][edits[0].index('--body') + 1]
+        self.assertEqual(title, 'docs(publication): record toolbox 2026.10.12-b5.1, claude 2.1.3-b1')
+        self.assertIn('| `claude` | `2.1.3-b1` |', body); self.assertIn('| `toolbox` | `2026.10.12-b5.1` |', body)
+        self.assertFalse(any(call[:3] == ('gh', 'pr', 'create') for call in state['calls']))
+        runs = [call for call in state['calls'] if call[:3] == ('gh', 'workflow', 'run')]
+        self.assertEqual(len(runs), 1); self.assertIn('expected_head_sha=' + '8'*40, runs[0])
+
+    def test_same_publication_again_keeps_the_head_but_still_runs_ci(self):
+        module, _, _, claude, *_ = self.forge()
+        # The rebuilt tree equals the topic's tree and its parent is current main.
+        result, state = self.propose('claude', claude, pending={'claude': claude}, head_tree='3'*40)
+        self.assertEqual(result, 'Updated publication PR')
+        self.assertFalse(any(call[0] in ('git/commits',) or call[0].startswith('git/refs') for call in state['api']))
+        runs = [call for call in state['calls'] if call[:3] == ('gh', 'workflow', 'run')]
+        self.assertEqual(len(runs), 1); self.assertIn('expected_head_sha=' + '2'*40, runs[0])
+
+    def test_guards_refuse_without_any_write_or_dispatch(self):
+        module, _, _, claude, *_ = self.forge()
+        older = dict(claude, tag='2.1.2-b1')
+        cases = [('moved main', 'toolbox', 'toolbox', dict(moved=True)),
+                 ('wrong pr base', 'toolbox', 'toolbox', dict(pending={'claude': claude}, wrong_pr=True)),
+                 ('wrong pr branch', 'toolbox', 'toolbox', dict(pending={'claude': claude}, ref='publication-docs/other')),
+                 ('topic moved (lease)', 'toolbox', 'toolbox', dict(pending={'claude': claude}, lease=True)),
+                 ('topic moved late (lease)', 'toolbox', 'toolbox', dict(pending={'claude': claude}, lease_late=True)),
+                 ('merge commit on topic', 'toolbox', 'toolbox', dict(pending={'claude': claude}, merge=True)),
+                 ('topic touches other files', 'toolbox', 'toolbox', dict(pending={'claude': claude}, touched=['docs/toolbox.md', '.github/workflows/ci.yml'])),
+                 ('stale topic without PR', 'toolbox', 'toolbox', dict(stale=True)),
+                 ('creation race', 'toolbox', 'toolbox', dict(race=True)),
+                 ('older than pending', 'claude', older, dict(pending={'claude': claude}))]
+        for name, bundle, record, options in cases:
+            with self.subTest(name):
+                result, state = self.propose(bundle, record, **options)
+                self.assertIsInstance(result, ValueError)
+                self.assertFalse(any(call[:3] in (('gh', 'workflow', 'run'), ('gh', 'pr', 'create'), ('gh', 'pr', 'edit')) for call in state['calls']))
+                self.assertFalse(any(call[2] == 'PATCH' or (call[0] == 'git/refs' and name != 'creation race') for call in state['api']))
+
+    def test_proposal_paths_are_limited_to_publication_markdown_and_metadata(self):
+        allowed = self.module.allowed_paths()
+        self.assertIn('docs/toolbox.md', allowed); self.assertIn('README.md', allowed)
+        self.assertIn('docs/node-current-published.json', allowed)
+        for path in ('.github/workflows/ci.yml', 'bundles/toolbox/packages.lock.json', 'scripts/publication-docs.py'):
+            self.assertNotIn(path, allowed)
+        module, record, *_ = self.forge()
+        with patch.object(module, 'source_at', return_value='x'), patch.object(module, 'allowed_paths', return_value=set()), patch.object(module, 'replacement', return_value='y'), patch.object(module, 'replacement_quickstart', return_value='z'), patch.object(module, 'command', return_value=''):
+            with self.assertRaises(ValueError): module.build_changes('1'*40, {'toolbox': (record, None)})
+
+    def test_rolling_job_serialises_runs(self):
+        workflow = (Path(__file__).resolve().parents[1] / '.github/workflows/bundle-publish.yml').read_text()
+        docs = workflow.split('\n  documentation:\n')[1].split('\n  cleanup:\n')[0]
+        self.assertIn('group: bundledock-publication-docs', docs)
+        self.assertIn('cancel-in-progress: false', docs)
+        self.assertIn('queue: max', docs)
 
     def test_every_bundle_metadata_retains_canonical_evidence_without_enlarging_markdown(self):
         record = self.validate()
@@ -246,9 +340,12 @@ class PublicationDocsTest(unittest.TestCase):
                     if args[:2] == ('gh', 'api'): return 'main'
                     if args[:3] == ('git', 'remote', 'get-url'): return self.module.SOURCE
                     if args[:2] == ('git', 'rev-parse'): return base
+                    if args[:3] == ('gh', 'pr', 'list'): return '[]'
+                    if args[:2] == ('git', 'ls-remote'): return base + '\\trefs/heads/main'
                     return ''
                 def fake_api(path, payload=None):
                     if path == 'git/commits/'+base: return {'tree': {'sha': '2'*40}}
+                    if path.startswith('git/ref/heads/'): raise subprocess.CalledProcessError(1, ['gh'], stderr='HTTP 404')
                     self.assertEqual(path, 'git/trees')
                     changes = {item['path']: item['content'] for item in payload['tree']}
                     self.assertEqual(json.loads(changes.pop('docs/node-current-published.json'))['upstream_version'], '26.11.1')
