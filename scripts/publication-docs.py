@@ -189,13 +189,117 @@ def source_at(revision, path):
     return subprocess.check_output(['git', 'show', revision + ':' + path]).decode('utf-8')
 
 
-def api(path, payload=None):
+def api(path, payload=None, method='POST'):
     args = ['gh', 'api', 'repos/' + REPOSITORY + '/' + path]
     if payload is not None:
-        args.extend(['--method', 'POST', '--input', '-'])
+        args.extend(['--method', method, '--input', '-'])
     result = subprocess.run(args, input=json.dumps(payload) if payload is not None else None,
                             text=True, capture_output=True, check=True)
     return json.loads(result.stdout)
+
+
+# Every publication run adds its bundle to ONE rolling topic and pull request, so
+# merging one docs PR never leaves another behind main. Workflow concurrency
+# serialises the runs; the topic is rebuilt as a single commit on fresh main.
+PENDING = 'publication-docs/pending'
+
+
+def allowed_paths():
+    return set(BUNDLES.values()) | {metadata_path(name) for name in BUNDLES} | {'README.md'}
+
+
+def record_of(source):
+    """The publication record inside the managed section, or None."""
+    if source.count(BEGIN) != 1 or source.count(END) != 1:
+        return None
+    managed = source.split(BEGIN)[1].split(END)[0]
+    found = re.search(r'<!-- publication-record: (.+) -->', managed)
+    return json.loads(found[1]) if found else None
+
+
+def check_record(record):
+    require(isinstance(record, dict) and all(isinstance(record.get(key), str) for key in FIELDS + ('digest', 'reference', 'attempt')), 'Invalid pending record')
+    require(re.fullmatch(SHA, record['commit']) and re.fullmatch(DIGEST, record['digest']) and
+            re.fullmatch(r'[1-9]\d*', record['run_id']) and re.fullmatch(r'[1-9]\d*', record['attempt']) and
+            record['source'] == SOURCE and record['reference'] == record['image'] + '@' + record['digest'], 'Invalid pending record')
+    version_key(record['tag'])
+    return record
+
+
+def pending_entries(base, head):
+    """Entries carried by the open topic: records that differ from main."""
+    entries = {}
+    for name, path in BUNDLES.items():
+        record = record_of(source_at(head, path))
+        if record is not None and record != record_of(source_at(base, path)):
+            evidence = json.loads(source_at(head, metadata_path(name))).get('publication_evidence')
+            entries[name] = (check_record(record), evidence)
+    return entries
+
+
+def merge_entry(entries, bundle, record, evidence):
+    entries = dict(entries)
+    if bundle in entries:
+        old = entries[bundle][0]
+        require(version_key(old['tag']) <= version_key(record['tag']), 'Refusing older publication')
+        require(old['tag'] != record['tag'] or all(record.get(key) == value for key, value in old.items()), 'Same version has conflicting publication record')
+    entries[bundle] = (record, evidence)
+    return entries
+
+
+def build_changes(base, entries):
+    changes = []
+    for name in BUNDLES:
+        if name not in entries:
+            continue
+        record, evidence = entries[name]
+        path = BUNDLES[name]
+        source = source_at(base, path)
+        desired = replacement(source, record)
+        if desired != source:
+            changes.append({'path': path, 'mode': '100644', 'type': 'blob', 'content': desired})
+        if name == 'toolbox':
+            readme = source_at(base, 'README.md')
+            desired_readme = replacement_quickstart(readme, record)
+            if desired_readme != readme:
+                changes.append({'path': 'README.md', 'mode': '100644', 'type': 'blob', 'content': desired_readme})
+        receipt_path = metadata_path(name)
+        # New bundle metadata may not exist on the base yet; list the exact
+        # tree first rather than swallowing a failed Git read.
+        exists = command('git', 'ls-tree', '--name-only', base, '--', receipt_path)
+        old_metadata = source_at(base, receipt_path) if exists == receipt_path else '{}'
+        desired_metadata = metadata(name, record, old_metadata, evidence)
+        if desired_metadata != old_metadata:
+            changes.append({'path': receipt_path, 'mode': '100644', 'type': 'blob', 'content': desired_metadata})
+    require(all(change['path'] in allowed_paths() for change in changes), 'Only publication Markdown and metadata may change')
+    return changes
+
+
+def describe(entries):
+    names = [name for name in BUNDLES if name in entries]
+    if len(names) == 1:
+        tag = entries[names[0]][0]['tag']
+        title = 'docs(' + names[0] + '): record publication ' + tag
+    else:
+        title = 'docs(publication): record ' + ', '.join(name + ' ' + entries[name][0]['tag'] for name in names)
+    rows = ['| Bundle | Version | Index digest | Source | Run |', '| --- | --- | --- | --- | --- |']
+    for name in names:
+        record = entries[name][0]
+        rows.append('| `' + name + '` | `' + record['tag'] + '` | `' + record['digest'] + '` | [`' + record['commit'][:12] + '`](' + SOURCE + '/commit/' + record['commit'] +
+                    ') | [run ' + record['run_id'] + '](' + SOURCE + '/actions/runs/' + record['run_id'] + '/attempts/' + record['attempt'] + ') |')
+    body = ('Record the verified published versions, index digests, exact sources and workflow runs in the managed bundle guides.\n\n' +
+            '\n'.join(rows) + '\n\nThis rolling PR collects the publications since the last merge: each publication run rebuilds it as one commit on current main. ' +
+            'It changes Markdown and publication metadata source only; no documentation build or consumer activation is performed.')
+    return title, body
+
+
+def ref_exists(branch):
+    try:
+        api('git/ref/heads/' + branch)
+    except subprocess.CalledProcessError as error:
+        require('404' in (error.stderr or ''), 'Topic lookup failed')
+        return False
+    return True
 
 
 def propose(root, bundle, record, evidence=None):
@@ -206,65 +310,59 @@ def propose(root, bundle, record, evidence=None):
             (SOURCE, SOURCE + '.git', 'git@github.com:' + REPOSITORY + '.git'), 'Wrong origin repository')
     command('git', 'fetch', 'origin', 'main')
     base = command('git', 'rev-parse', 'origin/main')
-    branch = 'publication-docs/' + bundle + '/' + record['tag']
-    path = BUNDLES[bundle]
-    source = source_at(base, path)
-    desired = replacement(source, record)
-    changes = []
-    if desired != source:
-        changes.append({'path': path, 'mode': '100644', 'type': 'blob', 'content': desired})
-    if bundle == 'toolbox':
-        readme_path = 'README.md'
-        readme_source = source_at(base, readme_path)
-        desired_readme = replacement_quickstart(readme_source, record)
-        if desired_readme != readme_source:
-            changes.append({'path': readme_path, 'mode': '100644', 'type': 'blob', 'content': desired_readme})
-    receipt_path = metadata_path(bundle)
-    # New bundle metadata may not exist on the base yet; list the exact
-    # tree first rather than swallowing a failed Git read.
-    exists = command('git', 'ls-tree', '--name-only', base, '--', receipt_path)
-    old_metadata = source_at(base, receipt_path) if exists == receipt_path else '{}'
-    desired_metadata = metadata(bundle, record, old_metadata, evidence)
-    if desired_metadata != old_metadata:
-        changes.append({'path': receipt_path, 'mode': '100644', 'type': 'blob', 'content': desired_metadata})
+    branch = PENDING
+    prs = json.loads(command('gh', 'pr', 'list', '--repo', REPOSITORY, '--state', 'open', '--head', branch,
+                             '--json', 'number,headRefName,headRefOid,baseRefName,isCrossRepository'))
+    require(len(prs) <= 1, 'Ambiguous existing PRs')
+    entries, head, head_tree = {}, None, None
+    if prs:
+        pr = prs[0]
+        head = pr['headRefOid']
+        require(re.fullmatch(SHA, head) and pr['headRefName'] == branch and pr['baseRefName'] == 'main' and not pr['isCrossRepository'], 'Wrong existing PR target')
+        require(api('git/ref/heads/' + branch)['object']['sha'] == head, 'Topic moved before rebuild')
+        command('git', 'fetch', 'origin', 'refs/heads/' + branch)
+        require(command('git', 'rev-parse', 'FETCH_HEAD') == head, 'Topic moved before rebuild')
+        # Only the publication commit this workflow wrote may be rebuilt.
+        require(len(command('git', 'rev-list', '--parents', '-n', '1', head).split()) == 2, 'Pending topic must be one commit')
+        touched = command('git', 'diff-tree', '--no-commit-id', '--name-only', '-r', head).split('\n')
+        require(all(path in allowed_paths() for path in touched if path), 'Pending topic changes files outside publication source')
+        entries = pending_entries(base, head)
+        head_tree = api('git/commits/' + head)['tree']['sha']
+    else:
+        require(not ref_exists(branch), 'Pending topic exists without an open PR; delete it and rerun')
+    entries = merge_entry(entries, bundle, record, evidence)
+    changes = build_changes(base, entries)
     if not changes:
         return 'Publication source already current'
+    title, body = describe(entries)
     tree = api('git/commits/' + base)['tree']['sha']
     require(re.fullmatch(SHA, tree), 'Invalid base tree')
     tree = api('git/trees', {'base_tree': tree, 'tree': changes})['sha']
     require(re.fullmatch(SHA, tree), 'Invalid new tree')
-    head = api('git/commits', {'message': 'docs(' + bundle + '): record publication ' + record['tag'] + '\n\nKeep consumer guidance tied to the verified published index and exact source revision.',
-                             'tree': tree, 'parents': [base]})['sha']
-    require(re.fullmatch(SHA, head), 'Invalid new commit')
-    require(command('git', 'ls-remote', 'origin', 'refs/heads/main').split()[0] == base, 'Main moved; retry on fresh base')
-    try:
-        api('git/refs', {'ref': 'refs/heads/' + branch, 'sha': head})
-    except subprocess.CalledProcessError as error:
-        # A creation race is never a reason to update a branch. Only the exact
-        # expected commit with this fresh parent/tree can reuse a topic.
-        require('HTTP 422' in (error.stderr or ''), 'Ref creation failed')
-        existing = api('git/ref/heads/' + branch)['object']['sha']
-        commit = api('git/commits/' + existing)
-        require(commit['tree']['sha'] == tree and
-                [parent['sha'] for parent in commit['parents']] == [base],
-                'Existing topic conflicts with publication source or base')
-        head = existing
-    require(api('git/ref/heads/' + branch)['object']['sha'] == head, 'Topic moved before PR creation')
-    require(command('git', 'ls-remote', 'origin', 'refs/heads/main').split()[0] == base, 'Main moved before PR creation')
-    prs = json.loads(command('gh', 'pr', 'list', '--repo', REPOSITORY, '--state', 'open', '--head', branch,
-                             '--json', 'number,headRefName,headRefOid,baseRefName,isCrossRepository'))
-    require(len(prs) <= 1, 'Ambiguous existing PRs')
-    if prs:
-        require(prs[0]['headRefName'] == branch and prs[0]['headRefOid'] == head and
-                prs[0]['baseRefName'] == 'main' and not prs[0]['isCrossRepository'], 'Wrong existing PR target')
-        result = 'Existing identical publication PR'
+    if head is not None and tree == head_tree and command('git', 'rev-parse', head + '^') == base:
+        new = head
     else:
-        result = command('gh', 'pr', 'create', '--repo', REPOSITORY, '--base', 'main', '--head', branch,
-            '--title', 'docs(' + bundle + '): record publication ' + record['tag'], '--body',
-            'Record the verified published version, index digest, exact source and workflow run in the managed bundle guide. This changes Markdown and publication metadata source only; no documentation build or consumer activation is performed.')
-    require(api('git/ref/heads/' + branch)['object']['sha'] == head, 'Topic moved before source CI')
+        new = api('git/commits', {'message': title + '\n\nKeep consumer guidance tied to the verified published index and exact source revision.',
+                                  'tree': tree, 'parents': [base]})['sha']
+        require(re.fullmatch(SHA, new), 'Invalid new commit')
+        require(command('git', 'ls-remote', 'origin', 'refs/heads/main').split()[0] == base, 'Main moved; retry on fresh base')
+        if head is None:
+            try:
+                api('git/refs', {'ref': 'refs/heads/' + branch, 'sha': new})
+            except subprocess.CalledProcessError as error:
+                raise ValueError('Pending topic appeared concurrently') from error
+        else:
+            # Lease: replace the topic only if it is still the head just read.
+            require(api('git/ref/heads/' + branch)['object']['sha'] == head, 'Topic moved before update')
+            api('git/refs/heads/' + branch, {'sha': new, 'force': True}, 'PATCH')
+    require(api('git/ref/heads/' + branch)['object']['sha'] == new, 'Topic moved before PR update')
+    if prs:
+        command('gh', 'pr', 'edit', str(prs[0]['number']), '--repo', REPOSITORY, '--title', title, '--body', body)
+        result = 'Updated publication PR'
+    else:
+        result = command('gh', 'pr', 'create', '--repo', REPOSITORY, '--base', 'main', '--head', branch, '--title', title, '--body', body)
     command('gh', 'workflow', 'run', 'ci.yml', '--repo', REPOSITORY, '--ref', branch,
-            '-f', 'expected_head_sha=' + head)
+            '-f', 'expected_head_sha=' + new)
     return result
 
 

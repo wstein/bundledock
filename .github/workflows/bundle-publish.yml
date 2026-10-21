@@ -358,6 +358,11 @@ jobs:
       contents: write
       pull-requests: write
       actions: write
+    # One rolling docs PR: runs append to it one at a time.
+    concurrency:
+      group: bundledock-publication-docs
+      cancel-in-progress: false
+      queue: max
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
