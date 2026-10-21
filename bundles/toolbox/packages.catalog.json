@@ -1610,6 +1610,35 @@
         "licenses/scc/dependencies/golang.org__x__text__PATENTS",
         "licenses/scc/dependencies/gopkg.in__warnings.v0__LICENSE"
       ]
+    },
+    "smill": {
+      "provider": "github",
+      "repository": "wstein/sheetmill",
+      "normalization": "semver",
+      "tag_prefix": "v",
+      "architectures": {
+        "amd64": "amd64",
+        "arm64": "arm64"
+      },
+      "asset": "smill_{version}_linux_{arch}.tar.gz",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "sidecar": "SHA256SUMS",
+      "install": {
+        "kind": "tar.gz",
+        "members": {
+          "smill": "bin/smill"
+        },
+        "archive_notices": [
+          "LICENSE",
+          "README.md"
+        ]
+      },
+      "notices": [
+        "licenses/smill/SOURCE"
+      ]
     }
   }
 }
