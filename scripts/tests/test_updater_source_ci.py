@@ -233,6 +233,16 @@ else:
         for text in ('actions: write', 'contents: write', 'pull-requests: write'):
             self.assertIn(text, proposal)
             self.assertNotIn(text, resolvers)
+        # Pin the exact write scopes: a mutant adding another scope must fail.
+        permissions = proposal.split('    permissions:\n')[1].split('    concurrency:')[0]
+        self.assertEqual(sorted(line.strip() for line in permissions.splitlines()),
+                         ['actions: write', 'contents: write', 'pull-requests: write'])
+        self.assertTrue(caller.startswith('name: Propose upgrades') and '\npermissions:\n  contents: read\n' in caller.split('\njobs:\n')[0])
+        self.assertNotIn('permissions:', caller.split('\n  proposal:\n')[1].split('\n  propose:\n')[0])
+        # Any failed step of a resolve job, not only the resolver, marks the bundle failed.
+        marker = helper.split('id: failed\n')[1].split('run:')[0]
+        self.assertIn('if: ${{ failure() && (github.event_name', marker)
+        self.assertNotIn('steps.resolve.outcome', marker)
         self.assertIn('needs: [plan, proposal]', proposal)
         self.assertIn('!inputs.dry_run', proposal)
         self.assertIn('bundledock-upgrade-proposal', proposal)
