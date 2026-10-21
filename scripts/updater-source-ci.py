@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Dispatch source-only CI for one fresh, base-derived bot updater PR."""
+"""Dispatch source-only CI for one fresh, base-derived bot updater PR.
+
+The PR carries one commit for one or several bundles; only those bundles' own
+locks and generated inventories may change.
+"""
 import argparse
 import json
 import os
@@ -35,7 +39,12 @@ def dispatch(args):
             args.base == os.environ.get('GITHUB_SHA'), 'Exact proposer source required')
     run, attempt = os.environ.get('GITHUB_RUN_ID', ''), os.environ.get('GITHUB_RUN_ATTEMPT', '')
     require(re.fullmatch('[1-9][0-9]*', run) and re.fullmatch('[1-9][0-9]*', attempt), 'Invalid proposer identity')
-    require(args.branch == 'automation/' + args.bundle + '-upgrade-' + run + '-' + attempt,
+    bundles = args.bundles.split(',')
+    require(all(name in BUNDLES for name in bundles) and len(set(bundles)) == len(bundles),
+            'Known, unique bundles required')
+    # One bundle keeps its own topic name (publication recognises it); several share one.
+    topic = bundles[0] + '-upgrade-' if len(bundles) == 1 else 'upgrades-'
+    require(args.branch == 'automation/' + topic + run + '-' + attempt,
             'Only this proposer topic may request CI')
     match = re.fullmatch(r'https://github.com/wstein/bundledock/pull/([1-9][0-9]*)', args.pr_url)
     require(match is not None, 'Invalid proposal URL')
@@ -50,13 +59,14 @@ def dispatch(args):
             pr['base']['ref'] == 'main' and pr['base']['sha'] == args.base and
             pr['head']['ref'] == args.branch and pr['head']['sha'] == args.head,
             'Proposal source/repository changed')
-    require(pr['commits'] == 1 and 1 <= pr['changed_files'] <= 2, 'One bounded updater commit required')
+    require(pr['commits'] == 1 and 1 <= pr['changed_files'] <= 2 * len(bundles), 'One bounded updater commit required')
     files = api('/pulls/' + number + '/files?per_page=100&page=1')
-    allowed = {'bundles/' + args.bundle + '/packages.lock.json', 'docs/' + args.bundle + '.md'}
+    allowed = {path for name in bundles for path in
+               ('bundles/' + name + '/packages.lock.json', 'docs/' + name + '.md')}
     require(isinstance(files, list) and len(files) == pr['changed_files'] and
             len({item['filename'] for item in files}) == len(files) and
             all(item['filename'] in allowed and item['status'] == 'modified' for item in files),
-            'Only existing own lock/inventory changes permitted')
+            'Only existing own lock/inventory changes of the listed bundles permitted')
     comparison = api('/compare/' + args.base + '...' + args.head)
     require(comparison['status'] == 'ahead' and comparison['ahead_by'] == 1 and
             comparison['behind_by'] == 0 and comparison['total_commits'] == 1 and
@@ -92,7 +102,7 @@ def dispatch(args):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--bundle', required=True, choices=BUNDLES)
+    parser.add_argument('--bundles', required=True, help='comma-separated bundles in the proposal')
     for name in ('branch', 'base', 'head', 'pr-url'):
         parser.add_argument('--' + name, required=True)
     try:

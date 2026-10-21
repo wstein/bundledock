@@ -212,7 +212,7 @@ PYTHON
       echo 'PR creation failed. An administrator must explicitly permit GITHUB_TOKEN contents:write and pull-requests:write, and enable Settings > Actions > General > Workflow permissions > Allow GitHub Actions to create and approve pull requests (subject to organization policy). This workflow never changes those settings or uses a PAT. The topic branch may already exist; inspect it before retrying.' >&2; exit 1
     fi
     printf '%s\n' "$url" >> "$GITHUB_STEP_SUMMARY"
-    python3 scripts/updater-source-ci.py --bundle "${bundles[0]}" --branch "$branch" \
+    python3 scripts/updater-source-ci.py --bundles "$(IFS=,; echo "${bundles[*]}")" --branch "$branch" \
       --base "$proposal_base" --head "$(git rev-parse HEAD)" --pr-url "$url" \
       >> "$GITHUB_STEP_SUMMARY"
     ;;
