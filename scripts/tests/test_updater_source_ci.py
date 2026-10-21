@@ -223,19 +223,22 @@ else:
         result, _ = self.run_dispatch(env_changes={'FAIL_DISPATCH': '1'})
         self.assertNotEqual(result.returncode, 0)
 
-    def test_only_nonempty_successful_proposals_dispatch_ci_with_narrow_permissions(self):
+    def test_one_write_job_proposes_all_bundles_with_narrow_permissions(self):
         caller = (ROOT / '.github/workflows/propose-upgrades.yml').read_text()
         helper = (ROOT / '.github/workflows/bundle-upgrade.yml').read_text()
-        proposal = helper.split('\n  propose-pr:\n')[1]
-        self.assertIn('actions: write', proposal)
-        self.assertNotIn('actions: write', helper.split('\n  propose-pr:\n')[0])
-        self.assertIn('actions: write', caller.split('\n  proposal:\n')[1])
-        self.assertIn("needs.resolve.outputs.changed == 'true'", proposal)
+        proposal = caller.split('\n  propose:\n')[1]
+        resolvers = caller.split('\n  propose:\n')[0] + helper
+        self.assertEqual(caller.count('scripts/tool-upgrade.sh publish'), 1)
+        self.assertNotIn('tool-upgrade.sh publish', helper)
+        for text in ('actions: write', 'contents: write', 'pull-requests: write'):
+            self.assertIn(text, proposal)
+            self.assertNotIn(text, resolvers)
+        self.assertIn('needs: [plan, proposal]', proposal)
         self.assertIn('!inputs.dry_run', proposal)
+        self.assertIn('bundledock-upgrade-proposal', proposal)
         shell = (ROOT / 'scripts/tool-upgrade.sh').read_text()
         self.assertGreater(shell.index('scripts/updater-source-ci.py'), shell.index('gh pr create'))
         self.assertGreater(shell.index('scripts/updater-source-ci.py'), shell.index('if git diff --quiet'))
-
 
 if __name__ == '__main__':
     unittest.main()

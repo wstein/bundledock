@@ -42,7 +42,8 @@ class ConsolidatedWorkflowsTests(unittest.TestCase):
                      'uses: ./.github/workflows/bundle-upgrade.yml'):
             self.assertIn(text, source)
         helper = (ROOT / '.github/workflows/bundle-upgrade.yml').read_text()
-        self.assertIn('\n  propose-pr:\n', helper)
+        self.assertIn('\n  propose:\n', source)
+        self.assertNotIn('\n  propose-pr:\n', helper)
         self.assertNotIn('\n  publish:\n', helper)
         self.assertIn('bundledock-${{ inputs.bundle }}-upgrade', helper)
 
