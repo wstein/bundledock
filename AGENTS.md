@@ -28,13 +28,14 @@ Builds and releases other than the Pages exception and the CLI release workflow 
 of the intended operation and source revision. The approved bundle automation
 exception covers toolbox,
 code-server, Node LTS, Node Current, Bun, Codex, Antigravity, Claude and OpenTofu updater PRs authored by `github-actions[bot]`, changing
-only their own lock and generated inventory. The actual human owner `wstein`
+only their own lock and generated inventory; a combined updater PR changes the
+locks and inventories of several bundles, each checked like a per-bundle updater. The actual human owner `wstein`
 merging an eligible updater authorizes publication of that exact frozen lock;
 a submitted APPROVED review is not required. Source merges are the human's job:
 no review-triggered controller may merge or dispatch builds. The successful
 exact merged-main CI and required GitHub Actions `check` must cover that source.
 The publisher verifies the actual `merged_by` identity, bot author, branch and
-own-file scope, exact merged source and updater-head tree equality, frozen lock,
+own-file scope of every bundle the PR changes, exact merged source and updater-head tree equality, frozen lock,
 and current main before build jobs and promotion. Main may advance during a
 build only if the approved source remains its ancestor and the bundle's own lock
 is byte-identical there. Changed heads, a diverged or rewritten main, a changed

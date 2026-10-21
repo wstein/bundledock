@@ -20,9 +20,10 @@ per run carries every bundle that changed in a single commit on
 has one table per bundle. If a bundle's resolution fails, the others are still
 proposed and the failure is named in the PR body and run summary. A run that
 changes one bundle keeps that bundle's own `automation/<bundle>-upgrade-...`
-topic, so its owner merge still authorizes publication as described below. The
-automatic approval flow does not recognise the combined topic: after merging a
-multi-bundle PR, publish each bundle by manual full-SHA dispatch.
+topic. The owner merge of either form authorizes publication as described
+below: for a combined PR the planner derives the bundles from the locks it
+changed, accepts only those bundles' own locks and inventories, and runs one
+publication leg per bundle with the same per-bundle checks.
 
 The [Codex](codex.md), [Antigravity](agy.md) and [Claude Code](claude.md)
 guides record their verified initial publications and native AMD64/ARM64 smoke
@@ -342,8 +343,14 @@ and Git tag writes are separate systems and cannot be one atomic transaction.
 ## Published guide updates
 
 After successful verified promotion and source tagging, the shared publisher
-opens a normal `publication-docs/<bundle>/<version>` PR for the corresponding
-bundle guide. Its managed publication section records the immutable version,
+adds the bundle to one rolling `publication-docs/pending` PR (runs queue under
+the `bundledock-publication-docs` concurrency group). Each run rebuilds that
+topic as a single commit on current `main` from the pending entries plus its
+own, updates the PR title and table, and dispatches source CI for the new head.
+It refuses a topic that has a merge commit or touches anything but publication
+Markdown and metadata, and replaces the topic only if it is still the head it
+read. If the topic exists without an open PR, delete it and rerun. For the
+The bundle guide's managed publication section records the immutable version,
 index digest, exact source SHA, workflow run and digest-pinned pull example.
 The generated tool table remains the current source inventory, separate from
 the published record. Most version badges read Quay directly and need no README bot commit. Node
