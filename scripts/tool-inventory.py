@@ -58,6 +58,7 @@ LABELS = (
     ("smill", "SheetMill (`smill`)"),
     ("cscribe", "ChartScribe (`cscribe`)"),
     ("opentofu", "OpenTofu (`tofu`)"),
+    ("whr", "WorkHarbor (`whr`)"),
     ("zk", "zk (`zk`)"),
     ("fastfetch", "Fastfetch (`fastfetch`)"),
     ("bottom", "bottom (`btm`)"),

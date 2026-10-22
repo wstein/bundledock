@@ -56,6 +56,7 @@ typos>=1.51.1
 typst>=0.15.1
 uv>=0.13.0
 watchexec>=2.8.0
+whr>=0.1.0
 xh>=0.26.2
 yq>=4.54.1
 zizmor>=1.31.1
