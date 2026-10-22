@@ -372,6 +372,13 @@ func extract(root *os.Root, tool string, p toolconfig.Package, source io.Reader,
 						treeFiles[tree]++
 						break
 					}
+					// Archives that nest everything below one wrapper directory
+					// (tool_1.0_linux_amd64/) keep the tree path below that directory.
+					if _, below, ok := strings.Cut(name, "/"); ok && strings.HasPrefix(below, tree+"/") {
+						target = "licenses/" + tool + "/" + below
+						treeFiles[tree]++
+						break
+					}
 				}
 				if target == "" {
 					for _, notice := range p.Install.ArchiveNotices {
