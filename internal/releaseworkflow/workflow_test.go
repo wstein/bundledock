@@ -370,10 +370,13 @@ func violations(w workflow, raw string) []string {
 		}
 	}
 	green, _ := stepNamed(verify, "Require a green CI run")
-	for _, want := range []string{`repos/$REPO/actions/workflows/ci.yml/runs?head_sha=$GITHUB_SHA&event=push&status=success`, `test "$n" -ge 1 ||`} {
-		if !strings.Contains(green.Run, want) {
-			add("ci", "CI step lacks %q", want)
-		}
+	// The retry, the client-side fallback and the head_sha filter live in release-verify.sh
+	// (unit-tested against a fake gh in scripts_test.go); the step must call it for the run commit.
+	if !strings.Contains(green.Run, `sh .github/scripts/release-verify.sh ci-green "$GITHUB_SHA"`) {
+		add("ci", "CI step lacks the ci-green script call")
+	}
+	if green.Env["GH_TOKEN"] != "${{ github.token }}" || green.Env["REPO"] != "${{ github.repository }}" || len(green.Env) != 2 {
+		add("ci", "CI step env = %v", green.Env)
 	}
 	absent, _ := stepNamed(verify, "Require that no release exists")
 	for _, want := range []string{`*"HTTP 404"*) echo "no release for $TAG yet" ;;`, `*) echo "cannot tell whether a release exists: $out" >&2; exit 1 ;;`, `echo "a release for $TAG already exists" >&2`} {
@@ -628,9 +631,6 @@ func violations(w workflow, raw string) []string {
 	if !strings.Contains(ps.Run, `if [ "$DRAFT" = true ]; then flags+=(--draft); fi`) {
 		add("publish", "publish lacks the draft rule")
 	}
-	if !strings.Contains(green.Run, `n=$(gh api "repos/$REPO/actions/workflows/ci.yml/runs?head_sha=$GITHUB_SHA&event=push&status=success" --jq '.workflow_runs | map(select(.conclusion == "success")) | length')`) {
-		add("ci", "CI step lacks the exact count query")
-	}
 	return v
 }
 
@@ -698,12 +698,13 @@ func TestReleaseWorkflowMutantsAreCaught(t *testing.T) {
 		{"owner env always equal", "owner", "ACTOR: ${{ github.triggering_actor }}\n          PUSHER", "ACTOR: ${{ github.repository_owner }}\n          PUSHER"},
 		{"drop the pusher check", "owner", `          test "$PUSHER" = "$OWNER" || { echo "run originally started by $PUSHER, not by the repository owner $OWNER" >&2; exit 1; }`, "          true"},
 		{"swallow the tag check", "swallow", `test "$commit" = "$GITHUB_SHA" || { echo "tag $TAG names $commit but the run is for $GITHUB_SHA" >&2; exit 1; }`, `test "$commit" = "$GITHUB_SHA" || true`},
-		{"disarm with exit 0", "swallow", `test "$n" -ge 1 || { echo "no successful CI run on push for $GITHUB_SHA; wait for or re-run CI for that commit first" >&2; exit 1; }`, `test "$n" -ge 1 || { echo "x" >&2; exit 0; }`},
+		{"disarm with exit 0", "swallow", `test "$commit" = "$GITHUB_SHA" || { echo "tag $TAG names $commit but the run is for $GITHUB_SHA" >&2; exit 1; }`, `test "$commit" = "$GITHUB_SHA" || { echo "x" >&2; exit 0; }`},
 		{"set +e", "strict", "          set -euo pipefail\n          if [ \"$EVENT_NAME\"", "          set +e\n          if [ \"$EVENT_NAME\""},
 		{"annotated tag check removed", "tag", `commit=$(sh .github/scripts/release-verify.sh tag "$TAG" refs/remotes/origin/main)`, `commit=$GITHUB_SHA`},
 		{"tag fetch not forced", "tag", `git fetch --force --no-tags "https://github.com/$REPO" "+refs/tags/$TAG:refs/tags/$TAG"`, `git fetch --no-tags "https://github.com/$REPO" "+refs/tags/$TAG:refs/tags/$TAG"`},
-		{"CI query by event", "ci", "event=push&status=success", "status=success"},
-		{"CI threshold", "ci", `test "$n" -ge 1`, `test "$n" -ge 0`},
+		{"CI guard call removed", "ci", `sh .github/scripts/release-verify.sh ci-green "$GITHUB_SHA"`, `true`},
+		{"CI guard other commit", "ci", `ci-green "$GITHUB_SHA"`, `ci-green "$GITHUB_REF"`},
+		{"CI guard without repo", "ci", "          REPO: ${{ github.repository }}\n        run: |\n          set -euo pipefail\n          # Retries", "        run: |\n          set -euo pipefail\n          # Retries"},
 		{"release-exists loosened", "exists", `*) echo "cannot tell whether a release exists: $out" >&2; exit 1 ;;`, `*) echo "ignored" ;;`},
 		{"tag step unguarded", "guard", "      - name: Require an annotated tag on a commit of main\n        if: steps.resolve.outputs.dry_run == 'false'\n", "      - name: Require an annotated tag on a commit of main\n"},
 		{"drop make check", "verify", "      - run: make check\n", ""},
@@ -712,7 +713,6 @@ func TestReleaseWorkflowMutantsAreCaught(t *testing.T) {
 		{"smoke on wrong runner", "runner", "runner: macos-15", "runner: ubuntu-24.04"},
 		{"smoke arm64 emulated", "runner", "runner: ubuntu-24.04-arm", "runner: ubuntu-24.04"},
 		{"copy between builds", "build", "          # A second build with an empty build cache", "          cp -r \"$RUNNER_TEMP/first\" \"$RUNNER_TEMP/second\"\n          # A second build with an empty build cache"},
-		{"n overwritten", "reassign", "          test \"$n\" -ge 1 ||", "          n=1\n          test \"$n\" -ge 1 ||"},
 		{"existing cleared", "reassign", "          test -z \"$existing\" ||", "          existing=\"\"\n          test -z \"$existing\" ||"},
 		{"remote defaulted", "redirect", "          test \"$remote\" = \"$COMMIT\" ||", "          remote=${remote:-$COMMIT}\n          test \"$remote\" = \"$COMMIT\" ||"},
 		{"main redirected", "redirect", "          commit=$(sh .github/scripts/release-verify.sh tag", "          git update-ref refs/remotes/origin/main HEAD\n          commit=$(sh .github/scripts/release-verify.sh tag"},
@@ -729,7 +729,6 @@ func TestReleaseWorkflowMutantsAreCaught(t *testing.T) {
 		{"setup-go latest", "setupgo", "          check-latest: false\n          cache: false\n      - name: Build", "          check-latest: true\n          cache: false\n      - name: Build"},
 		{"setup-go version pin", "setupgo", "          go-version-file: .go-version\n          check-latest: false\n          cache: false\n      - name: Build", "          go-version: '1.25'\n          check-latest: false\n          cache: false\n      - name: Build"},
 		{"sums line changed", "publish", "cat -- bdock_*.tar.gz.sha256 | LC_ALL=C sort -k2 > SHA256SUMS", "cat -- bdock_*.tar.gz.sha256 > SHA256SUMS"},
-		{"CI count inflated", "ci", "--jq '.workflow_runs | map(select(.conclusion == \"success\")) | length'", "--jq '.total_count + 1'"},
 		{"verify gate echoed", "verify", "      - run: make check\n", "      - run: echo make check\n"},
 		{"verify gate commented", "verify", "      - run: go mod verify\n", "      - run: \"# go mod verify\"\n"},
 		{"copy after second build", "build", "          diff -r \"$RUNNER_TEMP/first\" \"$RUNNER_TEMP/second\"", "          rm -rf \"$RUNNER_TEMP/second\"; cp -r \"$RUNNER_TEMP/first\" \"$RUNNER_TEMP/second\"\n          diff -r \"$RUNNER_TEMP/first\" \"$RUNNER_TEMP/second\""},
@@ -739,7 +738,7 @@ func TestReleaseWorkflowMutantsAreCaught(t *testing.T) {
 		{"extra main fetch", "redirect", "          commit=$(sh .github/scripts/release-verify.sh tag", "          git fetch --force --no-tags \"https://github.com/$REPO\" '+refs/heads/dev:refs/remotes/origin/main'\n          commit=$(sh .github/scripts/release-verify.sh tag"},
 		{"draft test inverted", "publish", "if [ \"$DRAFT\" = true ]; then flags+=(--draft); fi", "if [ \"$DRAFT\" != true ]; then flags+=(--draft); fi"},
 		{"extra release asset", "publish", "\"$RUNNER_TEMP\"/dist/bdock_*.tar.gz \"$RUNNER_TEMP/dist/SHA256SUMS\"", "\"$RUNNER_TEMP\"/dist/* \"$RUNNER_TEMP/dist/SHA256SUMS\""},
-		{"test -o trick", "swallow", "test \"$n\" -ge 1 ||", "test \"$n\" -ge 1 -o 1 = 1 ||"},
+		{"test -o trick", "swallow", "test \"$commit\" = \"$GITHUB_SHA\" ||", "test \"$commit\" = \"$GITHUB_SHA\" -o 1 = 1 ||"},
 		{"monotonic step unguarded", "guard", "      - name: Require a version above every existing release\n        if: steps.resolve.outputs.dry_run == 'false'\n", "      - name: Require a version above every existing release\n"},
 		{"monotonic script call removed", "monotonic", `| sh .github/scripts/release-verify.sh monotonic "$TAG"`, `| cat`},
 		{"monotonic ignores releases", "monotonic", `printf '%s\n%s\n' "$tags" "$releases"`, `printf '%s\n' "$tags"`},

@@ -266,7 +266,7 @@
           },
           "if": "steps.resolve.outputs.dry_run == 'false'",
           "name": "Require a green CI run for the tagged commit",
-          "run": "set -euo pipefail\nn=$(gh api \"repos/$REPO/actions/workflows/ci.yml/runs?head_sha=$GITHUB_SHA\u0026event=push\u0026status=success\" --jq '.workflow_runs | map(select(.conclusion == \"success\")) | length')\ntest \"$n\" -ge 1 || { echo \"no successful CI run on push for $GITHUB_SHA; wait for or re-run CI for that commit first\" \u003e\u00262; exit 1; }\n",
+          "run": "set -euo pipefail\n# Retries the head_sha query, then filters the push runs by head_sha client side.\nsh .github/scripts/release-verify.sh ci-green \"$GITHUB_SHA\"\n",
           "shell": "bash"
         },
         {

@@ -11,8 +11,14 @@
 #                                         names, one per line, and must include TAG itself; fails when any other strict
 #                                         bdock/v tag has a version greater than or equal to TAG's.
 #                                         Other lines (pre-releases, image tags, blanks) are ignored.
+#   sh release-verify.sh ci-green SHA     a successful push run of ci.yml exists for the 40-hex commit SHA.
+#                                         Needs gh and REPO (owner/name) and reads the Actions API only.
+#                                         The head_sha query is retried (CI_ATTEMPTS, default 5, CI_SLEEP seconds,
+#                                         default 2) because the API has answered the same query with 2 and 0
+#                                         results alternately; then up to CI_PAGES (default 5) pages of the
+#                                         successful push runs are filtered by head_sha client side.
 #
-# Reads local files and git objects only; no network and no writes. Exit 0 when the
+# Except for ci-green, reads local files and git objects only; no network and no writes. Exit 0 when the
 # check holds, 1 when it fails, 2 on a usage error.
 set -eu
 
@@ -21,7 +27,7 @@ fail() {
 	exit 1
 }
 usage() {
-	printf 'usage: sh release-verify.sh version V | dryversion V | tag-version TAG | tag TAG MAIN_REF | monotonic TAG\n' >&2
+	printf 'usage: sh release-verify.sh version V | dryversion V | tag-version TAG | tag TAG MAIN_REF | monotonic TAG | ci-green SHA\n' >&2
 	exit 2
 }
 
@@ -87,6 +93,34 @@ monotonic)
 		}
 		END { if (!seen) { printf "release-verify: the listing does not show %s; refusing to guess\n", tag > "/dev/stderr"; exit 1 } exit bad }
 	' || fail "version $new is not above every existing bdock/v tag; release the next version"
+	;;
+ci-green)
+	[ "$#" -eq 1 ] || usage
+	sha=$1
+	match '^[0-9a-f]{40}$' "$sha" || fail "not a full commit id: $sha"
+	: "${REPO:?REPO must be owner/name}"
+	attempts=${CI_ATTEMPTS:-5}
+	sleep_s=${CI_SLEEP:-2}
+	pages=${CI_PAGES:-5}
+	base="repos/$REPO/actions/workflows/ci.yml/runs"
+	i=0
+	while [ "$i" -lt "$attempts" ]; do
+		i=$((i + 1))
+		if n=$(gh api "$base?head_sha=$sha&event=push&status=success" --jq '.workflow_runs | map(select(.conclusion == "success")) | length'); then :; else n=0; fi
+		if [ "${n:-0}" -ge 1 ] 2>/dev/null; then exit 0; fi
+		[ "$i" -lt "$attempts" ] && sleep "$sleep_s"
+	done
+	# The head_sha filter was unreliable: list the successful push runs and filter by hand.
+	p=0
+	while [ "$p" -lt "$pages" ]; do
+		p=$((p + 1))
+		if r=$(gh api "$base?event=push&status=success&per_page=100&page=$p" --jq "\"\(.workflow_runs | length) \(.workflow_runs | map(select(.head_sha == \"$sha\" and .conclusion == \"success\")) | length)\""); then :; else r="0 0"; fi
+		total=${r% *}
+		found=${r#* }
+		if [ "${found:-0}" -ge 1 ] 2>/dev/null; then exit 0; fi
+		[ "${total:-0}" -ge 100 ] 2>/dev/null || break
+	done
+	fail "no successful CI run on push for $sha; wait for or re-run CI for that commit first ($attempts attempts of the head_sha query and a client-side listing of up to $pages pages found none)"
 	;;
 *)
 	usage
