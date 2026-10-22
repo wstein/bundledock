@@ -103,8 +103,8 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          n=$(gh api "repos/$REPO/actions/workflows/ci.yml/runs?head_sha=$GITHUB_SHA&event=push&status=success" --jq '.workflow_runs | map(select(.conclusion == "success")) | length')
-          test "$n" -ge 1 || { echo "no successful CI run on push for $GITHUB_SHA; wait for or re-run CI for that commit first" >&2; exit 1; }
+          # Retries the head_sha query, then filters the push runs by head_sha client side.
+          sh .github/scripts/release-verify.sh ci-green "$GITHUB_SHA"
       - name: Require that no release exists for the tag
         if: steps.resolve.outputs.dry_run == 'false'
         shell: bash

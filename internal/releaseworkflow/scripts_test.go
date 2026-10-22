@@ -445,3 +445,174 @@ func TestVerifyMonotonicVersion(t *testing.T) {
 		t.Error("a non-release tag is accepted")
 	}
 }
+
+const ciSHA = "b6ee4d79b6ee4d79b6ee4d79b6ee4d79b6ee4d79"
+const otherSHA = "0123456789012345678901234567890123456789"
+
+// fakeGH puts a fake `gh` first on PATH. A head_sha query pops the next count of head
+// (an empty list answers 0, like the live API did); any other query is the paginated
+// list, answered by running the caller's --jq filter over list, whatever the page.
+// Every URL is logged. The script is run with no sleep.
+func fakeGH(t *testing.T, head []string, list string) (env []string, calls func() []string) {
+	t.Helper()
+	dir := t.TempDir()
+	write := func(name, body string) {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write("head", strings.Join(head, "\n")+"\n")
+	write("list.json", list)
+	bin := filepath.Join(dir, "bin")
+	if err := os.Mkdir(bin, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	fake := `#!/bin/sh
+d=` + dir + `
+[ "$1" = api ] || exit 9
+url=$2
+filter=$4
+echo "$url" >> "$d/calls"
+case $url in
+*head_sha=*)
+	n=$(sed -n 1p "$d/head")
+	sed 1d "$d/head" > "$d/head.next" && mv "$d/head.next" "$d/head"
+	echo "${n:-0}"
+	;;
+*)
+	jq -r "$filter" "$d/list.json"
+	;;
+esac
+`
+	if err := os.WriteFile(filepath.Join(bin, "gh"), []byte(fake), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	calls = func() []string {
+		raw, _ := os.ReadFile(filepath.Join(dir, "calls"))
+		return strings.Fields(string(raw))
+	}
+	return []string{"PATH=" + bin + string(os.PathListSeparator) + os.Getenv("PATH"), "REPO=o/r", "CI_SLEEP=0"}, calls
+}
+
+func runList(sha string) string {
+	return `{"workflow_runs":[{"head_sha":"` + sha + `","conclusion":"success"}]}`
+}
+
+func ciGreen(t *testing.T, scriptPath string, env []string) (string, error) {
+	t.Helper()
+	return runIn(t, repoRoot(t), env, "sh", scriptPath, "ci-green", ciSHA)
+}
+
+func countHead(urls []string) (head, list int) {
+	for _, u := range urls {
+		if strings.Contains(u, "head_sha=") {
+			head++
+		} else {
+			list++
+		}
+	}
+	return
+}
+
+func TestCIGreenRetriesTheHeadQuery(t *testing.T) {
+	s := script(t, "release-verify.sh")
+	for name, tc := range map[string]struct {
+		head       []string
+		list       string
+		ok         bool
+		heads, lst int
+	}{
+		"first answer is enough":       {[]string{"2"}, runList(otherSHA), true, 1, 0},
+		"0,0,2 succeeds on the third":  {[]string{"0", "0", "2"}, runList(otherSHA), true, 3, 0},
+		"five misses use the fallback": {[]string{"0", "0", "0", "0", "0"}, runList(ciSHA), true, 5, 1},
+		"fallback ignores other heads": {nil, runList(otherSHA), false, 5, 1},
+	} {
+		env, calls := fakeGH(t, tc.head, tc.list)
+		out, err := ciGreen(t, s, env)
+		if (err == nil) != tc.ok {
+			t.Errorf("%s: err=%v out=%s", name, err, out)
+		}
+		if h, l := countHead(calls()); h != tc.heads || l != tc.lst {
+			t.Errorf("%s: %d head queries and %d list queries, want %d and %d (%v)", name, h, l, tc.heads, tc.lst, calls())
+		}
+		if !tc.ok && !strings.Contains(out, "no successful CI run on push for "+ciSHA) {
+			t.Errorf("%s: failure lacks the CI message: %s", name, out)
+		}
+		if !tc.ok && !strings.Contains(out, "5 attempts") {
+			t.Errorf("%s: failure does not say how many attempts were made: %s", name, out)
+		}
+	}
+}
+
+func TestCIGreenFallbackPagesAreCapped(t *testing.T) {
+	env, calls := fakeGH(t, nil, `{"workflow_runs":[`+strings.TrimSuffix(strings.Repeat(`{"head_sha":"`+otherSHA+`","conclusion":"success"},`, 100), ",")+`]}`)
+	if _, err := ciGreen(t, script(t, "release-verify.sh"), env); err == nil {
+		t.Fatal("a listing without the commit passed")
+	}
+	if _, l := countHead(calls()); l != 5 {
+		t.Errorf("fallback read %d pages, want the cap of 5", l)
+	}
+}
+
+func TestCIGreenRejectsABadCommit(t *testing.T) {
+	env, _ := fakeGH(t, []string{"2"}, runList(ciSHA))
+	for _, bad := range []string{"", "main", ciSHA[:39], ciSHA + "0", "B6EE4D79B6EE4D79B6EE4D79B6EE4D79B6EE4D79"} {
+		if _, err := runIn(t, repoRoot(t), env, "sh", script(t, "release-verify.sh"), "ci-green", bad); err == nil {
+			t.Errorf("commit %q accepted", bad)
+		}
+	}
+}
+
+// Each mutant weakens the script once; the retry and fallback tests must notice.
+func TestCIGreenMutantsAreCaught(t *testing.T) {
+	raw, err := os.ReadFile(script(t, "release-verify.sh"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	mutants := []struct{ name, from, to string }{
+		{"no retry", "CI_ATTEMPTS:-5", "CI_ATTEMPTS:-1"},
+		{"retry count 0", "CI_ATTEMPTS:-5", "CI_ATTEMPTS:-0"},
+		{"no fallback", "pages=${CI_PAGES:-5}", "pages=0"},
+		{"fallback without head_sha filter", "select(.head_sha == \\\"$sha\\\" and", "select(true and"},
+		{"fallback ignores conclusion", "and .conclusion == \\\"success\\\"", ""},
+		{"fallback uncapped", "pages=${CI_PAGES:-5}", "pages=${CI_PAGES:-50}"},
+	}
+	for _, m := range mutants {
+		if !strings.Contains(string(raw), m.from) {
+			t.Errorf("HARNESS ERROR, NOT A KILL: %q: text not found: %q", m.name, m.from)
+			continue
+		}
+		path := filepath.Join(t.TempDir(), "release-verify.sh")
+		if err := os.WriteFile(path, []byte(strings.Replace(string(raw), m.from, m.to, 1)), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		killed := false
+		check := func(head []string, list string, wantOK bool, wantHeads int) {
+			env, calls := fakeGH(t, head, list)
+			_, err := ciGreen(t, path, env)
+			h, l := countHead(calls())
+			if (err == nil) != wantOK || h != wantHeads || (m.name == "fallback uncapped" && l != 5 && !wantOK) {
+				killed = true
+			}
+		}
+		check([]string{"0", "0", "2"}, runList(otherSHA), true, 3)
+		check([]string{"0", "0", "0", "0", "0"}, runList(ciSHA), true, 5)
+		check(nil, runList(otherSHA), false, 5)
+		env, calls := fakeGH(t, nil, `{"workflow_runs":[`+strings.TrimSuffix(strings.Repeat(`{"head_sha":"`+otherSHA+`","conclusion":"success"},`, 100), ",")+`]}`)
+		if _, err := ciGreen(t, path, env); err == nil {
+			killed = true
+		}
+		if _, l := countHead(calls()); l != 5 {
+			killed = true
+		}
+		if m.name == "fallback ignores conclusion" {
+			env, _ := fakeGH(t, nil, `{"workflow_runs":[{"head_sha":"`+ciSHA+`","conclusion":"failure"}]}`)
+			if _, err := ciGreen(t, path, env); err == nil {
+				killed = true
+			}
+		}
+		if !killed {
+			t.Errorf("mutant %q survived", m.name)
+		}
+	}
+}
