@@ -26,6 +26,7 @@ check() {
         --mount "type=bind,src=$script_dir/scc-smoke.sh,dst=/scc-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/smill-smoke.sh,dst=/smill-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/cscribe-smoke.sh,dst=/cscribe-smoke.sh,readonly" \
+        --mount "type=bind,src=$script_dir/tofu-smoke.sh,dst=/tofu-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/zk-smoke.sh,dst=/zk-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/fastfetch-smoke.sh,dst=/fastfetch-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/navi-smoke.sh,dst=/navi-smoke.sh,readonly" \
@@ -128,6 +129,8 @@ check() {
             sh /smill-smoke.sh
             stage "ChartScribe version"
             sh /cscribe-smoke.sh
+            stage "OpenTofu version"
+            sh /tofu-smoke.sh
             stage "zk version"
             sh /zk-smoke.sh
             stage "Fastfetch version"

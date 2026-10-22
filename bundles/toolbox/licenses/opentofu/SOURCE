@@ -1,0 +1,9 @@
+OpenTofu v1.13.1
+Official source: https://github.com/opentofu/opentofu/tree/v1.13.1
+License: Mozilla Public License 2.0 (MPL-2.0)
+Official release: https://github.com/opentofu/opentofu/releases/tag/v1.13.1
+Checksums: https://github.com/opentofu/opentofu/releases/download/v1.13.1/tofu_1.13.1_SHA256SUMS
+Publisher SHA256SUMS were read from the official release. Upstream provides GPG and Sigstore signatures; BundleDock currently verifies publisher SHA256 values, not those signatures.
+Archive LICENSE, README.md and CHANGELOG.md are retained without modification.
+No provider plugins are bundled; provider licenses and configuration remain consumer responsibilities.
+Toolbox: the default toolbox ships the same official prebuilt tofu archives and the same lock pin as the separate opentofu bundle (currently v1.13.2, same publisher SHA256 evidence); the separate bundle remains supported until the owner retires it (owner decision 2026-10-22). Archive LICENSE, README.md and CHANGELOG.md are retained from each archive under licenses/opentofu. The binary is not executed with network access in smoke: only `tofu version` runs, in an isolated empty home.
