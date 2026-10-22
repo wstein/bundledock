@@ -62,7 +62,7 @@ type Install struct {
 	Aliases        map[string]string `json:"aliases,omitempty"`
 	Preserve       bool              `json:"preserve,omitempty"`
 	ArchiveNotices []string          `json:"archive_notices,omitempty"`
-	// ArchiveNoticeTrees are exact relative archive directories whose regular
+	// ArchiveNoticeTrees are exact relative archive directories (optionally below one wrapper directory) whose regular
 	// files are retained under licenses/<tool>/ with their relative paths.
 	ArchiveNoticeTrees []string `json:"archive_notice_trees,omitempty"`
 	ExcludeDirectories []string `json:"exclude_directories,omitempty"`
