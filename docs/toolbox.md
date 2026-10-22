@@ -52,7 +52,7 @@ The source inventory below describes the current lock; this publication retains 
 | fzf (`fzf`) | 0.74.5 | [Homepage](https://junegunn.github.io/fzf/) | [Source](https://github.com/junegunn/fzf) |
 | Git LFS (`git-lfs`) | 3.8.0 | [Homepage](https://git-lfs.com) | [Source](https://github.com/git-lfs/git-lfs) |
 | git-cliff (`git-cliff`) | 2.14.2 | [Homepage](https://github.com/orhun/git-cliff) | [Source](https://github.com/orhun/git-cliff) |
-| GitHub CLI | 2.102.1 | [Homepage](https://cli.github.com) | [Source](https://github.com/cli/cli) |
+| GitHub CLI | 2.103.0 | [Homepage](https://cli.github.com) | [Source](https://github.com/cli/cli) |
 | GitHub CLI Stacked PRs (`gh stack`) | 0.2.1 | [Homepage](https://gh.io/stacks) | [Source](https://github.com/github/gh-stack) |
 | Gitleaks (`gitleaks`) | 8.30.1 | [Homepage](https://gitleaks.io) | [Source](https://github.com/gitleaks/gitleaks) |
 | Hadolint (`hadolint`) | 2.15.1 | [Homepage](https://github.com/hadolint/hadolint) | [Source](https://github.com/hadolint/hadolint) |
@@ -72,7 +72,7 @@ The source inventory below describes the current lock; this publication retains 
 | mise (`mise`) | 2026.10.17 | [Homepage](https://mise.jdx.dev) | [Source](https://github.com/jdx/mise) |
 | navi (`navi`) | 2.24.0 | [Homepage](https://github.com/denisidoro/navi) | [Source](https://github.com/denisidoro/navi) |
 | Nushell (`nu`) | 0.116.1 | [Homepage](https://www.nushell.sh/) | [Source](https://github.com/nushell/nushell) |
-| pinact (`pinact`) | 5.0.0 | [Homepage](https://github.com/suzuki-shunsuke/pinact) | [Source](https://github.com/suzuki-shunsuke/pinact) |
+| pinact (`pinact`) | 5.0.1 | [Homepage](https://github.com/suzuki-shunsuke/pinact) | [Source](https://github.com/suzuki-shunsuke/pinact) |
 | regctl (`regctl`) | 0.11.7 | [Homepage](https://regclient.org) | [Source](https://github.com/regclient/regclient) |
 | ripgrep (`rg`) | 15.2.0 | [Homepage](https://github.com/BurntSushi/ripgrep) | [Source](https://github.com/BurntSushi/ripgrep) |
 | Ruff (`ruff`) | 0.17.1 | [Homepage](https://docs.astral.sh/ruff) | [Source](https://github.com/astral-sh/ruff) |
@@ -90,7 +90,7 @@ The source inventory below describes the current lock; this publication retains 
 | TruffleHog (`trufflehog`) | 3.99.3 | [Homepage](https://github.com/trufflesecurity/trufflehog) | [Source](https://github.com/trufflesecurity/trufflehog) |
 | typos (`typos`) | 1.51.1 | [Homepage](https://github.com/crate-ci/typos) | [Source](https://github.com/crate-ci/typos) |
 | Typst (`typst`) | 0.15.1 | [Homepage](https://typst.app) | [Source](https://github.com/typst/typst) |
-| uv (`uv`, `uvx`) | 0.13.4 | [Homepage](https://docs.astral.sh/uv) | [Source](https://github.com/astral-sh/uv) |
+| uv (`uv`, `uvx`) | 0.13.5 | [Homepage](https://docs.astral.sh/uv) | [Source](https://github.com/astral-sh/uv) |
 | watchexec (`watchexec`) | 2.8.0 | [Homepage](https://watchexec.github.io) | [Source](https://github.com/watchexec/watchexec) |
 | xh (`xh`) | 0.26.3 | [Homepage](https://github.com/ducaale/xh) | [Source](https://github.com/ducaale/xh) |
 | zizmor (`zizmor`) | 1.31.1 | [Homepage](https://github.com/zizmorcore/zizmor) | [Source](https://github.com/zizmorcore/zizmor) |

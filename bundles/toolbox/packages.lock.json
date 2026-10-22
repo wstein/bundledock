@@ -101,9 +101,9 @@
         "verification": "publisher-sha256"
       },
       "gh": {
-        "version": "v2.102.1",
-        "url": "https://github.com/cli/cli/releases/download/v2.102.1/gh_2.102.1_linux_amd64.tar.gz",
-        "sha256": "77b9e297e94c50336823d0f84de7ef1be60cba704601fa0d98f129f47a94987b",
+        "version": "v2.103.0",
+        "url": "https://github.com/cli/cli/releases/download/v2.103.0/gh_2.103.0_linux_amd64.tar.gz",
+        "sha256": "fdd768eb70f6409f80fcfa9f3a1c0adf0fc98d827ab3ce0bed2ac22762c5d786",
         "verification": "publisher-sha256"
       },
       "gh-stack": {
@@ -227,9 +227,9 @@
         "verification": "publisher-sha256"
       },
       "pinact": {
-        "version": "v5.0.0",
-        "url": "https://github.com/suzuki-shunsuke/pinact/releases/download/v5.0.0/pinact_linux_amd64.tar.gz",
-        "sha256": "d005bbb85da80dacdc07816f24a5da723a9f6d1e9f3d3e7e73df33f9caa1358f",
+        "version": "v5.0.1",
+        "url": "https://github.com/suzuki-shunsuke/pinact/releases/download/v5.0.1/pinact_linux_amd64.tar.gz",
+        "sha256": "12500c0fff5db94a0155e2e76ed959d1dc0e899056ee168d8fb7b4840e7c04f0",
         "verification": "publisher-sha256"
       },
       "regctl": {
@@ -323,9 +323,9 @@
         "verification": "publisher-sha256"
       },
       "uv": {
-        "version": "0.13.4",
-        "url": "https://github.com/astral-sh/uv/releases/download/0.13.4/uv-x86_64-unknown-linux-musl.tar.gz",
-        "sha256": "28d4385f9f9d1d1c7654d85b3855e0e2615b2f6cc13136a2edff858bbdc16ff1",
+        "version": "0.13.5",
+        "url": "https://github.com/astral-sh/uv/releases/download/0.13.5/uv-x86_64-unknown-linux-musl.tar.gz",
+        "sha256": "57ef9d9ccb01fb1bd998df995b0dd221b52f7d7841fbea93f2d4463bf61fb7a9",
         "verification": "publisher-sha256"
       },
       "watchexec": {
@@ -463,9 +463,9 @@
         "verification": "publisher-sha256"
       },
       "gh": {
-        "version": "v2.102.1",
-        "url": "https://github.com/cli/cli/releases/download/v2.102.1/gh_2.102.1_linux_arm64.tar.gz",
-        "sha256": "5019b3cc6e8a03bb4d88600f8dbda2add8e6407705c159b0c63151036e77a1af",
+        "version": "v2.103.0",
+        "url": "https://github.com/cli/cli/releases/download/v2.103.0/gh_2.103.0_linux_arm64.tar.gz",
+        "sha256": "7f322df34e624d14f5ec0c4acb121fd6dfa14392fdbbd1066aa8e0a05ac3721e",
         "verification": "publisher-sha256"
       },
       "gh-stack": {
@@ -589,9 +589,9 @@
         "verification": "publisher-sha256"
       },
       "pinact": {
-        "version": "v5.0.0",
-        "url": "https://github.com/suzuki-shunsuke/pinact/releases/download/v5.0.0/pinact_linux_arm64.tar.gz",
-        "sha256": "d28ca5e9ddd7950da4a808288f8a83f84fc3ca40e86bab970f3adeef33578c0b",
+        "version": "v5.0.1",
+        "url": "https://github.com/suzuki-shunsuke/pinact/releases/download/v5.0.1/pinact_linux_arm64.tar.gz",
+        "sha256": "fc1432004f378ae51d549a356195b4d2e3ee05935dbd20e3bbca66db1cdf6590",
         "verification": "publisher-sha256"
       },
       "regctl": {
@@ -685,9 +685,9 @@
         "verification": "publisher-sha256"
       },
       "uv": {
-        "version": "0.13.4",
-        "url": "https://github.com/astral-sh/uv/releases/download/0.13.4/uv-aarch64-unknown-linux-musl.tar.gz",
-        "sha256": "253a17cadcb659ae77a0fe3b9a2f1c14297528d480c421899e61e64d64f24e8f",
+        "version": "0.13.5",
+        "url": "https://github.com/astral-sh/uv/releases/download/0.13.5/uv-aarch64-unknown-linux-musl.tar.gz",
+        "sha256": "7906c79adb21c81abd559841ba76bb1d9af9d791acac7a041b2972e03ae16538",
         "verification": "publisher-sha256"
       },
       "watchexec": {

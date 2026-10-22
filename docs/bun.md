@@ -34,7 +34,7 @@ The source inventory below describes the current lock; this publication retains 
 <!-- BEGIN GENERATED TOOL INVENTORY -->
 | Tool | Pinned version |
 | --- | --- |
-| bun | 1.4.3 |
+| bun | 1.4.4 |
 <!-- END GENERATED TOOL INVENTORY -->
 
 The [official release](https://github.com/oven-sh/bun/releases/tag/bun-v1.4.3),

@@ -36,7 +36,7 @@ The source inventory below describes the current lock; this publication retains 
 <!-- BEGIN GENERATED TOOL INVENTORY -->
 | Tool | Pinned version |
 | --- | --- |
-| opentofu | 1.13.1 |
+| opentofu | 1.13.2 |
 <!-- END GENERATED TOOL INVENTORY -->
 
 The [official v1.13.1 release](https://github.com/opentofu/opentofu/releases/tag/v1.13.1)
