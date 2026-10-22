@@ -1669,6 +1669,36 @@
         "licenses/cscribe/SOURCE"
       ]
     },
+    "opentofu": {
+      "provider": "github",
+      "repository": "opentofu/opentofu",
+      "tag_prefix": "v",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "amd64",
+        "arm64": "arm64"
+      },
+      "asset": "tofu_{version}_linux_{arch}.tar.gz",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "sidecar": "tofu_{version}_SHA256SUMS",
+      "install": {
+        "kind": "tar.gz",
+        "members": {
+          "tofu": "bin/tofu"
+        },
+        "archive_notices": [
+          "LICENSE",
+          "README.md",
+          "CHANGELOG.md"
+        ]
+      },
+      "notices": [
+        "licenses/opentofu/SOURCE"
+      ]
+    },
     "zk": {
       "provider": "github",
       "repository": "zk-org/zk",
