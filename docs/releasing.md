@@ -46,9 +46,9 @@ dispatch (dry run, never publishes).
 Each archive holds `bdock`, `LICENSE` and `PROVENANCE` (source revision, version, toolchain,
 flags, platform). Nothing is signed with a key or notarized. The archives and `SHA256SUMS` carry a
 GitHub build-provenance attestation; verify a downloaded file with
-`gh attestation verify <archive> -R wstein/bundledock`. A release created before the
-attestation step existed (`bdock/v0.1.0` was) has none, and tags are permanent, so such a release
-cannot be attested afterwards without a new tag.
+`gh attestation verify <archive> -R wstein/bundledock`. Attestation applies to every
+release created by a tag run of this workflow; the first release, `bdock/v0.1.0`, is tagged after
+this change.
 
 ## Before the first tag
 

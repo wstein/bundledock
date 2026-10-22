@@ -122,8 +122,9 @@ that tag.
 - Nothing is signed with a key or notarized. The publish job attests build provenance for the
   archives and `SHA256SUMS` (`actions/attest-build-provenance`, between the checks and
   `gh release create`; `id-token: write` and `attestations: write` on that job only), verified with
-  `gh attestation verify <archive> -R wstein/bundledock`; a dry run never attests. A release made
-  before this step (`bdock/v0.1.0`) has no attestation. macOS may quarantine a browser download.
+  `gh attestation verify <archive> -R wstein/bundledock`; a dry run never attests. Every release
+  created by a tag run is attested; the first release, `bdock/v0.1.0`, is tagged after this
+  change. macOS may quarantine a browser download.
 - Owner checks compare with `github.repository_owner`; if the repository moves to an
   organization they fail closed until rewritten.
 - No reviewer gate: the `release` environment is unprotected, so an owner tag push publishes as
