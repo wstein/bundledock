@@ -30,7 +30,11 @@ dispatch (dry run, never publishes).
    a successful `CI` push run for that commit; no release for the tag yet; a version strictly
    above every other `bdock/vX.Y.Z` tag and release (numeric comparison, so 0.10.0 > 0.9.0); `make check`;
    `go mod verify`.
-   The CI guard retries its `head_sha` query up to five times and then filters the successful push runs by commit client side, because the Actions API has answered that query alternately with two results and none.
+   The CI guard retries its `head_sha` query up to five times and then filters the newest 500
+   successful push runs of `ci.yml` by commit client side, because the Actions API has answered
+   that query alternately with two results and none; every run is re-checked for the commit, a
+   success conclusion and the push event, and a commit older than those 500 runs must re-run CI
+   first.
 2. **build** (linux/amd64, linux/arm64, darwin/arm64): `scripts/release.sh` twice per
    platform with an empty second build cache; the trees must be byte-identical and name the
    tagged revision with `source_modified=false`.

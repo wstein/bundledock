@@ -15,9 +15,12 @@
 #                                         Needs gh and REPO (owner/name) and reads the Actions API only.
 #                                         The head_sha query is retried (CI_ATTEMPTS, default 5, CI_SLEEP seconds,
 #                                         default 2) because the API has answered the same query with 2 and 0
-#                                         results alternately; then up to CI_PAGES (default 5) pages of the
-#                                         successful push runs are filtered by head_sha client side.
+#                                         results alternately; then up to CI_PAGES (default 5) pages of 100, the newest 500
+#                                         successful push runs, are filtered by head_sha client side (an older
+#                                         commit must re-run CI first). Every run is re-checked here for the
+#                                         commit, a success conclusion and the push event.
 #
+# POSIX sh (tested with dash and bash).
 # Except for ci-green, reads local files and git objects only; no network and no writes. Exit 0 when the
 # check holds, 1 when it fails, 2 on a usage error.
 set -eu
@@ -102,25 +105,46 @@ ci-green)
 	attempts=${CI_ATTEMPTS:-5}
 	sleep_s=${CI_SLEEP:-2}
 	pages=${CI_PAGES:-5}
-	base="repos/$REPO/actions/workflows/ci.yml/runs"
+	runs="repos/$REPO/actions/workflows/ci.yml/runs"
+	# Neither the head_sha filter nor the status filter of the server is trusted: every run is
+	# checked here for the commit, a success conclusion and the push event.
+	hf='[.workflow_runs[] | select(.head_sha == "'$sha'" and .conclusion == "success" and .event == "push")] | length'
+	ff='"\(.workflow_runs | length) \(.workflow_runs | map(select(.head_sha == "'$sha'" and .conclusion == "success" and .event == "push")) | length)"'
+	api_ok=0
 	i=0
 	while [ "$i" -lt "$attempts" ]; do
 		i=$((i + 1))
-		if n=$(gh api "$base?head_sha=$sha&event=push&status=success" --jq '.workflow_runs | map(select(.conclusion == "success")) | length'); then :; else n=0; fi
-		if [ "${n:-0}" -ge 1 ] 2>/dev/null; then exit 0; fi
-		[ "$i" -lt "$attempts" ] && sleep "$sleep_s"
+		if n=$(gh api "$runs?head_sha=$sha&event=push&status=success" --jq "$hf"); then
+			api_ok=1
+			if [ "$n" -ge 1 ] 2>/dev/null; then exit 0; fi
+		fi
+		if [ "$i" -lt "$attempts" ]; then sleep "$sleep_s"; fi
 	done
-	# The head_sha filter was unreliable: list the successful push runs and filter by hand.
+	# The head_sha filter was unreliable: list the newest successful push runs and filter by hand.
 	p=0
 	while [ "$p" -lt "$pages" ]; do
 		p=$((p + 1))
-		if r=$(gh api "$base?event=push&status=success&per_page=100&page=$p" --jq "\"\(.workflow_runs | length) \(.workflow_runs | map(select(.head_sha == \"$sha\" and .conclusion == \"success\")) | length)\""); then :; else r="0 0"; fi
-		total=${r% *}
+		t=0
+		r=
+		while [ "$t" -lt "$attempts" ]; do
+			t=$((t + 1))
+			if r=$(gh api "$runs?event=push&status=success&per_page=100&page=$p" --jq "$ff"); then
+				api_ok=1
+				break
+			fi
+			r=
+			if [ "$t" -lt "$attempts" ]; then sleep "$sleep_s"; fi
+		done
+		[ -n "$r" ] || break
 		found=${r#* }
-		if [ "${found:-0}" -ge 1 ] 2>/dev/null; then exit 0; fi
-		[ "${total:-0}" -ge 100 ] 2>/dev/null || break
+		if [ "$found" -ge 1 ] 2>/dev/null; then exit 0; fi
+		total=${r% *}
+		[ "$total" -ge 100 ] 2>/dev/null || break
 	done
-	fail "no successful CI run on push for $sha; wait for or re-run CI for that commit first ($attempts attempts of the head_sha query and a client-side listing of up to $pages pages found none)"
+	if [ "$api_ok" = 0 ]; then
+		fail "the GitHub API kept failing for $sha after $attempts attempts: see the errors above"
+	fi
+	fail "no successful CI run on push for $sha; wait for or re-run CI for that commit first ($attempts attempts of the head_sha query and a client-side listing of up to $pages pages of 100 found none; older commits than the newest $((pages * 100)) successful push runs must re-run CI first)"
 	;;
 *)
 	usage
