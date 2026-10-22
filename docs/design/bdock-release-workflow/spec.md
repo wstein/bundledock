@@ -119,7 +119,11 @@ that tag.
   casual weakening. The reviews and the owner's review of the workflow PR are the real gate.
 - Reproducibility is shown on one runner with one toolchain (two builds, one fresh cache);
   independent reproduction is not claimed.
-- Nothing is signed, notarized or attested. macOS may quarantine a browser download.
+- Nothing is signed with a key or notarized. The publish job attests build provenance for the
+  archives and `SHA256SUMS` (`actions/attest-build-provenance`, between the checks and
+  `gh release create`; `id-token: write` and `attestations: write` on that job only), verified with
+  `gh attestation verify <archive> -R wstein/bundledock`; a dry run never attests. A release made
+  before this step (`bdock/v0.1.0`) has no attestation. macOS may quarantine a browser download.
 - Owner checks compare with `github.repository_owner`; if the repository moves to an
   organization they fail closed until rewritten.
 - No reviewer gate: the `release` environment is unprotected, so an owner tag push publishes as
@@ -143,7 +147,7 @@ that tag.
 ## Out of scope
 
 Windows, darwin/amd64, linux/386, Homebrew/apt/Docker/`go install` publication, SBOMs,
-attestations or signatures, pre-release tags, automatic version bumps, changelog files,
+signatures, pre-release tags, automatic version bumps, changelog files,
 OCI image releases (see [publication](../../publication.md)), running the workflow,
 tagging and merging.
 
@@ -160,7 +164,7 @@ tagging and merging.
    build-approval sentences and has its own paragraph; the owner may prefer other phrasing.
 5. **Tag ruleset.** Block deletion and update of `bdock/v*` tags. A repository setting only the owner
    changes; the click path is in `docs/releasing.md`. Recommended before the first tag.
-6. **Attestations** (build provenance) after the first release. Recommended later.
+6. **Attestations** (build provenance): done in the publish job (see Known limitations); the first one appears with the first tag run after it merged.
 7. **Security reporting.** There is no `SECURITY.md`; `CODE_OF_CONDUCT.md` has a contact for
    conduct reports only. Recommended: decide a vulnerability-reporting channel (or defer
    explicitly) before the first public binary.

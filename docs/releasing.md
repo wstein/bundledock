@@ -38,11 +38,17 @@ dispatch (dry run, never publishes).
    `completion bash`. No network, Docker or registry is used, so this does not test
    `tools volume` or `tools upgrade`.
 4. **publish**: re-checks the owner, refuses an existing release (drafts included) and a moved tag,
-   builds `SHA256SUMS`, and runs `gh release create --verify-tag` with three archives and
-   `SHA256SUMS`.
+   builds `SHA256SUMS`, attests build provenance for the three archives and `SHA256SUMS`
+   (`actions/attest-build-provenance`; only this job holds `id-token: write` and
+   `attestations: write`), and then runs `gh release create --verify-tag` with the archives and
+   `SHA256SUMS`. A dry run never reaches this job, so it neither attests nor publishes.
 
 Each archive holds `bdock`, `LICENSE` and `PROVENANCE` (source revision, version, toolchain,
-flags, platform). Nothing is signed or notarized.
+flags, platform). Nothing is signed with a key or notarized. The archives and `SHA256SUMS` carry a
+GitHub build-provenance attestation; verify a downloaded file with
+`gh attestation verify <archive> -R wstein/bundledock`. A release created before the
+attestation step existed (`bdock/v0.1.0` was) has none, and tags are permanent, so such a release
+cannot be attested afterwards without a new tag.
 
 ## Before the first tag
 
