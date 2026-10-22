@@ -372,8 +372,10 @@ func extract(root *os.Root, tool string, p toolconfig.Package, source io.Reader,
 						treeFiles[tree]++
 						break
 					}
-					// Archives that nest everything below one wrapper directory
-					// (tool_1.0_linux_amd64/) keep the tree path below that directory.
+					// A tree directly below any first-level directory (for example
+					// tool_1.0_linux_amd64/) also matches; that directory is dropped
+					// from the target path. This is not limited to a single wrapper;
+					// two entries with the same target path fail closed.
 					if _, below, ok := strings.Cut(name, "/"); ok && strings.HasPrefix(below, tree+"/") {
 						target = "licenses/" + tool + "/" + below
 						treeFiles[tree]++
