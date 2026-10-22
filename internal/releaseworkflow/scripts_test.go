@@ -2,6 +2,7 @@ package releaseworkflow
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -449,11 +450,39 @@ func TestVerifyMonotonicVersion(t *testing.T) {
 const ciSHA = "b6ee4d79b6ee4d79b6ee4d79b6ee4d79b6ee4d79"
 const otherSHA = "0123456789012345678901234567890123456789"
 
-// fakeGH puts a fake `gh` first on PATH. A head_sha query pops the next count of head
-// (an empty list answers 0, like the live API did); any other query is the paginated
-// list, answered by running the caller's --jq filter over list, whatever the page.
-// Every URL is logged. The script is run with no sleep.
-func fakeGH(t *testing.T, head []string, list string) (env []string, calls func() []string) {
+type ciRun struct{ sha, conclusion, event string }
+
+func ciRuns(rs ...ciRun) string {
+	var parts []string
+	for _, r := range rs {
+		parts = append(parts, `{"head_sha":"`+r.sha+`","conclusion":"`+r.conclusion+`","event":"`+r.event+`"}`)
+	}
+	return "[" + strings.Join(parts, ",") + "]"
+}
+
+func ciRunsN(n int, r ciRun) []ciRun {
+	out := make([]ciRun, n)
+	for i := range out {
+		out[i] = r
+	}
+	return out
+}
+
+// ciCase describes one fake API situation. headModes and listModes are consumed one entry
+// per head_sha query or per list query ("ok", "empty" for a zero-result answer, "fail" for a
+// gh error); once used up the fake answers "ok". ignoreHead models a server that ignores
+// the head_sha, event and status filters and returns unfiltered runs.
+type ciCase struct {
+	name                 string
+	runs                 string
+	headModes, listModes []string
+	ignoreHead           bool
+	ok                   bool
+	heads, lists, sleeps int
+	msg                  string
+}
+
+func fakeGH(t *testing.T, c ciCase, extraEnv ...string) (env []string, files func(string) []string) {
 	t.Helper()
 	dir := t.TempDir()
 	write := func(name, body string) {
@@ -461,41 +490,65 @@ func fakeGH(t *testing.T, head []string, list string) (env []string, calls func(
 			t.Fatal(err)
 		}
 	}
-	write("head", strings.Join(head, "\n")+"\n")
-	write("list.json", list)
+	write("runs.json", c.runs)
+	write("head", strings.Join(c.headModes, "\n")+"\n")
+	write("list", strings.Join(c.listModes, "\n")+"\n")
+	ignore := "0"
+	if c.ignoreHead {
+		ignore = "1"
+	}
+	write("ignorehead", ignore)
 	bin := filepath.Join(dir, "bin")
 	if err := os.Mkdir(bin, 0o755); err != nil {
 		t.Fatal(err)
 	}
+	// The fake models the Actions API: it checks the path, applies the head_sha, event and
+	// status filters of the query to the runs, pages them and answers the caller's --jq
+	// filter with the real jq over {"total_count", "workflow_runs"}.
 	fake := `#!/bin/sh
 d=` + dir + `
-[ "$1" = api ] || exit 9
+[ "$1" = api ] && [ "$3" = --jq ] || exit 9
 url=$2
 filter=$4
 echo "$url" >> "$d/calls"
+path=${url%%\?*}
+query=${url#*\?}
+if [ "$path" != "repos/o/r/actions/workflows/ci.yml/runs" ]; then echo "gh: Not Found (HTTP 404)" >&2; exit 1; fi
+param() { printf '%s' "$query" | tr '&' '\n' | sed -n "s/^$1=//p"; }
 case $url in
-*head_sha=*)
-	n=$(sed -n 1p "$d/head")
-	sed 1d "$d/head" > "$d/head.next" && mv "$d/head.next" "$d/head"
-	echo "${n:-0}"
-	;;
+*head_sha=*) q=head ;;
+*) q=list ;;
+esac
+mode=$(sed -n 1p "$d/$q")
+sed 1d "$d/$q" > "$d/$q.next" && mv "$d/$q.next" "$d/$q"
+case ${mode:-ok} in
+fail) echo "gh: HTTP 502 (Bad Gateway)" >&2; exit 1 ;;
+empty) body='{"total_count":0,"workflow_runs":[]}' ;;
 *)
-	jq -r "$filter" "$d/list.json"
+	body=$(jq -c --arg head "$(param head_sha)" --arg event "$(param event)" --arg status "$(param status)" \
+		--argjson per "$(param per_page | grep . || echo 30)" --argjson page "$(param page | grep . || echo 1)" \
+		--arg ignore "$(cat "$d/ignorehead")" '
+		[.[] | select(($ignore == "1" or $head == "" or .head_sha == $head)
+			and ($ignore == "1" or $event == "" or .event == $event)
+			and ($ignore == "1" or $status == "" or ($status == "success" and .conclusion == "success")))] as $m
+		| {total_count: ($m | length), workflow_runs: $m[($page - 1) * $per : $page * $per]}' "$d/runs.json")
 	;;
 esac
+printf '%s' "$body" | jq -r "$filter"
 `
 	if err := os.WriteFile(filepath.Join(bin, "gh"), []byte(fake), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	calls = func() []string {
-		raw, _ := os.ReadFile(filepath.Join(dir, "calls"))
+	// A fake sleep that records its argument keeps the tests fast and shows the pause.
+	if err := os.WriteFile(filepath.Join(bin, "sleep"), []byte("#!/bin/sh\necho \"$1\" >> '"+dir+"/sleeps'\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	files = func(name string) []string {
+		raw, _ := os.ReadFile(filepath.Join(dir, name))
 		return strings.Fields(string(raw))
 	}
-	return []string{"PATH=" + bin + string(os.PathListSeparator) + os.Getenv("PATH"), "REPO=o/r", "CI_SLEEP=0"}, calls
-}
-
-func runList(sha string) string {
-	return `{"workflow_runs":[{"head_sha":"` + sha + `","conclusion":"success"}]}`
+	env = append([]string{"PATH=" + bin + string(os.PathListSeparator) + os.Getenv("PATH"), "REPO=o/r"}, extraEnv...)
+	return env, files
 }
 
 func ciGreen(t *testing.T, scriptPath string, env []string) (string, error) {
@@ -503,59 +556,103 @@ func ciGreen(t *testing.T, scriptPath string, env []string) (string, error) {
 	return runIn(t, repoRoot(t), env, "sh", scriptPath, "ci-green", ciSHA)
 }
 
-func countHead(urls []string) (head, list int) {
-	for _, u := range urls {
+func ciCases() []ciCase {
+	hit := ciRuns(ciRun{ciSHA, "success", "push"})
+	other := ciRuns(ciRun{otherSHA, "success", "push"}, ciRun{otherSHA, "success", "push"})
+	five := func(m string) []string { return []string{m, m, m, m, m} }
+	withHit := func(n int) string {
+		rs := ciRunsN(n, ciRun{otherSHA, "success", "push"})
+		return ciRuns(append(rs, ciRun{ciSHA, "success", "push"})...)
+	}
+	const none = "no successful CI run on push for " + ciSHA
+	const failing = "kept failing"
+	return []ciCase{
+		{name: "first answer is enough", runs: hit, ok: true, heads: 1},
+		{name: "0,0,2 succeeds on the third", runs: hit, headModes: []string{"empty", "empty", "ok"}, ok: true, heads: 3, sleeps: 2},
+		{name: "five empty answers use the fallback", runs: hit, headModes: five("empty"), ok: true, heads: 5, lists: 1, sleeps: 4},
+		{name: "five gh errors use the fallback", runs: hit, headModes: five("fail"), ok: true, heads: 5, lists: 1, sleeps: 4},
+		{name: "nothing found", runs: other, ok: false, heads: 5, lists: 1, sleeps: 4, msg: none},
+		{name: "no runs at all", runs: "[]", ok: false, heads: 5, lists: 1, sleeps: 4, msg: none},
+		{name: "server ignores head_sha, returns other commits", runs: other, ignoreHead: true, ok: false, heads: 5, lists: 1, sleeps: 4, msg: none},
+		{name: "run of the commit did not succeed", runs: ciRuns(ciRun{ciSHA, "failure", "push"}), ignoreHead: true, ok: false, heads: 5, lists: 1, sleeps: 4, msg: none},
+		{name: "run of the commit is not a push run", runs: ciRuns(ciRun{ciSHA, "success", "pull_request"}), ignoreHead: true, ok: false, heads: 5, lists: 1, sleeps: 4, msg: none},
+		{name: "every call fails", runs: hit, headModes: five("fail"), listModes: five("fail"), ok: false, heads: 5, lists: 5, sleeps: 8, msg: failing},
+		{name: "the API fails once the head query is empty", runs: hit, headModes: five("empty"), listModes: five("fail"), ok: false, heads: 5, lists: 5, sleeps: 8, msg: none},
+		{name: "a failed list page is retried", runs: hit, headModes: five("empty"), listModes: []string{"fail", "ok"}, ok: true, heads: 5, lists: 2, sleeps: 5},
+		{name: "fallback reads status=success pages only", runs: ciRuns(append(ciRunsN(450, ciRun{otherSHA, "failure", "push"}), ciRun{ciSHA, "success", "push"})...), headModes: five("empty"), ok: true, heads: 5, lists: 1, sleeps: 4},
+		{name: "commit within the newest 500 is found on page 5", runs: withHit(450), headModes: five("empty"), ok: true, heads: 5, lists: 5, sleeps: 4},
+		{name: "commit beyond the newest 500 is not found", runs: withHit(550), headModes: five("empty"), ok: false, heads: 5, lists: 5, sleeps: 4, msg: none},
+	}
+}
+
+// ciProblems runs one case against the script at path (CI_SLEEP unset) and lists what deviates.
+func ciProblems(t *testing.T, path string, c ciCase) []string {
+	t.Helper()
+	env, files := fakeGH(t, c)
+	out, err := ciGreen(t, path, env)
+	var bad []string
+	if (err == nil) != c.ok {
+		bad = append(bad, "exit: "+fmt.Sprint(err)+" "+out)
+	}
+	var heads, lists int
+	for _, u := range files("calls") {
 		if strings.Contains(u, "head_sha=") {
-			head++
+			heads++
+			if !strings.Contains(u, "head_sha="+ciSHA+"&") {
+				bad = append(bad, "head query for another commit: "+u)
+			}
 		} else {
-			list++
+			lists++
+		}
+		if !strings.Contains(u, "event=push") || !strings.Contains(u, "status=success") || !strings.HasPrefix(u, "repos/o/r/actions/workflows/ci.yml/runs?") {
+			bad = append(bad, "query lacks event=push, status=success or the ci.yml path: "+u)
 		}
 	}
-	return
+	if heads != c.heads || lists != c.lists {
+		bad = append(bad, fmt.Sprintf("%d head and %d list queries, want %d and %d", heads, lists, c.heads, c.lists))
+	}
+	sleeps := files("sleeps")
+	if len(sleeps) != c.sleeps {
+		bad = append(bad, fmt.Sprintf("%d pauses, want %d", len(sleeps), c.sleeps))
+	}
+	for _, sl := range sleeps {
+		if sl != "2" {
+			bad = append(bad, "pause of "+sl+" seconds, want 2")
+		}
+	}
+	if c.msg != "" && !strings.Contains(out, c.msg) {
+		bad = append(bad, "message lacks "+c.msg+": "+out)
+	}
+	if !c.ok && c.msg == none(c) && strings.Contains(out, "5 attempts") == false {
+		bad = append(bad, "message does not say how many attempts were made: "+out)
+	}
+	return bad
 }
 
-func TestCIGreenRetriesTheHeadQuery(t *testing.T) {
-	s := script(t, "release-verify.sh")
-	for name, tc := range map[string]struct {
-		head       []string
-		list       string
-		ok         bool
-		heads, lst int
-	}{
-		"first answer is enough":       {[]string{"2"}, runList(otherSHA), true, 1, 0},
-		"0,0,2 succeeds on the third":  {[]string{"0", "0", "2"}, runList(otherSHA), true, 3, 0},
-		"five misses use the fallback": {[]string{"0", "0", "0", "0", "0"}, runList(ciSHA), true, 5, 1},
-		"fallback ignores other heads": {nil, runList(otherSHA), false, 5, 1},
-	} {
-		env, calls := fakeGH(t, tc.head, tc.list)
-		out, err := ciGreen(t, s, env)
-		if (err == nil) != tc.ok {
-			t.Errorf("%s: err=%v out=%s", name, err, out)
-		}
-		if h, l := countHead(calls()); h != tc.heads || l != tc.lst {
-			t.Errorf("%s: %d head queries and %d list queries, want %d and %d (%v)", name, h, l, tc.heads, tc.lst, calls())
-		}
-		if !tc.ok && !strings.Contains(out, "no successful CI run on push for "+ciSHA) {
-			t.Errorf("%s: failure lacks the CI message: %s", name, out)
-		}
-		if !tc.ok && !strings.Contains(out, "5 attempts") {
-			t.Errorf("%s: failure does not say how many attempts were made: %s", name, out)
+func none(c ciCase) string { return "no successful CI run on push for " + ciSHA }
+
+func TestCIGreen(t *testing.T) {
+	for _, c := range ciCases() {
+		for _, bad := range ciProblems(t, script(t, "release-verify.sh"), c) {
+			t.Errorf("%s: %s", c.name, bad)
 		}
 	}
 }
 
-func TestCIGreenFallbackPagesAreCapped(t *testing.T) {
-	env, calls := fakeGH(t, nil, `{"workflow_runs":[`+strings.TrimSuffix(strings.Repeat(`{"head_sha":"`+otherSHA+`","conclusion":"success"},`, 100), ",")+`]}`)
-	if _, err := ciGreen(t, script(t, "release-verify.sh"), env); err == nil {
-		t.Fatal("a listing without the commit passed")
-	}
-	if _, l := countHead(calls()); l != 5 {
-		t.Errorf("fallback read %d pages, want the cap of 5", l)
+func TestCIGreenRunsUnderDashAndBash(t *testing.T) {
+	for _, shell := range []string{"dash", "bash"} {
+		if _, err := exec.LookPath(shell); err != nil {
+			t.Skipf("%s not installed", shell)
+		}
+		env, _ := fakeGH(t, ciCases()[1])
+		if out, err := runIn(t, repoRoot(t), env, shell, script(t, "release-verify.sh"), "ci-green", ciSHA); err != nil {
+			t.Errorf("%s: %v\n%s", shell, err, out)
+		}
 	}
 }
 
 func TestCIGreenRejectsABadCommit(t *testing.T) {
-	env, _ := fakeGH(t, []string{"2"}, runList(ciSHA))
+	env, _ := fakeGH(t, ciCases()[0])
 	for _, bad := range []string{"", "main", ciSHA[:39], ciSHA + "0", "B6EE4D79B6EE4D79B6EE4D79B6EE4D79B6EE4D79"} {
 		if _, err := runIn(t, repoRoot(t), env, "sh", script(t, "release-verify.sh"), "ci-green", bad); err == nil {
 			t.Errorf("commit %q accepted", bad)
@@ -563,19 +660,45 @@ func TestCIGreenRejectsABadCommit(t *testing.T) {
 	}
 }
 
-// Each mutant weakens the script once; the retry and fallback tests must notice.
+// Each mutant weakens the script once; some case of TestCIGreen must deviate.
 func TestCIGreenMutantsAreCaught(t *testing.T) {
 	raw, err := os.ReadFile(script(t, "release-verify.sh"))
 	if err != nil {
 		t.Fatal(err)
 	}
+	headQ := `"$runs?head_sha=$sha&event=push&status=success"`
+	listQ := `"$runs?event=push&status=success&per_page=100&page=$p"`
 	mutants := []struct{ name, from, to string }{
 		{"no retry", "CI_ATTEMPTS:-5", "CI_ATTEMPTS:-1"},
 		{"retry count 0", "CI_ATTEMPTS:-5", "CI_ATTEMPTS:-0"},
 		{"no fallback", "pages=${CI_PAGES:-5}", "pages=0"},
-		{"fallback without head_sha filter", "select(.head_sha == \\\"$sha\\\" and", "select(true and"},
-		{"fallback ignores conclusion", "and .conclusion == \\\"success\\\"", ""},
 		{"fallback uncapped", "pages=${CI_PAGES:-5}", "pages=${CI_PAGES:-50}"},
+		{"head filter without head_sha", `select(.head_sha == "'$sha'" and .conclusion == "success" and .event == "push")] | length'`, `select(.conclusion == "success" and .event == "push")] | length'`},
+		{"head filter without conclusion", `select(.head_sha == "'$sha'" and .conclusion == "success" and .event == "push")] | length'`, `select(.head_sha == "'$sha'" and .event == "push")] | length'`},
+		{"head filter conclusion inverted", `select(.head_sha == "'$sha'" and .conclusion == "success" and .event == "push")] | length'`, `select(.head_sha == "'$sha'" and .conclusion != "success" and .event == "push")] | length'`},
+		{"head filter without event", `select(.head_sha == "'$sha'" and .conclusion == "success" and .event == "push")] | length'`, `select(.head_sha == "'$sha'" and .conclusion == "success")] | length'`},
+		{"head count is total_count + 1", `hf='[.workflow_runs[] | select(.head_sha == "'$sha'" and .conclusion == "success" and .event == "push")] | length'`, `hf='.total_count + 1'`},
+		{"fallback filter without head_sha", `map(select(.head_sha == "'$sha'" and .conclusion`, `map(select(.conclusion`},
+		{"fallback filter conclusion inverted", `map(select(.head_sha == "'$sha'" and .conclusion == "success"`, `map(select(.head_sha == "'$sha'" and .conclusion != "success"`},
+		{"fallback filter without conclusion", `and .conclusion == "success" and .event == "push")) | length)"'`, `and .event == "push")) | length)"'`},
+		{"fallback filter without event", `and .conclusion == "success" and .event == "push")) | length)"'`, `and .conclusion == "success")) | length)"'`},
+		{"head query without event=push", headQ, `"$runs?head_sha=$sha&status=success"`},
+		{"head query without status=success", headQ, `"$runs?head_sha=$sha&event=push"`},
+		{"head query without head_sha", headQ, `"$runs?event=push&status=success"`},
+		{"fallback query without event=push", listQ, `"$runs?status=success&per_page=100&page=$p"`},
+		{"fallback query without status=success", listQ, `"$runs?event=push&per_page=100&page=$p"`},
+		{"other workflow path", `runs="repos/$REPO/actions/workflows/ci.yml/runs"`, `runs="repos/$REPO/actions/runs"`},
+		{"gh failure counts as success in the head query", `if n=$(gh api "$runs?head_sha`, `if n=1; gh api "$runs?head_sha`},
+		{"gh failure counts as success in the fallback", `[ -n "$r" ] || break`, `[ -n "$r" ] || r="1 1"`},
+		{"no pause in the head loop", `if [ "$i" -lt "$attempts" ]; then sleep "$sleep_s"; fi`, `:`},
+		{"no pause in the page loop", `if [ "$t" -lt "$attempts" ]; then sleep "$sleep_s"; fi`, `:`},
+		{"pause default changed", "CI_SLEEP:-2", "CI_SLEEP:-0"},
+		{"API failure message lost", `if [ "$api_ok" = 0 ]; then`, `if false; then`},
+		{"API failure never noted", "api_ok=1\n\t\t\tif [ \"$n\"", "if [ \"$n\""},
+		{"list page error not retried", `[ "$t" -lt "$attempts" ]; then sleep "$sleep_s"; fi
+		done`, `[ "$t" -lt "$attempts" ]; then sleep "$sleep_s"; fi
+		break
+		done`},
 	}
 	for _, m := range mutants {
 		if !strings.Contains(string(raw), m.from) {
@@ -587,28 +710,10 @@ func TestCIGreenMutantsAreCaught(t *testing.T) {
 			t.Fatal(err)
 		}
 		killed := false
-		check := func(head []string, list string, wantOK bool, wantHeads int) {
-			env, calls := fakeGH(t, head, list)
-			_, err := ciGreen(t, path, env)
-			h, l := countHead(calls())
-			if (err == nil) != wantOK || h != wantHeads || (m.name == "fallback uncapped" && l != 5 && !wantOK) {
+		for _, c := range ciCases() {
+			if len(ciProblems(t, path, c)) > 0 {
 				killed = true
-			}
-		}
-		check([]string{"0", "0", "2"}, runList(otherSHA), true, 3)
-		check([]string{"0", "0", "0", "0", "0"}, runList(ciSHA), true, 5)
-		check(nil, runList(otherSHA), false, 5)
-		env, calls := fakeGH(t, nil, `{"workflow_runs":[`+strings.TrimSuffix(strings.Repeat(`{"head_sha":"`+otherSHA+`","conclusion":"success"},`, 100), ",")+`]}`)
-		if _, err := ciGreen(t, path, env); err == nil {
-			killed = true
-		}
-		if _, l := countHead(calls()); l != 5 {
-			killed = true
-		}
-		if m.name == "fallback ignores conclusion" {
-			env, _ := fakeGH(t, nil, `{"workflow_runs":[{"head_sha":"`+ciSHA+`","conclusion":"failure"}]}`)
-			if _, err := ciGreen(t, path, env); err == nil {
-				killed = true
+				break
 			}
 		}
 		if !killed {
