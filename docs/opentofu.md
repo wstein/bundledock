@@ -12,6 +12,10 @@ for Linux AMD64 and ARM64. It has a separate catalog, lock, image, volume and
 `/opt/bdock/opentofu` mount. Providers are not bundled or pinned here;
 projects manage provider versions, lock files, credentials and licenses.
 
+The default [toolbox](toolbox.md#opentofu) also ships `tofu` at the same pin
+(owner decision 2026-10-22). This separate bundle remains published and
+supported until the owner retires it; no migration is required.
+
 <!-- BEGIN PUBLISHED BUNDLE -->
 <!-- publication-record: {"attempt":"1","bundle":"opentofu","commit":"84216f3a45e35ba741cc8245f96803b5b9a2a31f","created":"2026-10-12T22:02:34Z","digest":"sha256:67bd27de607af0d950789a3a0308262141860a331bae31b3f2a9d170c0cb3414","image":"quay.io/bundledock/opentofu","lock_sha256":"142e60e99b8603649549d5dc83679f8257563772e6301c155cf6ec535b8dfd84","reference":"quay.io/bundledock/opentofu@sha256:67bd27de607af0d950789a3a0308262141860a331bae31b3f2a9d170c0cb3414","run_attempt":"1","run_id":"38314225387","source":"https://github.com/wstein/bundledock","tag":"1.13.1-b1"} -->
 ## Published bundle

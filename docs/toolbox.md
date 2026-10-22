@@ -101,7 +101,7 @@ The source inventory below describes the current lock; this publication retains 
 
 The default bundle lives in `bundles/toolbox/`: `packages.txt`,
 `packages.catalog.json`, `packages.lock.json`, its Dockerfile, smoke scripts and licenses.
-Shared Go code remains at the repository root. The source toolbox contains 60
+Shared Go code remains at the repository root. The source toolbox contains 61
 downloaded tools plus the two first-use Python launchers listed above. Codex, Antigravity and Claude are supplied by their separate
 [Codex](codex.md), [Antigravity](agy.md) and [Claude Code](claude.md) bundles.
 The published toolbox recorded above still includes those agents; this source
@@ -387,6 +387,26 @@ source tag and the source-on-request offer EUPL-1.2 calls for.
 v0.1.0 binary was executed once that way for this addition. Native consumer
 smoke, image build/publication and consumer activation remain pending separate
 owner authorization.
+
+### OpenTofu
+
+The source lock includes the official stable prebuilt OpenTofu CLI (`tofu`,
+catalog and package ID `opentofu`, `opentofu>=1.13.1,<2.0.0`) because the toolbox
+is rebuilt daily and is the default toolset (owner decision 2026-10-22). It uses
+the same recipe, pin (v1.13.2) and publisher `tofu_{version}_SHA256SUMS` evidence
+as the separate [OpenTofu bundle](opentofu.md), which remains published and
+supported until the owner retires it; consumers may keep pinning either. No
+Sigstore or GPG verification is added, and providers stay out: they, their
+licenses, lock files, credentials and state belong to the consumer's project.
+The catalog installs only `bin/tofu`; the full MPL-2.0 `LICENSE`, `README.md`
+and `CHANGELOG.md` are retained from each archive under `licenses/opentofu/`,
+next to a `SOURCE` record.
+
+The toolbox smoke runs only `tofu version` (expected `OpenTofu vX.Y.Z`) in an
+isolated empty home, with networking disabled, in the read-only consumer. The
+fuller init, plan and apply fixture stays with the separate bundle's smoke.
+Native consumer smoke, image build/publication and consumer activation remain
+pending separate owner authorization.
 
 ### zk release
 
