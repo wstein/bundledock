@@ -369,7 +369,7 @@ func TestChangedDesiredAndBootstrap(t *testing.T) {
 							assets := []asset{}
 							for _, arch := range []string{"amd64", "arm64"} {
 								name := expand(p.Asset, v, p.Architectures[arch])
-								assets = append(assets, asset{Name: name, URL: "https://github.com/" + p.Repository + "/releases/download/" + p.TagPrefix + v + "/" + name})
+								assets = append(assets, asset{Name: name, URL: "https://github.com/" + p.Repository + "/releases/download/" + p.TagPrefix + v + "/" + name, Digest: fixtureDigest(p)})
 							}
 							json.NewEncoder(w).Encode([]release{{Tag: p.TagPrefix + v, Assets: assets}})
 							return
@@ -537,7 +537,7 @@ func TestUpgradeAllRepairsChangedCatalogInventory(t *testing.T) {
 					assets := []asset{}
 					for _, arch := range []string{"amd64", "arm64"} {
 						name := expand(p.Asset, v, p.Architectures[arch])
-						assets = append(assets, asset{Name: name, URL: "https://github.com/" + p.Repository + "/releases/download/" + p.TagPrefix + v + "/" + name})
+						assets = append(assets, asset{Name: name, URL: "https://github.com/" + p.Repository + "/releases/download/" + p.TagPrefix + v + "/" + name, Digest: fixtureDigest(p)})
 					}
 					json.NewEncoder(w).Encode([]release{{Tag: p.TagPrefix + v, Assets: assets}})
 					return
@@ -678,4 +678,13 @@ func fixtureReleaseVersion(p toolconfig.Package, canonical string) string {
 		return fmt.Sprintf("%d.%d", v[0], v[1])
 	}
 	return fmt.Sprintf("%d.%d%c", v[0], v[1], 'a'+v[2]-1)
+}
+
+// fixtureDigest gives the OpenTofu recipe the publisher checksum its strict pin
+// validation requires; the fixture serves the same payload for every download.
+func fixtureDigest(p toolconfig.Package) string {
+	if p.Repository != "opentofu/opentofu" {
+		return ""
+	}
+	return fmt.Sprintf("sha256:%x", sha256.Sum256([]byte("binary")))
 }
