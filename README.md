@@ -76,7 +76,9 @@ bundle publication and version evidence remains in each bundle guide.
 
 The `bdock` CLI is released as archives for Linux AMD64, Linux ARM64 and macOS ARM64 by a
 tag-driven CI workflow (tags `bdock/vMAJOR.MINOR.PATCH`, separate from the OCI image tags).
-No CLI release has been published yet. The owner procedure is `docs/releasing.md` in the
+Each release's archives and `SHA256SUMS` carry a GitHub build-provenance attestation; verify a
+download with `gh attestation verify <archive> -R wstein/bundledock`. Nothing is signed with a key
+or notarized. No CLI release has been published yet. The owner procedure is `docs/releasing.md` in the
 repository; OCI images are published separately.
 
 ## Quick start

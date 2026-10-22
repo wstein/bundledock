@@ -40,8 +40,13 @@ Verify a download in the directory that holds the archives and SHA256SUMS:
 then extract and run \`bdock --version\`, which prints \`bdock version $plain\`.
 
 The binaries are not signed or notarized. SHA256SUMS detects a damaged or wrong
-download; it does not prove who published the release. This release contains the
-CLI only; OCI tool images are published separately and are unaffected.
+download; it does not prove who published the release. The archives and SHA256SUMS
+carry a GitHub build-provenance attestation that ties each file to this repository's
+release workflow run and commit; verify one with the GitHub CLI:
+
+    gh attestation verify ARCHIVE -R wstein/bundledock
+
+This release contains the CLI only; OCI tool images are published separately and are unaffected.
 
 TEXT
 if [ -n "$prev" ]; then

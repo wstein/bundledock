@@ -142,7 +142,7 @@ func TestReleaseNotesNameBaselineAndFacts(t *testing.T) {
 	}
 	head := commit(t, dir, "feat: first change")
 	first := notes("bdock/v0.1.0", head)
-	for _, want := range []string{"bdock v0.1.0", head, "Go 1.27.2", "linux/amd64, linux/arm64, darwin/arm64", "bdock_0.1.0_<os>_<arch>.tar.gz", "sha256sum --check --ignore-missing SHA256SUMS", "bdock --version", "prints `bdock version 0.1.0`", "not signed or notarized", "First release."} {
+	for _, want := range []string{"bdock v0.1.0", head, "Go 1.27.2", "linux/amd64, linux/arm64, darwin/arm64", "bdock_0.1.0_<os>_<arch>.tar.gz", "sha256sum --check --ignore-missing SHA256SUMS", "bdock --version", "prints `bdock version 0.1.0`", "not signed or notarized", "gh attestation verify ARCHIVE -R wstein/bundledock", "build-provenance attestation", "First release."} {
 		if !strings.Contains(first, want) {
 			t.Errorf("first release notes miss %q:\n%s", want, first)
 		}
