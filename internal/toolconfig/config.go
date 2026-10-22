@@ -350,8 +350,10 @@ func (c Config) validate(strict bool) error {
 		default:
 			return fmt.Errorf("unknown install kind for %s", name)
 		}
+		// The recipe is shared by the separate opentofu bundle and the toolbox; the
+		// separate bundle keeps its single-package shape in its own tests.
 		if name == "opentofu" {
-			if len(c.Catalog.Packages) != 1 || p.Provider != "github" || p.Repository != "opentofu/opentofu" || p.TagPrefix != "v" || p.Normalization != "semver" || p.Asset != "tofu_{version}_linux_{arch}.tar.gz" || p.Architectures["amd64"] != "amd64" || p.Architectures["arm64"] != "arm64" || len(p.AllowedHosts) != 1 || p.AllowedHosts[0] != "github.com" || p.BaseURL != "" || p.MetadataURL != "" || p.Sidecar != "tofu_{version}_SHA256SUMS" || p.Install.Profile != "" || p.Install.Kind != "tar.gz" || p.Install.Preserve || len(p.Install.Members) != 1 || p.Install.Members["tofu"] != "bin/tofu" || len(p.Install.Aliases) != 0 || len(p.Install.ExcludeDirectories) != 0 {
+			if p.Provider != "github" || p.Repository != "opentofu/opentofu" || p.TagPrefix != "v" || p.Normalization != "semver" || p.Asset != "tofu_{version}_linux_{arch}.tar.gz" || p.Architectures["amd64"] != "amd64" || p.Architectures["arm64"] != "arm64" || len(p.AllowedHosts) != 1 || p.AllowedHosts[0] != "github.com" || p.BaseURL != "" || p.MetadataURL != "" || p.Sidecar != "tofu_{version}_SHA256SUMS" || p.Install.Profile != "" || p.Install.Kind != "tar.gz" || p.Install.Preserve || len(p.Install.Members) != 1 || p.Install.Members["tofu"] != "bin/tofu" || len(p.Install.Aliases) != 0 || len(p.Install.ExcludeDirectories) != 0 {
 				return fmt.Errorf("invalid official OpenTofu CLI recipe")
 			}
 		}
