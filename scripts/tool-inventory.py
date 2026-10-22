@@ -56,6 +56,7 @@ LABELS = (
     ("syft", "Syft (`syft`)"),
     ("scc", "SCC (`scc`, wstein fork)"),
     ("smill", "SheetMill (`smill`)"),
+    ("cscribe", "ChartScribe (`cscribe`)"),
     ("zk", "zk (`zk`)"),
     ("fastfetch", "Fastfetch (`fastfetch`)"),
     ("bottom", "bottom (`btm`)"),

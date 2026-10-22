@@ -40,6 +40,7 @@ The source inventory below describes the current lock; this publication retains 
 | bat (`bat`) | 0.26.1 | [Homepage](https://github.com/sharkdp/bat) | [Source](https://github.com/sharkdp/bat) |
 | bottom (`btm`) | 0.14.9 | [Homepage](https://bottom.pages.dev) | [Source](https://github.com/ClementTsang/bottom) |
 | btop (`btop`) | 1.4.7 | [Homepage](https://github.com/aristocratos/btop) | [Source](https://github.com/aristocratos/btop) |
+| ChartScribe (`cscribe`) | 0.1.0 | [Homepage](https://github.com/wstein/chartscribe) | [Source](https://github.com/wstein/chartscribe) |
 | Cosign (`cosign`) | 3.1.4 | [Homepage](https://github.com/sigstore/cosign) | [Source](https://github.com/sigstore/cosign) |
 | delta (`delta`) | 0.20.1 | [Homepage](https://dandavison.github.io/delta/) | [Source](https://github.com/dandavison/delta) |
 | Difftastic (`difft`) | 0.71.0 | [Homepage](https://github.com/Wilfred/difftastic) | [Source](https://github.com/Wilfred/difftastic) |
@@ -99,7 +100,7 @@ The source inventory below describes the current lock; this publication retains 
 
 The default bundle lives in `bundles/toolbox/`: `packages.txt`,
 `packages.catalog.json`, `packages.lock.json`, its Dockerfile, smoke scripts and licenses.
-Shared Go code remains at the repository root. The source toolbox contains 59
+Shared Go code remains at the repository root. The source toolbox contains 60
 downloaded tools plus the two first-use Python launchers listed above. Codex, Antigravity and Claude are supplied by their separate
 [Codex](codex.md), [Antigravity](agy.md) and [Claude Code](claude.md) bundles.
 The published toolbox recorded above still includes those agents; this source
@@ -362,6 +363,29 @@ corresponding source tag and the source-on-request offer EUPL-1.2 calls for.
 v0.1.1 binary was executed once that way for this addition. Native consumer
 smoke, image build/publication and consumer activation remain pending separate
 owner authorization. The published image above retains its recorded source.
+
+### ChartScribe release
+
+The source lock includes [wstein/chartscribe v0.1.0](https://github.com/wstein/chartscribe/releases/tag/v0.1.0)
+(`cscribe>=0.1.0`), the `cscribe` note-tooling command-line tool from the
+separately pinned ChartScribe repository. It is placed in the toolbox rather than
+in a bundle of its own: it is a small, self-contained Go binary like the other
+prebuilt utilities, has no runtime, no state volume and no release cadence that
+must be decoupled from the toolbox. A future updater run resolves new stable
+ChartScribe releases through the normal toolbox path (tag prefix `v`, asset
+`cscribe_{version}_linux_{arch}.tar.gz`, publisher `SHA256SUMS`).
+Linux AMD64 and ARM64 archives were checked against `SHA256SUMS` and the release
+API digests on 2026-10-22; the other Linux architectures are not used. The release
+binaries are unsigned. The catalog installs only `bin/cscribe`; the full EUPL-1.2
+`LICENSE` and `README.md` are retained from each release archive under
+`licenses/cscribe/`, next to a `SOURCE` record that names the corresponding
+source tag and the source-on-request offer EUPL-1.2 calls for.
+
+`cscribe` has no `--version` flag. The isolated consumer smoke runs only
+`cscribe version` (expected `cscribe vX.Y.Z`) with an empty home. The linux/amd64
+v0.1.0 binary was executed once that way for this addition. Native consumer
+smoke, image build/publication and consumer activation remain pending separate
+owner authorization.
 
 ### zk release
 
