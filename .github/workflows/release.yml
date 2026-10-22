@@ -2,7 +2,7 @@
 # docs/design/bdock-release-workflow): an owner-pushed tag bdock/vMAJOR.MINOR.PATCH is the
 # publication approval for that tag's CLI release; a manual run is a dry run that never
 # publishes. This workflow releases the bdock CLI only, never an OCI image. Nothing is
-# signed or notarized.
+# signed or notarized; the publish job attests build provenance for the archives and SHA256SUMS.
 name: release
 
 on:
@@ -242,6 +242,8 @@ jobs:
     timeout-minutes: 15
     permissions:
       contents: write
+      attestations: write
+      id-token: write
     environment: release
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -253,7 +255,7 @@ jobs:
           pattern: release-*
           merge-multiple: true
           path: ${{ runner.temp }}/dist
-      - name: Create the release
+      - name: Assemble and check the release files
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -261,7 +263,6 @@ jobs:
           TAG: ${{ needs.verify.outputs.tag }}
           VERSION: ${{ needs.verify.outputs.version }}
           COMMIT: ${{ needs.verify.outputs.commit }}
-          DRAFT: ${{ vars.BDOCK_RELEASE_DRAFT }}
           ACTOR: ${{ github.triggering_actor }}
           PUSHER: ${{ github.actor }}
           OWNER: ${{ github.repository_owner }}
@@ -289,7 +290,22 @@ jobs:
           cat -- bdock_*.tar.gz.sha256 | LC_ALL=C sort -k2 > SHA256SUMS
           test "$(wc -l < SHA256SUMS)" -eq 3 || { echo "expected exactly three checksums" >&2; exit 1; }
           sha256sum --check SHA256SUMS
-          cd "$GITHUB_WORKSPACE"
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: |
+            ${{ runner.temp }}/dist/bdock_*.tar.gz
+            ${{ runner.temp }}/dist/SHA256SUMS
+      - name: Create the release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ needs.verify.outputs.tag }}
+          VERSION: ${{ needs.verify.outputs.version }}
+          COMMIT: ${{ needs.verify.outputs.commit }}
+          DRAFT: ${{ vars.BDOCK_RELEASE_DRAFT }}
+        run: |
+          set -euo pipefail
           sh .github/scripts/release-notes.sh "$TAG" "$COMMIT" "$(cat .go-version)" > "$RUNNER_TEMP/notes.md"
           test -z "$DRAFT" -o "$DRAFT" = true -o "$DRAFT" = false || { echo "BDOCK_RELEASE_DRAFT must be empty, true or false, got $DRAFT" >&2; exit 1; }
           flags=()

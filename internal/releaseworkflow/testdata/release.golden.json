@@ -80,7 +80,9 @@
         "smoke"
       ],
       "permissions": {
-        "contents": "write"
+        "attestations": "write",
+        "contents": "write",
+        "id-token": "write"
       },
       "runs-on": "ubuntu-24.04",
       "steps": [
@@ -103,7 +105,6 @@
           "env": {
             "ACTOR": "${{ github.triggering_actor }}",
             "COMMIT": "${{ needs.verify.outputs.commit }}",
-            "DRAFT": "${{ vars.BDOCK_RELEASE_DRAFT }}",
             "GH_TOKEN": "${{ github.token }}",
             "OWNER": "${{ github.repository_owner }}",
             "PUSHER": "${{ github.actor }}",
@@ -111,8 +112,27 @@
             "TAG": "${{ needs.verify.outputs.tag }}",
             "VERSION": "${{ needs.verify.outputs.version }}"
           },
+          "name": "Assemble and check the release files",
+          "run": "set -euo pipefail\n# A re-run by someone else must not publish on the owner's earlier approval.\ntest \"$ACTOR\" = \"$OWNER\" || { echo \"run triggered by $ACTOR, not by the repository owner $OWNER\" \u003e\u00262; exit 1; }\ntest \"$PUSHER\" = \"$OWNER\" || { echo \"run originally started by $PUSHER, not by the repository owner $OWNER\" \u003e\u00262; exit 1; }\n# Drafts are invisible to the verify job's read token; refuse any release, draft or not, for the tag.\nexisting=$(gh api \"repos/$REPO/releases\" --paginate --jq \".[] | select(.tag_name == \\\"$TAG\\\") | .id\")\ntest -z \"$existing\" || { echo \"a release (possibly a draft) for $TAG already exists: $existing\" \u003e\u00262; exit 1; }\n# The tag must still name the verified commit; the owner may have moved it during the run.\nremote=$(git ls-remote \"https://github.com/$REPO\" \"refs/tags/$TAG^{}\" | cut -f1)\ntest \"$remote\" = \"$COMMIT\" || { echo \"tag $TAG now names '$remote', not the verified $COMMIT\" \u003e\u00262; exit 1; }\n# The version order again, with the write token, which also lists drafts.\ntags=$(git ls-remote --tags \"https://github.com/$REPO\" 'refs/tags/bdock/v*' | cut -f2 | sed 's|^refs/tags/||; s|\\^{}$||')\nreleases=$(gh api \"repos/$REPO/releases\" --paginate --jq '.[].tag_name')\nprintf '%s\\n%s\\n' \"$tags\" \"$releases\" | sh .github/scripts/release-verify.sh monotonic \"$TAG\"\ntest \"$(git rev-parse HEAD)\" = \"$COMMIT\"\ncd \"$RUNNER_TEMP/dist\"\ntest \"$(ls -1 -- bdock_*.tar.gz | wc -l)\" -eq 3 || { echo \"expected exactly three archives\" \u003e\u00262; exit 1; }\nfor platform in darwin_arm64 linux_amd64 linux_arm64; do\n  test -f \"bdock_${VERSION}_${platform}.tar.gz\" || { echo \"missing archive for $platform\" \u003e\u00262; exit 1; }\ndone\ncat -- bdock_*.tar.gz.sha256 | LC_ALL=C sort -k2 \u003e SHA256SUMS\ntest \"$(wc -l \u003c SHA256SUMS)\" -eq 3 || { echo \"expected exactly three checksums\" \u003e\u00262; exit 1; }\nsha256sum --check SHA256SUMS\n",
+          "shell": "bash"
+        },
+        {
+          "uses": "actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8",
+          "with": {
+            "subject-path": "${{ runner.temp }}/dist/bdock_*.tar.gz\n${{ runner.temp }}/dist/SHA256SUMS\n"
+          }
+        },
+        {
+          "env": {
+            "COMMIT": "${{ needs.verify.outputs.commit }}",
+            "DRAFT": "${{ vars.BDOCK_RELEASE_DRAFT }}",
+            "GH_TOKEN": "${{ github.token }}",
+            "REPO": "${{ github.repository }}",
+            "TAG": "${{ needs.verify.outputs.tag }}",
+            "VERSION": "${{ needs.verify.outputs.version }}"
+          },
           "name": "Create the release",
-          "run": "set -euo pipefail\n# A re-run by someone else must not publish on the owner's earlier approval.\ntest \"$ACTOR\" = \"$OWNER\" || { echo \"run triggered by $ACTOR, not by the repository owner $OWNER\" \u003e\u00262; exit 1; }\ntest \"$PUSHER\" = \"$OWNER\" || { echo \"run originally started by $PUSHER, not by the repository owner $OWNER\" \u003e\u00262; exit 1; }\n# Drafts are invisible to the verify job's read token; refuse any release, draft or not, for the tag.\nexisting=$(gh api \"repos/$REPO/releases\" --paginate --jq \".[] | select(.tag_name == \\\"$TAG\\\") | .id\")\ntest -z \"$existing\" || { echo \"a release (possibly a draft) for $TAG already exists: $existing\" \u003e\u00262; exit 1; }\n# The tag must still name the verified commit; the owner may have moved it during the run.\nremote=$(git ls-remote \"https://github.com/$REPO\" \"refs/tags/$TAG^{}\" | cut -f1)\ntest \"$remote\" = \"$COMMIT\" || { echo \"tag $TAG now names '$remote', not the verified $COMMIT\" \u003e\u00262; exit 1; }\n# The version order again, with the write token, which also lists drafts.\ntags=$(git ls-remote --tags \"https://github.com/$REPO\" 'refs/tags/bdock/v*' | cut -f2 | sed 's|^refs/tags/||; s|\\^{}$||')\nreleases=$(gh api \"repos/$REPO/releases\" --paginate --jq '.[].tag_name')\nprintf '%s\\n%s\\n' \"$tags\" \"$releases\" | sh .github/scripts/release-verify.sh monotonic \"$TAG\"\ntest \"$(git rev-parse HEAD)\" = \"$COMMIT\"\ncd \"$RUNNER_TEMP/dist\"\ntest \"$(ls -1 -- bdock_*.tar.gz | wc -l)\" -eq 3 || { echo \"expected exactly three archives\" \u003e\u00262; exit 1; }\nfor platform in darwin_arm64 linux_amd64 linux_arm64; do\n  test -f \"bdock_${VERSION}_${platform}.tar.gz\" || { echo \"missing archive for $platform\" \u003e\u00262; exit 1; }\ndone\ncat -- bdock_*.tar.gz.sha256 | LC_ALL=C sort -k2 \u003e SHA256SUMS\ntest \"$(wc -l \u003c SHA256SUMS)\" -eq 3 || { echo \"expected exactly three checksums\" \u003e\u00262; exit 1; }\nsha256sum --check SHA256SUMS\ncd \"$GITHUB_WORKSPACE\"\nsh .github/scripts/release-notes.sh \"$TAG\" \"$COMMIT\" \"$(cat .go-version)\" \u003e \"$RUNNER_TEMP/notes.md\"\ntest -z \"$DRAFT\" -o \"$DRAFT\" = true -o \"$DRAFT\" = false || { echo \"BDOCK_RELEASE_DRAFT must be empty, true or false, got $DRAFT\" \u003e\u00262; exit 1; }\nflags=()\nif [ \"$DRAFT\" = true ]; then flags+=(--draft); fi\ngh release create \"$TAG\" --repo \"$REPO\" --verify-tag --title \"bdock v$VERSION\" --notes-file \"$RUNNER_TEMP/notes.md\" ${flags[@]+\"${flags[@]}\"} \\\n  \"$RUNNER_TEMP\"/dist/bdock_*.tar.gz \"$RUNNER_TEMP/dist/SHA256SUMS\"\n",
+          "run": "set -euo pipefail\nsh .github/scripts/release-notes.sh \"$TAG\" \"$COMMIT\" \"$(cat .go-version)\" \u003e \"$RUNNER_TEMP/notes.md\"\ntest -z \"$DRAFT\" -o \"$DRAFT\" = true -o \"$DRAFT\" = false || { echo \"BDOCK_RELEASE_DRAFT must be empty, true or false, got $DRAFT\" \u003e\u00262; exit 1; }\nflags=()\nif [ \"$DRAFT\" = true ]; then flags+=(--draft); fi\ngh release create \"$TAG\" --repo \"$REPO\" --verify-tag --title \"bdock v$VERSION\" --notes-file \"$RUNNER_TEMP/notes.md\" ${flags[@]+\"${flags[@]}\"} \\\n  \"$RUNNER_TEMP\"/dist/bdock_*.tar.gz \"$RUNNER_TEMP/dist/SHA256SUMS\"\n",
           "shell": "bash"
         }
       ],
