@@ -1,7 +1,7 @@
 {
   "schema": 2,
-  "desired_digest": "616afe30dc7e478952a5ae791d01265626d054db3b96012dc02b75021ea840d8",
-  "catalog_digest": "9b0bdbe59cee831498cfb5f0ab8d9cee06f1f08fbf23078c5e9e7f5ca01f9337",
+  "desired_digest": "16f1ef201cc554b20c4a713f72acd66cee8f7467f97b180cf5b2f3e3ca7f0fd4",
+  "catalog_digest": "3adc2dca8cd659394e06b97930174c8ef1f987ea749b64f6ca31c9980f7859b1",
   "platforms": {
     "amd64": {
       "actionlint": {
@@ -338,6 +338,12 @@
         "version": "v2.8.0",
         "url": "https://github.com/watchexec/watchexec/releases/download/v2.8.0/watchexec-2.8.0-x86_64-unknown-linux-musl.tar.xz",
         "sha256": "35ea667cbe4bc96c23ba2a1f46c94c46bc385b67165e3bf621c0e7e4959aa99b",
+        "verification": "publisher-sha256"
+      },
+      "whr": {
+        "version": "v0.1.0",
+        "url": "https://github.com/wstein/workharbor/releases/download/v0.1.0/whr_0.1.0_linux_amd64.tar.gz",
+        "sha256": "5bbbf4950b22154332d67e7a3bc7187d959aabb3ea6e702a6516c66882e5ff64",
         "verification": "publisher-sha256"
       },
       "xh": {
@@ -706,6 +712,12 @@
         "version": "v2.8.0",
         "url": "https://github.com/watchexec/watchexec/releases/download/v2.8.0/watchexec-2.8.0-aarch64-unknown-linux-musl.tar.xz",
         "sha256": "3961878b21e3c1729279322f4007dd5bbf0032110fbcb5e7b983946a9ceb3bf6",
+        "verification": "publisher-sha256"
+      },
+      "whr": {
+        "version": "v0.1.0",
+        "url": "https://github.com/wstein/workharbor/releases/download/v0.1.0/whr_0.1.0_linux_arm64.tar.gz",
+        "sha256": "42930ee6e41349facc49921e0b51667cbcb737a5d9ef3488544d6c1e5ec2be2a",
         "verification": "publisher-sha256"
       },
       "xh": {

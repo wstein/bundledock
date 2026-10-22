@@ -93,6 +93,7 @@ The source inventory below describes the current lock; this publication retains 
 | Typst (`typst`) | 0.15.1 | [Homepage](https://typst.app) | [Source](https://github.com/typst/typst) |
 | uv (`uv`, `uvx`) | 0.13.5 | [Homepage](https://docs.astral.sh/uv) | [Source](https://github.com/astral-sh/uv) |
 | watchexec (`watchexec`) | 2.8.0 | [Homepage](https://watchexec.github.io) | [Source](https://github.com/watchexec/watchexec) |
+| WorkHarbor (`whr`) | 0.1.0 | [Homepage](https://github.com/wstein/workharbor) | [Source](https://github.com/wstein/workharbor) |
 | xh (`xh`) | 0.26.3 | [Homepage](https://github.com/ducaale/xh) | [Source](https://github.com/ducaale/xh) |
 | zizmor (`zizmor`) | 1.31.1 | [Homepage](https://github.com/zizmorcore/zizmor) | [Source](https://github.com/zizmorcore/zizmor) |
 | zk (`zk`) | 0.15.7 | [Homepage](https://github.com/zk-org/zk) | [Source](https://github.com/zk-org/zk) |
@@ -101,7 +102,7 @@ The source inventory below describes the current lock; this publication retains 
 
 The default bundle lives in `bundles/toolbox/`: `packages.txt`,
 `packages.catalog.json`, `packages.lock.json`, its Dockerfile, smoke scripts and licenses.
-Shared Go code remains at the repository root. The source toolbox contains 61
+Shared Go code remains at the repository root. The source toolbox contains 62
 downloaded tools plus the two first-use Python launchers listed above. Codex, Antigravity and Claude are supplied by their separate
 [Codex](codex.md), [Antigravity](agy.md) and [Claude Code](claude.md) bundles.
 The published toolbox recorded above still includes those agents; this source
@@ -407,6 +408,27 @@ isolated empty home, with networking disabled, in the read-only consumer. The
 fuller init, plan and apply fixture stays with the separate bundle's smoke.
 Native consumer smoke, image build/publication and consumer activation remain
 pending separate owner authorization.
+
+### WorkHarbor release
+
+The source lock includes [wstein/workharbor v0.1.0](https://github.com/wstein/workharbor/releases/tag/v0.1.0)
+(`whr>=0.1.0`), the `whr` command-line tool from the separately pinned WorkHarbor
+repository. Like `cscribe` it is a small, self-contained Go binary and is placed in
+the toolbox rather than in a bundle of its own. A future updater run resolves new
+stable WorkHarbor releases through the normal toolbox path (tag prefix `v`, asset
+`whr_{version}_linux_{arch}.tar.gz`, publisher `SHA256SUMS`). The Linux AMD64 and
+ARM64 pins come from the publisher `SHA256SUMS` of the release; the archives were
+not downloaded for this addition, and the darwin archive is not used. A GitHub
+build attestation exists but is not verified by BundleDock. The catalog installs
+only `bin/whr`; the EUPL-1.2 `LICENSE`, `README.md` and the `third_party/` notices of
+the linked modules are retained from each release archive under `licenses/whr/`,
+next to a `SOURCE` record that names the corresponding source tag and the
+source-on-request offer EUPL-1.2 calls for. The archives nest their files below
+`whr_<version>_linux_<arch>/`; the notice tree is matched below that directory.
+
+The isolated consumer smoke runs only `whr version` (expected `whr X.Y.Z`) with an
+empty home. Native consumer smoke, image build/publication and consumer activation
+remain pending separate owner authorization.
 
 ### zk release
 

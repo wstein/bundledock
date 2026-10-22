@@ -1699,6 +1699,38 @@
         "licenses/opentofu/SOURCE"
       ]
     },
+    "whr": {
+      "provider": "github",
+      "repository": "wstein/workharbor",
+      "normalization": "semver",
+      "tag_prefix": "v",
+      "architectures": {
+        "amd64": "amd64",
+        "arm64": "arm64"
+      },
+      "asset": "whr_{version}_linux_{arch}.tar.gz",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "sidecar": "SHA256SUMS",
+      "install": {
+        "kind": "tar.gz",
+        "members": {
+          "whr": "bin/whr"
+        },
+        "archive_notices": [
+          "LICENSE",
+          "README.md"
+        ],
+        "archive_notice_trees": [
+          "third_party"
+        ]
+      },
+      "notices": [
+        "licenses/whr/SOURCE"
+      ]
+    },
     "zk": {
       "provider": "github",
       "repository": "zk-org/zk",
