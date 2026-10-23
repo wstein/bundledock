@@ -50,7 +50,7 @@ The source inventory below describes the current lock; this publication retains 
 | fd (`fd`, `fdfind`) | 10.5.0 | [Homepage](https://github.com/sharkdp/fd) | [Source](https://github.com/sharkdp/fd) |
 | Fish (`fish`) | 4.9.3 | [Homepage](https://fishshell.com) | [Source](https://github.com/fish-shell/fish-shell) |
 | fzf (`fzf`) | 0.74.5 | [Homepage](https://junegunn.github.io/fzf/) | [Source](https://github.com/junegunn/fzf) |
-| Git LFS (`git-lfs`) | 3.8.0 | [Homepage](https://git-lfs.com) | [Source](https://github.com/git-lfs/git-lfs) |
+| Git LFS (`git-lfs`) | 3.8.1 | [Homepage](https://git-lfs.com) | [Source](https://github.com/git-lfs/git-lfs) |
 | git-cliff (`git-cliff`) | 2.14.2 | [Homepage](https://github.com/orhun/git-cliff) | [Source](https://github.com/orhun/git-cliff) |
 | GitHub CLI | 2.103.0 | [Homepage](https://cli.github.com) | [Source](https://github.com/cli/cli) |
 | GitHub CLI Stacked PRs (`gh stack`) | 0.2.1 | [Homepage](https://gh.io/stacks) | [Source](https://github.com/github/gh-stack) |
@@ -69,14 +69,14 @@ The source inventory below describes the current lock; this publication retains 
 | lsd (`lsd`) | 1.2.0 | [Homepage](https://github.com/lsd-rs/lsd) | [Source](https://github.com/lsd-rs/lsd) |
 | lychee (`lychee`) | 0.24.2 | [Homepage](https://lychee.cli.rs) | [Source](https://github.com/lycheeverse/lychee) |
 | Mike Farah yq (`yq`) | 4.54.1 | [Homepage](https://mikefarah.gitbook.io/yq/) | [Source](https://github.com/mikefarah/yq) |
-| mise (`mise`) | 2026.10.17 | [Homepage](https://mise.jdx.dev) | [Source](https://github.com/jdx/mise) |
+| mise (`mise`) | 2026.10.18 | [Homepage](https://mise.jdx.dev) | [Source](https://github.com/jdx/mise) |
 | navi (`navi`) | 2.24.0 | [Homepage](https://github.com/denisidoro/navi) | [Source](https://github.com/denisidoro/navi) |
 | Nushell (`nu`) | 0.116.1 | [Homepage](https://www.nushell.sh/) | [Source](https://github.com/nushell/nushell) |
 | OpenTofu (`tofu`) | 1.13.2 | [Homepage](https://opentofu.org) | [Source](https://github.com/opentofu/opentofu) |
 | pinact (`pinact`) | 5.0.1 | [Homepage](https://github.com/suzuki-shunsuke/pinact) | [Source](https://github.com/suzuki-shunsuke/pinact) |
 | regctl (`regctl`) | 0.11.7 | [Homepage](https://regclient.org) | [Source](https://github.com/regclient/regclient) |
 | ripgrep (`rg`) | 15.2.0 | [Homepage](https://github.com/BurntSushi/ripgrep) | [Source](https://github.com/BurntSushi/ripgrep) |
-| Ruff (`ruff`) | 0.17.1 | [Homepage](https://docs.astral.sh/ruff) | [Source](https://github.com/astral-sh/ruff) |
+| Ruff (`ruff`) | 0.17.2 | [Homepage](https://docs.astral.sh/ruff) | [Source](https://github.com/astral-sh/ruff) |
 | SCC (`scc`, wstein fork) | 4.1.1 | [Homepage](https://github.com/wstein/scc-fork) | [Source](https://github.com/wstein/scc-fork) |
 | SheetMill (`smill`) | 0.1.1 | [Homepage](https://github.com/wstein/sheetmill) | [Source](https://github.com/wstein/sheetmill) |
 | ShellCheck (`shellcheck`) | 0.11.0 | [Homepage](https://www.shellcheck.net) | [Source](https://github.com/koalaman/shellcheck) |
@@ -88,7 +88,7 @@ The source inventory below describes the current lock; this publication retains 
 | tldr (`tldr`, first-use pip launcher) | 3.4.4 | [Homepage](https://pypi.org/project/tldr/) | [Source](https://github.com/tldr-pages/tldr-python-client) |
 | tmux (`tmux`) | 3.7c (official static builds) | [Homepage](https://github.com/tmux/tmux-builds) | [Source](https://github.com/tmux/tmux-builds) |
 | Trivy (`trivy`) | 0.76.1 | [Homepage](https://trivy.dev) | [Source](https://github.com/aquasecurity/trivy) |
-| TruffleHog (`trufflehog`) | 3.99.3 | [Homepage](https://github.com/trufflesecurity/trufflehog) | [Source](https://github.com/trufflesecurity/trufflehog) |
+| TruffleHog (`trufflehog`) | 3.99.4 | [Homepage](https://github.com/trufflesecurity/trufflehog) | [Source](https://github.com/trufflesecurity/trufflehog) |
 | typos (`typos`) | 1.51.1 | [Homepage](https://github.com/crate-ci/typos) | [Source](https://github.com/crate-ci/typos) |
 | Typst (`typst`) | 0.15.1 | [Homepage](https://typst.app) | [Source](https://github.com/typst/typst) |
 | uv (`uv`, `uvx`) | 0.13.5 | [Homepage](https://docs.astral.sh/uv) | [Source](https://github.com/astral-sh/uv) |
