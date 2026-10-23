@@ -1,0 +1,10 @@
+Upstream: https://github.com/wstein/bundledock
+License: EUPL-1.2 (full LICENSE and the build PROVENANCE record retained from each official release archive; LICENSE SHA256 1aceba239ff13a3c4986dc8d226548fa4e64efb5913173e8564573a87924f57e)
+Initial reviewed release: bdock/v0.1.0 (stable, not a draft or pre-release), published 2026-10-23T16:31:56Z
+Source for corresponding release: https://github.com/wstein/bundledock/releases/tag/bdock/v0.1.0
+Tag bdock/v0.1.0 resolves to commit 5d5bceb60d2ceba60d72aeda3fcc51130968d593 (annotated tag object d0720f36840378120cabb276e3326af7c28a3c24).
+Source archive: https://github.com/wstein/bundledock/archive/refs/tags/bdock/v0.1.0.tar.gz
+Linux AMD64/ARM64: official stable prebuilt archives bdock_0.1.0_linux_{amd64,arm64}.tar.gz, unchanged executable. The release also ships a darwin arm64 archive, which BundleDock does not use in the Linux toolbox image. The repository's other release tags do not match the bdock/v tag prefix and are ignored by the updater.
+Archive SHA256 values match the publisher SHA256SUMS and the release API digests (checked 2026-10-23). The archives are flat (bdock, LICENSE and PROVENANCE at the top level); BundleDock installs only bdock and retains LICENSE and PROVENANCE.
+bdock has no version subcommand; the smoke test runs `bdock --version`, which prints "bdock version 0.1.0". The linux/amd64 binary was executed once in an isolated empty home on 2026-10-23 for that check; native consumer smoke remains part of an approved build.
+EUPL-1.2 is a copyleft licence. BundleDock gives any recipient of the toolbox the corresponding source of bdock on request, by pointing to the tagged release above. This is not legal advice.

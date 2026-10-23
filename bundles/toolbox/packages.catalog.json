@@ -1731,6 +1731,35 @@
         "licenses/whr/SOURCE"
       ]
     },
+    "bdock": {
+      "provider": "github",
+      "repository": "wstein/bundledock",
+      "normalization": "semver",
+      "tag_prefix": "bdock/v",
+      "architectures": {
+        "amd64": "amd64",
+        "arm64": "arm64"
+      },
+      "asset": "bdock_{version}_linux_{arch}.tar.gz",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "sidecar": "SHA256SUMS",
+      "install": {
+        "kind": "tar.gz",
+        "members": {
+          "bdock": "bin/bdock"
+        },
+        "archive_notices": [
+          "LICENSE",
+          "PROVENANCE"
+        ]
+      },
+      "notices": [
+        "licenses/bdock/SOURCE"
+      ]
+    },
     "zk": {
       "provider": "github",
       "repository": "zk-org/zk",

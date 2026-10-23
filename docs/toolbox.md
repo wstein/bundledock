@@ -40,6 +40,7 @@ The source inventory below describes the current lock; this publication retains 
 | bat (`bat`) | 0.26.1 | [Homepage](https://github.com/sharkdp/bat) | [Source](https://github.com/sharkdp/bat) |
 | bottom (`btm`) | 0.14.9 | [Homepage](https://bottom.pages.dev) | [Source](https://github.com/ClementTsang/bottom) |
 | btop (`btop`) | 1.4.7 | [Homepage](https://github.com/aristocratos/btop) | [Source](https://github.com/aristocratos/btop) |
+| BundleDock (`bdock`) | 0.1.0 | [Homepage](https://github.com/wstein/bundledock) | [Source](https://github.com/wstein/bundledock) |
 | ChartScribe (`cscribe`) | 0.1.0 | [Homepage](https://github.com/wstein/chartscribe) | [Source](https://github.com/wstein/chartscribe) |
 | Cosign (`cosign`) | 3.1.4 | [Homepage](https://github.com/sigstore/cosign) | [Source](https://github.com/sigstore/cosign) |
 | delta (`delta`) | 0.20.1 | [Homepage](https://dandavison.github.io/delta/) | [Source](https://github.com/dandavison/delta) |
@@ -102,7 +103,7 @@ The source inventory below describes the current lock; this publication retains 
 
 The default bundle lives in `bundles/toolbox/`: `packages.txt`,
 `packages.catalog.json`, `packages.lock.json`, its Dockerfile, smoke scripts and licenses.
-Shared Go code remains at the repository root. The source toolbox contains 62
+Shared Go code remains at the repository root. The source toolbox contains 63
 downloaded tools plus the two first-use Python launchers listed above. Codex, Antigravity and Claude are supplied by their separate
 [Codex](codex.md), [Antigravity](agy.md) and [Claude Code](claude.md) bundles.
 The published toolbox recorded above still includes those agents; this source
@@ -429,6 +430,29 @@ source-on-request offer EUPL-1.2 calls for. The archives nest their files below
 The isolated consumer smoke runs only `whr version` (expected `whr X.Y.Z`) with an
 empty home. Native consumer smoke, image build/publication and consumer activation
 remain pending separate owner authorization.
+
+### BundleDock release
+
+The source lock includes [wstein/bundledock bdock/v0.1.0](https://github.com/wstein/bundledock/releases/tag/bdock/v0.1.0)
+(`bdock>=0.1.0`), this repository's own `bdock` command-line tool, so that a
+toolbox shell can build and manage bundles without a separate install. Like
+`cscribe` and `whr` it is a small, self-contained Go binary placed in the toolbox.
+It is resolved from its own release stream: the repository also carries other
+tags, and the catalog's tag prefix `bdock/v` selects only `bdock/vMAJOR.MINOR.PATCH`
+releases (asset `bdock_{version}_linux_{arch}.tar.gz`, publisher `SHA256SUMS`).
+The toolbox is a Linux image, so only the Linux AMD64 and ARM64 archives are used;
+the darwin arm64 archive serves macOS hosts and is not installed. The archives are
+flat; the catalog installs only `bin/bdock` and retains the EUPL-1.2 `LICENSE` and
+the build `PROVENANCE` record under `licenses/bdock/`, next to a `SOURCE` record
+that names the corresponding source tag and the source-on-request offer EUPL-1.2
+calls for. Because the toolbox is built from the sources of the same repository,
+the shipped `bdock` is the last published release, not the checkout being built.
+
+`bdock` has no `version` subcommand. The isolated consumer smoke runs only
+`bdock --version` (expected `bdock version X.Y.Z`) with an empty home. The
+linux/amd64 v0.1.0 binary was executed once that way for this addition. Native
+consumer smoke, image build/publication and consumer activation remain pending
+separate owner authorization.
 
 ### zk release
 

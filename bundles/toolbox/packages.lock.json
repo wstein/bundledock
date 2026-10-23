@@ -1,7 +1,7 @@
 {
   "schema": 2,
-  "desired_digest": "16f1ef201cc554b20c4a713f72acd66cee8f7467f97b180cf5b2f3e3ca7f0fd4",
-  "catalog_digest": "3adc2dca8cd659394e06b97930174c8ef1f987ea749b64f6ca31c9980f7859b1",
+  "desired_digest": "b1d3f6951ad1c2ff3609f19f9aef6f0fb725faa56051f8e64f563d61b2a1ed61",
+  "catalog_digest": "ed8498a316bdb31ca9e4d4c339b773a95537f8613b5900806f1fd0207f125b5c",
   "platforms": {
     "amd64": {
       "actionlint": {
@@ -26,6 +26,12 @@
         "version": "v0.26.1",
         "url": "https://github.com/sharkdp/bat/releases/download/v0.26.1/bat-v0.26.1-x86_64-unknown-linux-musl.tar.gz",
         "sha256": "0dcd8ac79732c0d5b136f11f4ee00e581440e16a44eab5b3105b611bbf2cf191",
+        "verification": "publisher-sha256"
+      },
+      "bdock": {
+        "version": "bdock/v0.1.0",
+        "url": "https://github.com/wstein/bundledock/releases/download/bdock/v0.1.0/bdock_0.1.0_linux_amd64.tar.gz",
+        "sha256": "d86feb7f1a925023b74d218877e3f7d83698a66687ed22770b778132d5271b32",
         "verification": "publisher-sha256"
       },
       "bottom": {
@@ -400,6 +406,12 @@
         "version": "v0.26.1",
         "url": "https://github.com/sharkdp/bat/releases/download/v0.26.1/bat-v0.26.1-aarch64-unknown-linux-musl.tar.gz",
         "sha256": "6369242c584065f195fb20cb36fbd7cb63ae690605bbe89868a7596b596c2c23",
+        "verification": "publisher-sha256"
+      },
+      "bdock": {
+        "version": "bdock/v0.1.0",
+        "url": "https://github.com/wstein/bundledock/releases/download/bdock/v0.1.0/bdock_0.1.0_linux_arm64.tar.gz",
+        "sha256": "f48370470c029ba821c3602a09bd959c395e3a29b3fc24d91224c147a1ed64bd",
         "verification": "publisher-sha256"
       },
       "bottom": {
