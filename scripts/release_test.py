@@ -13,6 +13,12 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 # Sorted by archive name; darwin/amd64 (end of life) and Windows are not built.
+# `git commit` spawns `git maintenance run --auto --detach`; the detached process may still write
+# into `objects` while TemporaryDirectory removes the fixture, failing with ENOTEMPTY. Fixture
+# repositories never need background maintenance.
+GIT_NO_MAINTENANCE = {'GIT_CONFIG_COUNT': '2',
+                      'GIT_CONFIG_KEY_0': 'maintenance.auto', 'GIT_CONFIG_VALUE_0': 'false',
+                      'GIT_CONFIG_KEY_1': 'gc.auto', 'GIT_CONFIG_VALUE_1': '0'}
 TARGETS = (('darwin', 'arm64'), ('linux', 'amd64'), ('linux', 'arm64'))
 
 
@@ -120,7 +126,8 @@ class SourceStewardAdapterTest(unittest.TestCase):
         for args in (('init', '-q'), ('add', '.'),
                      ('-c', 'user.name=fixture', '-c', 'user.email=fixture@example.invalid',
                       'commit', '-q', '-m', 'fixture')):
-            subprocess.run(['git', *args], cwd=root, check=True, capture_output=True)
+            subprocess.run(['git', *args], cwd=root, check=True, capture_output=True,
+                           env=dict(os.environ, **GIT_NO_MAINTENANCE))
         compiler = base / 'go'
         compiler.write_text('''#!/usr/bin/env python3
 import json, os, pathlib, sys
@@ -138,8 +145,18 @@ else:
 ''')
         compiler.chmod(0o755)
         (base / 'tmp').mkdir()
-        env = dict(os.environ, GO=str(compiler), TMPDIR=str(base / 'tmp'), GOFLAGS='-race')
+        env = dict(os.environ, GO=str(compiler), TMPDIR=str(base / 'tmp'), GOFLAGS='-race', **GIT_NO_MAINTENANCE)
         return root, env
+
+    def test_fixture_repository_starts_no_background_maintenance(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root, env = self.fixture(Path(directory))
+            trace = subprocess.run(['git', 'commit', '-q', '--allow-empty', '-m', 'again'], cwd=root,
+                                   env=dict(env, GIT_TRACE='1', GIT_AUTHOR_NAME='f', GIT_COMMITTER_NAME='f',
+                                            GIT_AUTHOR_EMAIL='f@example.invalid',
+                                            GIT_COMMITTER_EMAIL='f@example.invalid'),
+                                   capture_output=True, text=True, check=True).stderr
+            self.assertNotIn('maintenance', trace)
 
     def invoke(self, root, env, os_name='linux', arch='amd64', version='0.1.0', output=None):
         if output is None:

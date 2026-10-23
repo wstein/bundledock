@@ -107,8 +107,16 @@ class GitTests(ProvenanceTests):
     def setUp(self):
         import os
         import tempfile
+        from unittest.mock import patch
         import subprocess
         self.temporary = tempfile.TemporaryDirectory()
+        # `git commit` spawns a detached `git maintenance run --auto` that can write into
+        # `objects` during cleanup (ENOTEMPTY); the fixture repositories never need it.
+        patcher = patch.dict(os.environ, {'GIT_CONFIG_COUNT': '2',
+                                          'GIT_CONFIG_KEY_0': 'maintenance.auto', 'GIT_CONFIG_VALUE_0': 'false',
+                                          'GIT_CONFIG_KEY_1': 'gc.auto', 'GIT_CONFIG_VALUE_1': '0'})
+        patcher.start()
+        self.addCleanup(patcher.stop)
         self.previous = os.getcwd()
         os.chdir(self.temporary.name)
         subprocess.run(['git','init','--bare','remote.git'],check=True,capture_output=True)
