@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"bundledock/internal/gittest"
 )
 
 // gsyncEnv is a hermetic environment: no user or system Git configuration, a
@@ -44,6 +46,7 @@ func newGsyncFixture(t *testing.T) *gsyncFixture {
 			t.Fatal(err)
 		}
 	}
+	gittest.WriteGlobalConfig(t, filepath.Join(f.home, "gitconfig"))
 	real, err := exec.LookPath("git")
 	if err != nil {
 		t.Skip("git not installed")

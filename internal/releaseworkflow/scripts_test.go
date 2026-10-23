@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"bundledock/internal/gittest"
 )
 
 // repoRoot is the BundleDock checkout holding this package.
@@ -89,7 +91,7 @@ func TestVerifyTagNamespace(t *testing.T) {
 func gitRepo(t *testing.T) string {
 	t.Helper()
 	dir := t.TempDir()
-	env := []string{"GIT_AUTHOR_NAME=t", "GIT_AUTHOR_EMAIL=t@example.invalid", "GIT_COMMITTER_NAME=t", "GIT_COMMITTER_EMAIL=t@example.invalid", "GIT_CONFIG_GLOBAL=/dev/null", "GIT_CONFIG_SYSTEM=/dev/null"}
+	env := []string{"GIT_AUTHOR_NAME=t", "GIT_AUTHOR_EMAIL=t@example.invalid", "GIT_COMMITTER_NAME=t", "GIT_COMMITTER_EMAIL=t@example.invalid", "GIT_CONFIG_GLOBAL=" + gittest.GlobalConfig(t), "GIT_CONFIG_SYSTEM=/dev/null"}
 	t.Setenv("GIT_AUTHOR_NAME", "t")
 	for _, kv := range env {
 		k, v, _ := strings.Cut(kv, "=")

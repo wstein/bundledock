@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"bundledock/internal/gittest"
 )
 
 func run(t *testing.T, dir string, env []string, name string, args ...string) (string, error) {
@@ -14,7 +16,7 @@ func run(t *testing.T, dir string, env []string, name string, args ...string) (s
 	c := exec.Command(name, args...)
 	c.Dir = dir
 	config := filepath.Join(t.TempDir(), "gitconfig")
-	if err := os.WriteFile(config, []byte("[maintenance]\n\tauto = false\n[gc]\n\tauto = 0\n[receive]\n\tautoGC = false\n"), 0600); err != nil {
+	if err := os.WriteFile(config, []byte(gittest.NoMaintenanceConfig), 0600); err != nil {
 		t.Fatal(err)
 	}
 	c.Env = append(os.Environ(), "HOME="+t.TempDir(), "XDG_CONFIG_HOME="+t.TempDir(), "GIT_CONFIG_NOSYSTEM=1", "GIT_CONFIG_GLOBAL="+config)
