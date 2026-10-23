@@ -120,9 +120,14 @@ class GitTests(ProvenanceTests):
         self.previous = os.getcwd()
         os.chdir(self.temporary.name)
         subprocess.run(['git','init','--bare','remote.git'],check=True,capture_output=True)
+        for key,value in (('maintenance.auto','false'),('gc.auto','0'),('receive.autoGC','false')):
+            subprocess.run(['git','-C','remote.git','config',key,value],check=True,capture_output=True)
         subprocess.run(['git','init','work'],check=True,capture_output=True)
         os.chdir('work')
         for args in [('config','user.name','Fixture'),('config','user.email','fixture@example.invalid'),
+                     # Throwaway repos: `git commit` and `git-receive-pack` (local transport drops
+                     # GIT_CONFIG_*) start detached auto maintenance that races temp cleanup (ENOTEMPTY).
+                     ('config','maintenance.auto','false'),('config','gc.auto','0'),
                      ('remote','add','origin','../remote.git'),('commit','--allow-empty','-m','fixture')]:
             subprocess.run(['git',*args],check=True,capture_output=True)
         self.record_data = tags.validate_record(self.record(commit=tags.git('rev-parse','HEAD').stdout.strip()))
