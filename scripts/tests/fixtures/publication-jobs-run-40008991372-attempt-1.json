@@ -1,0 +1,239 @@
+{
+ "run": {
+  "id": 40008991372,
+  "run_attempt": 1,
+  "run_number": 559,
+  "head_sha": "1e08d92cffad915da515b88bc8d1992eac3ded02",
+  "event": "workflow_dispatch",
+  "path": ".github/workflows/publish-bundles.yml",
+  "status": "completed",
+  "conclusion": "failure"
+ },
+ "total_count": 9,
+ "jobs": [
+  {
+   "id": 120604162028,
+   "run_id": 40008991372,
+   "run_attempt": 1,
+   "head_sha": "1e08d92cffad915da515b88bc8d1992eac3ded02",
+   "name": "plan (toolbox)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": [
+    {
+     "name": "Set up job",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Select the eligible bundles without compiling artifacts",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Complete job",
+     "status": "completed",
+     "conclusion": "success"
+    }
+   ]
+  },
+  {
+   "id": 120604239814,
+   "run_id": 40008991372,
+   "run_attempt": 1,
+   "head_sha": "1e08d92cffad915da515b88bc8d1992eac3ded02",
+   "name": "publication (toolbox) / preflight (toolbox)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": [
+    {
+     "name": "Set up job",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Validate publication source without compiling artifacts",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Complete job",
+     "status": "completed",
+     "conclusion": "success"
+    }
+   ]
+  },
+  {
+   "id": 120604292040,
+   "run_id": 40008991372,
+   "run_attempt": 1,
+   "head_sha": "1e08d92cffad915da515b88bc8d1992eac3ded02",
+   "name": "publication (toolbox) / resolve",
+   "status": "completed",
+   "conclusion": "failure",
+   "steps": [
+    {
+     "name": "Set up job",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Require the user's approval for this exact main revision",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Revalidate approved merged bundle source before compiling",
+     "status": "completed",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Run actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Check manager and publication gates",
+     "status": "completed",
+     "conclusion": "failure"
+    },
+    {
+     "name": "Compile CI adapter",
+     "status": "completed",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Resolve all tools once",
+     "status": "completed",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Compare resolved tools with the published baseline",
+     "status": "completed",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9",
+     "status": "completed",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Post Run actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e",
+     "status": "completed",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Complete job",
+     "status": "completed",
+     "conclusion": "success"
+    }
+   ]
+  },
+  {
+   "id": 120604823547,
+   "run_id": 40008991372,
+   "run_attempt": 1,
+   "head_sha": "1e08d92cffad915da515b88bc8d1992eac3ded02",
+   "name": "publication (toolbox) / native",
+   "status": "completed",
+   "conclusion": "skipped",
+   "steps": []
+  },
+  {
+   "id": 120604823951,
+   "run_id": 40008991372,
+   "run_attempt": 1,
+   "head_sha": "1e08d92cffad915da515b88bc8d1992eac3ded02",
+   "name": "publication (toolbox) / promote",
+   "status": "completed",
+   "conclusion": "skipped",
+   "steps": []
+  },
+  {
+   "id": 120604824173,
+   "run_id": 40008991372,
+   "run_attempt": 1,
+   "head_sha": "1e08d92cffad915da515b88bc8d1992eac3ded02",
+   "name": "publication (toolbox) / outcome",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": [
+    {
+     "name": "Set up job",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Summarize this bundle publication outcome",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Complete job",
+     "status": "completed",
+     "conclusion": "success"
+    }
+   ]
+  },
+  {
+   "id": 120604824697,
+   "run_id": 40008991372,
+   "run_attempt": 1,
+   "head_sha": "1e08d92cffad915da515b88bc8d1992eac3ded02",
+   "name": "publication (toolbox) / tag",
+   "status": "completed",
+   "conclusion": "skipped",
+   "steps": []
+  },
+  {
+   "id": 120604825138,
+   "run_id": 40008991372,
+   "run_attempt": 1,
+   "head_sha": "1e08d92cffad915da515b88bc8d1992eac3ded02",
+   "name": "publication (toolbox) / documentation",
+   "status": "completed",
+   "conclusion": "skipped",
+   "steps": []
+  },
+  {
+   "id": 120604825425,
+   "run_id": 40008991372,
+   "run_attempt": 1,
+   "head_sha": "1e08d92cffad915da515b88bc8d1992eac3ded02",
+   "name": "publication (toolbox) / cleanup",
+   "status": "completed",
+   "conclusion": "skipped",
+   "steps": []
+  }
+ ]
+}
