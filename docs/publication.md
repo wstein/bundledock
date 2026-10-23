@@ -493,6 +493,55 @@ leaves the older attempt pending. This covers CI artifact retention, not permane
 archival of live GitHub job history or registry content; deleted/inaccessible live
 proof remains pending.
 
+### Recover a failed or skipped documentation job
+
+If the image was promoted and source-tagged but the `documentation` job failed or
+was skipped, the guide and `docs/<bundle>-published.json` are missing from
+`main`. The owner repairs this by re-proposing the documentation PR from the
+run's receipt; no rebuild or re-promotion is involved.
+
+1. Confirm the state is `published-image-and-tag` with the read-only helper
+   described above (`--bundle`, `--sha`, `--run-id`, `--attempt`).
+2. Download the run's receipt artifact, named `<bundle>-publication-<attempt>`
+   (for example `toolbox-publication-2` or `agy-publication-1`), into an empty
+   directory:
+
+   ```sh
+   gh run download <run-id> -R wstein/bundledock \
+     -n <bundle>-publication-<attempt> -D <empty-dir>
+   ```
+
+3. From a clean checkout of `main` (clean working tree, `origin` pointing at
+   `wstein/bundledock`), with a `gh` token that can write contents, pull
+   requests and Actions, run:
+
+   ```sh
+   python3 -B scripts/publication-docs.py \
+     --receipt <empty-dir>/publication.json --bundle <bundle> \
+     --image quay.io/bundledock/<bundle> --sha <source sha> \
+     --run-id <run-id> --attempt <attempt> --propose
+   ```
+
+`<source sha>` is the full image source SHA the run was approved for: the
+helper's `requested_source_sha` (and `source_sha`), not the automatic
+controller SHA, which can differ. For example, toolbox run `40008991372`,
+attempt `2`, uses `1e08d92cffad915da515b88bc8d1992eac3ded02`.
+
+`--propose` first re-verifies the evidence as the helper does. It then creates or
+rebuilds the rolling `publication-docs/pending` branch and PR from fresh `main`
+and dispatches source CI for the new head. This writes a branch and a PR and
+starts a workflow, so it is an owner operation that needs explicit approval for
+each use. An artifact that expired fails closed; the tracked `publication_evidence`
+fallback only applies to the read-only helper.
+
+When several bundles of one combined run need recovery, repeat the download and
+command for each bundle with its own receipt, run and attempt. All of them
+accumulate in the same single pending PR.
+
+**Re-run failed jobs** does not repair the job after the workflow or this script
+changed: GitHub re-uses the original commit, so the old code runs again. Use the
+steps above from current `main` instead.
+
 ## List unpublished updaters
 
 `reconcile` verifies one known attempt. To find which bundles still need one, run
