@@ -48,6 +48,7 @@ shfmt>=3.14.1
 smill>=0.1.1
 sops>=3.13.3
 starship>=1.26.0
+stw>=0.1.0
 syft>=1.54.1
 tmux>=3.7.3
 trivy>=0.75.0

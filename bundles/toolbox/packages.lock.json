@@ -1,7 +1,7 @@
 {
   "schema": 2,
-  "desired_digest": "16f1ef201cc554b20c4a713f72acd66cee8f7467f97b180cf5b2f3e3ca7f0fd4",
-  "catalog_digest": "3adc2dca8cd659394e06b97930174c8ef1f987ea749b64f6ca31c9980f7859b1",
+  "desired_digest": "4f08c383d78d9919c56e11ca1f1839c804e2ddb6dea394210c5078d620f14008",
+  "catalog_digest": "b0e2d9112fd2911fea5d6113ebd6d3d1510543dd876f1d5888b6f72d1eaeb543",
   "platforms": {
     "amd64": {
       "actionlint": {
@@ -290,6 +290,12 @@
         "version": "v1.27.0",
         "url": "https://github.com/starship/starship/releases/download/v1.27.0/starship-x86_64-unknown-linux-musl.tar.gz",
         "sha256": "10c8eb4cb3b761d9bf59ea828444c2dab36c900b7d69a69e08814b286969df89",
+        "verification": "publisher-sha256"
+      },
+      "stw": {
+        "version": "v0.1.0",
+        "url": "https://github.com/wstein/sourcesteward/releases/download/v0.1.0/stw_0.1.0_linux_amd64.tar.gz",
+        "sha256": "067e143f01f75eb2c9a25e12a83d5d3ba4522f074dd1ff6f16f50164fe52248a",
         "verification": "publisher-sha256"
       },
       "syft": {
@@ -664,6 +670,12 @@
         "version": "v1.27.0",
         "url": "https://github.com/starship/starship/releases/download/v1.27.0/starship-aarch64-unknown-linux-musl.tar.gz",
         "sha256": "341f5cbf24699fa0b27ec88965ad25f862ea09e15d35a543fd6ffdff1d2aa00d",
+        "verification": "publisher-sha256"
+      },
+      "stw": {
+        "version": "v0.1.0",
+        "url": "https://github.com/wstein/sourcesteward/releases/download/v0.1.0/stw_0.1.0_linux_arm64.tar.gz",
+        "sha256": "d35fe8fb5ea3c11d914301d3bbe1ebbccd7b448d1976d96061013636f8eb743a",
         "verification": "publisher-sha256"
       },
       "syft": {

@@ -82,6 +82,7 @@ The source inventory below describes the current lock; this publication retains 
 | ShellCheck (`shellcheck`) | 0.11.0 | [Homepage](https://www.shellcheck.net) | [Source](https://github.com/koalaman/shellcheck) |
 | shfmt (`shfmt`) | 3.14.1 | [Homepage](https://pkg.go.dev/mvdan.cc/sh/v3) | [Source](https://github.com/mvdan/sh) |
 | SOPS (`sops`) | 3.13.3 | [Homepage](https://github.com/getsops/sops) | [Source](https://github.com/getsops/sops) |
+| SourceSteward (`stw`) | 0.1.0 | [Homepage](https://github.com/wstein/sourcesteward) | [Source](https://github.com/wstein/sourcesteward) |
 | Spec Kit (`specify`, first-use pip launcher) | 1.1.3 | [Homepage](https://github.github.io/spec-kit/) | [Source](https://github.com/github/spec-kit) |
 | Starship (`starship`) | 1.27.0 | [Homepage](https://starship.rs) | [Source](https://github.com/starship/starship) |
 | Syft (`syft`) | 1.55.0 | [Homepage](https://github.com/anchore/syft) | [Source](https://github.com/anchore/syft) |
@@ -102,7 +103,7 @@ The source inventory below describes the current lock; this publication retains 
 
 The default bundle lives in `bundles/toolbox/`: `packages.txt`,
 `packages.catalog.json`, `packages.lock.json`, its Dockerfile, smoke scripts and licenses.
-Shared Go code remains at the repository root. The source toolbox contains 62
+Shared Go code remains at the repository root. The source toolbox contains 63
 downloaded tools plus the two first-use Python launchers listed above. Codex, Antigravity and Claude are supplied by their separate
 [Codex](codex.md), [Antigravity](agy.md) and [Claude Code](claude.md) bundles.
 The published toolbox recorded above still includes those agents; this source
@@ -429,6 +430,30 @@ source-on-request offer EUPL-1.2 calls for. The archives nest their files below
 The isolated consumer smoke runs only `whr version` (expected `whr X.Y.Z`) with an
 empty home. Native consumer smoke, image build/publication and consumer activation
 remain pending separate owner authorization.
+
+### SourceSteward release
+
+The source lock includes [wstein/sourcesteward v0.1.0](https://github.com/wstein/sourcesteward/releases/tag/v0.1.0)
+(`stw>=0.1.0`), the `stw` command-line tool from the separately pinned SourceSteward
+repository. Like `cscribe` and `whr` it is a small, self-contained Go binary and is
+placed in the toolbox rather than in a bundle of its own. A future updater run
+resolves new stable SourceSteward releases through the normal toolbox path (tag
+prefix `v`, asset `stw_{version}_linux_{arch}.tar.gz`, publisher `SHA256SUMS`).
+Linux AMD64 and ARM64 archives were checked against `SHA256SUMS` and the release
+API digests on 2026-10-23; the darwin archives are not used in this Linux image.
+The catalog installs only `bin/stw`; the EUPL-1.2 `LICENSE`, `README.md` and the
+`third_party/` licence texts are retained from each release archive under
+`licenses/stw/`, next to a `SOURCE` record that names the corresponding source tag
+and the source-on-request offer EUPL-1.2 calls for. The archives nest their files
+below `stw_<version>_linux_<arch>/` and also carry `llms.txt` and `agent-guide.md`,
+which are not installed.
+
+`stw` needs git 2.46 or newer at runtime. The toolbox does not ship git, so that
+requirement stays with the consumer image's git. The isolated consumer smoke runs
+only `stw version` (expected `SourceSteward vX.Y.Z`) with an empty home, which needs
+no git. The linux/amd64 v0.1.0 binary was executed once that way for this addition.
+Native consumer smoke, image build/publication and consumer activation remain
+pending separate owner authorization.
 
 ### zk release
 

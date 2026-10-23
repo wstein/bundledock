@@ -27,6 +27,7 @@ check() {
         --mount "type=bind,src=$script_dir/smill-smoke.sh,dst=/smill-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/cscribe-smoke.sh,dst=/cscribe-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/whr-smoke.sh,dst=/whr-smoke.sh,readonly" \
+        --mount "type=bind,src=$script_dir/stw-smoke.sh,dst=/stw-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/tofu-smoke.sh,dst=/tofu-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/zk-smoke.sh,dst=/zk-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/fastfetch-smoke.sh,dst=/fastfetch-smoke.sh,readonly" \
@@ -132,6 +133,8 @@ check() {
             sh /cscribe-smoke.sh
             stage "WorkHarbor version"
             sh /whr-smoke.sh
+            stage "SourceSteward version"
+            sh /stw-smoke.sh
             stage "OpenTofu version"
             sh /tofu-smoke.sh
             stage "zk version"

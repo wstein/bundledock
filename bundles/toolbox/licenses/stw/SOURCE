@@ -1,0 +1,11 @@
+Upstream: https://github.com/wstein/sourcesteward
+License: EUPL-1.2 (full LICENSE, README.md and the third_party/ notices retained from each official release archive; LICENSE SHA256 1aceba239ff13a3c4986dc8d226548fa4e64efb5913173e8564573a87924f57e)
+Initial reviewed release: v0.1.0 (stable, not a draft or pre-release), published 2026-10-23T16:33:15Z
+Source for corresponding release: https://github.com/wstein/sourcesteward/releases/tag/v0.1.0
+Tag v0.1.0 resolves to commit 2f246f53004e4d6268cc27f0da386c3ab80d5695 (annotated tag object 425fc7c129c5b6f260c5fb6e17b5142c4a5a3a39).
+Source archive: https://github.com/wstein/sourcesteward/archive/refs/tags/v0.1.0.tar.gz
+Linux AMD64/ARM64: official stable prebuilt archives stw_0.1.0_linux_{amd64,arm64}.tar.gz, unchanged executable. The release also ships darwin amd64 and arm64 archives, which BundleDock does not use in the Linux toolbox image.
+Archive SHA256 values match the publisher SHA256SUMS and the release API digests (checked 2026-10-23). The archives nest their files below stw_<version>_linux_<arch>/ and also carry llms.txt and agent-guide.md, which BundleDock does not install; README.md, LICENSE and the third_party/ notices (licence texts of the modules linked into stw) are retained under licenses/stw.
+stw needs git 2.46 or newer at runtime. The toolbox does not ship git; the consumer's base image supplies it, so that requirement stays with the consumer image.
+stw prints "SourceSteward v0.1.0" for `stw version`; the smoke test runs only that, in an isolated empty home. The linux/amd64 binary was executed once in an isolated empty home on 2026-10-23 for that check; native consumer smoke remains part of an approved build.
+EUPL-1.2 is a copyleft licence. BundleDock gives any recipient of the toolbox the corresponding source of stw on request, by pointing to the tagged release above. This is not legal advice.
