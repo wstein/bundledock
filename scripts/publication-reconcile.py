@@ -100,11 +100,32 @@ def completed(item, conclusion='success'):
     return item.get('status') == 'completed' and item.get('conclusion') == conclusion
 
 
-def job_state(jobs, event, conclusion):
+def canonical(job, bundle):
+    """Return the JOBS-form name of one of this bundle's publication jobs, else None.
+
+    publish-bundles.yml calls the shared workflow from a bundle matrix, so GitHub
+    names its jobs 'publication (<bundle>) / <job>'; single-bundle callers (and
+    historical evidence) use 'publication / <job>'. Jobs of other bundles in a
+    combined run never match.
+    """
+    name = job.get('name')
+    if not isinstance(name, str):
+        return None
+    for prefix in ('publication / ', 'publication (' + bundle + ') / '):
+        if name.startswith(prefix):
+            return 'publication / ' + name[len(prefix):]
+    return None
+
+
+def named(jobs, bundle, name):
+    return [job for job in jobs if canonical(job, bundle) == name]
+
+
+def job_state(jobs, event, conclusion, bundle):
     # GitHub collapses an entirely skipped matrix to one unsuffixed job.
     artifact_names = set(JOBS) | {'publication / native'}
-    artifact_jobs = [job for job in jobs if job.get('name') in artifact_names]
-    names = {job['name'] for job in artifact_jobs}
+    artifact_jobs = [job for job in jobs if canonical(job, bundle) in artifact_names]
+    names = {canonical(job, bundle) for job in artifact_jobs}
     noop_names = {JOBS[0], JOBS[3], JOBS[4], JOBS[5]}
     natives = {JOBS[1], JOBS[2]}
     if (event == 'workflow_run' and conclusion == 'success'
@@ -113,7 +134,7 @@ def job_state(jobs, event, conclusion):
             and len(names) == len(artifact_jobs)
             and all(completed(job, 'skipped') for job in artifact_jobs)):
         return 'not-published'
-    selected = {name: [job for job in jobs if job.get('name') == name] for name in JOBS}
+    selected = {name: named(jobs, bundle, name) for name in JOBS}
     require(all(len(matches) <= 1 for matches in selected.values()), 'Duplicate publication jobs')
     if any(not matches for matches in selected.values()):
         return 'pending'
@@ -137,11 +158,11 @@ def executed(job, name):
     require(len(steps) == 1 and completed(steps[0]), 'Required publication step did not execute successfully')
 
 
-def attempt_evidence(run, jobs):
+def attempt_evidence(run, jobs, bundle):
     """Retain only the exact attempt and executed native/promotion provenance."""
     selected = []
     for name, step in ((JOBS[1], SMOKE), (JOBS[2], SMOKE), (JOBS[3], PROMOTE)):
-        matches = [job for job in jobs if job.get('name') == name]
+        matches = named(jobs, bundle, name)
         require(len(matches) == 1, 'Expected exact native/promotion job')
         job = matches[0]
         require(completed(job) and isinstance(job.get('id'), int) and job['id'] > 0
@@ -179,7 +200,7 @@ def durable_receipt(bundle, run_id, attempt, run, jobs, api, evidence_ref=None):
     require(isinstance(stored_attempt, dict), 'Durable attempt must be an object')
     if stored_attempt.get('run_attempt') != int(attempt):
         raise Pending('Exact durable publication attempt unavailable')
-    require(stored_attempt == attempt_evidence(run, jobs), 'Durable attempt provenance mismatch')
+    require(stored_attempt == attempt_evidence(run, jobs, bundle), 'Durable attempt provenance mismatch')
     receipt = evidence['receipt']
     require(isinstance(receipt, dict), 'Durable receipt must be an object')
     require(metadata.get('bundle') == bundle and all(metadata.get(key) == receipt.get(key)
@@ -248,8 +269,8 @@ def capture_evidence(bundle, revision, run_id, attempt, receipt, api):
     run = api.get('/actions/runs/' + run_id + '/attempts/' + attempt)
     validate_attempt(run, approval.config.select_bundle(bundle), revision, run_id, attempt)
     jobs = api.listing('/actions/runs/' + run_id + '/attempts/' + attempt + '/jobs', 'jobs')
-    evidence = attempt_evidence(run, jobs)
-    tag_jobs = [job for job in jobs if job.get('name') == JOBS[4]]
+    evidence = attempt_evidence(run, jobs, bundle)
+    tag_jobs = named(jobs, bundle, JOBS[4])
     require(len(tag_jobs) == 1 and completed(tag_jobs[0])
             and tag_jobs[0].get('run_id') == int(run_id) and tag_jobs[0].get('head_sha') == run['head_sha'],
             'Expected successful source tag job')
@@ -280,7 +301,7 @@ def reconcile(bundle, revision, run_id, attempt, api, registry_factory=tags.Regi
     jobs = api.listing(path + '/jobs', 'jobs')
     require(all(job.get('run_id') == int(run_id) and job.get('head_sha') == run['head_sha']
                 for job in jobs), 'Job source/run mismatch')
-    state = job_state(jobs, run['event'], run['conclusion'])
+    state = job_state(jobs, run['event'], run['conclusion'], bundle)
     result.update(state=state, jobs={job['name']: job.get('conclusion') for job in jobs})
     if state in ('pending', 'incomplete'):
         return result
@@ -299,7 +320,7 @@ def reconcile(bundle, revision, run_id, attempt, api, registry_factory=tags.Regi
         except Pending:
             return result
         raise ValueError('Skipped publisher has durable publication evidence')
-    by_name = {job['name']: job for job in jobs}
+    by_name = {name: named(jobs, bundle, name)[0] for name in JOBS}
     for name in JOBS[1:3]:
         executed(by_name[name], SMOKE)
     executed(by_name[JOBS[3]], PROMOTE)

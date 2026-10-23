@@ -1,0 +1,564 @@
+{
+ "run": {
+  "id": 40008991372,
+  "run_attempt": 2,
+  "run_number": 559,
+  "head_sha": "1e08d92cffad915da515b88bc8d1992eac3ded02",
+  "event": "workflow_dispatch",
+  "path": ".github/workflows/publish-bundles.yml",
+  "status": "completed",
+  "conclusion": "failure"
+ },
+ "total_count": 10,
+ "jobs": [
+  {
+   "id": 120605592621,
+   "run_id": 40008991372,
+   "run_attempt": 2,
+   "head_sha": "1e08d92cffad915da515b88bc8d1992eac3ded02",
+   "name": "publication (toolbox) / resolve",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": [
+    {
+     "name": "Set up job",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Require the user's approval for this exact main revision",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Revalidate approved merged bundle source before compiling",
+     "status": "completed",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Run actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Check manager and publication gates",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Compile CI adapter",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Resolve all tools once",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Compare resolved tools with the published baseline",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Post Run actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Complete job",
+     "status": "completed",
+     "conclusion": "success"
+    }
+   ]
+  },
+  {
+   "id": 120605592766,
+   "run_id": 40008991372,
+   "run_attempt": 2,
+   "head_sha": "1e08d92cffad915da515b88bc8d1992eac3ded02",
+   "name": "plan (toolbox)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": [
+    {
+     "name": "Set up job",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Select the eligible bundles without compiling artifacts",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Complete job",
+     "status": "completed",
+     "conclusion": "success"
+    }
+   ]
+  },
+  {
+   "id": 120605594085,
+   "run_id": 40008991372,
+   "run_attempt": 2,
+   "head_sha": "1e08d92cffad915da515b88bc8d1992eac3ded02",
+   "name": "publication (toolbox) / preflight (toolbox)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": [
+    {
+     "name": "Set up job",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Validate publication source without compiling artifacts",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Complete job",
+     "status": "completed",
+     "conclusion": "success"
+    }
+   ]
+  },
+  {
+   "id": 120606380544,
+   "run_id": 40008991372,
+   "run_attempt": 2,
+   "head_sha": "1e08d92cffad915da515b88bc8d1992eac3ded02",
+   "name": "publication (toolbox) / native (arm64, ubuntu-24.04-arm)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": [
+    {
+     "name": "Set up job",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Require the user's approval for this exact main revision",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Revalidate approved merged bundle source before compiling",
+     "status": "completed",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Run actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Run actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Use temporary registry credentials",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Compile CI adapter",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Build once and smoke on the native architecture",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Log in to Quay after native smoke passes",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Push the exact smoked image to its run staging tag",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Remove registry credentials",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Post Run actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Complete job",
+     "status": "completed",
+     "conclusion": "success"
+    }
+   ]
+  },
+  {
+   "id": 120606380615,
+   "run_id": 40008991372,
+   "run_attempt": 2,
+   "head_sha": "1e08d92cffad915da515b88bc8d1992eac3ded02",
+   "name": "publication (toolbox) / native (amd64, ubuntu-24.04)",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": [
+    {
+     "name": "Set up job",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Require the user's approval for this exact main revision",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Revalidate approved merged bundle source before compiling",
+     "status": "completed",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Run actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Run actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Use temporary registry credentials",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Compile CI adapter",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Build once and smoke on the native architecture",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Log in to Quay after native smoke passes",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Push the exact smoked image to its run staging tag",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Remove registry credentials",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Post Run actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Complete job",
+     "status": "completed",
+     "conclusion": "success"
+    }
+   ]
+  },
+  {
+   "id": 120608574375,
+   "run_id": 40008991372,
+   "run_attempt": 2,
+   "head_sha": "1e08d92cffad915da515b88bc8d1992eac3ded02",
+   "name": "publication (toolbox) / promote",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": [
+    {
+     "name": "Set up job",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Require the user's approval for this exact main revision",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Revalidate approved merged bundle source before compiling",
+     "status": "completed",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Run actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Run actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Run actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Use temporary registry credentials",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Compile CI adapter",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Refuse publication when a newer eligible run exists",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Revalidate approved source immediately before promotion",
+     "status": "completed",
+     "conclusion": "skipped"
+    },
+    {
+     "name": "Log in to Quay",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Verify both platform manifests and promote version and canonical channel aliases",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Remove registry credentials",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Post Run actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Complete job",
+     "status": "completed",
+     "conclusion": "success"
+    }
+   ]
+  },
+  {
+   "id": 120609109161,
+   "run_id": 40008991372,
+   "run_attempt": 2,
+   "head_sha": "1e08d92cffad915da515b88bc8d1992eac3ded02",
+   "name": "publication (toolbox) / tag",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": [
+    {
+     "name": "Set up job",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Run actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Tag the verified publication source",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Complete job",
+     "status": "completed",
+     "conclusion": "success"
+    }
+   ]
+  },
+  {
+   "id": 120609208142,
+   "run_id": 40008991372,
+   "run_attempt": 2,
+   "head_sha": "1e08d92cffad915da515b88bc8d1992eac3ded02",
+   "name": "publication (toolbox) / documentation",
+   "status": "completed",
+   "conclusion": "failure",
+   "steps": [
+    {
+     "name": "Set up job",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Run actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Propose verified publication Markdown source and run source CI",
+     "status": "completed",
+     "conclusion": "failure"
+    },
+    {
+     "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Complete job",
+     "status": "completed",
+     "conclusion": "success"
+    }
+   ]
+  },
+  {
+   "id": 120609277833,
+   "run_id": 40008991372,
+   "run_attempt": 2,
+   "head_sha": "1e08d92cffad915da515b88bc8d1992eac3ded02",
+   "name": "publication (toolbox) / outcome",
+   "status": "completed",
+   "conclusion": "success",
+   "steps": [
+    {
+     "name": "Set up job",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Summarize this bundle publication outcome",
+     "status": "completed",
+     "conclusion": "success"
+    },
+    {
+     "name": "Complete job",
+     "status": "completed",
+     "conclusion": "success"
+    }
+   ]
+  },
+  {
+   "id": 120609280009,
+   "run_id": 40008991372,
+   "run_attempt": 2,
+   "head_sha": "1e08d92cffad915da515b88bc8d1992eac3ded02",
+   "name": "publication (toolbox) / cleanup",
+   "status": "completed",
+   "conclusion": "skipped",
+   "steps": []
+  }
+ ]
+}

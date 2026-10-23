@@ -11,10 +11,10 @@ class PublicationReconcileTests(unittest.TestCase):
     def test_success_with_all_artifact_jobs_skipped_is_noop(self):
         jobs = [{'name': name, 'status': 'completed', 'conclusion': 'skipped'}
                 for name in reconcile.JOBS]
-        self.assertEqual(reconcile.job_state(jobs, 'workflow_run', 'success'), 'not-published')
+        self.assertEqual(reconcile.job_state(jobs, 'workflow_run', 'success', 'opentofu'), 'not-published')
 
     def test_missing_jobs_remain_pending(self):
-        self.assertEqual(reconcile.job_state([], 'workflow_run', 'success'), 'pending')
+        self.assertEqual(reconcile.job_state([], 'workflow_run', 'success', 'opentofu'), 'pending')
 
 import copy
 import base64
@@ -515,3 +515,76 @@ class ConsolidatedIdentityTests(unittest.TestCase):
         api.run['path'] = '.github/workflows/bundledock-opentofu.yml'
         with self.assertRaises(ValueError):
             reconcile.capture_evidence('opentofu', SHA, '123', '2', api.receipt, api)
+
+
+FIXTURES = Path(__file__).with_name('fixtures')
+
+
+def recorded(run_id, attempt):
+    """Real jobs of one workflow attempt, projected to the fields the helper reads."""
+    data = json.loads((FIXTURES / ('publication-jobs-run-%s-attempt-%s.json' % (run_id, attempt))).read_text())
+    return data['run'], data['jobs']
+
+
+class MatrixCallerJobNameTests(unittest.TestCase):
+    """publish-bundles.yml calls the shared workflow from a bundle matrix, so GitHub
+    prefixes every job with 'publication (<bundle>) / '."""
+
+    def test_rerun_attempt_evidence_selects_the_matrix_named_jobs(self):
+        run, jobs = recorded(40008991372, 2)
+        evidence = reconcile.attempt_evidence(run, jobs, 'toolbox')
+        self.assertEqual(evidence['run_attempt'], 2)
+        self.assertEqual([job['name'] for job in evidence['jobs']],
+                         ['publication (toolbox) / native (amd64, ubuntu-24.04)',
+                          'publication (toolbox) / native (arm64, ubuntu-24.04-arm)',
+                          'publication (toolbox) / promote'])
+        self.assertTrue(all(job['run_id'] == run['id'] for job in evidence['jobs']))
+        self.assertEqual(reconcile.job_state(jobs, run['event'], run['conclusion'], 'toolbox'), 'promoted')
+
+    def test_failed_first_attempt_never_yields_evidence(self):
+        run, jobs = recorded(40008991372, 1)
+        with self.assertRaises(ValueError):
+            reconcile.attempt_evidence(run, jobs, 'toolbox')
+        self.assertNotIn(reconcile.job_state(jobs, run['event'], run['conclusion'], 'toolbox'),
+                         ('promoted', 'not-published'))
+
+    def test_combined_run_selects_only_the_requested_bundle(self):
+        run, jobs = recorded(39954169722, 1)
+        for bundle in ('agy', 'claude', 'codex', 'toolbox'):
+            with self.subTest(bundle=bundle):
+                evidence = reconcile.attempt_evidence(run, jobs, bundle)
+                self.assertTrue(all(job['name'].startswith('publication (' + bundle + ') / ')
+                                    for job in evidence['jobs']))
+                self.assertEqual(reconcile.job_state(jobs, run['event'], run['conclusion'], bundle), 'promoted')
+
+    def test_other_bundle_jobs_never_satisfy_evidence(self):
+        run, jobs = recorded(40008991372, 2)
+        with self.assertRaises(ValueError):
+            reconcile.attempt_evidence(run, jobs, 'opentofu')
+        self.assertEqual(reconcile.job_state(jobs, run['event'], run['conclusion'], 'opentofu'), 'pending')
+
+    def test_mixed_caller_forms_are_duplicates(self):
+        run, jobs = recorded(40008991372, 2)
+        legacy = [dict(job, name=job['name'].replace('publication (toolbox) / ', 'publication / '))
+                  for job in jobs]
+        with self.assertRaises(ValueError):
+            reconcile.attempt_evidence(run, jobs + legacy, 'toolbox')
+        with self.assertRaises(ValueError):
+            reconcile.job_state(jobs + legacy, run['event'], run['conclusion'], 'toolbox')
+
+    def test_matrix_named_end_to_end_capture_and_reconcile(self):
+        api = FakeAPI()
+        decoys = [dict(job, id=job['id'] + 50, name=job['name'].replace('publication / ', 'publication (toolbox) / '),
+                       conclusion='failure') for job in api.jobs]
+        for job in api.jobs:
+            job['name'] = job['name'].replace('publication / ', 'publication (opentofu) / ')
+        api.jobs += decoys
+        api.run.update(status='in_progress', conclusion=None)
+        api.jobs[5].update(status='in_progress', conclusion=None)
+        evidence = reconcile.capture_evidence('opentofu', SHA, '123', '2', api.receipt, api)
+        record = reconcile.docs.validate(api.receipt, 'opentofu', api.receipt['image'], SHA, '123', '2')
+        api.durable = json.loads(reconcile.docs.metadata('opentofu', record, evidence=evidence))
+        api.run.update(status='completed', conclusion='failure')
+        api.jobs[5].update(status='completed', conclusion='success')
+        api.artifacts[0]['expired'] = True
+        self.assertEqual(api.check()['state'], 'published')
