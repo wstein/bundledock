@@ -10,15 +10,10 @@ import tarfile
 import tempfile
 import tomllib
 import unittest
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 # Sorted by archive name; darwin/amd64 (end of life) and Windows are not built.
-# `git commit` spawns `git maintenance run --auto --detach`; the detached process may still write
-# into `objects` while TemporaryDirectory removes the fixture, failing with ENOTEMPTY. Fixture
-# repositories never need background maintenance.
-GIT_NO_MAINTENANCE = {'GIT_CONFIG_COUNT': '2',
-                      'GIT_CONFIG_KEY_0': 'maintenance.auto', 'GIT_CONFIG_VALUE_0': 'false',
-                      'GIT_CONFIG_KEY_1': 'gc.auto', 'GIT_CONFIG_VALUE_1': '0'}
 TARGETS = (('darwin', 'arm64'), ('linux', 'amd64'), ('linux', 'arm64'))
 
 
@@ -123,11 +118,15 @@ class SourceStewardAdapterTest(unittest.TestCase):
                 destination.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copyfile(source, destination)
         (root / '.gitignore').write_text('/dist/\n')
-        for args in (('init', '-q'), ('add', '.'),
+        # `git commit` starts a detached `git maintenance run --auto`. Under git's geometric
+        # strategy it repacks into objects/pack when the commit hash shares the 17 prefix of the
+        # fixed .gitignore blob, racing TemporaryDirectory cleanup (ENOTEMPTY). Repository-local
+        # config applies to every git process that touches the fixture.
+        for args in (('init', '-q'), ('config', 'maintenance.auto', 'false'),
+                     ('config', 'gc.auto', '0'), ('add', '.'),
                      ('-c', 'user.name=fixture', '-c', 'user.email=fixture@example.invalid',
                       'commit', '-q', '-m', 'fixture')):
-            subprocess.run(['git', *args], cwd=root, check=True, capture_output=True,
-                           env=dict(os.environ, **GIT_NO_MAINTENANCE))
+            subprocess.run(['git', *args], cwd=root, check=True, capture_output=True)
         compiler = base / 'go'
         compiler.write_text('''#!/usr/bin/env python3
 import json, os, pathlib, sys
@@ -145,18 +144,21 @@ else:
 ''')
         compiler.chmod(0o755)
         (base / 'tmp').mkdir()
-        env = dict(os.environ, GO=str(compiler), TMPDIR=str(base / 'tmp'), GOFLAGS='-race', **GIT_NO_MAINTENANCE)
+        env = dict(os.environ, GO=str(compiler), TMPDIR=str(base / 'tmp'), GOFLAGS='-race')
         return root, env
 
-    def test_fixture_repository_starts_no_background_maintenance(self):
+    def test_fixture_commit_starts_no_background_maintenance(self):
         with tempfile.TemporaryDirectory() as directory:
-            root, env = self.fixture(Path(directory))
-            trace = subprocess.run(['git', 'commit', '-q', '--allow-empty', '-m', 'again'], cwd=root,
-                                   env=dict(env, GIT_TRACE='1', GIT_AUTHOR_NAME='f', GIT_COMMITTER_NAME='f',
-                                            GIT_AUTHOR_EMAIL='f@example.invalid',
-                                            GIT_COMMITTER_EMAIL='f@example.invalid'),
-                                   capture_output=True, text=True, check=True).stderr
-            self.assertNotIn('maintenance', trace)
+            base = Path(directory) / 'fx'
+            base.mkdir()
+            events = Path(directory) / 'trace2.json'
+            with mock.patch.dict(os.environ, GIT_TRACE2_EVENT=str(events)):
+                self.fixture(base)
+            records = [json.loads(line) for line in events.read_text().splitlines()]
+            commands = [r['name'] for r in records if r['event'] == 'cmd_name']
+            self.assertIn('commit', commands)  # the fixture's own commit was traced
+            children = [r['argv'] for r in records if r['event'] == 'child_start']
+            self.assertEqual([argv for argv in children if 'maintenance' in argv], [])
 
     def invoke(self, root, env, os_name='linux', arch='amd64', version='0.1.0', output=None):
         if output is None:
