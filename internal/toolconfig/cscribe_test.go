@@ -35,6 +35,10 @@ func TestCscribeOfficialStableRecipe(t *testing.T) {
 	if _, ok := c.Desired["cscribe"]; !ok {
 		t.Fatal("missing stable requirement")
 	}
+	// packages.txt raises the minimum to 0.2.0: 0.1.x must be excluded.
+	if !c.Desired["cscribe"].Contains("0.2.0") || c.Desired["cscribe"].Contains("0.1.0") {
+		t.Fatal("cscribe constraint must require at least 0.2.0")
+	}
 	version := ""
 	for _, arch := range []string{"amd64", "arm64"} {
 		pin := c.Lock.Platforms[arch]["cscribe"]

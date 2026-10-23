@@ -12,7 +12,7 @@ func TestCscribeSmokeVersionOnlyAndIsolated(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, version := range []string{"cscribe v0.1.0", "cscribe 0.1.0", "wrong"} {
+	for _, version := range []string{"cscribe v0.2.0", "cscribe 0.2.0", "wrong"} {
 		t.Run(version, func(t *testing.T) {
 			bin := t.TempDir()
 			// cscribe has no --version flag; its version subcommand prints "cscribe vX.Y.Z".
@@ -32,10 +32,10 @@ printf '%s\n' '` + version + `'
 			cmd := exec.Command("sh", script)
 			cmd.Env = append(os.Environ(), "PATH="+bin+":"+os.Getenv("PATH"), "CALLER_HOME="+os.Getenv("HOME"))
 			out, err := cmd.CombinedOutput()
-			if version == "cscribe v0.1.0" && err != nil {
+			if version == "cscribe v0.2.0" && err != nil {
 				t.Fatalf("isolated version failed: %v\n%s", err, out)
 			}
-			if version != "cscribe v0.1.0" && err == nil {
+			if version != "cscribe v0.2.0" && err == nil {
 				t.Fatal("invalid version accepted")
 			}
 		})

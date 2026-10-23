@@ -1,10 +1,10 @@
 Upstream: https://github.com/wstein/chartscribe
 License: EUPL-1.2 (full LICENSE and README.md retained from each official release archive; LICENSE SHA256 49f83599832256fdceb27c2f5e63ce8bc4ffc599e98038bbb23bda41f1cfb68c)
-Initial reviewed release: v0.1.0 (stable, not a draft or pre-release), published 2026-10-22T00:05:55Z
-Source for corresponding release: https://github.com/wstein/chartscribe/releases/tag/v0.1.0
-Tag v0.1.0 resolves to commit cdce0d7a526c30fa0fbdb226a3a8f919fb775bd1 (annotated tag object 10e7c898e97fce5eab773b7f7f845c40720f669a).
-Source archive: https://github.com/wstein/chartscribe/archive/refs/tags/v0.1.0.tar.gz
-Linux AMD64/ARM64: official stable prebuilt archives cscribe_0.1.0_linux_{amd64,arm64}.tar.gz, unchanged executable. The release also ships armv6, armv7, loong64, ppc64le, riscv64 and s390x archives, which BundleDock does not use. Release binaries are unsigned.
-Archive SHA256 values match the publisher SHA256SUMS and the release API digests (checked 2026-10-22). The archives nest their files below cscribe_<version>_linux_<arch>/ and also carry agent-guide.md and llms.txt, which BundleDock does not install.
-cscribe has no --version flag; the smoke test runs `cscribe version`, which prints "cscribe v0.1.0". The linux/amd64 binary was executed once in an isolated empty home on 2026-10-22 for that check; native consumer smoke remains part of an approved build.
+Current reviewed release: v0.2.0 (stable, not a draft or pre-release), published 2026-10-23T16:31:55Z (initially added at v0.1.0)
+Source for corresponding release: https://github.com/wstein/chartscribe/releases/tag/v0.2.0
+Tag v0.2.0 resolves to commit df4687e7978aede0b0784c062329cbe58856ba8a (annotated tag object 80852c9b13e3be7de55f60559f251b7425073107).
+Source archive: https://github.com/wstein/chartscribe/archive/refs/tags/v0.2.0.tar.gz
+Linux AMD64/ARM64: official stable prebuilt archives cscribe_0.2.0_linux_{amd64,arm64}.tar.gz, unchanged executable. The release also ships armv6, armv7, loong64, ppc64le, riscv64 and s390x archives, which BundleDock does not use. Release binaries are unsigned.
+Archive SHA256 values match the publisher SHA256SUMS and the release API digests (checked 2026-10-23). The archives nest their files below cscribe_<version>_linux_<arch>/ and also carry agent-guide.md and llms.txt, which BundleDock does not install.
+cscribe has no --version flag; the smoke test runs `cscribe version`, which prints "cscribe v0.2.0". The linux/amd64 binary was executed once in an isolated empty home on 2026-10-23 for that check; native consumer smoke remains part of an approved build.
 EUPL-1.2 is a copyleft licence. BundleDock gives any recipient of the toolbox the corresponding source of cscribe on request, by pointing to the tagged release above. This is not legal advice.

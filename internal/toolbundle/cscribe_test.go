@@ -24,7 +24,7 @@ func TestCscribeArchiveInstallsExecutableAndLicense(t *testing.T) {
 	}
 	defer root.Close()
 	// The official archive nests its files below cscribe_<version>_linux_<arch>/.
-	const dir = "cscribe_0.1.0_linux_amd64/"
+	const dir = "cscribe_0.2.0_linux_amd64/"
 	data := archive(t, member{dir + "cscribe", "synthetic native executable", 0755, 0}, member{dir + "LICENSE", "EUPL text", 0644, 0}, member{dir + "README.md", "readme", 0644, 0}, member{dir + "unrequested", "unrequested executable", 0755, 0})
 	if err := Extract(root, "cscribe", p, bytes.NewReader(data)); err != nil {
 		t.Fatal(err)
