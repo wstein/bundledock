@@ -119,9 +119,9 @@
         "verification": "publisher-sha256"
       },
       "git-lfs": {
-        "version": "v3.8.0",
-        "url": "https://github.com/git-lfs/git-lfs/releases/download/v3.8.0/git-lfs-linux-amd64-v3.8.0.tar.gz",
-        "sha256": "e455e00f15d9b95661b8d53498ffb0c3367962cf1ec73c31ab7369516cd6ab8d",
+        "version": "v3.8.1",
+        "url": "https://github.com/git-lfs/git-lfs/releases/download/v3.8.1/git-lfs-linux-amd64-v3.8.1.tar.gz",
+        "sha256": "e72cf723a4a660438862282e8aecf3885fc8123e88bfcad534cf6b941a354b75",
         "verification": "publisher-sha256"
       },
       "gitleaks": {
@@ -209,9 +209,9 @@
         "verification": "publisher-sha256"
       },
       "mise": {
-        "version": "v2026.10.17",
-        "url": "https://github.com/jdx/mise/releases/download/v2026.10.17/mise-v2026.10.17-linux-x64-musl",
-        "sha256": "f6e5e457103252eca6032dbc5c29bff7e0c73f1bc0f915541e7658ba360d4287",
+        "version": "v2026.10.18",
+        "url": "https://github.com/jdx/mise/releases/download/v2026.10.18/mise-v2026.10.18-linux-x64-musl",
+        "sha256": "cab4710274e8c5bf0a4753a3e9bf1fd0ae2c0a525a4f2902e1c7658cee699fdb",
         "verification": "publisher-sha256"
       },
       "navi": {
@@ -251,9 +251,9 @@
         "verification": "publisher-sha256"
       },
       "ruff": {
-        "version": "0.17.1",
-        "url": "https://github.com/astral-sh/ruff/releases/download/0.17.1/ruff-x86_64-unknown-linux-musl.tar.gz",
-        "sha256": "2d9878b5e6a3d0dedadbfc01a64bfe54e72f560adbfd235937cd29e1fc9238e3",
+        "version": "0.17.2",
+        "url": "https://github.com/astral-sh/ruff/releases/download/0.17.2/ruff-x86_64-unknown-linux-musl.tar.gz",
+        "sha256": "d6407f429ef15e558cbe980d30a67f27d02e3d2f72780be141ee006b2fdf7df3",
         "verification": "publisher-sha256"
       },
       "scc": {
@@ -311,9 +311,9 @@
         "verification": "publisher-sha256"
       },
       "trufflehog": {
-        "version": "v3.99.3",
-        "url": "https://github.com/trufflesecurity/trufflehog/releases/download/v3.99.3/trufflehog_3.99.3_linux_amd64.tar.gz",
-        "sha256": "029b182e0ed35fd5b02cd1eadc2a94bd457ab14ad22a9380b6e5d9652261d28d",
+        "version": "v3.99.4",
+        "url": "https://github.com/trufflesecurity/trufflehog/releases/download/v3.99.4/trufflehog_3.99.4_linux_amd64.tar.gz",
+        "sha256": "5ae9b313342d1bfa96404064c0f59e77a2cbd1824d797ca7b11e6655aa8fd9d1",
         "verification": "publisher-sha256"
       },
       "typos": {
@@ -493,9 +493,9 @@
         "verification": "publisher-sha256"
       },
       "git-lfs": {
-        "version": "v3.8.0",
-        "url": "https://github.com/git-lfs/git-lfs/releases/download/v3.8.0/git-lfs-linux-arm64-v3.8.0.tar.gz",
-        "sha256": "ac9c8efac980bb0505ead384d087e2acb6486fd8498691a2165fa174ec6118c2",
+        "version": "v3.8.1",
+        "url": "https://github.com/git-lfs/git-lfs/releases/download/v3.8.1/git-lfs-linux-arm64-v3.8.1.tar.gz",
+        "sha256": "67895dd77b63329796bc5efdd47b57f218e1f7b98717ebaf936a8238dbcaec0f",
         "verification": "publisher-sha256"
       },
       "gitleaks": {
@@ -583,9 +583,9 @@
         "verification": "publisher-sha256"
       },
       "mise": {
-        "version": "v2026.10.17",
-        "url": "https://github.com/jdx/mise/releases/download/v2026.10.17/mise-v2026.10.17-linux-arm64-musl",
-        "sha256": "86d4db8bb1277ce164d75c0ba12179830ab172c318598f878f8286d27978e4f2",
+        "version": "v2026.10.18",
+        "url": "https://github.com/jdx/mise/releases/download/v2026.10.18/mise-v2026.10.18-linux-arm64-musl",
+        "sha256": "61c5773ca684d12907092263890cb0532c667b3efe64e373f3f7169938cc86d4",
         "verification": "publisher-sha256"
       },
       "navi": {
@@ -625,9 +625,9 @@
         "verification": "publisher-sha256"
       },
       "ruff": {
-        "version": "0.17.1",
-        "url": "https://github.com/astral-sh/ruff/releases/download/0.17.1/ruff-aarch64-unknown-linux-musl.tar.gz",
-        "sha256": "255404ccf2f7950ff6aad8858321a6f416fe2a840ae4e37dfb4c21cb8774f325",
+        "version": "0.17.2",
+        "url": "https://github.com/astral-sh/ruff/releases/download/0.17.2/ruff-aarch64-unknown-linux-musl.tar.gz",
+        "sha256": "ba1a3a43f8afc7bda55f8be2c600a1c8966390c3de17526bb1e6c5609c2e9fa0",
         "verification": "publisher-sha256"
       },
       "scc": {
@@ -685,9 +685,9 @@
         "verification": "publisher-sha256"
       },
       "trufflehog": {
-        "version": "v3.99.3",
-        "url": "https://github.com/trufflesecurity/trufflehog/releases/download/v3.99.3/trufflehog_3.99.3_linux_arm64.tar.gz",
-        "sha256": "fdfc2d0da45c9fc3642c4cad08f881131570c0e8f648a5943a02e5387a94243d",
+        "version": "v3.99.4",
+        "url": "https://github.com/trufflesecurity/trufflehog/releases/download/v3.99.4/trufflehog_3.99.4_linux_arm64.tar.gz",
+        "sha256": "e6285aff62e692131255dca91ad300a62a479330e0b72e4eb1d60ae58908f8d5",
         "verification": "publisher-sha256"
       },
       "typos": {
