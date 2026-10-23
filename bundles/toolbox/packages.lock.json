@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "desired_digest": "4f08c383d78d9919c56e11ca1f1839c804e2ddb6dea394210c5078d620f14008",
+  "desired_digest": "aaef601adc5a63993a44a145d5f38e940589670745b983f7c4ffa07fe5ed01cc",
   "catalog_digest": "b0e2d9112fd2911fea5d6113ebd6d3d1510543dd876f1d5888b6f72d1eaeb543",
   "platforms": {
     "amd64": {
@@ -47,9 +47,9 @@
         "verification": "publisher-sha256"
       },
       "cscribe": {
-        "version": "v0.1.0",
-        "url": "https://github.com/wstein/chartscribe/releases/download/v0.1.0/cscribe_0.1.0_linux_amd64.tar.gz",
-        "sha256": "b8941a418cec616df6d142d1008dd0bef7c8aea98c32911b724620e666a572cf",
+        "version": "v0.2.0",
+        "url": "https://github.com/wstein/chartscribe/releases/download/v0.2.0/cscribe_0.2.0_linux_amd64.tar.gz",
+        "sha256": "85cf6ee25a9b5dca29c766638f123fc733c38cc1f466c867a1f510e0e0b6eda8",
         "verification": "publisher-sha256"
       },
       "delta": {
@@ -427,9 +427,9 @@
         "verification": "publisher-sha256"
       },
       "cscribe": {
-        "version": "v0.1.0",
-        "url": "https://github.com/wstein/chartscribe/releases/download/v0.1.0/cscribe_0.1.0_linux_arm64.tar.gz",
-        "sha256": "a2acd240ceeaad7de1b9ecaf62c45843ced1ea65ba23c35bc9696f46bbefe4b0",
+        "version": "v0.2.0",
+        "url": "https://github.com/wstein/chartscribe/releases/download/v0.2.0/cscribe_0.2.0_linux_arm64.tar.gz",
+        "sha256": "f32a2d59b8ec3a172651ef347bdff02726e3bad1fe1fe5a6a4014523b9324914",
         "verification": "publisher-sha256"
       },
       "delta": {
