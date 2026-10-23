@@ -42,7 +42,7 @@ def exact_requirements(text):
 
 def copy_repository(root):
     for name in ('bundles', 'scripts', '.config', '.github', 'docs', 'internal/toolconfig',
-                 'internal/toolupgrade', 'internal/toolinventory', 'internal/toolmanager', 'cmd/tools-publish', 'internal/toolpublish', 'internal/toolbundle/python'):
+                 'internal/toolupgrade', 'internal/toolinventory', 'internal/toolmanager', 'cmd/tools-publish', 'internal/toolpublish', 'internal/toolbundle/python', 'internal/gittest'):
         shutil.copytree(ROOT / name, root / name, ignore=shutil.ignore_patterns('__pycache__'))
     for name in ('go.mod', 'go.sum'):
         shutil.copyfile(ROOT / name, root / name)
