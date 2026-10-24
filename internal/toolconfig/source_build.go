@@ -1,9 +1,15 @@
 package toolconfig
 
 import (
+	"encoding/hex"
 	"fmt"
 	"regexp"
 	"strings"
+)
+
+var (
+	extraSourceName = regexp.MustCompile(`^[a-z][a-z0-9-]*$`)
+	commitSHA       = regexp.MustCompile(`^[0-9a-f]{40}$`)
 )
 
 // The source-build vocabulary is closed: every name below is reviewed Go code,
@@ -17,18 +23,47 @@ type VersionSource struct {
 	URL  string `json:"url"`
 }
 
+// ExtraSource is a further pinned source of a source-build package: files of
+// one commit of a source repository. The publisher offers no checksum for it, so
+// the lock pins each file by the builder-computed SHA256 (class
+// tls-download-sha256), the named exception of AGENTS.md.
+type ExtraSource struct {
+	Repository string `json:"repository"`
+	Commit     string `json:"commit"`
+	// Files maps a repository path to the file name used in the build directory.
+	Files map[string]string `json:"files"`
+	// URL is a template with {commit} and {file} (the repository path).
+	URL          string   `json:"url"`
+	AllowedHosts []string `json:"allowed_hosts"`
+}
+
+// LockedSource is the lock entry of an ExtraSource, keyed "<tool>/<name>".
+type LockedSource struct {
+	Commit string                `json:"commit"`
+	Files  map[string]LockedFile `json:"files"`
+}
+
+// LockedFile pins one extra-source file by URL and builder-computed SHA256.
+type LockedFile struct {
+	URL          string `json:"url"`
+	SHA256       string `json:"sha256"`
+	Verification string `json:"verification"`
+}
+
 // Build is the recipe of a provider "source-build" package.
 type Build struct {
 	Kind          string   `json:"kind"`
 	Toolchain     string   `json:"toolchain"`
 	ArchivePrefix string   `json:"archive_prefix"`
 	Sources       []string `json:"sources"`
-	Defines       []string `json:"defines,omitempty"`
-	Cflags        []string `json:"cflags,omitempty"`
-	Libs          []string `json:"libs,omitempty"`
-	Static        bool     `json:"static"`
-	OutputForm    string   `json:"output_form"`
-	Output        string   `json:"output"`
+	// ExtraSources lists, by name, the package-level extra_sources the recipe consumes.
+	ExtraSources []string `json:"extra_sources,omitempty"`
+	Defines      []string `json:"defines,omitempty"`
+	Cflags       []string `json:"cflags,omitempty"`
+	Libs         []string `json:"libs,omitempty"`
+	Static       bool     `json:"static"`
+	OutputForm   string   `json:"output_form"`
+	Output       string   `json:"output"`
 }
 
 var (
@@ -53,8 +88,8 @@ var (
 
 func validateSourceBuild(name string, p Package) error {
 	if p.Provider != "source-build" {
-		if p.Build != nil || p.VersionSource != nil {
-			return fmt.Errorf("%s: the build and version_source blocks are only valid for the source-build provider", name)
+		if p.Build != nil || p.VersionSource != nil || len(p.ExtraSources) != 0 {
+			return fmt.Errorf("%s: the build, version_source and extra_sources blocks are only valid for the source-build provider", name)
 		}
 		if p.Install.Kind == "build-output" {
 			return fmt.Errorf("%s: install kind build-output is only valid for the source-build provider", name)
@@ -123,6 +158,9 @@ func validateSourceBuild(name string, p Package) error {
 		if !allowedLibs[l] {
 			return fmt.Errorf("%s: build lib %q is not allowed", name, l)
 		}
+	}
+	if err := validateExtraSources(name, p); err != nil {
+		return err
 	}
 	if !outputName.MatchString(b.Output) {
 		return fmt.Errorf("%s: invalid build.output %q", name, b.Output)
@@ -197,6 +235,118 @@ func (c Config) validateToolchains() error {
 				return fmt.Errorf("toolchain %q has different versions per architecture", tc)
 			}
 			version = s.Version
+		}
+	}
+	return nil
+}
+
+// extraURL expands an extra source's URL template for one repository path.
+func extraURL(e ExtraSource, file string) string {
+	return strings.NewReplacer("{commit}", e.Commit, "{file}", file).Replace(e.URL)
+}
+
+func validateExtraSources(name string, p Package) error {
+	listed := map[string]bool{}
+	for _, n := range p.Build.ExtraSources {
+		if listed[n] || !extraSourceName.MatchString(n) {
+			return fmt.Errorf("%s: invalid or duplicate build.extra_sources entry %q", name, n)
+		}
+		listed[n] = true
+		if _, ok := p.ExtraSources[n]; !ok {
+			return fmt.Errorf("%s: build.extra_sources lists %q, which no extra_sources entry declares", name, n)
+		}
+	}
+	local := map[string]bool{}
+	for n, e := range p.ExtraSources {
+		if !listed[n] {
+			return fmt.Errorf("%s: extra source %q is declared but not listed in build.extra_sources", name, n)
+		}
+		if !repositoryName.MatchString(e.Repository) || strings.HasPrefix(e.Repository, ".") || strings.Contains(e.Repository, "/.") {
+			return fmt.Errorf("%s/%s: invalid extra source repository %q", name, n, e.Repository)
+		}
+		if !commitSHA.MatchString(e.Commit) {
+			return fmt.Errorf("%s/%s: the extra source commit must be a full 40-hex SHA, not %q", name, n, e.Commit)
+		}
+		if len(e.Files) == 0 {
+			return fmt.Errorf("%s/%s: extra source lists no files", name, n)
+		}
+		if !strings.Contains(e.URL, "{commit}") || !strings.Contains(e.URL, "{file}") || strings.ContainsAny(strings.NewReplacer("{commit}", "", "{file}", "").Replace(e.URL), "{}") {
+			return fmt.Errorf("%s/%s: extra source URL template needs exactly the {commit} and {file} placeholders", name, n)
+		}
+		for _, h := range e.AllowedHosts {
+			ok := false
+			for _, ph := range p.AllowedHosts {
+				ok = ok || ph == h
+			}
+			if !ok {
+				return fmt.Errorf("%s/%s: extra source host %q is not in the package allowed_hosts", name, n, h)
+			}
+		}
+		license := false
+		for file, target := range e.Files {
+			if !validPath(file) || !outputName.MatchString(target) {
+				return fmt.Errorf("%s/%s: unsafe extra source file %q -> %q", name, n, file, target)
+			}
+			if local[target] {
+				return fmt.Errorf("%s/%s: duplicate build file name %q across sources", name, n, target)
+			}
+			local[target] = true
+			if err := ValidateURL(extraURL(e, file), e.AllowedHosts); err != nil {
+				return fmt.Errorf("%s/%s: %w", name, n, err)
+			}
+			license = license || file == "LICENSE" || file == "COPYING"
+		}
+		if !license {
+			return fmt.Errorf("%s/%s: extra source must include its LICENSE or COPYING file", name, n)
+		}
+	}
+	for _, d := range p.Build.Defines {
+		if d == "HAVE_LINENOISE=1" && !(local["linenoise.c"] && local["linenoise.h"]) {
+			return fmt.Errorf("%s: HAVE_LINENOISE needs linenoise.c and linenoise.h from an extra source", name)
+		}
+	}
+	return nil
+}
+
+// validateLockedExtraSources checks lock.extra_sources against the catalog.
+func (c Config) validateLockedExtraSources() error {
+	want := map[string]bool{}
+	for name, p := range c.Catalog.Packages {
+		if p.Provider != "source-build" || p.Build == nil {
+			continue
+		}
+		for _, n := range p.Build.ExtraSources {
+			key := name + "/" + n
+			want[key] = true
+			e, l := p.ExtraSources[n], c.Lock.ExtraSources[key]
+			if l.Commit == "" && len(l.Files) == 0 {
+				return fmt.Errorf("extra source %s is not locked", key)
+			}
+			if !commitSHA.MatchString(l.Commit) || l.Commit != e.Commit {
+				return fmt.Errorf("extra source %s: the locked commit %q differs from the catalog commit", key, l.Commit)
+			}
+			if len(l.Files) != len(e.Files) {
+				return fmt.Errorf("extra source %s: the locked files differ from the catalog files", key)
+			}
+			for file, lf := range l.Files {
+				if _, ok := e.Files[file]; !ok {
+					return fmt.Errorf("extra source %s: the locked files differ from the catalog files (%q)", key, file)
+				}
+				if lf.URL != extraURL(e, file) {
+					return fmt.Errorf("extra source %s: URL of %q is not the catalog template at the pinned commit", key, file)
+				}
+				if sum, err := hex.DecodeString(lf.SHA256); err != nil || len(sum) != 32 {
+					return fmt.Errorf("extra source %s: invalid sha256 for %q", key, file)
+				}
+				if lf.Verification != "tls-download-sha256" {
+					return fmt.Errorf("extra source %s: %q needs class tls-download-sha256, not %q", key, file, lf.Verification)
+				}
+			}
+		}
+	}
+	for key := range c.Lock.ExtraSources {
+		if !want[key] {
+			return fmt.Errorf("locked extra source %s is not listed by any source-build recipe", key)
 		}
 	}
 	return nil
