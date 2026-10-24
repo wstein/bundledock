@@ -91,13 +91,13 @@ func TestSourceBuildLockURLAcceptsDerivedForms(t *testing.T) {
 
 func TestNumericVersion(t *testing.T) {
 	for in, want := range map[string]string{"3.54.1": "3540100", "3.9.0": "3090000", "3.54.12": "3541200", "3.0.0": "3000000"} {
-		got, err := numericVersion(in)
+		got, err := NumericVersion(in)
 		if err != nil || got != want {
 			t.Fatalf("%s: %q %v, want %q", in, got, err, want)
 		}
 	}
 	for _, in := range []string{"", "3.54", "3.100.0", "3.5.100", "10.0.0", "x.1.2", "3.54.1-rc1"} {
-		if _, err := numericVersion(in); err == nil {
+		if _, err := NumericVersion(in); err == nil {
 			t.Fatalf("accepted %q", in)
 		}
 	}

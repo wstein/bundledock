@@ -201,9 +201,9 @@ func validateSourceBuildSpec(name, arch string, p Package, s Spec) error {
 	return validateSourceURL(name, arch, p, s)
 }
 
-// numericVersion maps x.y.z to the publisher's digit form major*1000000+minor*10000+patch*100
+// NumericVersion maps x.y.z to the publisher's digit form major*1000000+minor*10000+patch*100
 // (3.54.1 to 3540100); minor and patch above 99 have no such form.
-func numericVersion(version string) (string, error) {
+func NumericVersion(version string) (string, error) {
 	v, err := ParseVersion(version)
 	if err != nil {
 		return "", err
@@ -214,16 +214,23 @@ func numericVersion(version string) (string, error) {
 	return strconv.FormatUint(v[0]*1000000+v[1]*10000+v[2]*100, 10), nil
 }
 
+// ValidSourcePath reports whether rel, the part of a source archive URL after base_url,
+// has the grammar of the given version source kind.
+func ValidSourcePath(kind, rel string) bool {
+	re, ok := sourcePaths[kind]
+	return ok && re.MatchString(rel)
+}
+
 // validateSourceURL ties the locked archive URL to base_url, the version-source path
 // grammar and the asset template with the locked version's numeric form.
 func validateSourceURL(name, arch string, p Package, s Spec) error {
-	numeric, err := numericVersion(s.Version)
+	numeric, err := NumericVersion(s.Version)
 	if err != nil {
 		return fmt.Errorf("%s/%s: %w", arch, name, err)
 	}
 	rel, ok := strings.CutPrefix(s.URL, p.BaseURL+"/")
 	asset := strings.NewReplacer("{version}", s.Version, "{arch}", p.Architectures[arch], "{numeric}", numeric).Replace(p.Asset)
-	if !ok || !sourcePaths[p.VersionSource.Kind].MatchString(rel) || path.Base(rel) != asset {
+	if !ok || !ValidSourcePath(p.VersionSource.Kind, rel) || path.Base(rel) != asset {
 		return fmt.Errorf("%s/%s: the source URL %q is not base_url, a year directory and the asset for version %s", arch, name, s.URL, s.Version)
 	}
 	return nil
