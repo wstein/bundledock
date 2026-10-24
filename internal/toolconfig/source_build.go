@@ -9,7 +9,9 @@ import (
 
 var (
 	extraSourceName = regexp.MustCompile(`^[a-z][a-z0-9-]*$`)
-	commitSHA       = regexp.MustCompile(`^[0-9a-f]{40}$`)
+	// repoFilePath is a safe repository-relative path: no dot-dot, percent, query or fragment.
+	repoFilePath = regexp.MustCompile(`^[A-Za-z0-9_][A-Za-z0-9_.+-]*(/[A-Za-z0-9_][A-Za-z0-9_.+-]*)*$`)
+	commitSHA    = regexp.MustCompile(`^[0-9a-f]{40}$`)
 )
 
 // The source-build vocabulary is closed: every name below is reviewed Go code,
@@ -240,6 +242,15 @@ func (c Config) validateToolchains() error {
 	return nil
 }
 
+func hasCommitSegment(p string) bool {
+	for _, seg := range strings.Split(p, "/") {
+		if commitSHA.MatchString(seg) {
+			return true
+		}
+	}
+	return false
+}
+
 // extraURL expands an extra source's URL template for one repository path.
 func extraURL(e ExtraSource, file string) string {
 	return strings.NewReplacer("{commit}", e.Commit, "{file}", file).Replace(e.URL)
@@ -257,6 +268,7 @@ func validateExtraSources(name string, p Package) error {
 		}
 	}
 	local := map[string]bool{}
+	exact := map[string]bool{}
 	for n, e := range p.ExtraSources {
 		if !listed[n] {
 			return fmt.Errorf("%s: extra source %q is declared but not listed in build.extra_sources", name, n)
@@ -270,9 +282,6 @@ func validateExtraSources(name string, p Package) error {
 		if len(e.Files) == 0 {
 			return fmt.Errorf("%s/%s: extra source lists no files", name, n)
 		}
-		if !strings.Contains(e.URL, "{commit}") || !strings.Contains(e.URL, "{file}") || strings.ContainsAny(strings.NewReplacer("{commit}", "", "{file}", "").Replace(e.URL), "{}") {
-			return fmt.Errorf("%s/%s: extra source URL template needs exactly the {commit} and {file} placeholders", name, n)
-		}
 		for _, h := range e.AllowedHosts {
 			ok := false
 			for _, ph := range p.AllowedHosts {
@@ -282,15 +291,23 @@ func validateExtraSources(name string, p Package) error {
 				return fmt.Errorf("%s/%s: extra source host %q is not in the package allowed_hosts", name, n, h)
 			}
 		}
+		template := false
+		for _, h := range e.AllowedHosts {
+			template = template || e.URL == "https://"+h+"/"+e.Repository+"/{commit}/{file}"
+		}
+		if !template {
+			return fmt.Errorf("%s/%s: extra source URL template must be exactly https://<allowed host>/<repository>/{commit}/{file} with the two placeholders", name, n)
+		}
 		license := false
 		for file, target := range e.Files {
-			if !validPath(file) || !outputName.MatchString(target) {
+			if !repoFilePath.MatchString(file) || hasCommitSegment(file) || !outputName.MatchString(target) {
 				return fmt.Errorf("%s/%s: unsafe extra source file %q -> %q", name, n, file, target)
 			}
-			if local[target] {
+			if local[strings.ToLower(target)] {
 				return fmt.Errorf("%s/%s: duplicate build file name %q across sources", name, n, target)
 			}
-			local[target] = true
+			local[strings.ToLower(target)] = true
+			exact[target] = true
 			if err := ValidateURL(extraURL(e, file), e.AllowedHosts); err != nil {
 				return fmt.Errorf("%s/%s: %w", name, n, err)
 			}
@@ -301,7 +318,7 @@ func validateExtraSources(name string, p Package) error {
 		}
 	}
 	for _, d := range p.Build.Defines {
-		if d == "HAVE_LINENOISE=1" && !(local["linenoise.c"] && local["linenoise.h"]) {
+		if d == "HAVE_LINENOISE=1" && !(exact["linenoise.c"] && exact["linenoise.h"]) {
 			return fmt.Errorf("%s: HAVE_LINENOISE needs linenoise.c and linenoise.h from an extra source", name)
 		}
 	}
