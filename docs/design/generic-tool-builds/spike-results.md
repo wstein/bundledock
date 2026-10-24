@@ -220,3 +220,7 @@ runtime code (compiler-rt, musl) embedded in the output (planned for WP5: musl `
 1. The recipe declares `output_form: "exec"` for both architectures.
 2. The linenoise statement "emits VT100 escapes itself" needs the window-size caveat above.
 3. No other statement of the design was contradicted.
+
+## Addendum: shape of the zig archive (2026-10-24, WP4d)
+
+Read-only listing of `zig-aarch64-linux-0.17.0.tar.xz` (downloaded again, SHA256 `9e8d1166...4ff8` equals the publisher index; the file was then deleted): 20,777 members under the single top directory `zig-aarch64-linux-0.17.0/`, of which 1,272 directories and 19,505 regular files; **no symbolic links, hard links or special files**; 360,344,860 bytes unpacked; the largest member is 171,691,896 bytes (the compiler). The `tar` listing was used, not the Go extractor. The x86_64 archive was not downloaded. The extractor's bounds (50,000 members, 256 MiB per member, 1 GiB) are set from these figures.

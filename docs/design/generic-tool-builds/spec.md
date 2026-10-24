@@ -258,6 +258,25 @@ below `archive_prefix`, by base name with mode 0644; it fails on a missing sourc
 depth, any member whose base name equals an extra-source build file (case-insensitive, anywhere in the archive),
 case-only duplicates, unsafe or duplicate paths and non-regular entries.
 
+*WP4d implementation choices* (`internal/toolbundle`, `cmd/tools-bundle`): two subcommands split the stages. 
+`tools-bundle fetch-sources -tool T -arch A -work W` runs in `downloads` (network): it downloads the zig archive for
+`A` (publisher checksum), the source archive (builder SHA256 and publisher SHA3-256) and each extra-source file
+(`tls-download-sha256`), verifies every checksum before it reads or unpacks the file, and writes `W/toolchain` and
+`W/src` (`ExtractBuildSources`, the fail-closed rules above). The toolchain unpack accepts one top directory of
+directories and regular files only, at most 50,000 members, 256 MiB per member and 1 GiB in total (the 0.17.0
+aarch64 archive has 20,777 members, no links, 360 MB, the compiler 172 MB; measured 2026-10-24).
+`tools-bundle compile -tool T -arch A -work W -output O` runs in `compile-<tool>` under `RUN --network=none`: it builds
+the command line from fixed flags and the recipe's allow-listed values (`zig cc -target <arch>-linux-musl -static
+<cflags> -ffile-prefix-map=<src>=. -D<define>... <sources in recipe order> -l<lib>... -o <output>`; `-static-pie` for
+that output form; the vocabulary check is repeated), runs it in `W/src` with only `SOURCE_DATE_EPOCH=1` and the two zig
+cache variables in the environment, and requires a non-empty regular output. The `builder` stage receives the output
+(`--build-outputs`), `CheckStaticELF` accepts it for the target and declared form, and only then is it installed and
+the manifest written. The production Dockerfile has no source-build tool yet; `cmd/tools-bundle/testdata/source-build.Dockerfile`
+is the reviewed stage layout (never built): tests check it against the compile-stage rules, against the real flag
+parser, and against the production Dockerfile, which it may differ from only by the source-build lines. WP5 adds the
+stage to `bundles/toolbox/Dockerfile` with the catalog entry. `RUN --network=none` on the real BuildKit frontend is
+still untested.
+
 ### Catalog: sqlite3
 
 ```json
