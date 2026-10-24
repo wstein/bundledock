@@ -260,7 +260,7 @@ below `archive_prefix`, by base name with mode 0644; it fails on a missing sourc
 depth, any member whose base name equals an extra-source build file (case-insensitive, anywhere in the archive),
 case-only duplicates, unsafe or duplicate paths and non-regular entries.
 
-*WP4d implementation choices* (`internal/toolbundle`, `cmd/tools-bundle`): two subcommands split the stages. 
+*WP4d implementation choices* (`internal/toolbundle`, `cmd/tools-bundle`): two subcommands split the stages.
 `tools-bundle fetch-sources -tool T -arch A -work W` runs in `downloads` (network): it downloads the zig archive for
 `A` (publisher checksum), the source archive (builder SHA256 and publisher SHA3-256) and each extra-source file
 (`tls-download-sha256`), verifies every checksum before it reads or unpacks the file, and writes `W/toolchain` and
