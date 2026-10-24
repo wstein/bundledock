@@ -494,10 +494,13 @@ func TestSourceBuildAcceptedVariants(t *testing.T) {
 	}
 }
 
-func TestInputsProbeAcceptsSourceBuildRecipe(t *testing.T) {
-	c := sqliteConfig(t)
-	dir := t.TempDir()
-	write := func(name string, v any) {
+// writeBundle writes a Config as the three user files of a bundle directory.
+func writeBundle(t *testing.T, dir, packages string, c Config) {
+	t.Helper()
+	if err := os.WriteFile(filepath.Join(dir, "packages.txt"), []byte(packages), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	for name, v := range map[string]any{"packages.catalog.json": c.Catalog, "packages.lock.json": c.Lock} {
 		data, err := json.MarshalIndent(v, "", "  ")
 		if err != nil {
 			t.Fatal(err)
@@ -506,11 +509,11 @@ func TestInputsProbeAcceptsSourceBuildRecipe(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if err := os.WriteFile(filepath.Join(dir, "packages.txt"), []byte("sqlite3>=3.54.1,<4.0.0\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	write("packages.catalog.json", c.Catalog)
-	write("packages.lock.json", c.Lock)
+}
+
+func TestInputsProbeAcceptsSourceBuildRecipe(t *testing.T) {
+	dir := t.TempDir()
+	writeBundle(t, dir, "sqlite3>=3.54.1,<4.0.0\n", sqliteConfig(t))
 	loaded, err := Load(dir)
 	if err != nil {
 		t.Fatal(err)
@@ -540,19 +543,5 @@ func TestSourceRecipesOutsideSourceBuildAreRejected(t *testing.T) {
 				t.Fatal("accepted")
 			}
 		})
-	}
-}
-
-// Package and lock extra_sources belong to the separate WP3b change: until it
-// lands the strict decoder rejects them as unknown fields.
-func TestExtraSourcesAreUnknownFields(t *testing.T) {
-	if err := Decode(strings.NewReader(`{"schema":2,"extra_sources":{}}`), new(Lock)); err == nil {
-		t.Error("lock extra_sources accepted")
-	}
-	if err := Decode(strings.NewReader(`{"provider":"source-build","extra_sources":{}}`), new(Package)); err == nil {
-		t.Error("package extra_sources accepted")
-	}
-	if err := Decode(strings.NewReader(`{"kind":"c-amalgamation","extra_sources":[]}`), new(Build)); err == nil {
-		t.Error("build extra_sources accepted")
 	}
 }
