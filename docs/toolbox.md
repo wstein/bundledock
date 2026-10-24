@@ -611,6 +611,13 @@ Existing images, volumes, running containers, and desired ranges are unaffected 
 resolution. `tools volume` remains the existing initialization command; no update
 alias or other tool-management commands are added.
 
+For a `source-build` tool the upgrade reads the publisher's product data, verifies the
+source archive against the publisher SHA3-256 before computing the SHA256, and rewrites
+only that tool's version, URL and the two hashes (the same for both architectures). It
+copies the lock's `toolchains` and `extra_sources` unchanged and never resolves them, so a
+compiler or extra-source change is an owner-authored lock edit. It refuses a lower version
+and new bytes under the locked version. It builds nothing.
+
 ## Optional toolbox utilities
 
 `fzf` filters lists; for example, `printf 'alpha\nbeta\n' | fzf --filter beta`

@@ -4,6 +4,7 @@ import (
 	"bundledock/internal/toolconfig"
 	"context"
 	"crypto/sha256"
+	"crypto/sha3"
 	"crypto/sha512"
 	"encoding/hex"
 	"encoding/json"
@@ -231,6 +232,8 @@ func (r resolver) pin(ctx context.Context, raw string, hosts []string, expected,
 		switch provenance {
 		case "publisher-sha512":
 			verify = sha512.New()
+		case "publisher-sha3-256":
+			verify = sha3.New256()
 		default:
 			verify = sha256.New()
 		}
@@ -259,6 +262,9 @@ func (r resolver) pin(ctx context.Context, raw string, hosts []string, expected,
 		return s, fmt.Errorf("publisher checksum mismatch for %s", raw)
 	}
 	s.SHA256 = hex.EncodeToString(h.Sum(nil))
+	if provenance == "publisher-sha3-256" {
+		s.SHA3256 = strings.ToLower(expected)
+	}
 	if provenance == "publisher-sha512" {
 		s.SHA256 = ""
 		s.SHA512 = hex.EncodeToString(verify.Sum(nil))
@@ -270,6 +276,9 @@ func (r resolver) pin(ctx context.Context, raw string, hosts []string, expected,
 	return s, nil
 }
 func (r resolver) resolve(ctx context.Context, p toolconfig.Package, c toolconfig.Constraint) (map[string]toolconfig.Spec, error) {
+	if p.Provider == "source-build" {
+		return r.sourceBuild(ctx, p, c)
+	}
 	if p.Provider == "node" {
 		return r.node(ctx, p, c)
 	}

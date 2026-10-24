@@ -240,6 +240,14 @@ URL must be the exact archive of its version and architecture (`zig-cc`:
 source entry. `ToolDigest` (the `platforms-sha256` label) covers `toolchains` and `extra_sources` when present
 and is byte-identical to the earlier digest for the nine existing locks (tested).
 
+*WP4b implementation choices* (`internal/toolmanager`): the SQLite resolver reads the product-data comment of
+`download.html` (exact header line, five fields per row, exactly one `sqlite-amalgamation` row, positive size,
+lower-case 64-hex SHA3-256, path grammar and numeric match, version inside the `packages.txt` range), downloads
+the archive once and pins both architectures with the same entry. `bdock tools upgrade` copies `toolchains` and
+`extra_sources` from the existing lock unchanged (a first lock without them fails validation by name), refuses
+a lower version or other bytes under the locked version, and a changed catalog extra-source commit fails
+`Validate` until the owner edits the lock. It writes the pin lines of the tool only.
+
 ### Catalog: sqlite3
 
 ```json

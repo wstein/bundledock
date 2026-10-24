@@ -27,6 +27,9 @@ func Upgrade(ctx context.Context, client *http.Client, directory, tool string, o
 	exists := err == nil
 	mode := os.FileMode(0644)
 	var before []byte
+	// previous holds the pins of the lock on disk: source builds keep the toolchains
+	// and extra sources of that lock, and a bump may not go backwards.
+	var previous toolconfig.Lock
 	if err != nil && !os.IsNotExist(err) {
 		return err
 	}
@@ -46,6 +49,9 @@ func Upgrade(ctx context.Context, client *http.Client, directory, tool string, o
 		}
 		if tool != "" {
 			c, err = toolconfig.LoadForUpgrade(directory)
+			if err == nil {
+				previous = c.Lock
+			}
 			if err != nil {
 				return fmt.Errorf("targeted upgrade requires an unchanged package inventory; run bdock tools upgrade: %w", err)
 			}
@@ -53,14 +59,15 @@ func Upgrade(ctx context.Context, client *http.Client, directory, tool string, o
 				return fmt.Errorf("package catalog changed; run bdock tools upgrade without a tool")
 			}
 		} else {
-			var previous toolconfig.Lock
 			if err := toolconfig.Decode(bytes.NewReader(before), &previous); err != nil {
 				return err
 			}
 			if previous.Schema != 2 {
 				return fmt.Errorf("unsupported lock schema %d", previous.Schema)
 			}
-			c.Lock = toolconfig.Lock{Platforms: map[string]map[string]toolconfig.Spec{"amd64": {}, "arm64": {}}}
+			// Toolchains and extra sources are recipe pins, reviewed by the owner: the upgrade
+			// never resolves or edits them, it carries them over unchanged.
+			c.Lock = toolconfig.Lock{Platforms: map[string]map[string]toolconfig.Spec{"amd64": {}, "arm64": {}}, Toolchains: previous.Toolchains, ExtraSources: previous.ExtraSources}
 		}
 	}
 	if client == nil {
@@ -84,6 +91,11 @@ func Upgrade(ctx context.Context, client *http.Client, directory, tool string, o
 		specs, err := resolver.resolve(ctx, c.Catalog.Packages[n], c.Desired[n])
 		if err != nil {
 			return fmt.Errorf("upgrade %s: %w", n, err)
+		}
+		if c.Catalog.Packages[n].Provider == "source-build" {
+			if err := checkSourceBump(previous.Platforms["amd64"][n], specs["amd64"]); err != nil {
+				return fmt.Errorf("upgrade %s: %w", n, err)
+			}
 		}
 		for _, arch := range []string{"amd64", "arm64"} {
 			c.Lock.Platforms[arch][n] = specs[arch]
@@ -139,6 +151,31 @@ func Upgrade(ctx context.Context, client *http.Client, directory, tool string, o
 	} else {
 		if _, err := io.Copy(output, &report); err != nil {
 			return err
+		}
+	}
+	return nil
+}
+
+// checkSourceBump allows a source-build pin to change only forward: a lower
+// version, or new bytes under the same version, is a changed source, not a bump.
+func checkSourceBump(old, next toolconfig.Spec) error {
+	if old.Version == "" {
+		return nil
+	}
+	oldVersion, err := toolconfig.ParseVersion(old.Version)
+	if err != nil {
+		return err
+	}
+	nextVersion, err := toolconfig.ParseVersion(next.Version)
+	if err != nil {
+		return err
+	}
+	switch nextVersion.Compare(oldVersion) {
+	case -1:
+		return fmt.Errorf("version %s is older than the locked %s", next.Version, old.Version)
+	case 0:
+		if old != next {
+			return fmt.Errorf("the source of locked version %s changed upstream", old.Version)
 		}
 	}
 	return nil
