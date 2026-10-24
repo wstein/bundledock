@@ -119,6 +119,12 @@ RUNTIME_TOOLS = (
 
 
 def source_url(package):
+    if package.get("provider") == "source-build":
+        # The publisher's download page is the authoritative source of a source build.
+        url = urlparse(package.get("version_source", {}).get("url", ""))
+        if url.scheme != "https" or url.netloc not in package.get("allowed_hosts", []) or not re.fullmatch(r"/[A-Za-z0-9_./-]*", url.path) or url.query or url.fragment:
+            raise ValueError("inventory requires a safe authoritative version source URL")
+        return url.geturl()
     repository = package.get("repository", "")
     if package.get("provider") != "github" or not isinstance(repository, str) or not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repository):
         raise ValueError("inventory requires a safe authoritative GitHub repository")
