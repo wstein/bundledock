@@ -65,14 +65,36 @@ content check".
 owner commits after the approved real build and smoke of that exact revision. Both
 publication paths (the owner-merged updater and the exact-SHA manual dispatch) refuse
 a bundle whose source-build tool has no approval or a stale one. The digest covers the
-tool's catalog entry, its pins on both architectures, its toolchain and its extra
-sources, so a recipe, toolchain, extra-source, version or checksum change invalidates
-the approval, and an unrelated updater PR (say a `gh` bump) cannot publish a source
-build for the first time. The updater bot never writes or changes `approvals`; the gate
-rejects a bot PR that does. Compute the value with
-`python3 scripts/approval-digest.py <tool>` on the approved revision and commit it in
-an owner-authored change. A source bump therefore needs a new owner approval; the
-bot no longer publishes it by itself.
+tool's catalog entry, its pins on both architectures (including the publisher SHA3-256),
+its toolchain and its extra sources, and this closed list of file inputs at the approved
+revision (`APPROVAL_INPUT_FILES` in `scripts/bundle-publication.py`; print it with
+`python3 scripts/approval-digest.py --list-inputs`):
+
+- `.go-version`;
+- the compile driver and its checks: `cmd/tools-bundle/main.go`,
+  `cmd/tools-bundle/source_build.go`, `internal/toolbundle/buildsources.go`,
+  `internal/toolbundle/compile.go`, `internal/toolbundle/elfcheck.go`,
+  `internal/toolbundle/files.go`, `internal/toolbundle/sourcebuild.go`,
+  `internal/toolbundle/zip.go`, `internal/toolconfig/source_build.go`;
+- per tool, from the bundle's `Dockerfile`: the `compile-<tool>` stage (with its base
+  image digest and `--network=none`) and the `fetch-sources` line of the tool;
+- per tool, the notice files named by its catalog `notices`.
+
+Smoke scripts, tests, documentation and the inventory are excluded on purpose: they do
+not change the artifact. A recipe, toolchain, extra-source, version, checksum, driver,
+Go toolchain, compile-stage or notice change therefore invalidates the approval, and an
+unrelated updater PR (say a `gh` bump) cannot publish a source build for the first time.
+The updater bot never writes or changes `approvals`; the gate rejects a bot PR that
+does. Compute the value with `python3 scripts/approval-digest.py <tool>` on the approved
+revision and commit it in an owner-authored change.
+
+Costs, intended: a change to any listed driver file forces a new owner approval of every
+source-build tool; a source bump by the bot no longer publishes by itself; and because
+the check is per bundle, one missing or stale approval refuses the whole updater PR,
+including the other bundles of a combined updater PR, from the merge of the commit that
+adds a source-build tool (until the owner commits its approval) and after every bot
+bump of its source (until the owner re-approves). Rerun the approved build and smoke,
+then commit the new digest.
 
 An already merged ineligible updater cannot be repaired retroactively; use a
 separately approved exact-SHA manual publication of current `main`. Rerunning an
