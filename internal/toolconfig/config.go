@@ -22,10 +22,13 @@ const ToolboxDirectory = "bundles/toolbox"
 const ToolboxLock = ToolboxDirectory + "/packages.lock.json"
 
 type Spec struct {
-	Version      string `json:"version"`
-	URL          string `json:"url"`
-	SHA256       string `json:"sha256,omitempty"`
-	SHA512       string `json:"sha512,omitempty"`
+	Version string `json:"version"`
+	URL     string `json:"url"`
+	SHA256  string `json:"sha256,omitempty"`
+	SHA512  string `json:"sha512,omitempty"`
+	// SHA3256 is the publisher's SHA3-256, only with class publisher-sha3-256
+	// (source builds); SHA256 then holds the builder-computed digest of the same bytes.
+	SHA3256      string `json:"sha3_256,omitempty"`
 	Verification string `json:"verification,omitempty"`
 }
 type Lock struct {
@@ -224,9 +227,21 @@ func ValidateSpec(s Spec) error {
 		return fmt.Errorf("invalid checksum")
 	}
 	switch s.Verification {
-	case "publisher-sha256", "publisher-sha512", "tls-download-sha256":
+	case "publisher-sha256", "publisher-sha512", "tls-download-sha256", "publisher-sha3-256":
 	default:
 		return fmt.Errorf("invalid verification provenance %q", s.Verification)
+	}
+	if (s.Verification == "publisher-sha3-256") != (s.SHA3256 != "") {
+		return fmt.Errorf("sha3_256 is required by, and only valid with, publisher-sha3-256")
+	}
+	if s.Verification == "publisher-sha3-256" {
+		b, err := hex.DecodeString(s.SHA3256)
+		if err != nil || len(b) != 32 {
+			return fmt.Errorf("invalid sha3_256 checksum")
+		}
+		if s.SHA256 == "" {
+			return fmt.Errorf("publisher-sha3-256 requires the builder SHA256 of the same bytes")
+		}
 	}
 	if s.Verification == "publisher-sha512" && s.SHA512 == "" {
 		return fmt.Errorf("SHA512 verification requires SHA512")
