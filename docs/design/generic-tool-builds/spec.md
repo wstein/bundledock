@@ -1,8 +1,9 @@
 # Design: a generic way to add tools the catalog cannot express
 
 **Status**: design only; owner decisions recorded 2026-10-24 (see [Decisions](#decisions)); awaiting a
-re-review of the revised text. No implementation, no catalog or lock edit, no build and no image was
-produced. Every statement is marked verified (with how) or unverified.
+re-review of the revised text.
+No implementation, catalog or lock edit and no image was produced; the WP2 local compile spike
+(outside the repository, outside BuildKit) is recorded in [spike-results.md](spike-results.md). Every statement is marked verified (with how) or unverified.
 
 ## Context and trigger
 
@@ -20,7 +21,7 @@ and excluded the same day by `9554982` at the owner's request; `TestSQLiteRemove
 | 1a | sqlite.org publishes no linux-arm64 precompiled CLI | **Confirmed** | `https://www.sqlite.org/download.html` fetched 2026-10-24 (SQLite 3.54.1): the product list has `sqlite-tools-linux-x64`, `osx-arm64`, `osx-x64`, `win-*`, `android`, `wasm`; no linux-arm64. The independent review reached the same result |
 | 1b | It is not a GitHub release, so the catalog cannot express it | **Confirmed** | `Package.Provider` accepts only `node`, `github`, `claude`, `antigravity` (`internal/toolconfig/config.go`, `validate`); each resolves versions from a release API or fixed metadata. A linux-x64-only asset would also break the "both architectures, same version" rule |
 | 2a | The Alpine `sqlite` apk is dynamically linked against musl and will not run on the Debian consumer | **Unverified, plausible** | No apk was inspected. `docs/architecture.md`: "Runtime compatibility with Alpine or arbitrary consumer images is not established". The design does not use Alpine packages for the tool |
-| 2b | A static musl build runs on glibc | **Unverified here, standard behaviour** | Nothing was built or run. Indirect evidence: mise ships as a musl raw binary with "no ELF interpreter" (`bundles/toolbox/licenses/mise/SOURCE`). The spike (WP2) and the first approved smoke prove it |
+| 2b | A static musl build runs on glibc | **Verified on 2026-10-24 for aarch64 only** (native, Debian 13, glibc 2.41, not the consumer image). The x86_64 binary was verified by inspection (ELF headers) and by execution under Rosetta emulation only; native x86_64 execution is not measured | The spike built and ran it ([spike-results.md](spike-results.md)). Earlier indirect evidence: mise ships as a musl raw binary with "no ELF interpreter" (`bundles/toolbox/licenses/mise/SOURCE`). The spike ran the aarch64 binary on this host and recorded the ELF headers of both (see spike-results.md); the first approved smoke on the consumer image is still needed |
 | 3 | mise is shipped, optional, an installer/resolver and not a C build engine | **Confirmed** | Catalog `mise`: provider `github`, raw musl binary, v2026.10.18, `publisher-sha256`. mise would not provide SQLite for linux-arm64 either (backends not researched; unverified) |
 | 4 | Two separable concerns | **Confirmed**; the acquisition side is deferred (D4) | |
 
@@ -52,10 +53,9 @@ Additional verified findings (2026-10-24 unless noted):
   and `linenoise.c` includes only libc headers and `termios.h`/`sys/ioctl.h` (no terminfo or ncurses; it
   mentions `TERM` only to refuse the terminals `dumb`, `cons25` and `emacs`). `msteveb/linenoise` has
   no GitHub licence field (not used). That the file compiles under `zig cc` static musl and links with
-  `shell.c` is **unverified** (spike).
+  `shell.c` is **verified on 2026-10-24** ([spike-results.md](spike-results.md)).
 - **The `ziglang.org/download/index.json` lists 0.17.0** (2026-10-01) with `tarball`, `shasum` and
-  `size` for `x86_64-linux` and `aarch64-linux`. Whether the zig binary is fully static and whether its
-  static-PIE/`-static` output meets the verifier are unverified (spike).
+  `size` for `x86_64-linux` and `aarch64-linux`. The aarch64 zig binary is static (checked with `readelf`: no `PT_INTERP`, no `DT_NEEDED`) and `-static` output is non-PIE `ET_EXEC` on both architectures (verified on 2026-10-24, [spike-results.md](spike-results.md)); the x86_64 zig archive was not downloaded and the Go verifier does not exist yet.
 - **The Alpine package index keeps one gcc and one musl-dev** (review, 2026-10-24: `gcc` 15.2.0-r2,
   `musl-dev` 1.2.5-r24 for v3.23/main/aarch64), so exact apk pins would break on routine point releases.
 - **Publication builds natively**: `bundle-publish.yml` has `native` jobs on `ubuntu-24.04` and
@@ -150,10 +150,9 @@ system: nothing is installed with `apk`. `tools-bundle` runs in `builder` (`FROM
   architecture (`x86_64-linux-musl`, `aarch64-linux-musl`). Zig can cross-compile, so a single host
   could build both, but publication already runs natively and native output is what the smoke tests.
   Emulation is for local development only and never for published output.
-- **Reproducibility.** Goal only; **unverified until measured** by the spike (two builds of one input,
-  one architecture, hash compare). Fixed flags, no timestamps (`SOURCE_DATE_EPOCH` from the recipe),
+- **Reproducibility.** Measured on 2026-10-24 ([spike-results.md](spike-results.md)): four variants per architecture (and a fifth, warm-cache build for aarch64) were byte-identical across build paths, cache directories, `SOURCE_DATE_EPOCH` values and network namespace, on one host with one zig; other hosts and `-g` are not measured. Fixed flags, no timestamps (`SOURCE_DATE_EPOCH` from the recipe),
   `-ffile-prefix-map`, sorted inputs.
-- **Build time and cache.** Not measured. The compile stage depends only on source hash, zig pin and
+- **Build time and cache.** About 7 to 9 seconds wall time per target on 10 cores, cold or warm zig cache, outside BuildKit (verified on 2026-10-24, [spike-results.md](spike-results.md)); BuildKit time and cache are not measured. The compile stage depends only on source hash, zig pin and
   recipe, so BuildKit caching is keyed on those.
 
 ### Recipe format
@@ -331,14 +330,13 @@ zig hashes in the publisher index (0.17.0, 2026-10-24) are real but not copied h
    list as written is checked in WP5.
 5. **Recipe.** Second entry in the source set, `-DHAVE_LINENOISE=1`, compiled with `zig cc` in the same
    static, network-less `compile` stage; `linenoise.c` needs only libc headers, so there is no terminfo
-   or ncurses dependency (it emits VT100 escapes itself; **unverified at run time**). The ELF checker's
+   or ncurses dependency (it emits VT100 escapes itself; verified at run time on 2026-10-24, with the caveat that it queries the cursor position (`ESC [ 6 n`) when the terminal size is unknown, that is `TIOCGWINSZ` fails or reports 0 columns; any optional pty smoke must set a window size or `LINENOISE_COLS`; D8 stays, no patch; see [spike-results.md](spike-results.md)). The ELF checker's
    `DT_NEEDED` rule proves no `libncurses`/`libtinfo` reference.
 6. **Behaviour and smoke.** `shell.c` uses line editing only for an interactive stdin
    (`stdin_is_interactive`; its exact tty detection was not traced, unverified). The smoke runs, from a
    non-tty (pipe and `</dev/null`): `echo 'select 1+1;' | sqlite3 :memory:` prints `2`, with `TERM`
    unset and with `TERM=dumb`, and `sqlite3 :memory: 'select 1'` exits 0; none may fail for a missing or
-   unsupported terminal. A pty-based interactive check (completion, history) is optional and unverified
-   (needs `script` or similar in the consumer).
+   unsupported terminal. A pty-based interactive check (completion, history recall, editing keys) passed on 2026-10-24 with a scripted 24x80 pty that answered no query ([spike-results.md](spike-results.md)); saving the history file was not observed. It remains optional in the consumer smoke.
 
 ## Validation rules and tests
 
@@ -386,7 +384,7 @@ basis `declared`, with whatever identifier `validSourceLicense` accepts for a pu
 (unverified; settled in WP5, the PR that adds the notices). A zig-built static binary embeds the musl C library (MIT); its notice must
 be retained in the same notice tree, and that is a standing obligation of every `source-build` tool. The
 zig compiler itself is build-only and not shipped, so it adds no shipped notice; this must be confirmed
-by the notice test (the output may embed compiler runtime code; its licence is checked in the spike).
+by the notice test (the output may embed compiler runtime code; that licence check moves to WP5, which plans the musl `COPYRIGHT` and zig (compiler_rt) MIT notices next to the linenoise BSD-2-Clause licence).
 
 ## Security analysis
 
@@ -483,8 +481,7 @@ Each is one small PR; the first is a prerequisite and merges before the rest.
    (line 61). No code for the provider.
 2. **WP2 spike.** On a scratch branch, as read-only evidence in the PR: test-compile SQLite static for
    amd64 and arm64 with the pinned zig, report the ELF form (exec or static-pie), run the proposed
-   verifier, confirm `RUN --network=none`, compare two builds for reproducibility (unverified until
-   measured), and note zig's licence/runtime-embedding. Any image or local build needs explicit owner
+   verifier, confirm `RUN --network=none`, compare two builds for reproducibility (measured on 2026-10-24), and note zig's licence/runtime-embedding. Any image or local build needs explicit owner
    approval; the spike's findings update this document.
 3. **WP3 schema and validation** (optional fields, `source-build` vocabulary, `sha3_256`, byte-identical
    round-trip tests; no tool uses it).
@@ -509,8 +506,8 @@ Each is one small PR; the first is a prerequisite and merges before the rest.
 
 ## Risks
 
-- Zig as a large third-party compiler; its static behaviour and output form are unverified (spike).
-- Reproducibility unverified; build time unmeasured.
+- Zig as a large third-party compiler (393 MB extracted); the static output form is measured (non-PIE `ET_EXEC`, [spike-results.md](spike-results.md)); BuildKit behaviour is still untested.
+- Reproducibility measured on one host only; BuildKit build time unmeasured.
 - A closed vocabulary will be too small for the next tool; each kind needs a design.
 - Public-domain licence identifier and the musl notice obligation need a licence check.
 - Re-running an exception the owner removed four days after adding it (git-trim): maintenance appetite.
