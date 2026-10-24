@@ -176,12 +176,16 @@ func LoadInputs(directory string) (*Config, error) {
 		s := Spec{Version: probeVersion, URL: "https://" + host + "/", SHA256: strings.Repeat("0", 64), Verification: "tls-download-sha256"}
 		if p.Provider == "source-build" && p.Build != nil {
 			s.Verification, s.Toolchain = "publisher-sha256", p.Build.Toolchain
+			numeric, _ := numericVersion(probeVersion)
+			s.URL = p.BaseURL + "/2000/" + strings.NewReplacer("{version}", probeVersion, "{arch}", p.Architectures["amd64"], "{numeric}", numeric).Replace(p.Asset)
 			if hosts := toolchainHosts[p.Build.Toolchain]; len(hosts) > 0 {
 				if probe.Lock.Toolchains == nil {
 					probe.Lock.Toolchains = map[string]map[string]Spec{}
 				}
-				t := Spec{Version: "1.0.0", URL: "https://" + hosts[0] + "/", SHA256: strings.Repeat("0", 64), Verification: "publisher-sha256"}
-				probe.Lock.Toolchains[p.Build.Toolchain] = map[string]Spec{"amd64": t, "arm64": t}
+				t := func(arch string) Spec {
+					return Spec{Version: "1.0.0", URL: toolchainURL(p.Build.Toolchain, arch, "1.0.0"), SHA256: strings.Repeat("0", 64), Verification: "publisher-sha256"}
+				}
+				probe.Lock.Toolchains[p.Build.Toolchain] = map[string]Spec{"amd64": t("amd64"), "arm64": t("arm64")}
 			}
 			for _, extra := range p.Build.ExtraSources {
 				e := p.ExtraSources[extra]
@@ -532,6 +536,9 @@ func (c Config) validate(strict bool) error {
 			}
 			first = v
 		}
+	}
+	if err := c.validateSourceBuildPins(); err != nil {
+		return err
 	}
 	if err := c.validateToolchains(); err != nil {
 		return err

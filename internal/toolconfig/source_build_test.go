@@ -190,9 +190,9 @@ func TestSourceBuildRejectedShapes(t *testing.T) {
 		}, "toolchain"},
 		"architectures differ": {func(c *Config) {
 			s := c.Lock.Platforms["arm64"]["sqlite3"]
-			s.Version = "3.54.2"
+			s.Version, s.URL = "3.54.2", "https://www.sqlite.org/2026/sqlite-amalgamation-3540200.zip"
 			c.Lock.Platforms["arm64"]["sqlite3"] = s
-		}, "different versions"},
+		}, "differ"},
 		"no build block": {func(c *Config) { p := c.Catalog.Packages["sqlite3"]; p.Build = nil; c.Catalog.Packages["sqlite3"] = p }, "build"},
 		"no version source": {func(c *Config) {
 			p := c.Catalog.Packages["sqlite3"]
