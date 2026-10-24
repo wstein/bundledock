@@ -203,7 +203,9 @@ func TestToolboxDailyBaselineRequiresIndependentAttempt(t *testing.T) {
 }
 
 // Locks without source-build sections keep the digest they had before toolchains
-// and extra sources were included: every committed bundle lock hashes its platforms alone.
+// and extra sources were included: they hash their platforms alone. Only the toolbox
+// lock, which carries the sqlite3 source build, has such sections, and its digest must
+// then cover them.
 func TestToolDigestOfExistingLocksIsUnchanged(t *testing.T) {
 	locks, err := filepath.Glob("../../bundles/*/packages.lock.json")
 	if err != nil || len(locks) != 9 {
@@ -215,7 +217,9 @@ func TestToolDigestOfExistingLocksIsUnchanged(t *testing.T) {
 			t.Fatal(err)
 		}
 		var lock struct {
-			Platforms json.RawMessage `json:"platforms"`
+			Platforms    json.RawMessage `json:"platforms"`
+			Toolchains   json.RawMessage `json:"toolchains"`
+			ExtraSources json.RawMessage `json:"extra_sources"`
 		}
 		if err := json.Unmarshal(data, &lock); err != nil {
 			t.Fatal(err)
@@ -226,6 +230,15 @@ func TestToolDigestOfExistingLocksIsUnchanged(t *testing.T) {
 		}
 		legacy, _ := json.Marshal(platforms)
 		want := fmt.Sprintf("%x", sha256.Sum256(legacy))
+		if sections := len(lock.Toolchains) + len(lock.ExtraSources); sections != 0 {
+			if filepath.Base(filepath.Dir(path)) != "toolbox" {
+				t.Fatalf("%s: only the toolbox lock carries source-build sections", path)
+			}
+			if got, err := ToolDigest(data); err != nil || got == want {
+				t.Fatalf("%s: the digest %s %v must cover the toolchains and extra sources", path, got, err)
+			}
+			continue
+		}
 		if got, err := ToolDigest(data); err != nil || got != want {
 			t.Fatalf("%s: digest %s %v, want the platforms-only digest %s", path, got, err, want)
 		}

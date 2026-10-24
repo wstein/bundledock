@@ -84,6 +84,7 @@ The source inventory below describes the current lock; this publication retains 
 | SOPS (`sops`) | 3.13.3 | [Homepage](https://github.com/getsops/sops) | [Source](https://github.com/getsops/sops) |
 | SourceSteward (`stw`) | 0.1.0 | [Homepage](https://github.com/wstein/sourcesteward) | [Source](https://github.com/wstein/sourcesteward) |
 | Spec Kit (`specify`, first-use pip launcher) | 1.1.3 | [Homepage](https://github.github.io/spec-kit/) | [Source](https://github.com/github/spec-kit) |
+| SQLite (`sqlite3`) | 3.54.1 | [Homepage](https://www.sqlite.org/) | [Source](https://www.sqlite.org/download.html) |
 | Starship (`starship`) | 1.27.0 | [Homepage](https://starship.rs) | [Source](https://github.com/starship/starship) |
 | Syft (`syft`) | 1.55.0 | [Homepage](https://github.com/anchore/syft) | [Source](https://github.com/anchore/syft) |
 | tldr (`tldr`, first-use pip launcher) | 3.4.4 | [Homepage](https://pypi.org/project/tldr/) | [Source](https://github.com/tldr-pages/tldr-python-client) |

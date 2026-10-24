@@ -246,3 +246,54 @@ func TestSourceBuildUpgradeRefusesAChangedRecipePin(t *testing.T) {
 		t.Fatalf("a bumped extra-source commit must need an owner-authored lock: %v", err)
 	}
 }
+
+// The real toolbox entry resolves like the fixture: a newer SQLite release moves only the
+// sqlite3 source pin, and the toolchain, the linenoise pin and every other tool stay.
+func TestToolboxSQLiteUpgradeBumpsOnlyTheSource(t *testing.T) {
+	dir := checkout(t)
+	tc0, ex0, _ := lockSections(t, dir)
+	before, err := toolconfig.Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// The next patch release after whatever the lock pins now (no version constant).
+	locked, err := toolconfig.ParseVersion(before.Lock.Platforms["amd64"]["sqlite3"].Version)
+	if err != nil {
+		t.Fatal(err)
+	}
+	locked[2]++
+	next := locked.String()
+	numeric, err := toolconfig.NumericVersion(next)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rel := "2026/sqlite-amalgamation-" + numeric + ".zip"
+	archive := []byte("pretend amalgamation zip of " + next)
+	client := sqliteServer(t, archive, sha3Hex(archive), next, rel)
+	if err := Upgrade(context.Background(), client, dir, "sqlite3", &bytes.Buffer{}); err != nil {
+		t.Fatal(err)
+	}
+	tc1, ex1, _ := lockSections(t, dir)
+	compact := func(b []byte) string {
+		var out bytes.Buffer
+		if err := json.Compact(&out, b); err != nil {
+			t.Fatal(err)
+		}
+		return out.String()
+	}
+	if compact(tc0) != compact(tc1) || compact(ex0) != compact(ex1) {
+		t.Fatal("toolchains or extra sources changed")
+	}
+	after, err := toolconfig.Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := toolconfig.Spec{Version: next, URL: "https://www.sqlite.org/" + rel, SHA256: fmt.Sprintf("%x", sha256.Sum256(archive)), SHA3256: sha3Hex(archive), Verification: "publisher-sha3-256", Toolchain: "zig-cc"}
+	for arch, tools := range after.Lock.Platforms {
+		for name, spec := range tools {
+			if name == "sqlite3" && spec != want || name != "sqlite3" && spec != before.Lock.Platforms[arch][name] {
+				t.Fatalf("%s/%s: %+v", arch, name, spec)
+			}
+		}
+	}
+}

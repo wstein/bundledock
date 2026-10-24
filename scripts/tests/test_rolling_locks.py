@@ -34,6 +34,11 @@ def next_release(tag, package):
     return prefix + newer, version, newer
 
 
+def numeric_version(version):
+    major, minor, patch = (int(p) for p in version.split('.'))
+    return '%07d' % (major * 1000000 + minor * 10000 + patch * 100)
+
+
 def exact_requirements(text):
     # Match ParseDesired's comment removal and surrounding whitespace handling.
     normalized = '\n'.join(line.split('#', 1)[0].strip() for line in text.splitlines())
@@ -90,15 +95,23 @@ class RollingLockTests(unittest.TestCase):
                     for arch in ('amd64', 'arm64'):
                         pin = lock['platforms'][arch][name]
                         self.assertEqual(pin['version'], old)
-                        url = pin['url'].replace(old, new).replace(old_version, new_version)
+                        if package['provider'] == 'source-build':
+                            # The URL carries the publisher's seven-digit form, not the dotted version.
+                            url = pin['url'].replace(numeric_version(old_version), numeric_version(new_version))
+                        else:
+                            url = pin['url'].replace(old, new).replace(old_version, new_version)
                         self.assertNotEqual(url, pin['url'], (name, arch, 'version missing from URL'))
                         pin.update(version=new, url=url)
                         # Synthetic metadata only: no binary downloads or claims
                         # of actual upstream availability or checksum validation.
+                        # A source build pins one source for both architectures.
+                        seed = name + new if package['provider'] == 'source-build' else name + arch + new
+                        if pin.get('sha3_256'):
+                            pin['sha3_256'] = hashlib.sha3_256(seed.encode()).hexdigest()
                         if pin.get('sha512'):
-                            pin['sha512'] = hashlib.sha512((name + arch + new).encode()).hexdigest()
+                            pin['sha512'] = hashlib.sha512(seed.encode()).hexdigest()
                         else:
-                            pin['sha256'] = hashlib.sha256((name + arch + new).encode()).hexdigest()
+                            pin['sha256'] = hashlib.sha256(seed.encode()).hexdigest()
                     changed.append(catalog_path.parent.name + '/' + name)
                 path.write_text(json.dumps(lock, indent=2) + '\n')
                 # Workflow no-op cases require a consistent baseline inventory,

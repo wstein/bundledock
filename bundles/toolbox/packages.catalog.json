@@ -1787,6 +1787,85 @@
         "licenses/zk/LICENSE",
         "licenses/zk/SOURCE"
       ]
+    },
+    "sqlite3": {
+      "provider": "source-build",
+      "normalization": "semver",
+      "version_source": {
+        "kind": "sqlite-product-data",
+        "url": "https://www.sqlite.org/download.html"
+      },
+      "base_url": "https://www.sqlite.org",
+      "architectures": {
+        "amd64": "x86_64",
+        "arm64": "aarch64"
+      },
+      "asset": "sqlite-amalgamation-{numeric}.zip",
+      "allowed_hosts": [
+        "www.sqlite.org",
+        "raw.githubusercontent.com"
+      ],
+      "verification": "official-or-download",
+      "build": {
+        "kind": "c-amalgamation",
+        "toolchain": "zig-cc",
+        "archive_prefix": "sqlite-amalgamation-{numeric}/",
+        "sources": [
+          "shell.c",
+          "sqlite3.c",
+          "linenoise.c"
+        ],
+        "extra_sources": [
+          "linenoise"
+        ],
+        "defines": [
+          "HAVE_LINENOISE=1",
+          "SQLITE_THREADSAFE=1",
+          "SQLITE_OMIT_LOAD_EXTENSION=1",
+          "SQLITE_ENABLE_FTS5=1",
+          "SQLITE_ENABLE_RTREE=1",
+          "SQLITE_ENABLE_DBSTAT_VTAB=1",
+          "SQLITE_ENABLE_MATH_FUNCTIONS=1"
+        ],
+        "cflags": [
+          "-Os"
+        ],
+        "libs": [
+          "m",
+          "pthread"
+        ],
+        "static": true,
+        "output_form": "exec",
+        "output": "sqlite3"
+      },
+      "extra_sources": {
+        "linenoise": {
+          "repository": "antirez/linenoise",
+          "commit": "a473823d74b93eab2ba83480df16ed37617493f2",
+          "files": {
+            "linenoise.c": "linenoise.c",
+            "linenoise.h": "linenoise.h",
+            "LICENSE": "LICENSE"
+          },
+          "url": "https://raw.githubusercontent.com/antirez/linenoise/{commit}/{file}",
+          "allowed_hosts": [
+            "raw.githubusercontent.com"
+          ]
+        }
+      },
+      "install": {
+        "kind": "build-output",
+        "members": {
+          "sqlite3": "bin/sqlite3"
+        }
+      },
+      "notices": [
+        "licenses/sqlite3/NOTICE",
+        "licenses/sqlite3/SOURCE",
+        "licenses/sqlite3/LINENOISE-LICENSE",
+        "licenses/sqlite3/MUSL-COPYRIGHT",
+        "licenses/sqlite3/ZIG-LICENSE"
+      ]
     }
   }
 }
