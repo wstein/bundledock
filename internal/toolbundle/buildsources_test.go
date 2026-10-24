@@ -3,6 +3,7 @@ package toolbundle
 import (
 	"archive/tar"
 	"bytes"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -100,5 +101,15 @@ func TestExtractBuildSourcesRejectsOversizedMember(t *testing.T) {
 	data := zipArchive(t, member{amalgamation + "shell.c", big, 0644, 0}, member{amalgamation + "sqlite3.c", "x", 0644, 0})
 	if _, err := extractSources(t, data, []string{"shell.c", "sqlite3.c"}, nil); err == nil || !strings.Contains(err.Error(), "too large") {
 		t.Fatalf("oversized member: %v", err)
+	}
+}
+
+func TestBoundedReaderFailsInsteadOfTruncating(t *testing.T) {
+	r := &boundedReader{r: strings.NewReader("0123456789"), left: 9, name: "x.c"}
+	if _, err := io.ReadAll(r); err == nil || !strings.Contains(err.Error(), "too large") {
+		t.Fatalf("%v", err)
+	}
+	if data, err := io.ReadAll(&boundedReader{r: strings.NewReader("0123456789"), left: 10}); err != nil || len(data) != 10 {
+		t.Fatalf("at the limit: %d %v", len(data), err)
 	}
 }

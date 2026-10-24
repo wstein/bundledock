@@ -115,10 +115,26 @@ func writeZIPMember(root *os.Root, entry *zip.File, target string) error {
 	if err != nil {
 		return err
 	}
-	writeErr := WriteFile(root, target, io.LimitReader(f, maxBuildSourceSize+1), fs.FileMode(0644))
+	writeErr := WriteFile(root, target, &boundedReader{r: f, left: maxBuildSourceSize, name: target}, fs.FileMode(0644))
 	closeErr := f.Close()
 	if writeErr != nil {
 		return writeErr
 	}
 	return closeErr
+}
+
+// boundedReader fails, instead of truncating, when a member yields more than its limit.
+type boundedReader struct {
+	r    io.Reader
+	left int64
+	name string
+}
+
+func (b *boundedReader) Read(p []byte) (int, error) {
+	n, err := b.r.Read(p)
+	b.left -= int64(n)
+	if b.left < 0 {
+		return n, fmt.Errorf("archive member %q too large", b.name)
+	}
+	return n, err
 }
