@@ -50,6 +50,16 @@ or any final changes outside the bundle's lock and inventory reject publication.
 Rebasing to a single updater commit remains supported. Rerun source checks after
 refreshing the branch and before the human merge.
 
+The verifier also compares the bundle lock content of the merged commit with that
+of its single parent (not the PR base). It rejects a changed `toolchains` or
+`extra_sources` section, an added or removed package or platform, and for every
+`source-build` tool anything beyond a rise of the source `version`, `url` and
+checksums (new version within the `packages.txt` constraint, URL derived from the
+version, both architectures in agreement). The first publication of a
+`source-build` tool and any recipe or toolchain change are owner-authored and need
+explicit publication approval; see the generic tool builds design, "Publish-gate
+content check".
+
 An already merged ineligible updater cannot be repaired retroactively; use a
 separately approved exact-SHA manual publication of current `main`. Rerunning an
 old publication does not bypass current-main checks. `main` may advance during a
