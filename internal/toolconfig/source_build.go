@@ -128,6 +128,26 @@ func validateSourceBuild(name string, p Package) error {
 	if err := ValidateURL(p.VersionSource.URL, p.AllowedHosts); err != nil {
 		return fmt.Errorf("%s: version_source: %w", name, err)
 	}
+	if err := b.CheckVocabulary(name); err != nil {
+		return err
+	}
+	prefix := strings.ReplaceAll(b.ArchivePrefix, "{numeric}", "1234567")
+	if !strings.HasSuffix(prefix, "/") || !validPath(strings.TrimSuffix(prefix, "/")) || strings.ContainsAny(prefix, "{}") {
+		return fmt.Errorf("%s: invalid build.archive_prefix %q", name, b.ArchivePrefix)
+	}
+	if err := validateExtraSources(name, p); err != nil {
+		return err
+	}
+	if _, ok := p.Install.Members[b.Output]; !ok || len(p.Install.Members) != 1 {
+		return fmt.Errorf("%s: the single install member must be the build output %q", name, b.Output)
+	}
+	return nil
+}
+
+// CheckVocabulary verifies that a recipe uses only the reviewed closed vocabulary:
+// build kind, toolchain, output form, source and output names, defines, cflags and
+// libs. The builder repeats it before it assembles a compiler command line.
+func (b Build) CheckVocabulary(name string) error {
 	if !buildKinds[b.Kind] {
 		return fmt.Errorf("%s: unknown build kind %q", name, b.Kind)
 	}
@@ -139,10 +159,6 @@ func validateSourceBuild(name string, p Package) error {
 	}
 	if !outputForms[b.OutputForm] {
 		return fmt.Errorf("%s: build.output_form must be exec or static-pie, not %q", name, b.OutputForm)
-	}
-	prefix := strings.ReplaceAll(b.ArchivePrefix, "{numeric}", "1234567")
-	if !strings.HasSuffix(prefix, "/") || !validPath(strings.TrimSuffix(prefix, "/")) || strings.ContainsAny(prefix, "{}") {
-		return fmt.Errorf("%s: invalid build.archive_prefix %q", name, b.ArchivePrefix)
 	}
 	if len(b.Sources) == 0 {
 		return fmt.Errorf("%s: build.sources is empty", name)
@@ -169,14 +185,8 @@ func validateSourceBuild(name string, p Package) error {
 			return fmt.Errorf("%s: build lib %q is not allowed", name, l)
 		}
 	}
-	if err := validateExtraSources(name, p); err != nil {
-		return err
-	}
 	if !outputName.MatchString(b.Output) {
 		return fmt.Errorf("%s: invalid build.output %q", name, b.Output)
-	}
-	if _, ok := p.Install.Members[b.Output]; !ok || len(p.Install.Members) != 1 {
-		return fmt.Errorf("%s: the single install member must be the build output %q", name, b.Output)
 	}
 	return nil
 }
