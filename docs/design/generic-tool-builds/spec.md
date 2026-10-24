@@ -329,7 +329,8 @@ publication.
     }
   },
   "install": { "kind": "build-output", "members": { "sqlite3": "bin/sqlite3" } },
-  "notices": ["licenses/sqlite3/NOTICE", "licenses/sqlite3/SOURCE", "licenses/sqlite3/linenoise/LICENSE"]
+  "notices": ["licenses/sqlite3/NOTICE", "licenses/sqlite3/SOURCE", "licenses/sqlite3/LINENOISE-LICENSE",
+              "licenses/sqlite3/MUSL-COPYRIGHT", "licenses/sqlite3/ZIG-LICENSE"]
 }
 ```
 
@@ -413,7 +414,7 @@ zig hashes in the publisher index (0.17.0, 2026-10-24) are real but not copied h
 4. **Licence.** The upstream `LICENSE` is the BSD 2-clause licence ("Copyright (c) 2010-2014, Salvatore
    Sanfilippo; Copyright (c) 2010-2013, Pieter Noordhuis", conditions: retain the copyright notice and
    disclaimer in source and **in binary form in the documentation/materials**). It is retained verbatim
-   at `licenses/sqlite3/linenoise/LICENSE` (fetched as a locked file above), referenced by the `SOURCE`
+   at `licenses/sqlite3/LINENOISE-LICENSE` (flat, because notices are installed by base name; fetched as a locked file above), referenced by the `SOURCE`
    notice. SQLite stays public domain; the binary is therefore a public-domain plus BSD-2-Clause plus
    (musl, MIT) work, listed in the notice. Whether the `source` licence block accepts a multi-licence
    list as written is checked in WP5.

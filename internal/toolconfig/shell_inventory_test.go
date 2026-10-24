@@ -83,6 +83,9 @@ func TestSQLiteIsBundledAsStaticSourceBuild(t *testing.T) {
 	if fmt.Sprintf("%x", sha256.Sum256(data)) != locked.Files["LICENSE"].SHA256 {
 		t.Fatal("the retained linenoise license differs from the locked file")
 	}
+	if locked.Files["LICENSE"].SHA256 != "efe1692aa5b869edaa0ac88f95eb0276c1125304ffc636a299db3ebbab47f62b" {
+		t.Fatal("the locked linenoise LICENSE is not the reviewed text")
+	}
 	for _, notice := range []string{"NOTICE", "SOURCE", "LINENOISE-LICENSE", "MUSL-COPYRIGHT", "ZIG-LICENSE"} {
 		if !slices.Contains(p.Notices, "licenses/sqlite3/"+notice) {
 			t.Errorf("sqlite3 does not retain %s", notice)
