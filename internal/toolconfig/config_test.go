@@ -1,11 +1,8 @@
 package toolconfig
 
 import (
-	"encoding/json"
-	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
 	"sort"
 	"strings"
 	"testing"
@@ -43,36 +40,16 @@ func TestRepositoryIdentityAndBothArchitectures(t *testing.T) {
 		t.Fatal("catalog incomplete")
 	}
 	// A tool is an official prebuilt release unless it is a reviewed static
-	// source build that meets the AGENTS.md conditions.
+	// source build that meets the AGENTS.md conditions. Validate (below) is the
+	// real check: it rejects a source recipe outside provider source-build and
+	// every source-build without the pinned toolchain, publisher checksum or
+	// static declaration (source_build_test.go).
 	if _, ok := c.Catalog.Packages["git-trim"]; ok {
 		t.Fatal("catalog still lists git-trim")
 	}
 	for name, p := range c.Catalog.Packages {
 		if p.Install.Profile == "git-trim-source" {
 			t.Fatalf("%s uses the removed git-trim source profile", name)
-		}
-	}
-	rawCatalog, err := os.ReadFile("../../bundles/toolbox/packages.catalog.json")
-	if err != nil {
-		t.Fatal(err)
-	}
-	var catalog struct {
-		Packages map[string]map[string]any `json:"packages"`
-	}
-	if err := json.Unmarshal(rawCatalog, &catalog); err != nil {
-		t.Fatal(err)
-	}
-	var lock map[string]any
-	rawLock, err := os.ReadFile("../../bundles/toolbox/packages.lock.json")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := json.Unmarshal(rawLock, &lock); err != nil {
-		t.Fatal(err)
-	}
-	for name, pkg := range catalog.Packages {
-		for _, v := range sourceBuildViolations(name, pkg, lock) {
-			t.Errorf("%s: %s", name, v)
 		}
 	}
 	if err := c.Validate(); err != nil {
@@ -375,186 +352,5 @@ func TestLockRejectsSourceBuildPins(t *testing.T) {
 	}
 	if _, err := Load(dir); err == nil {
 		t.Fatal("accepted a lock with a source-build pin")
-	}
-}
-
-var (
-	hex64 = regexp.MustCompile(`^[0-9a-f]{64}$`)
-	hex40 = regexp.MustCompile(`^[0-9a-f]{40}$`)
-)
-
-func obj(v any) map[string]any { m, _ := v.(map[string]any); return m }
-func str(v any) string         { s, _ := v.(string); return s }
-
-// sourceBuildViolations reports why a raw catalog package is a source build
-// that AGENTS.md does not allow. Where each field lives follows the design
-// (docs/design/generic-tool-builds): the catalog package has provider
-// "source-build", build.static and the build.toolchain name; the lock pins the
-// toolchain per architecture (lock.toolchains), the source checksum per
-// architecture (lock.platforms) and every extra source by a full 40-hex commit
-// SHA with per-file builder-computed hashes (lock.extra_sources, class
-// tls-download-sha256). Whether no official prebuilt exists for both
-// architectures is judged by review, not by code. A prebuilt package has no
-// violations.
-func sourceBuildViolations(name string, pkg, lock map[string]any) []string {
-	profile := str(obj(pkg["install"])["profile"])
-	_, hasBuild := pkg["build"]
-	if pkg["provider"] != "source-build" && !hasBuild && !strings.Contains(profile, "source") {
-		return nil
-	}
-	var out []string
-	bad := func(format string, a ...any) { out = append(out, fmt.Sprintf(format, a...)) }
-	if pkg["provider"] != "source-build" {
-		bad("source recipe outside the source-build provider")
-	}
-	build := obj(pkg["build"])
-	if build["static"] != true {
-		bad("source build is not declared static")
-	}
-	tc := str(build["toolchain"])
-	for _, arch := range []string{"amd64", "arm64"} {
-		if tc == "" || !hex64.MatchString(str(obj(obj(obj(lock["toolchains"])[tc])[arch])["sha256"])) {
-			bad("%s: toolchain %q is not pinned by sha256 in the lock", arch, tc)
-		}
-		if tc != "" && !strings.HasPrefix(str(obj(obj(obj(lock["toolchains"])[tc])[arch])["verification"]), "publisher-") {
-			bad("%s: toolchain %q checksum is not publisher data", arch, tc)
-		}
-		entry := obj(obj(obj(lock["platforms"])[arch])[name])
-		if !hex64.MatchString(str(entry["sha256"])) {
-			bad("%s: no source checksum in the lock", arch)
-		}
-		if !strings.HasPrefix(str(entry["verification"]), "publisher-") {
-			bad("%s: the main source archive needs a publisher checksum class, not %q", arch, str(entry["verification"]))
-		}
-		if str(entry["toolchain"]) != tc {
-			bad("%s: lock toolchain differs from the catalog", arch)
-		}
-	}
-	extras, _ := build["extra_sources"].([]any)
-	listed := map[string]bool{}
-	for _, e := range extras {
-		listed[str(e)] = true
-	}
-	for e := range obj(pkg["extra_sources"]) {
-		if !listed[e] {
-			bad("extra source %s is declared but not listed in build.extra_sources", e)
-		}
-	}
-	for key := range obj(lock["extra_sources"]) {
-		if strings.HasPrefix(key, name+"/") && !listed[strings.TrimPrefix(key, name+"/")] {
-			bad("locked extra source %s is not listed in build.extra_sources", key)
-		}
-	}
-	for _, e := range extras {
-		key := name + "/" + str(e)
-		commit := str(obj(obj(pkg["extra_sources"])[str(e)])["commit"])
-		locked := obj(obj(lock["extra_sources"])[key])
-		if !hex40.MatchString(commit) || str(locked["commit"]) != commit {
-			bad("extra source %s is not pinned by one full 40-hex commit SHA in catalog and lock", key)
-		}
-		files := obj(locked["files"])
-		if len(files) == 0 {
-			bad("extra source %s has no locked files", key)
-		}
-		for f, v := range files {
-			if !hex64.MatchString(str(obj(v)["sha256"])) || str(obj(v)["verification"]) != "tls-download-sha256" {
-				bad("extra source %s file %s lacks a builder-computed sha256", key, f)
-			}
-		}
-	}
-	return out
-}
-
-const designSQLite3 = `{
- "catalog": {"provider":"source-build","install":{"kind":"build-output"},
-   "build":{"kind":"c-amalgamation","toolchain":"zig-cc","static":true,"extra_sources":["linenoise"]},
-   "extra_sources":{"linenoise":{"commit":"a473823d74b93eab2ba83480df16ed37617493f2"}}},
- "lock": {"toolchains":{"zig-cc":{
-     "amd64":{"sha256":"` + "0000000000000000000000000000000000000000000000000000000000000001" + `","verification":"publisher-sha256"},
-     "arm64":{"sha256":"` + "0000000000000000000000000000000000000000000000000000000000000002" + `","verification":"publisher-sha256"}}},
-   "platforms":{
-     "amd64":{"sqlite3":{"sha256":"` + "0000000000000000000000000000000000000000000000000000000000000003" + `","verification":"publisher-sha3-256","toolchain":"zig-cc"}},
-     "arm64":{"sqlite3":{"sha256":"` + "0000000000000000000000000000000000000000000000000000000000000003" + `","verification":"publisher-sha3-256","toolchain":"zig-cc"}}},
-   "extra_sources":{"sqlite3/linenoise":{"commit":"a473823d74b93eab2ba83480df16ed37617493f2","files":{
-     "linenoise.c":{"sha256":"` + "0000000000000000000000000000000000000000000000000000000000000004" + `","verification":"tls-download-sha256"}}}}}
-}`
-
-func designExample(t *testing.T) (map[string]any, map[string]any) {
-	t.Helper()
-	var d map[string]any
-	if err := json.Unmarshal([]byte(designSQLite3), &d); err != nil {
-		t.Fatal(err)
-	}
-	return obj(d["catalog"]), obj(d["lock"])
-}
-
-func TestSourceBuildViolations(t *testing.T) {
-	pkg, lock := designExample(t)
-	if v := sourceBuildViolations("sqlite3", pkg, lock); len(v) != 0 {
-		t.Fatalf("the design's sqlite3 example is rejected: %v", v)
-	}
-	if v := sourceBuildViolations("gh", map[string]any{"provider": "github"}, lock); len(v) != 0 {
-		t.Fatalf("prebuilt rejected: %v", v)
-	}
-	for name, mutate := range map[string]func(pkg, lock map[string]any){
-		"not static":            func(p, l map[string]any) { obj(p["build"])["static"] = false },
-		"no static key":         func(p, l map[string]any) { delete(obj(p["build"]), "static") },
-		"no toolchain name":     func(p, l map[string]any) { delete(obj(p["build"]), "toolchain") },
-		"toolchain not in lock": func(p, l map[string]any) { delete(obj(l["toolchains"]), "zig-cc") },
-		"toolchain one arch":    func(p, l map[string]any) { delete(obj(obj(l["toolchains"])["zig-cc"]), "arm64") },
-		"toolchain unhashed":    func(p, l map[string]any) { obj(obj(obj(l["toolchains"])["zig-cc"])["amd64"])["sha256"] = "" },
-		"no source checksum":    func(p, l map[string]any) { delete(obj(obj(obj(l["platforms"])["arm64"])["sqlite3"]), "sha256") },
-		"short source checksum": func(p, l map[string]any) { obj(obj(obj(l["platforms"])["amd64"])["sqlite3"])["sha256"] = "abc" },
-		"lock toolchain differs": func(p, l map[string]any) {
-			obj(obj(obj(l["platforms"])["amd64"])["sqlite3"])["toolchain"] = "other"
-		},
-		"commit is a branch": func(p, l map[string]any) { obj(obj(p["extra_sources"])["linenoise"])["commit"] = "main" },
-		"commit is a branch everywhere": func(p, l map[string]any) {
-			obj(obj(p["extra_sources"])["linenoise"])["commit"] = "main"
-			obj(obj(l["extra_sources"])["sqlite3/linenoise"])["commit"] = "main"
-		},
-		"no locked files": func(p, l map[string]any) { delete(obj(obj(l["extra_sources"])["sqlite3/linenoise"]), "files") },
-		"main archive builder-computed only": func(p, l map[string]any) {
-			obj(obj(obj(l["platforms"])["amd64"])["sqlite3"])["verification"] = "tls-download-sha256"
-		},
-		"main archive no class": func(p, l map[string]any) { delete(obj(obj(obj(l["platforms"])["arm64"])["sqlite3"]), "verification") },
-		"toolchain builder-computed": func(p, l map[string]any) {
-			obj(obj(obj(l["toolchains"])["zig-cc"])["amd64"])["verification"] = "tls-download-sha256"
-		},
-		"extra source not listed": func(p, l map[string]any) {
-			delete(obj(p["build"]), "extra_sources")
-			delete(obj(l["extra_sources"]), "sqlite3/linenoise")
-		},
-		"extra source only locked": func(p, l map[string]any) {
-			obj(l["extra_sources"])["sqlite3/other"] = map[string]any{"commit": strings.Repeat("c", 40)}
-		},
-		"commit is short": func(p, l map[string]any) { obj(obj(p["extra_sources"])["linenoise"])["commit"] = "a473823" },
-		"lock commit differs": func(p, l map[string]any) {
-			obj(obj(l["extra_sources"])["sqlite3/linenoise"])["commit"] = strings.Repeat("b", 40)
-		},
-		"extra source unlocked": func(p, l map[string]any) { delete(obj(l["extra_sources"]), "sqlite3/linenoise") },
-		"file unhashed": func(p, l map[string]any) {
-			delete(obj(obj(obj(obj(l["extra_sources"])["sqlite3/linenoise"])["files"])["linenoise.c"]), "sha256")
-		},
-		"file wrong class": func(p, l map[string]any) {
-			obj(obj(obj(obj(l["extra_sources"])["sqlite3/linenoise"])["files"])["linenoise.c"])["verification"] = "publisher-sha256"
-		},
-		"other provider with build": func(p, l map[string]any) { p["provider"] = "github" },
-	} {
-		pkg, lock := designExample(t)
-		mutate(pkg, lock)
-		if len(sourceBuildViolations("sqlite3", pkg, lock)) == 0 {
-			t.Errorf("%s: accepted", name)
-		}
-	}
-	// Source recipes recognised without a build block or provider.
-	if len(sourceBuildViolations("x", map[string]any{"provider": "github", "install": map[string]any{"profile": "git-trim-source"}}, lock)) == 0 {
-		t.Error("legacy source profile on a prebuilt provider: accepted")
-	}
-	if len(sourceBuildViolations("x", map[string]any{"provider": "github", "build": map[string]any{"static": true}}, lock)) == 0 {
-		t.Error("build block on a prebuilt provider: accepted")
-	}
-	if len(sourceBuildViolations("x", map[string]any{"provider": "source-build"}, lock)) == 0 {
-		t.Error("bare source-build provider: accepted")
 	}
 }
