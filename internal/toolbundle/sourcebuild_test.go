@@ -279,7 +279,7 @@ func TestToolchainExtractionBounds(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			root, _ := openRoot(t)
-			if err := extractToolchain(root, bytes.NewReader(xzArchive(t, members...)), top); err == nil {
+			if err := extractToolchain(root, bytes.NewReader(xzArchive(t, members...)), top, defaultToolchainLimits); err == nil {
 				t.Fatal("accepted")
 			}
 		})
@@ -365,6 +365,35 @@ func TestBuildRejectsUnverifiableCompiledOutput(t *testing.T) {
 			}
 			if _, statErr := os.Stat(filepath.Join(dst, "manifest.json")); statErr == nil {
 				t.Fatal("manifest written for a rejected build")
+			}
+		})
+	}
+}
+
+func TestToolchainExtractionEnforcesEachBound(t *testing.T) {
+	top := "zig-x86_64-linux-0.17.0"
+	zig := member{top + "/zig", "0123456789", 0755, 0}
+	lib := member{top + "/lib/a.h", "0123456789", 0644, 0}
+	for name, tc := range map[string]struct {
+		lim     toolchainLimits
+		members []member
+		want    string // empty: must be accepted
+	}{
+		"members at the limit": {toolchainLimits{3, 10, 1 << 20}, []member{{top + "/", "", 0755, tar.TypeDir}, zig, lib}, ""},
+		"one member too many":  {toolchainLimits{3, 10, 1 << 20}, []member{{top + "/", "", 0755, tar.TypeDir}, zig, lib, {top + "/b.h", "x", 0644, 0}}, "too many"},
+		"member at the limit":  {toolchainLimits{10, 10, 1 << 20}, []member{zig}, ""},
+		"member one byte over": {toolchainLimits{10, 10, 1 << 20}, []member{zig, {top + "/lib/big.h", "0123456789a", 0644, 0}}, "too large"},
+		"total at the limit":   {toolchainLimits{10, 10, 3072}, []member{zig, lib}, ""},
+		"total over the limit": {toolchainLimits{10, 10, 3072}, []member{zig, lib, {top + "/c.h", "0123456789", 0644, 0}}, "exceeds"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			root, _ := openRoot(t)
+			err := extractToolchain(root, bytes.NewReader(xzArchive(t, tc.members...)), top, tc.lim)
+			if tc.want == "" && err != nil {
+				t.Fatal(err)
+			}
+			if tc.want != "" && (err == nil || !strings.Contains(err.Error(), tc.want)) {
+				t.Fatalf("error %v does not mention %q", err, tc.want)
 			}
 		})
 	}
