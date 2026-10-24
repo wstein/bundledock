@@ -189,31 +189,33 @@ func TestSourceBuildUpgradeBumpsOnlyTheSource(t *testing.T) {
 
 func TestSourceBuildUpgradeFailsClosedAndKeepsTheLock(t *testing.T) {
 	const rel = "2026/sqlite-amalgamation-3540100.zip"
-	for name, tc := range map[string]struct {
-		hash    string
-		version string
-		rel     string
-		want    string
-	}{
-		"publisher hash mismatch": {hexOf("0"), "3.54.1", rel, "mismatch"},
-		"downgrade":               {"", "3.53.0", "2026/sqlite-amalgamation-3530000.zip", "older"},
-		"same version other hash": {"", "3.54.0", "2026/sqlite-amalgamation-3540000.zip", "changed"},
-	} {
-		t.Run(name, func(t *testing.T) {
-			dir, archive := sqliteBundle(t)
-			before := readLock(t, dir)
-			hash := tc.hash
-			if hash == "" {
-				hash = sha3Hex(archive)
-			}
-			err := Upgrade(context.Background(), sqliteServer(t, archive, hash, tc.version, tc.rel), dir, "", &bytes.Buffer{})
-			if err == nil || !strings.Contains(err.Error(), tc.want) {
-				t.Fatalf("error %v does not mention %q", err, tc.want)
-			}
-			if !bytes.Equal(before, readLock(t, dir)) {
-				t.Fatal("lock modified by a failed upgrade")
-			}
-		})
+	for _, tool := range []string{"", "sqlite3"} {
+		for name, tc := range map[string]struct {
+			hash    string
+			version string
+			rel     string
+			want    string
+		}{
+			"publisher hash mismatch": {hexOf("0"), "3.54.1", rel, "mismatch"},
+			"downgrade":               {"", "3.53.0", "2026/sqlite-amalgamation-3530000.zip", "older"},
+			"same version other hash": {"", "3.54.0", "2026/sqlite-amalgamation-3540000.zip", "changed"},
+		} {
+			t.Run("tool="+tool+"/"+name, func(t *testing.T) {
+				dir, archive := sqliteBundle(t)
+				before := readLock(t, dir)
+				hash := tc.hash
+				if hash == "" {
+					hash = sha3Hex(archive)
+				}
+				err := Upgrade(context.Background(), sqliteServer(t, archive, hash, tc.version, tc.rel), dir, tool, &bytes.Buffer{})
+				if err == nil || !strings.Contains(err.Error(), tc.want) {
+					t.Fatalf("error %v does not mention %q", err, tc.want)
+				}
+				if !bytes.Equal(before, readLock(t, dir)) {
+					t.Fatal("lock modified by a failed upgrade")
+				}
+			})
+		}
 	}
 }
 
