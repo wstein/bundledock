@@ -232,6 +232,14 @@ code fixes them as closed Go lists, so a new entry is a reviewed code change):
   exactly `https://<allowed host>/<repository>/{commit}/{file}`; repository file paths allow only letters,
   digits and `_.+-` with `/` separators, no segment may start with a dot or look like a 40-hex commit.
 
+*WP4a implementation choices* (`source_build.go`, `internal/toolpublish/baseline.go`): a source-build lock URL
+must be `base_url/` plus a path matching the version source's grammar (SQLite: `^20[0-9]{2}/sqlite-amalgamation-[0-9]{7}\.zip$`)
+whose last segment is the asset template expanded with the locked version's numeric form; a toolchain lock
+URL must be the exact archive of its version and architecture (`zig-cc`:
+`https://ziglang.org/download/<v>/zig-<x86_64|aarch64>-linux-<v>.tar.xz`); both architectures pin the same
+source entry. `ToolDigest` (the `platforms-sha256` label) covers `toolchains` and `extra_sources` when present
+and is byte-identical to the earlier digest for the nine existing locks (tested).
+
 ### Catalog: sqlite3
 
 ```json
