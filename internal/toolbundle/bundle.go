@@ -17,6 +17,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"path/filepath"
 	"sort"
 	"strings"
 	"time"
@@ -86,7 +87,13 @@ func Build(ctx context.Context, client *http.Client, tools map[string]Spec, pack
 	for _, name := range names {
 		spec := tools[name]
 		fmt.Fprintln(output, "Installing", name, spec.Version)
-		if err := install(ctx, client, root, name, packages[name], spec); err != nil {
+		var err error
+		if packages[name].Install.Kind == "build-output" {
+			err = installBuildOutput(root, name, packages[name], arch, o.buildOutputs)
+		} else {
+			err = install(ctx, client, root, name, packages[name], spec)
+		}
+		if err != nil {
 			return fmt.Errorf("install %s: %w", name, err)
 		}
 	}
@@ -122,6 +129,39 @@ func Build(ctx context.Context, client *http.Client, tools map[string]Spec, pack
 		return WriteBunManifest(root, arch, tools)
 	}
 	return WriteManifest(root, arch, tools)
+}
+
+// installBuildOutput installs the compile stage's output of a source-build tool
+// after proving it is a static ELF of the declared form for the target.
+func installBuildOutput(root *os.Root, name string, p toolconfig.Package, arch, outputs string) error {
+	if outputs == "" || p.Build == nil {
+		return fmt.Errorf("no compiled output supplied for source-build tool %s", name)
+	}
+	dir, err := os.OpenRoot(filepath.Join(outputs, name))
+	if err != nil {
+		return err
+	}
+	defer dir.Close()
+	f, err := OpenFile(dir, p.Build.Output)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	if err := CheckStaticELF(f, arch, p.Build.OutputForm); err != nil {
+		return fmt.Errorf("%s is not a static %s %s executable: %w", p.Build.Output, arch, p.Build.OutputForm, err)
+	}
+	if _, err := f.Seek(0, io.SeekStart); err != nil {
+		return err
+	}
+	if len(p.Install.Members) != 1 {
+		return fmt.Errorf("source-build tool %s needs exactly one install member", name)
+	}
+	for _, target := range p.Install.Members {
+		if err := WriteFile(root, target, f, 0755); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 func install(ctx context.Context, client *http.Client, root *os.Root, name string, p toolconfig.Package, spec Spec) error {
 	h, expected, err := checksum(spec)

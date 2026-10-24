@@ -14,7 +14,15 @@ import (
 type BuildOption func(*buildOptions)
 
 type buildOptions struct {
-	shellLayer fs.FS
+	shellLayer   fs.FS
+	buildOutputs string
+}
+
+// WithBuildOutputs names the directory holding, per source-build tool, the output of
+// its compile stage (<dir>/<tool>/<build.output>). The bundle build checks and
+// installs these files; it never compiles or downloads them.
+func WithBuildOutputs(dir string) BuildOption {
+	return func(o *buildOptions) { o.buildOutputs = dir }
 }
 
 // WithShellLayer supplies the shared shell layer's source directory

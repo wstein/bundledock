@@ -285,3 +285,87 @@ func TestToolchainExtractionBounds(t *testing.T) {
 		})
 	}
 }
+
+func buildWith(t *testing.T, f *sourceBuildFixture, outputs string, opts ...BuildOption) (string, error) {
+	t.Helper()
+	dst := filepath.Join(t.TempDir(), "bundle")
+	if outputs != "" {
+		opts = append(opts, WithBuildOutputs(outputs))
+	}
+	tools := f.config.Lock.Platforms["amd64"]
+	err := Build(context.Background(), f.client, tools, f.config.Catalog.Packages, os.DirFS(t.TempDir()), "amd64", dst, &bytes.Buffer{}, opts...)
+	return dst, err
+}
+
+func writeOutput(t *testing.T, data []byte) string {
+	t.Helper()
+	dir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(dir, "sqlite3"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "sqlite3", "sqlite3"), data, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	return dir
+}
+
+func TestBuildInstallsACheckedCompiledOutput(t *testing.T) {
+	f := newSourceBuildFixture(t)
+	elfBytes := staticExec(0x3e).bytes()
+	dst, err := buildWith(t, f, writeOutput(t, elfBytes))
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := os.ReadFile(filepath.Join(dst, "bin/sqlite3"))
+	info, _ := os.Stat(filepath.Join(dst, "bin/sqlite3"))
+	if err != nil || !bytes.Equal(got, elfBytes) || info.Mode().Perm() != 0755 {
+		t.Fatalf("installed output: %v %v", err, info)
+	}
+	manifest, _ := os.ReadFile(filepath.Join(dst, "manifest.json"))
+	for _, want := range []string{`"sqlite3"`, `"sha3_256": "` + f.config.Lock.Platforms["amd64"]["sqlite3"].SHA3256, `"toolchain": "zig-cc"`} {
+		if !strings.Contains(string(manifest), want) {
+			t.Errorf("manifest lacks %s:\n%s", want, manifest)
+		}
+	}
+	if len(f.fetched) != 0 {
+		t.Fatalf("the bundle build downloaded %v; compiled outputs come from the compile stage", f.fetched)
+	}
+}
+
+func TestBuildRejectsUnverifiableCompiledOutput(t *testing.T) {
+	dynamic := staticExec(0x3e)
+	dynamic.progs = append(dynamic.progs, fixtureProg{3, 4}) // PT_INTERP
+	for name, tc := range map[string]struct {
+		outputs func(t *testing.T) string
+		want    string
+	}{
+		"dynamic output":   {func(t *testing.T) string { return writeOutput(t, dynamic.bytes()) }, "PT_INTERP"},
+		"wrong machine":    {func(t *testing.T) string { return writeOutput(t, staticExec(0xb7).bytes()) }, "machine"},
+		"not an ELF":       {func(t *testing.T) string { return writeOutput(t, []byte("#!/bin/sh\n")) }, "not an ELF"},
+		"no outputs given": {func(t *testing.T) string { return "" }, "compiled"},
+		"missing output":   {func(t *testing.T) string { return t.TempDir() }, "sqlite3"},
+		"output is a link": {func(t *testing.T) string {
+			dir := writeOutput(t, staticExec(0x3e).bytes())
+			if err := os.Rename(filepath.Join(dir, "sqlite3", "sqlite3"), filepath.Join(dir, "real")); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.Symlink("../real", filepath.Join(dir, "sqlite3", "sqlite3")); err != nil {
+				t.Fatal(err)
+			}
+			return dir
+		}, "sqlite3"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			dst, err := buildWith(t, newSourceBuildFixture(t), tc.outputs(t))
+			if err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("error %v does not mention %q", err, tc.want)
+			}
+			if _, statErr := os.Stat(filepath.Join(dst, "bin/sqlite3")); statErr == nil {
+				t.Fatal("rejected output was installed")
+			}
+			if _, statErr := os.Stat(filepath.Join(dst, "manifest.json")); statErr == nil {
+				t.Fatal("manifest written for a rejected build")
+			}
+		})
+	}
+}
