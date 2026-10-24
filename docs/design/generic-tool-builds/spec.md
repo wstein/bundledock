@@ -248,6 +248,16 @@ the archive once and pins both architectures with the same entry. `bdock tools u
 a lower version or other bytes under the locked version, and a changed catalog extra-source commit fails
 `Validate` until the owner edits the lock. It writes the pin lines of the tool only.
 
+*WP4c implementation choices* (`internal/toolbundle`): `CheckStaticELF(file, arch, form)` reads the program
+headers (not sections) of a pure-Go `debug/elf` parse and rejects non-ELF input, a class other than ELFCLASS64, big
+endian, a machine other than the target, a type other than the declared form, `PT_INTERP`, a missing `PT_LOAD` or
+`PT_GNU_STACK`, an executable stack, `PT_DYNAMIC` in an `exec` output, and `DT_NEEDED`, `DT_RPATH` or `DT_RUNPATH`
+in a `static-pie` one; its fixtures are synthetic ELF images, no compiler. `ExtractBuildSources` validates the whole
+ZIP before writing: it installs the listed sources that no extra source provides, plus the headers, found directly
+below `archive_prefix`, by base name with mode 0644; it fails on a missing source, a same-named member at another
+depth, any member whose base name equals an extra-source build file (case-insensitive, anywhere in the archive),
+case-only duplicates, unsafe or duplicate paths and non-regular entries.
+
 ### Catalog: sqlite3
 
 ```json
