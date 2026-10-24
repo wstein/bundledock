@@ -12,14 +12,15 @@ import (
 // test needs neither a SQLite binary nor a C compiler. Each field switches one
 // behaviour; the zero value is a conforming build.
 type sqliteStub struct {
-	version    string
-	options    string
-	noFTS5     bool
-	noRTree    bool
-	loadExt    bool
-	badSum     bool
-	failDumb   bool
-	failNoTerm bool
+	version     string
+	options     string
+	noFTS5      bool
+	noRTree     bool
+	loadExt     bool
+	badSum      bool
+	failDumb    bool
+	failNoTerm  bool
+	noLinenoise bool
 }
 
 func (s sqliteStub) script(log string) string {
@@ -29,13 +30,18 @@ func (s sqliteStub) script(log string) string {
 		}
 		return "0"
 	}
+	marker := "# built with cons25 terminal handling"
+	if s.noLinenoise {
+		marker = "# no line editor"
+	}
 	return `#!/bin/sh
+` + marker + `
 version='` + s.version + `'
 options='` + s.options + `'
 if [ "$1" = --version ]; then printf '%s\n' "$version"; exit 0; fi
 case "$#" in
-2) db=$1; sql=$2 ;;
-1) db=$1; sql=$(cat); printf 'stdin TERM=%s\n' "${TERM-unset}" >> '` + log + `'
+2) db=$1; sql=$2; printf 'arg TERM=%s: %s\n' "${TERM-unset}" "$sql" >> '` + log + `' ;;
+1) db=$1; sql=$(cat); printf 'stdin TERM=%s: %s\n' "${TERM-unset}" "$sql" >> '` + log + `'
    if [ "${TERM-unset}" = dumb ] && [ ` + b(s.failDumb) + ` = 1 ]; then echo "unsupported terminal" >&2; exit 1; fi
    if [ "${TERM-unset}" = unset ] && [ ` + b(s.failNoTerm) + ` = 1 ]; then echo "no terminal" >&2; exit 1; fi ;;
 *) exit 64 ;;
@@ -88,8 +94,14 @@ func TestSQLite3SmokeAcceptsAConformingBuild(t *testing.T) {
 		t.Fatalf("conforming build failed: %v\n%s", err, out)
 	}
 	// The non-terminal checks run without a terminal and with TERM=dumb, never with the caller's TERM.
-	if !strings.Contains(log, "stdin TERM=unset\n") || !strings.Contains(log, "stdin TERM=dumb\n") || strings.Contains(log, "xterm") {
+	if !strings.Contains(log, "stdin TERM=unset: select 1+1;\n") || !strings.Contains(log, "stdin TERM=dumb: select 1+1;\n") || strings.Contains(log, "xterm") {
 		t.Fatalf("terminal handling %q", log)
+	}
+	// Every check must actually run: a script that silently drops one fails here.
+	for _, want := range []string{"select sqrt(16);", "dbstat", "fts5", "rtree", "pragma compile_options;", "load_extension", "arg TERM=dumb: select 1\n", "a+1"} {
+		if !strings.Contains(log, want) {
+			t.Errorf("the smoke never ran %q:\n%s", want, log)
+		}
 	}
 	if _, err, _ := runSQLiteSmoke(t, sqliteStub{}); err != nil {
 		t.Fatalf("the expected version is optional: %v", err)
@@ -108,6 +120,10 @@ func TestSQLite3SmokeRejectsDeviations(t *testing.T) {
 		"missing rtree module":          {sqliteStub{noRTree: true}, nil},
 		"extension loading available":   {sqliteStub{loadExt: true}, nil},
 		"threadsafe option missing":     {sqliteStub{options: strings.Replace(conformingOptions, "THREADSAFE=1", "THREADSAFE=0", 1)}, nil},
+		"rtree option missing":          {sqliteStub{options: strings.Replace(conformingOptions, "ENABLE_RTREE", "", 1)}, nil},
+		"dbstat option missing":         {sqliteStub{options: strings.Replace(conformingOptions, "ENABLE_DBSTAT_VTAB", "", 1)}, nil},
+		"math option missing":           {sqliteStub{options: strings.Replace(conformingOptions, "ENABLE_MATH_FUNCTIONS", "", 1)}, nil},
+		"linenoise not linked in":       {sqliteStub{noLinenoise: true}, nil},
 		"fts5 option missing":           {sqliteStub{options: strings.Replace(conformingOptions, "ENABLE_FTS5", "", 1)}, nil},
 		"extension option missing":      {sqliteStub{options: strings.Replace(conformingOptions, "OMIT_LOAD_EXTENSION", "", 1)}, nil},
 		"fails without TERM":            {sqliteStub{failNoTerm: true}, nil},

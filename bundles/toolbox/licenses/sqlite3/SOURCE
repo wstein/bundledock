@@ -1,5 +1,5 @@
 Upstream: https://www.sqlite.org/
-License: public domain (SQLite); BSD-2-Clause (linenoise); MIT (musl, Zig runtime)
+License: blessing (SQLite, a public-domain dedication); BSD-2-Clause (linenoise); MIT (musl, Zig runtime)
 Built from source by BundleDock because sqlite.org publishes no linux-arm64 command-line
 build. The recipe is the sqlite3 entry of packages.catalog.json.
 

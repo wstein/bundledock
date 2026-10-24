@@ -20,6 +20,9 @@ if [ -n "$expected" ]; then
     [ "${version%% *}" = "$expected" ] || fail "version ${version%% *} differs from the locked $expected"
 fi
 
+# linenoise is linked in: its terminal blacklist is a string of the binary.
+grep -q cons25 "$(command -v sqlite3)" || fail "linenoise is not linked in"
+
 [ "$(q 'create table t(a); insert into t values(41); select a+1 from t;')" = 42 ] || fail "create, insert and select"
 options=$(q 'pragma compile_options;') || fail "compile_options"
 for option in THREADSAFE=1 ENABLE_FTS5 ENABLE_RTREE ENABLE_DBSTAT_VTAB ENABLE_MATH_FUNCTIONS OMIT_LOAD_EXTENSION; do
