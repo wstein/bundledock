@@ -48,6 +48,41 @@ func editLocked(c *Config, f func(l *LockedSource)) {
 	c.Lock.ExtraSources["sqlite3/linenoise"] = l
 }
 
+// setRepository changes the repository together with the URL template and the lock,
+// so only the repository grammar can reject it.
+func setRepository(c *Config, repository string) {
+	editExtra(c, func(e *ExtraSource) {
+		e.Repository = repository
+		e.URL = "https://raw.githubusercontent.com/" + repository + "/{commit}/{file}"
+	})
+	relock(c, repository)
+}
+
+// relock rewrites the locked URLs to follow a changed catalog URL template.
+func relock(c *Config, repository string) {
+	editLocked(c, func(l *LockedSource) {
+		for k, f := range l.Files {
+			f.URL = "https://raw.githubusercontent.com/" + repository + "/" + linenoiseCommit + "/" + k
+			l.Files[k] = f
+		}
+	})
+}
+
+func TestMultiSourceCopyingLicenseAccepted(t *testing.T) {
+	c := clone(t, linenoiseConfig(t))
+	editExtra(&c, func(e *ExtraSource) { e.Files["COPYING"] = "COPYING"; delete(e.Files, "LICENSE") })
+	editLocked(&c, func(l *LockedSource) {
+		f := l.Files["LICENSE"]
+		f.URL = strings.TrimSuffix(f.URL, "LICENSE") + "COPYING"
+		l.Files["COPYING"] = f
+		delete(l.Files, "LICENSE")
+	})
+	c.Bind()
+	if err := c.Validate(); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestMultiSourceDesignExampleValidates(t *testing.T) {
 	c := linenoiseConfig(t)
 	if err := c.Validate(); err != nil {
@@ -105,7 +140,8 @@ func TestMultiSourceRejectedShapes(t *testing.T) {
 		"no files":       {func(c *Config) { editExtra(c, func(e *ExtraSource) { e.Files = nil }) }, "files"},
 		"unsafe file name": {func(c *Config) {
 			editExtra(c, func(e *ExtraSource) { e.Files["../evil.c"] = "evil.c" })
-		}, "file"},
+			editLocked(c, func(l *LockedSource) { l.Files["../evil.c"] = l.Files["linenoise.c"] })
+		}, "unsafe"},
 		"unsafe build name": {func(c *Config) {
 			editExtra(c, func(e *ExtraSource) { e.Files["linenoise.h"] = "../linenoise.h" })
 		}, "file"},
@@ -186,7 +222,7 @@ func TestMultiSourceRejectedShapes(t *testing.T) {
 					l.Files[k] = f
 				}
 			})
-		}, "invalid official URL"},
+		}, "URL template"},
 		"build name is an option": {func(c *Config) {
 			editExtra(c, func(e *ExtraSource) { e.Files["linenoise.h"] = "-include" })
 		}, "unsafe"},
@@ -209,6 +245,53 @@ func TestMultiSourceRejectedShapes(t *testing.T) {
 			c.Lock.ExtraSources["sqlite3/Bad Name"] = c.Lock.ExtraSources["sqlite3/linenoise"]
 			delete(c.Lock.ExtraSources, "sqlite3/linenoise")
 		}, "invalid"},
+		"url other repository": {func(c *Config) {
+			editExtra(c, func(e *ExtraSource) { e.URL = "https://raw.githubusercontent.com/evil/fork/{commit}/{file}" })
+			relock(c, "evil/fork")
+		}, "URL template"},
+		"url dot-dot then other sha": {func(c *Config) {
+			editExtra(c, func(e *ExtraSource) {
+				e.URL = "https://raw.githubusercontent.com/antirez/linenoise/{commit}/../" + strings.Repeat("d", 40) + "/{file}"
+			})
+		}, "URL template"},
+		"url other sha first": {func(c *Config) {
+			editExtra(c, func(e *ExtraSource) {
+				e.URL = "https://raw.githubusercontent.com/antirez/linenoise/" + strings.Repeat("d", 40) + "/{file}/{commit}"
+			})
+		}, "URL template"},
+		"url swapped placeholders": {func(c *Config) {
+			editExtra(c, func(e *ExtraSource) { e.URL = "https://raw.githubusercontent.com/antirez/linenoise/{file}/{commit}" })
+		}, "URL template"},
+		"percent-encoded file": {func(c *Config) {
+			editExtra(c, func(e *ExtraSource) { e.Files["%2e%2e/x.c"] = "x.c" })
+			editLocked(c, func(l *LockedSource) { l.Files["%2e%2e/x.c"] = l.Files["linenoise.c"] })
+		}, "unsafe"},
+		"file with another sha segment": {func(c *Config) {
+			f := strings.Repeat("d", 40) + "/linenoise.c"
+			editExtra(c, func(e *ExtraSource) { delete(e.Files, "linenoise.c"); e.Files[f] = "linenoise.c" })
+			editLocked(c, func(l *LockedSource) { delete(l.Files, "linenoise.c"); l.Files[f] = l.Files["linenoise.h"] })
+		}, "unsafe"},
+		"file with a query": {func(c *Config) {
+			editExtra(c, func(e *ExtraSource) { e.Files["x.c?y=1"] = "x.c" })
+			editLocked(c, func(l *LockedSource) { l.Files["x.c?y=1"] = l.Files["linenoise.c"] })
+		}, "unsafe"},
+		"build names differ by case": {func(c *Config) {
+			editExtra(c, func(e *ExtraSource) { e.Files["linenoise.h"] = "Linenoise.C" })
+		}, "duplicate"},
+		"HAVE_LINENOISE wrong case": {func(c *Config) {
+			editExtra(c, func(e *ExtraSource) { e.Files["linenoise.h"] = "Linenoise.h" })
+		}, "HAVE_LINENOISE"},
+		"repository with hidden owner": {func(c *Config) { setRepository(c, ".x/linenoise") }, "repository"},
+		"repository with hidden name":  {func(c *Config) { setRepository(c, "antirez/.linenoise") }, "repository"},
+		"repository dot-dot name":      {func(c *Config) { setRepository(c, "antirez/..") }, "repository"},
+		"linenoise.h missing alone": {func(c *Config) {
+			editExtra(c, func(e *ExtraSource) { delete(e.Files, "linenoise.h") })
+			editLocked(c, func(l *LockedSource) { delete(l.Files, "linenoise.h") })
+		}, "HAVE_LINENOISE"},
+		"linenoise.c missing alone": {func(c *Config) {
+			editExtra(c, func(e *ExtraSource) { delete(e.Files, "linenoise.c") })
+			editLocked(c, func(l *LockedSource) { delete(l.Files, "linenoise.c") })
+		}, "HAVE_LINENOISE"},
 		"extra sources on prebuilt": {func(c *Config) {
 			p := prebuiltPackage()
 			p.ExtraSources = c.Catalog.Packages["sqlite3"].ExtraSources

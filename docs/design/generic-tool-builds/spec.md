@@ -227,7 +227,10 @@ code fixes them as closed Go lists, so a new entry is a reviewed code change):
   equals the catalog commit, the locked files equal the catalog files, each locked URL is the template at
   that commit, and each file carries a 64-hex `sha256` with class `tls-download-sha256`. Whether the other
   `build.sources` really exist in the archive cannot be checked statically; the WP4 extractor fails on a
-  missing member.
+  missing member and must also fail when an archive member has the same base name as an extra-source build
+  file (compared case-insensitively here, so no two build names differ only by case). The URL template must be
+  exactly `https://<allowed host>/<repository>/{commit}/{file}`; repository file paths allow only letters,
+  digits and `_.+-` with `/` separators, no segment may start with a dot or look like a 40-hex commit.
 
 ### Catalog: sqlite3
 
