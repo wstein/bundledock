@@ -3,24 +3,26 @@ package toolpublish
 import (
 	"os"
 	"regexp"
+	"sort"
 	"strings"
 	"testing"
+
+	"bundledock/internal/toolconfig"
 )
 
-// The source-build Dockerfile fixture (cmd/tools-bundle/testdata) shows the stage
-// layout the compile mechanism expects. It is never built here: these tests only
-// read it.
-func sourceBuildFixture(t *testing.T) string {
+// The toolbox Dockerfile carries the stage layout of the compile mechanism. It is
+// never built here: these tests only read it.
+func toolboxDockerfile(t *testing.T) string {
 	t.Helper()
-	data, err := os.ReadFile("../../cmd/tools-bundle/testdata/source-build.Dockerfile")
+	data, err := os.ReadFile("../../bundles/toolbox/Dockerfile")
 	if err != nil {
 		t.Fatal(err)
 	}
 	return string(data)
 }
 
-func TestSourceBuildFixtureStagesFollowTheCompileRules(t *testing.T) {
-	text := sourceBuildFixture(t)
+func TestToolboxDockerfileStagesFollowTheCompileRules(t *testing.T) {
+	text := toolboxDockerfile(t)
 	stages := strings.Split(text[strings.Index(text, "FROM "):], "\nFROM ")
 	var names []string
 	var base string
@@ -61,32 +63,39 @@ func TestSourceBuildFixtureStagesFollowTheCompileRules(t *testing.T) {
 	}
 }
 
-// Apart from the source-build additions the fixture is the production toolbox
-// Dockerfile, so it cannot drift from it unnoticed.
-func TestSourceBuildFixtureDiffersFromProductionOnlyByTheCompileStage(t *testing.T) {
-	prod, err := os.ReadFile("../../bundles/toolbox/Dockerfile")
+// The toolbox has exactly one compile stage, fetch line and builder copy for each
+// source-build tool of its catalog, so a catalog entry cannot ship without its stage
+// (and a stage cannot outlive its entry).
+func TestToolboxDockerfileHasOneCompileStagePerSourceBuildTool(t *testing.T) {
+	c, err := toolconfig.Load("../../bundles/toolbox")
 	if err != nil {
 		t.Fatal(err)
 	}
-	text := sourceBuildFixture(t)
-	text = regexp.MustCompile(`(?s)# FIXTURE.*?with the catalog entry\.\n`).ReplaceAllString(text, "")
-	start := strings.Index(text, "RUN tools-bundle fetch-sources")
-	end := strings.Index(text, "FROM downloads AS builder")
-	if start < 0 || end < start {
-		t.Fatal("fixture lacks the fetch or compile stage")
-	}
-	text = text[:start] + text[end:]
-	for _, add := range []string{
-		"COPY --from=compiler /out/tools-bundle-native /build/native/tools-bundle\n",
-		"COPY --from=compile-sqlite3 /out /compiled/sqlite3\n",
-		" --build-outputs /compiled",
-	} {
-		if !strings.Contains(text, add) {
-			t.Fatalf("fixture lacks %q", add)
+	text := toolboxDockerfile(t)
+	var tools []string
+	for name, p := range c.Catalog.Packages {
+		if p.Provider == "source-build" {
+			tools = append(tools, name)
 		}
-		text = strings.Replace(text, add, "", 1)
 	}
-	if text != string(prod) {
-		t.Fatalf("the fixture differs from bundles/toolbox/Dockerfile beyond the source-build lines:\n%s", text)
+	sort.Strings(tools)
+	stages := regexp.MustCompile(`(?m)^FROM .* AS compile-([a-z0-9-]+)$`).FindAllStringSubmatch(text, -1)
+	var got []string
+	for _, m := range stages {
+		got = append(got, m[1])
+	}
+	if strings.Join(got, " ") != strings.Join(tools, " ") {
+		t.Fatalf("compile stages %v, source-build tools %v", got, tools)
+	}
+	for _, tool := range tools {
+		for _, want := range []string{
+			"RUN tools-bundle fetch-sources -tool " + tool + ` -arch "${TARGETARCH}" -work /build/work/` + tool + "\n",
+			"COPY --from=compile-" + tool + " /out /compiled/" + tool + "\n",
+			"RUN --network=none tools-bundle compile -tool " + tool + ` -arch "${TARGETARCH}" -work /work -output /out` + "\n",
+		} {
+			if !strings.Contains(text, want) {
+				t.Errorf("the Dockerfile lacks %q", want)
+			}
+		}
 	}
 }

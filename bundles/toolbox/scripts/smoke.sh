@@ -33,6 +33,7 @@ check() {
         --mount "type=bind,src=$script_dir/fastfetch-smoke.sh,dst=/fastfetch-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/navi-smoke.sh,dst=/navi-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/mise-smoke.sh,dst=/mise-smoke.sh,readonly" \
+        --mount "type=bind,src=$script_dir/sqlite3-smoke.sh,dst=/sqlite3-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/utilities-smoke.sh,dst=/utilities-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/helix-smoke.sh,dst=/helix-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/vcs-versions-smoke.sh,dst=/vcs-versions-smoke.sh,readonly" \
@@ -145,6 +146,8 @@ check() {
             sh /navi-smoke.sh
             stage "mise version"
             sh /mise-smoke.sh
+            stage "sqlite3 static source build"
+            sh /sqlite3-smoke.sh
             stage "fzf bat lsd and registry utilities"
             sh /utilities-smoke.sh
             stage "shell formatting recipes Python diffs watching benchmarks and encryption"
