@@ -1,0 +1,31 @@
+sqlite3 (the SQLite command-line shell) is built from source by BundleDock into one
+statically linked executable. The executable combines the following works; the
+license text of each is retained in this directory.
+
+1. SQLite (sqlite3.c, shell.c): in the public domain. The source files state:
+
+     The author disclaims copyright to this source code.  In place of
+     a legal notice, here is a blessing:
+
+        May you do good and not evil.
+        May you find forgiveness for yourself and forgive others.
+        May you share freely, never taking more than you give.
+
+   See https://www.sqlite.org/copyright.html. No license file is required.
+
+2. linenoise (linenoise.c, line editing for an interactive terminal): BSD-2-Clause,
+   Copyright (c) 2010-2014, Salvatore Sanfilippo and Copyright (c) 2010-2013,
+   Pieter Noordhuis. The conditions require the copyright notice and disclaimer
+   to be retained in binary form in the accompanying materials: see
+   LINENOISE-LICENSE.
+
+3. musl libc (statically linked C library): MIT, Copyright (c) 2005-2020 Rich
+   Felker, et al., with the notices of the individual files it lists: see
+   MUSL-COPYRIGHT.
+
+4. Zig compiler runtime code (compiler_rt and other support code that the zig
+   compiler adds to the output): MIT, Copyright (c) Zig contributors: see
+   ZIG-LICENSE. The zig compiler itself is a build tool and is not shipped.
+
+SQLite and linenoise are compiled from the pinned sources named in SOURCE. musl and
+the Zig runtime come from the pinned zig archive named there.

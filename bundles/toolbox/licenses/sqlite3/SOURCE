@@ -1,0 +1,26 @@
+Upstream: https://www.sqlite.org/
+License: public domain (SQLite); BSD-2-Clause (linenoise); MIT (musl, Zig runtime)
+Built from source by BundleDock because sqlite.org publishes no linux-arm64 command-line
+build. The recipe is the sqlite3 entry of packages.catalog.json.
+
+SQLite source: the amalgamation ZIP named by the lock (first pinned release 3.54.1,
+https://www.sqlite.org/2026/sqlite-amalgamation-3540100.zip). The lock records the
+SHA3-256 taken from the product data of https://www.sqlite.org/download.html and the
+SHA256 of the same bytes; the builder verifies both before it unpacks the file.
+
+linenoise source: https://github.com/antirez/linenoise, pinned by commit
+a473823d74b93eab2ba83480df16ed37617493f2 (files linenoise.c, linenoise.h and LICENSE,
+fetched from raw.githubusercontent.com at that commit). The upstream publishes no
+checksum, so the lock records the builder-computed SHA256 of each file (verification
+class tls-download-sha256, the named exception of AGENTS.md); a bump of this commit
+needs the owner's approval.
+
+Toolchain: zig 0.17.0 (https://ziglang.org/download/0.17.0/), pinned in the lock by the
+SHA256 listed for each architecture in https://ziglang.org/download/index.json. The musl
+and Zig license files in this directory are those of that archive (lib/libc/musl/COPYRIGHT
+and LICENSE; the two architectures' archives carry identical musl COPYRIGHT bytes).
+The compiler runs only at build time, without network access.
+
+The SQLite blessing in NOTICE was read from the header of sqlite3.h in the verified
+amalgamation. No upstream executable was run; the output is checked for static linking
+by the builder.
