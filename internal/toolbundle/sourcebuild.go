@@ -28,10 +28,16 @@ const (
 	maxToolchainDownload = 128 << 20
 	maxSourceDownload    = 64 << 20
 	maxExtraDownload     = 8 << 20
-	maxToolchainMembers  = 50000
-	maxToolchainMember   = 256 << 20
-	maxToolchainTotal    = 1 << 30
 )
+
+// toolchainLimits bounds the unpacked toolchain: members, bytes per member and
+// bytes of the whole tar stream. Tests inject small ones.
+type toolchainLimits struct {
+	members       int
+	member, total int64
+}
+
+var defaultToolchainLimits = toolchainLimits{members: 50000, member: 256 << 20, total: 1 << 30}
 
 type sum struct {
 	name string
@@ -153,7 +159,7 @@ func FetchSourceBuild(ctx context.Context, client *http.Client, c *toolconfig.Co
 	if err != nil {
 		return fmt.Errorf("toolchain %s: %w", p.Build.Toolchain, err)
 	}
-	err = extractToolchain(root, archive, strings.TrimSuffix(path.Base(toolchain.URL), ".tar.xz"))
+	err = extractToolchain(root, archive, strings.TrimSuffix(path.Base(toolchain.URL), ".tar.xz"), defaultToolchainLimits)
 	archive.Close()
 	if err != nil {
 		return fmt.Errorf("toolchain %s: %w", p.Build.Toolchain, err)
@@ -225,13 +231,23 @@ func FetchSourceBuild(ctx context.Context, client *http.Client, c *toolconfig.Co
 // extractToolchain unpacks a verified compiler tar.xz below root/toolchain, keeping
 // only directories and regular files of the single expected top directory, within
 // fixed member, size and total bounds.
-func extractToolchain(root *os.Root, source io.Reader, top string) error {
+func extractToolchain(root *os.Root, source io.Reader, top string, lim toolchainLimits) error {
 	reader, err := xz.NewReader(source)
 	if err != nil {
 		return err
 	}
-	limited := &io.LimitedReader{R: reader, N: maxToolchainTotal + 1}
-	archive := tar.NewReader(limited)
+	limited := &io.LimitedReader{R: reader, N: lim.total + 1}
+	// Running into the byte limit truncates the stream mid-read; report that, not the symptom.
+	if err := unpackToolchain(root, tar.NewReader(limited), top, lim, limited); err != nil {
+		if limited.N <= 0 {
+			return fmt.Errorf("toolchain archive exceeds %d bytes", lim.total)
+		}
+		return err
+	}
+	return nil
+}
+
+func unpackToolchain(root *os.Root, archive *tar.Reader, top string, lim toolchainLimits, limited *io.LimitedReader) error {
 	seen := map[string]bool{}
 	for {
 		entry, err := archive.Next()
@@ -242,13 +258,13 @@ func extractToolchain(root *os.Root, source io.Reader, top string) error {
 			return err
 		}
 		if limited.N <= 0 {
-			return fmt.Errorf("toolchain archive exceeds %d bytes", int64(maxToolchainTotal))
+			return fmt.Errorf("toolchain archive exceeds %d bytes", lim.total)
 		}
 		if err := ValidPath(entry.Name); err != nil {
 			return err
 		}
 		name := path.Clean(entry.Name)
-		if len(seen) >= maxToolchainMembers {
+		if len(seen) >= lim.members {
 			return fmt.Errorf("too many toolchain archive members")
 		}
 		if seen[name] {
@@ -273,7 +289,7 @@ func extractToolchain(root *os.Root, source io.Reader, top string) error {
 			if rel == "" {
 				return fmt.Errorf("toolchain root %q is not a directory", top)
 			}
-			if entry.Size > maxToolchainMember {
+			if entry.Size > lim.member {
 				return fmt.Errorf("toolchain member %q too large", name)
 			}
 			mode := fs.FileMode(0644)
