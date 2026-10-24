@@ -15,21 +15,21 @@ configuration remain unchanged. No browser service starts automatically.
 The current standalone pin comes from this bundle's own lock:
 
 <!-- BEGIN PUBLISHED BUNDLE -->
-<!-- publication-record: {"attempt":"1","commit":"9f25e0065885dce912658986bf26c178dddbaf36","digest":"sha256:07d3452052c1c5cb34cd6545b1975cd3dda589b9ee66710e5c765ea541ae49f1","image":"quay.io/bundledock/code-server","reference":"quay.io/bundledock/code-server@sha256:07d3452052c1c5cb34cd6545b1975cd3dda589b9ee66710e5c765ea541ae49f1","run_id":"38192754108","source":"https://github.com/wstein/bundledock","tag":"2026.10.12-b1.1"} -->
+<!-- publication-record: {"attempt":"1","bundle":"code-server","commit":"095e16c019e55eacb79b2eb3d1242d012e7de271","created":"2026-10-24T11:51:39Z","digest":"sha256:cb912936f9aef8891368f8159fae7ecf6ac0fe40c5be4eb11a1bf11cd320a97b","image":"quay.io/bundledock/code-server","lock_sha256":"d68feb8727bdf8dda18c2b8ecd1002c34a4b84476eda7bb521de2ac12e5ed009","reference":"quay.io/bundledock/code-server@sha256:cb912936f9aef8891368f8159fae7ecf6ac0fe40c5be4eb11a1bf11cd320a97b","run_attempt":"1","run_id":"40091432271","source":"https://github.com/wstein/bundledock","tag":"4.143.1-b1"} -->
 ## Published bundle
 
-Version: `2026.10.12-b1.1`
+Version: `4.143.1-b1`
 
-Index digest: `sha256:07d3452052c1c5cb34cd6545b1975cd3dda589b9ee66710e5c765ea541ae49f1`
+Index digest: `sha256:cb912936f9aef8891368f8159fae7ecf6ac0fe40c5be4eb11a1bf11cd320a97b`
 
-Source: [`9f25e0065885dce912658986bf26c178dddbaf36`](https://github.com/wstein/bundledock/commit/9f25e0065885dce912658986bf26c178dddbaf36)
+Source: [`095e16c019e55eacb79b2eb3d1242d012e7de271`](https://github.com/wstein/bundledock/commit/095e16c019e55eacb79b2eb3d1242d012e7de271)
 
-Publication: [run 38192754108, attempt 1](https://github.com/wstein/bundledock/actions/runs/38192754108/attempts/1)
+Publication: [run 40091432271, attempt 1](https://github.com/wstein/bundledock/actions/runs/40091432271/attempts/1)
 
 Pull this published carrier by its immutable index digest:
 
 ```sh
-docker pull quay.io/bundledock/code-server@sha256:07d3452052c1c5cb34cd6545b1975cd3dda589b9ee66710e5c765ea541ae49f1
+docker pull quay.io/bundledock/code-server@sha256:cb912936f9aef8891368f8159fae7ecf6ac0fe40c5be4eb11a1bf11cd320a97b
 ```
 
 The source inventory below describes the current lock; this publication retains its exact source revision.
