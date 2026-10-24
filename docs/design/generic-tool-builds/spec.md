@@ -1,9 +1,11 @@
 # Design: a generic way to add tools the catalog cannot express
 
-**Status**: design only; owner decisions recorded 2026-10-24 (see [Decisions](#decisions)); awaiting a
-re-review of the revised text.
-No implementation, catalog or lock edit and no image was produced; the WP2 local compile spike
-(outside the repository, outside BuildKit) is recorded in [spike-results.md](spike-results.md). Every statement is marked verified (with how) or unverified.
+**Status**: owner decisions recorded 2026-10-24 (see [Decisions](#decisions)). Implemented so far: WP1 (rule), WP3/WP3b
+(schema), WP4b (publish-gate content check), and WP4 as four stacked changes (lock URL binding and tool digest, product-data
+resolver and updater scope, ELF checker and extractor, fetch/compile subcommands and stage layout); see the
+"implementation choices" paragraphs below. Open: WP5 (the `sqlite3` catalog entry and the stage in the production
+Dockerfile) and WP6 (guides). No image has been built; the WP2 local compile spike (outside the repository, outside
+BuildKit) is recorded in [spike-results.md](spike-results.md). Every statement is marked verified (with how) or unverified.
 
 ## Context and trigger
 
