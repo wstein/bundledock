@@ -79,9 +79,20 @@ approved tag push under these gates. The `release` environment has no reviewer r
 decision), so a tag push by the owner that passes the checks publishes immediately. Agents
 never push tags and never start the workflow.
 
-Third-party tools must use official stable prebuilt releases. Never build
-third-party tools from source or silently patch any tool binary or embedded
-dependency. If a
+Third-party tools must use official stable prebuilt releases. Never silently
+patch any tool binary or embedded dependency. Building a third-party tool from
+source is the exception and is allowed only as a reviewed, recipe-driven, static
+source build when all of these hold: (a) the tool lacks an official prebuilt
+release for amd64 or for arm64 (a tool with an official prebuilt for both
+architectures is never built from source; the review records the publisher
+download page checked and the date); (b) the toolchain is pinned by content;
+(c) every pinned source (the source archive and any further pinned sources) has a recorded
+checksum from publisher data, or, where the publisher offers none, is a
+commit-pinned source fixed by commit SHA plus the builder-computed SHA256 of the
+fetched files (class `tls-download-sha256`), which is a named exception with its residual risk
+recorded and needs owner approval for every bump of that pin; and (d) a test
+proves the output is statically linked. Each new case needs its own review.
+If a
 security fix is not yet available in an official stable prebuilt release, wait
 for that release and record the remaining findings in existing documentation.
 This does not restrict compiling BundleDock's own CLI, builder, or initializer.

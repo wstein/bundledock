@@ -408,8 +408,9 @@ go test ./internal/toolbundle -run 'TestQualitySecurity' -count=1
 
 Third-party tools use official stable prebuilt releases under the
 [repository policy](../AGENTS.md). Wait for a patched
-stable upstream release; do not rebuild tools from source or patch
-any tool binary or dependency.
+stable upstream release; do not patch any tool binary or dependency, and
+rebuild a tool from source only under the reviewed source-build conditions of
+the repository policy.
 
 The 2026-10-10 inspection of Go build information in both official AMD64 and
 ARM64 archives confirmed the following dependencies in the locked releases:

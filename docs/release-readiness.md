@@ -49,7 +49,8 @@ authoritative tool inventory is the [catalog and lock](toolbox.md).
 - [Embedded dependency findings](development.md#embedded-dependency-findings) in Gitleaks,
   Syft and Trivy concern third-party binaries inside the toolbox image. The CLI archives do
   not contain them, so they neither block nor qualify a CLI release; they stay open for the
-  image and must not be closed by rebuilding or patching third-party tools.
+  image and must not be closed by patching third-party tools or by rebuilding them outside
+  the reviewed source-build rule in `AGENTS.md`.
 - Consumer activation of any image; Quay publication; authenticated agent workflows.
 
 ## Before the first tag

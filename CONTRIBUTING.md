@@ -58,8 +58,11 @@ unavailable checks. Historical native smoke results do not verify a new lock.
 ## Tools, security, and licensing
 
 Third-party tools must use official stable prebuilt releases, as defined in
-[AGENTS.md](AGENTS.md). Do not build tools from source or patch
-any tool binary or embedded dependency. Follow the
+[AGENTS.md](AGENTS.md). Do not patch any tool binary or embedded dependency.
+Build a tool from source only as a reviewed static source build that meets the
+conditions in AGENTS.md (an official prebuilt missing for amd64 or arm64, pinned
+toolchain, recorded source checksums, a static-linking test); each new case needs
+its own review. Follow the
 [tool upgrade guide](docs/toolbox.md#upgrade-the-lock), retain upstream notices,
 and verify archives on both supported architectures. When no patched stable
 prebuilt is available, record the remaining findings in existing documentation;
