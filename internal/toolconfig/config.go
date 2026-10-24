@@ -30,12 +30,17 @@ type Spec struct {
 	// (source builds); SHA256 then holds the builder-computed digest of the same bytes.
 	SHA3256      string `json:"sha3_256,omitempty"`
 	Verification string `json:"verification,omitempty"`
+	// Toolchain names the lock.toolchains entry a source build compiled with.
+	Toolchain string `json:"toolchain,omitempty"`
 }
 type Lock struct {
-	Schema        int                        `json:"schema"`
-	DesiredDigest string                     `json:"desired_digest"`
-	CatalogDigest string                     `json:"catalog_digest"`
-	Platforms     map[string]map[string]Spec `json:"platforms"`
+	Schema        int    `json:"schema"`
+	DesiredDigest string `json:"desired_digest"`
+	CatalogDigest string `json:"catalog_digest"`
+	// Toolchains pins each source-build compiler per architecture; absent for
+	// every lock without a source-build tool.
+	Toolchains map[string]map[string]Spec `json:"toolchains,omitempty"`
+	Platforms  map[string]map[string]Spec `json:"platforms"`
 }
 type Catalog struct {
 	Schema   int                `json:"schema"`
@@ -57,6 +62,9 @@ type Package struct {
 	Install       Install           `json:"install"`
 	Notices       []string          `json:"notices,omitempty"`
 	Source        *Source           `json:"source,omitempty"`
+	// VersionSource and Build exist only for provider "source-build".
+	VersionSource *VersionSource `json:"version_source,omitempty"`
+	Build         *Build         `json:"build,omitempty"`
 }
 type Install struct {
 	Profile        string            `json:"profile,omitempty"`
@@ -162,6 +170,16 @@ func LoadInputs(directory string) (*Config, error) {
 			probeVersion = "v3.8"
 		}
 		s := Spec{Version: probeVersion, URL: "https://" + host + "/", SHA256: strings.Repeat("0", 64), Verification: "tls-download-sha256"}
+		if p.Provider == "source-build" && p.Build != nil {
+			s.Verification, s.Toolchain = "publisher-sha256", p.Build.Toolchain
+			if hosts := toolchainHosts[p.Build.Toolchain]; len(hosts) > 0 {
+				if probe.Lock.Toolchains == nil {
+					probe.Lock.Toolchains = map[string]map[string]Spec{}
+				}
+				t := Spec{Version: "1.0.0", URL: "https://" + hosts[0] + "/", SHA256: strings.Repeat("0", 64), Verification: "publisher-sha256"}
+				probe.Lock.Toolchains[p.Build.Toolchain] = map[string]Spec{"amd64": t, "arm64": t}
+			}
+		}
 		for _, a := range []string{"amd64", "arm64"} {
 			probe.Lock.Platforms[a][n] = s
 		}
@@ -314,10 +332,14 @@ func (c Config) validate(strict bool) error {
 			if !repositoryName.MatchString(p.Repository) {
 				return fmt.Errorf("invalid repository for %s", name)
 			}
+		case "source-build":
 		default:
 			return fmt.Errorf("unknown provider for %s", name)
 		}
 
+		if err := validateSourceBuild(name, p); err != nil {
+			return err
+		}
 		if p.Normalization == "helix-calendar" && (name != "helix" || p.Provider != "github" || p.Repository != "helix-editor/helix" || p.TagPrefix != "") {
 			return fmt.Errorf("helix-calendar is only supported for official Helix releases")
 		}
@@ -334,7 +356,10 @@ func (c Config) validate(strict bool) error {
 			return fmt.Errorf("Antigravity requires official updater metadata URL")
 		}
 		for _, template := range []string{p.Asset, p.Sidecar} {
-			expanded := strings.NewReplacer("{version}", "1.2.3", "{arch}", "arch", "{asset}", "asset").Replace(template)
+			if p.Provider != "source-build" && strings.Contains(template, "{numeric}") {
+				return fmt.Errorf("{numeric} in the asset template of %s is only valid for source-build", name)
+			}
+			expanded := strings.NewReplacer("{version}", "1.2.3", "{arch}", "arch", "{asset}", "asset", "{numeric}", "1234567").Replace(template)
 			if template != "" && (!validPath(expanded) || strings.ContainsAny(expanded, "{}")) {
 				return fmt.Errorf("invalid asset template for %s", name)
 			}
@@ -361,7 +386,7 @@ func (c Config) validate(strict bool) error {
 			}
 		}
 		switch p.Install.Kind {
-		case "raw", "tar.gz", "tar.xz", "zip":
+		case "raw", "tar.gz", "tar.xz", "zip", "build-output":
 		default:
 			return fmt.Errorf("unknown install kind for %s", name)
 		}
@@ -455,6 +480,9 @@ func (c Config) validate(strict bool) error {
 			if err := ValidateURL(s.URL, p.AllowedHosts); err != nil {
 				return err
 			}
+			if err := validateSourceBuildSpec(name, arch, p, s); err != nil {
+				return err
+			}
 			if strict && name == "opentofu" {
 				version := strings.TrimPrefix(s.Version, "v")
 				expected := "https://github.com/opentofu/opentofu/releases/download/" + s.Version + "/tofu_" + version + "_linux_" + arch + ".tar.gz"
@@ -490,5 +518,5 @@ func (c Config) validate(strict bool) error {
 			first = v
 		}
 	}
-	return nil
+	return c.validateToolchains()
 }
