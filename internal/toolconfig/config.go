@@ -41,6 +41,8 @@ type Lock struct {
 	// every lock without a source-build tool.
 	Toolchains map[string]map[string]Spec `json:"toolchains,omitempty"`
 	Platforms  map[string]map[string]Spec `json:"platforms"`
+	// ExtraSources pins the further sources of source builds, keyed "<tool>/<name>".
+	ExtraSources map[string]LockedSource `json:"extra_sources,omitempty"`
 }
 type Catalog struct {
 	Schema   int                `json:"schema"`
@@ -65,6 +67,8 @@ type Package struct {
 	// VersionSource and Build exist only for provider "source-build".
 	VersionSource *VersionSource `json:"version_source,omitempty"`
 	Build         *Build         `json:"build,omitempty"`
+	// ExtraSources are the further commit-pinned sources the build consumes.
+	ExtraSources map[string]ExtraSource `json:"extra_sources,omitempty"`
 }
 type Install struct {
 	Profile        string            `json:"profile,omitempty"`
@@ -178,6 +182,17 @@ func LoadInputs(directory string) (*Config, error) {
 				}
 				t := Spec{Version: "1.0.0", URL: "https://" + hosts[0] + "/", SHA256: strings.Repeat("0", 64), Verification: "publisher-sha256"}
 				probe.Lock.Toolchains[p.Build.Toolchain] = map[string]Spec{"amd64": t, "arm64": t}
+			}
+			for _, extra := range p.Build.ExtraSources {
+				e := p.ExtraSources[extra]
+				locked := LockedSource{Commit: e.Commit, Files: map[string]LockedFile{}}
+				for file := range e.Files {
+					locked.Files[file] = LockedFile{URL: extraURL(e, file), SHA256: strings.Repeat("0", 64), Verification: "tls-download-sha256"}
+				}
+				if probe.Lock.ExtraSources == nil {
+					probe.Lock.ExtraSources = map[string]LockedSource{}
+				}
+				probe.Lock.ExtraSources[n+"/"+extra] = locked
 			}
 		}
 		for _, a := range []string{"amd64", "arm64"} {
@@ -518,5 +533,8 @@ func (c Config) validate(strict bool) error {
 			first = v
 		}
 	}
-	return c.validateToolchains()
+	if err := c.validateToolchains(); err != nil {
+		return err
+	}
+	return c.validateLockedExtraSources()
 }
