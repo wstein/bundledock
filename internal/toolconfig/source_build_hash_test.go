@@ -22,6 +22,8 @@ func TestValidateSpecSHA3(t *testing.T) {
 		"no sha3":        {Version: "1", SHA256: h("a"), Verification: "publisher-sha3-256"},
 		"non-hex sha3":   {Version: "1", SHA256: h("a"), SHA3256: strings.Repeat("z", 64), Verification: "publisher-sha3-256"},
 		"sha3 w/o class": {Version: "1", SHA256: h("a"), SHA3256: h("b"), Verification: "publisher-sha256"},
+		"short sha3":     {Version: "1", SHA256: h("a"), SHA3256: strings.Repeat("b", 62), Verification: "publisher-sha3-256"},
+		"long sha3":      {Version: "1", SHA256: h("a"), SHA3256: strings.Repeat("b", 66), Verification: "publisher-sha3-256"},
 		"sha512 + sha3":  {Version: "1", SHA512: strings.Repeat("a", 128), SHA3256: h("b"), Verification: "publisher-sha3-256"},
 	} {
 		if err := ValidateSpec(s); err == nil {

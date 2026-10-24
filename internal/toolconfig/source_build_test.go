@@ -300,6 +300,109 @@ func TestSourceBuildRejectedShapes(t *testing.T) {
 			p.Build.Libs = []string{"/usr/lib/libc.so"}
 			c.Catalog.Packages["sqlite3"] = p
 		}, "lib"},
+		"source option -Wl": {func(c *Config) {
+			p := c.Catalog.Packages["sqlite3"]
+			p.Build.Sources = []string{"-Wl,--wrap=x.c"}
+			c.Catalog.Packages["sqlite3"] = p
+		}, "source"},
+		"source option -o": {func(c *Config) {
+			p := c.Catalog.Packages["sqlite3"]
+			p.Build.Sources = []string{"-ofoo.c"}
+			c.Catalog.Packages["sqlite3"] = p
+		}, "source"},
+		"source option -include": {func(c *Config) {
+			p := c.Catalog.Packages["sqlite3"]
+			p.Build.Sources = []string{"-include.c"}
+			c.Catalog.Packages["sqlite3"] = p
+		}, "source"},
+		"source with space": {func(c *Config) {
+			p := c.Catalog.Packages["sqlite3"]
+			p.Build.Sources = []string{"a b.c"}
+			c.Catalog.Packages["sqlite3"] = p
+		}, "source"},
+		"source with comma": {func(c *Config) {
+			p := c.Catalog.Packages["sqlite3"]
+			p.Build.Sources = []string{"a,b.c"}
+			c.Catalog.Packages["sqlite3"] = p
+		}, "source"},
+		"source in directory": {func(c *Config) {
+			p := c.Catalog.Packages["sqlite3"]
+			p.Build.Sources = []string{"dir/x.c"}
+			c.Catalog.Packages["sqlite3"] = p
+		}, "source"},
+		"output option -o": {func(c *Config) {
+			p := c.Catalog.Packages["sqlite3"]
+			p.Build.Output = "-o"
+			p.Install.Members = map[string]string{"-o": "bin/sqlite3"}
+			c.Catalog.Packages["sqlite3"] = p
+		}, "output"},
+		"output with space": {func(c *Config) {
+			p := c.Catalog.Packages["sqlite3"]
+			p.Build.Output = "a b"
+			p.Install.Members = map[string]string{"a b": "bin/sqlite3"}
+			c.Catalog.Packages["sqlite3"] = p
+		}, "output"},
+		"output with comma": {func(c *Config) {
+			p := c.Catalog.Packages["sqlite3"]
+			p.Build.Output = "a,b"
+			p.Install.Members = map[string]string{"a,b": "bin/sqlite3"}
+			c.Catalog.Packages["sqlite3"] = p
+		}, "output"},
+		"output in directory": {func(c *Config) {
+			p := c.Catalog.Packages["sqlite3"]
+			p.Build.Output = "bin/sqlite3"
+			p.Install.Members = map[string]string{"bin/sqlite3": "bin/sqlite3"}
+			c.Catalog.Packages["sqlite3"] = p
+		}, "output"},
+		"source-build repository": {func(c *Config) {
+			p := c.Catalog.Packages["sqlite3"]
+			p.Repository = "a/b"
+			c.Catalog.Packages["sqlite3"] = p
+		}, "semver normalization and no repository"},
+		"source-build sidecar": {func(c *Config) {
+			p := c.Catalog.Packages["sqlite3"]
+			p.Sidecar = "SUMS"
+			c.Catalog.Packages["sqlite3"] = p
+		}, "semver normalization and no repository"},
+		"source-build metadata_url": {func(c *Config) {
+			p := c.Catalog.Packages["sqlite3"]
+			p.MetadataURL = "https://www.sqlite.org/m"
+			c.Catalog.Packages["sqlite3"] = p
+		}, "semver normalization and no repository"},
+		"source-build tag prefix": {func(c *Config) {
+			p := c.Catalog.Packages["sqlite3"]
+			p.TagPrefix = "v"
+			c.Catalog.Packages["sqlite3"] = p
+		}, "semver normalization and no repository"},
+		"source-build alias": {func(c *Config) {
+			p := c.Catalog.Packages["sqlite3"]
+			p.Install.Aliases = map[string]string{"bin/sq": "bin/sqlite3"}
+			c.Catalog.Packages["sqlite3"] = p
+		}, "no install profile"},
+		"source-build archive notices": {func(c *Config) {
+			p := c.Catalog.Packages["sqlite3"]
+			p.Install.ArchiveNotices = []string{"LICENSE"}
+			c.Catalog.Packages["sqlite3"] = p
+		}, "no install profile"},
+		"source-build missing base_url": {func(c *Config) { p := c.Catalog.Packages["sqlite3"]; p.BaseURL = ""; c.Catalog.Packages["sqlite3"] = p }, "base_url"},
+		"archive prefix placeholder": {func(c *Config) {
+			p := c.Catalog.Packages["sqlite3"]
+			p.Build.ArchivePrefix = "{version}/"
+			c.Catalog.Packages["sqlite3"] = p
+		}, "archive_prefix"},
+		"version_source on prebuilt": {func(c *Config) {
+			p := prebuiltPackage()
+			p.VersionSource = &VersionSource{Kind: "sqlite-product-data", URL: "https://github.com/x"}
+			c.Catalog.Packages["sqlite3"] = p
+			c.Lock.Toolchains = nil
+			s := Spec{Version: "3.54.1", URL: "https://github.com/a/b/x", SHA256: h("2"), Verification: "publisher-sha256"}
+			c.Lock.Platforms["amd64"]["sqlite3"], c.Lock.Platforms["arm64"]["sqlite3"] = s, s
+		}, "version_source"},
+		"nested toolchain field": {func(c *Config) {
+			s := c.Lock.Toolchains["zig-cc"]["amd64"]
+			s.Toolchain = "zig-cc"
+			c.Lock.Toolchains["zig-cc"]["amd64"] = s
+		}, "nested toolchain"},
 		"template on prebuilt": {func(c *Config) {
 			p := c.Catalog.Packages["sqlite3"]
 			p.Provider, p.Repository = "github", "a/b"
@@ -437,5 +540,19 @@ func TestSourceRecipesOutsideSourceBuildAreRejected(t *testing.T) {
 				t.Fatal("accepted")
 			}
 		})
+	}
+}
+
+// Package and lock extra_sources belong to the separate WP3b change: until it
+// lands the strict decoder rejects them as unknown fields.
+func TestExtraSourcesAreUnknownFields(t *testing.T) {
+	if err := Decode(strings.NewReader(`{"schema":2,"extra_sources":{}}`), new(Lock)); err == nil {
+		t.Error("lock extra_sources accepted")
+	}
+	if err := Decode(strings.NewReader(`{"provider":"source-build","extra_sources":{}}`), new(Package)); err == nil {
+		t.Error("package extra_sources accepted")
+	}
+	if err := Decode(strings.NewReader(`{"kind":"c-amalgamation","extra_sources":[]}`), new(Build)); err == nil {
+		t.Error("build extra_sources accepted")
 	}
 }

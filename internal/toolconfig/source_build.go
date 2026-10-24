@@ -2,6 +2,7 @@ package toolconfig
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 )
 
@@ -31,6 +32,9 @@ type Build struct {
 }
 
 var (
+	// Names that reach the compiler command line must never read as options.
+	sourceFileName = regexp.MustCompile(`^[A-Za-z0-9_][A-Za-z0-9_.+-]*\.c$`)
+	outputName     = regexp.MustCompile(`^[A-Za-z0-9_][A-Za-z0-9_.+-]*$`)
 	// toolchainHosts maps each known toolchain name to the hosts its lock URLs may use.
 	toolchainHosts = map[string][]string{"zig-cc": {"ziglang.org"}}
 	versionSources = map[string]bool{"sqlite-product-data": true}
@@ -100,7 +104,7 @@ func validateSourceBuild(name string, p Package) error {
 	}
 	seen := map[string]bool{}
 	for _, s := range b.Sources {
-		if !validPath(s) || strings.Contains(s, "/") || !strings.HasSuffix(s, ".c") || seen[s] {
+		if !sourceFileName.MatchString(s) || seen[s] {
 			return fmt.Errorf("%s: invalid or duplicate build source %q", name, s)
 		}
 		seen[s] = true
@@ -120,7 +124,7 @@ func validateSourceBuild(name string, p Package) error {
 			return fmt.Errorf("%s: build lib %q is not allowed", name, l)
 		}
 	}
-	if !validPath(b.Output) || strings.Contains(b.Output, "/") {
+	if !outputName.MatchString(b.Output) {
 		return fmt.Errorf("%s: invalid build.output %q", name, b.Output)
 	}
 	if _, ok := p.Install.Members[b.Output]; !ok || len(p.Install.Members) != 1 {
