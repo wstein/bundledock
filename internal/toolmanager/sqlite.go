@@ -42,8 +42,11 @@ func parseSQLiteProducts(page []byte, c toolconfig.Constraint) (sqliteProduct, e
 	var rows []sqliteProduct
 	for _, l := range lines[header+1:] {
 		l = strings.TrimSpace(l)
-		if l == "" || strings.HasPrefix(l, "-->") {
+		if strings.HasPrefix(l, "-->") {
 			break
+		}
+		if l == "" {
+			continue
 		}
 		fields := strings.Split(l, ",")
 		if len(fields) != 5 {
