@@ -1,7 +1,23 @@
 {
   "schema": 2,
-  "desired_digest": "aaef601adc5a63993a44a145d5f38e940589670745b983f7c4ffa07fe5ed01cc",
-  "catalog_digest": "b0e2d9112fd2911fea5d6113ebd6d3d1510543dd876f1d5888b6f72d1eaeb543",
+  "desired_digest": "9d420ff9ee6da43dd40e13ea5d79907977ab432ac8ec54430fe83fa5d6a1223d",
+  "catalog_digest": "1839211ccccdbe2e38a812793ca6898731d9cb0093a429052a1966b0fb8cb66d",
+  "toolchains": {
+    "zig-cc": {
+      "amd64": {
+        "version": "0.17.0",
+        "url": "https://ziglang.org/download/0.17.0/zig-x86_64-linux-0.17.0.tar.xz",
+        "sha256": "1cbe9df9f27e6b78d14ccbca43b6703a404ef79ef1c463de901d7f088d4e2026",
+        "verification": "publisher-sha256"
+      },
+      "arm64": {
+        "version": "0.17.0",
+        "url": "https://ziglang.org/download/0.17.0/zig-aarch64-linux-0.17.0.tar.xz",
+        "sha256": "9e8d11661d4ae3bd57702a3832781e23ad151dde5798e16a5ccd503f65234ff8",
+        "verification": "publisher-sha256"
+      }
+    }
+  },
   "platforms": {
     "amd64": {
       "actionlint": {
@@ -285,6 +301,14 @@
         "url": "https://github.com/getsops/sops/releases/download/v3.13.3/sops-v3.13.3.linux.amd64",
         "sha256": "e5bec3346a873ae91d871550f3e698c1aad962aff462a080e40f25fde17fef6b",
         "verification": "publisher-sha256"
+      },
+      "sqlite3": {
+        "version": "3.54.1",
+        "url": "https://www.sqlite.org/2026/sqlite-amalgamation-3540100.zip",
+        "sha256": "0a9c8e34352dad46006aa82836d5383bff9dc6bc9ce5a60553c05aa30e6ad1f9",
+        "sha3_256": "92281c86e2957f9b9305890f9ac04204caa7b677cc868dc326d942689df28e30",
+        "verification": "publisher-sha3-256",
+        "toolchain": "zig-cc"
       },
       "starship": {
         "version": "v1.27.0",
@@ -666,6 +690,14 @@
         "sha256": "53b0abacd38ef1b12a66d6c100956691b9cefce018d91f81e73ddf7438b94d77",
         "verification": "publisher-sha256"
       },
+      "sqlite3": {
+        "version": "3.54.1",
+        "url": "https://www.sqlite.org/2026/sqlite-amalgamation-3540100.zip",
+        "sha256": "0a9c8e34352dad46006aa82836d5383bff9dc6bc9ce5a60553c05aa30e6ad1f9",
+        "sha3_256": "92281c86e2957f9b9305890f9ac04204caa7b677cc868dc326d942689df28e30",
+        "verification": "publisher-sha3-256",
+        "toolchain": "zig-cc"
+      },
       "starship": {
         "version": "v1.27.0",
         "url": "https://github.com/starship/starship/releases/download/v1.27.0/starship-aarch64-unknown-linux-musl.tar.gz",
@@ -761,6 +793,28 @@
         "url": "https://github.com/ajeetdsouza/zoxide/releases/download/v0.10.0/zoxide-0.10.0-aarch64-unknown-linux-musl.tar.gz",
         "sha256": "f1f16c5d6298d63dee467eedea1cdcd8490e43e493bea43acd416dc9033ef641",
         "verification": "publisher-sha256"
+      }
+    }
+  },
+  "extra_sources": {
+    "sqlite3/linenoise": {
+      "commit": "a473823d74b93eab2ba83480df16ed37617493f2",
+      "files": {
+        "LICENSE": {
+          "url": "https://raw.githubusercontent.com/antirez/linenoise/a473823d74b93eab2ba83480df16ed37617493f2/LICENSE",
+          "sha256": "efe1692aa5b869edaa0ac88f95eb0276c1125304ffc636a299db3ebbab47f62b",
+          "verification": "tls-download-sha256"
+        },
+        "linenoise.c": {
+          "url": "https://raw.githubusercontent.com/antirez/linenoise/a473823d74b93eab2ba83480df16ed37617493f2/linenoise.c",
+          "sha256": "4bc28faf2a46ccaea11d07aa056e21aa2e9a748b4dc6962346a3f658593103a8",
+          "verification": "tls-download-sha256"
+        },
+        "linenoise.h": {
+          "url": "https://raw.githubusercontent.com/antirez/linenoise/a473823d74b93eab2ba83480df16ed37617493f2/linenoise.h",
+          "sha256": "5f94c6295e3b62e0f8b4b62b0a2f351433d0b6b21029607aec0c9abbc60acff7",
+          "verification": "tls-download-sha256"
+        }
       }
     }
   }

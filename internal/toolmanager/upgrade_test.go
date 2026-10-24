@@ -89,7 +89,8 @@ func checkout(t *testing.T) string {
 }
 
 // Generic prebuilt fixtures exercise moving releases on a rebound copy of the
-// toolbox inputs.
+// toolbox inputs. The source builds are left out, with their toolchain and extra
+// source pins: they have their own fixtures (source_build_test.go).
 func checkoutPrebuilts(t *testing.T) string {
 	t.Helper()
 	dir := checkout(t)
@@ -97,6 +98,15 @@ func checkoutPrebuilts(t *testing.T) string {
 	if err != nil {
 		t.Fatal(err)
 	}
+	for name, p := range c.Catalog.Packages {
+		if p.Provider == "source-build" {
+			delete(c.Catalog.Packages, name)
+			delete(c.Desired, name)
+			delete(c.Lock.Platforms["amd64"], name)
+			delete(c.Lock.Platforms["arm64"], name)
+		}
+	}
+	c.Lock.Toolchains, c.Lock.ExtraSources = nil, nil
 	c.Bind()
 	var desired strings.Builder
 	for name, v := range c.Desired {

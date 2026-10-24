@@ -60,10 +60,10 @@ func TestSourceBuildArguments(t *testing.T) {
 	}
 }
 
-func TestSourceBuildRejectsABundleWithoutThatTool(t *testing.T) {
-	// The production toolbox has no source-build tool yet: both subcommands must refuse.
+func TestSourceBuildRejectsAToolThatIsNotASourceBuild(t *testing.T) {
+	// gh is an official prebuilt release: both subcommands must refuse it before any download.
 	for _, command := range []string{"fetch-sources", "compile"} {
-		args := []string{"-tool", "sqlite3", "-arch", "amd64", "-directory", "../../bundles/toolbox", "-work", t.TempDir() + "/w", "-output", t.TempDir()}
+		args := []string{"-tool", "gh", "-arch", "amd64", "-directory", "../../bundles/toolbox", "-work", t.TempDir() + "/w", "-output", t.TempDir()}
 		if command == "fetch-sources" {
 			args = args[:len(args)-2]
 		}

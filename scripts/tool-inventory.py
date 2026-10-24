@@ -75,6 +75,7 @@ LABELS = (
     ("pinact", "pinact (`pinact`)"),
     ("hadolint", "Hadolint (`hadolint`)"),
     ("actionlint", "actionlint (`actionlint`)"),
+    ("sqlite3", "SQLite (`sqlite3`)"),
 )
 DISPLAY_SUFFIX = {"tmux": " (official static builds)"}
 
@@ -106,6 +107,7 @@ HOMEPAGES = {'age': 'https://age-encryption.org',
  'ruff': 'https://docs.astral.sh/ruff',
  'shellcheck': 'https://www.shellcheck.net',
  'shfmt': 'https://pkg.go.dev/mvdan.cc/sh/v3',
+ 'sqlite3': 'https://www.sqlite.org/',
  'starship': 'https://starship.rs',
  'trivy': 'https://trivy.dev',
  'typst': 'https://typst.app',

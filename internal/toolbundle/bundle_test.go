@@ -507,6 +507,8 @@ func testPackages(t *testing.T) map[string]toolconfig.Package {
 		p.Notices = nil // Dedicated carrier tests verify their own source notices.
 		c.Catalog.Packages[name] = p
 	}
+	// The source-build tool needs a compiled output; sourcebuild_test.go and compile_test.go cover it.
+	delete(c.Catalog.Packages, "sqlite3")
 	return c.Catalog.Packages
 }
 
