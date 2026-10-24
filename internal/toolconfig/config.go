@@ -176,7 +176,7 @@ func LoadInputs(directory string) (*Config, error) {
 		s := Spec{Version: probeVersion, URL: "https://" + host + "/", SHA256: strings.Repeat("0", 64), Verification: "tls-download-sha256"}
 		if p.Provider == "source-build" && p.Build != nil {
 			s.Verification, s.Toolchain = "publisher-sha256", p.Build.Toolchain
-			numeric, _ := numericVersion(probeVersion)
+			numeric, _ := NumericVersion(probeVersion)
 			s.URL = p.BaseURL + "/2000/" + strings.NewReplacer("{version}", probeVersion, "{arch}", p.Architectures["amd64"], "{numeric}", numeric).Replace(p.Asset)
 			if hosts := toolchainHosts[p.Build.Toolchain]; len(hosts) > 0 {
 				if probe.Lock.Toolchains == nil {
