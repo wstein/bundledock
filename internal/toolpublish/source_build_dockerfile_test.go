@@ -46,7 +46,7 @@ func TestSourceBuildFixtureStagesFollowTheCompileRules(t *testing.T) {
 			t.Error(v)
 		}
 		if !strings.Contains(stage, "--platform=$TARGETPLATFORM") {
-			t.Error("the compile stage must run on the target platform, not under emulation")
+			t.Error("the compile stage must run on the target platform (native on the publication runners)")
 		}
 	}
 	if compiled != 1 {
