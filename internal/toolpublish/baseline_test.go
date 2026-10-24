@@ -1,6 +1,7 @@
 package toolpublish
 
 import (
+	"bundledock/internal/toolconfig"
 	"context"
 	"crypto/sha256"
 	"encoding/json"
@@ -8,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -197,5 +199,73 @@ func TestToolboxDailyBaselineRequiresIndependentAttempt(t *testing.T) {
 		} else if err == nil {
 			t.Fatal("accepted daily baseline without valid attempt")
 		}
+	}
+}
+
+// Locks without source-build sections keep the digest they had before toolchains
+// and extra sources were included: every committed bundle lock hashes its platforms alone.
+func TestToolDigestOfExistingLocksIsUnchanged(t *testing.T) {
+	locks, err := filepath.Glob("../../bundles/*/packages.lock.json")
+	if err != nil || len(locks) != 9 {
+		t.Fatalf("expected the nine bundle locks, got %v (%v)", locks, err)
+	}
+	for _, path := range locks {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var lock struct {
+			Platforms json.RawMessage `json:"platforms"`
+		}
+		if err := json.Unmarshal(data, &lock); err != nil {
+			t.Fatal(err)
+		}
+		var platforms map[string]map[string]toolconfig.Spec
+		if err := json.Unmarshal(lock.Platforms, &platforms); err != nil {
+			t.Fatal(err)
+		}
+		legacy, _ := json.Marshal(platforms)
+		want := fmt.Sprintf("%x", sha256.Sum256(legacy))
+		if got, err := ToolDigest(data); err != nil || got != want {
+			t.Fatalf("%s: digest %s %v, want the platforms-only digest %s", path, got, err, want)
+		}
+	}
+}
+
+func TestToolDigestTracksToolchainsAndExtraSources(t *testing.T) {
+	var lock map[string]any
+	if err := json.Unmarshal(testLock(t), &lock); err != nil {
+		t.Fatal(err)
+	}
+	encode := func() []byte { b, _ := json.Marshal(lock); return b }
+	zig := func(sum string) map[string]any {
+		spec := map[string]any{"version": "0.17.0", "url": "https://ziglang.org/z", "sha256": strings.Repeat(sum, 64), "verification": "publisher-sha256"}
+		return map[string]any{"zig-cc": map[string]any{"amd64": spec, "arm64": spec}}
+	}
+	extra := func(sum string) map[string]any {
+		file := map[string]any{"url": "https://h/f", "sha256": strings.Repeat(sum, 64), "verification": "tls-download-sha256"}
+		return map[string]any{"t/x": map[string]any{"commit": strings.Repeat("a", 40), "files": map[string]any{"f": file}}}
+	}
+	base, err := ToolDigest(encode())
+	if err != nil {
+		t.Fatal(err)
+	}
+	lock["toolchains"] = zig("1")
+	withZig, err := ToolDigest(encode())
+	if err != nil || withZig == base {
+		t.Fatalf("a toolchain pin is not part of the digest: %s %v", withZig, err)
+	}
+	lock["toolchains"] = zig("2")
+	if got, err := ToolDigest(encode()); err != nil || got == withZig {
+		t.Fatalf("a changed toolchain hash keeps the digest: %s %v", got, err)
+	}
+	lock["extra_sources"] = extra("3")
+	withExtra, err := ToolDigest(encode())
+	if err != nil || withExtra == withZig {
+		t.Fatalf("an extra source is not part of the digest: %s %v", withExtra, err)
+	}
+	lock["extra_sources"] = extra("4")
+	if got, err := ToolDigest(encode()); err != nil || got == withExtra {
+		t.Fatalf("a changed extra source hash keeps the digest: %s %v", got, err)
 	}
 }

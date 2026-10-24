@@ -21,7 +21,8 @@ const platformsLabel = "io.bundledock.tools.platforms-sha256"
 var hashPattern = regexp.MustCompile(`^[a-f0-9]{64}$`)
 var legacyTagPattern = regexp.MustCompile(`^\d{4}\.\d{2}\.\d{2}-([1-9]\d*)-([1-9]\d*)$`)
 
-// ToolDigest includes every pinned tool/asset field on both architectures, but
+// ToolDigest includes every pinned tool/asset field on both architectures, and
+// the pinned toolchains and extra sources of source builds, but
 // excludes input range and catalog digests that can change without tool updates.
 func ToolDigest(data []byte) (string, error) {
 	var lock toolconfig.Lock
@@ -44,7 +45,24 @@ func ToolDigest(data []byte) (string, error) {
 			}
 		}
 	}
-	b, err := json.Marshal(lock.Platforms)
+	for tc, arches := range lock.Toolchains {
+		for arch, spec := range arches {
+			if err := toolconfig.ValidateSpec(spec); err != nil || spec.URL == "" {
+				return "", fmt.Errorf("invalid toolchain pin %s/%s", tc, arch)
+			}
+		}
+	}
+	// A lock without source builds hashes its platforms alone, as before toolchains
+	// and extra sources existed, so every earlier digest stays valid.
+	var pinned any = lock.Platforms
+	if len(lock.Toolchains) != 0 || len(lock.ExtraSources) != 0 {
+		pinned = struct {
+			Platforms    map[string]map[string]toolconfig.Spec `json:"platforms"`
+			Toolchains   map[string]map[string]toolconfig.Spec `json:"toolchains,omitempty"`
+			ExtraSources map[string]toolconfig.LockedSource    `json:"extra_sources,omitempty"`
+		}{lock.Platforms, lock.Toolchains, lock.ExtraSources}
+	}
+	b, err := json.Marshal(pinned)
 	if err != nil {
 		return "", err
 	}
