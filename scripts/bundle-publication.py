@@ -193,9 +193,58 @@ def content_check(get, bundle, base, revision):
             require(isinstance(new.get('url'), str) and derived_url(packages[tool], tool, new['version']).fullmatch(new['url']) is not None, GATE + tool + ' ' + arch + ' url is not derived from the version (T3)')
 
 
-def approval_digest(tool, package, lock):
+# The closed list of repository inputs, besides the catalog entry and the lock pins, that the owner's
+# approved_digest covers (documented in docs/publication.md and the generic tool builds design, printed by
+# scripts/approval-digest.py). They are exactly the files whose change alters the produced bytes or the shipped
+# licence content of a source build. Excluded on purpose, because they do not change the artifact: smoke scripts,
+# tests, documentation and the inventory.
+APPROVAL_INPUT_FILES = (
+    '.go-version',                          # the Go toolchain that builds the compile driver
+    'cmd/tools-bundle/main.go',             # tools-bundle entry point and subcommand dispatch
+    'cmd/tools-bundle/source_build.go',     # fetch-sources and compile subcommands
+    'internal/toolbundle/buildsources.go',  # fetch, verify and extract the sources and the toolchain
+    'internal/toolbundle/compile.go',       # zig invocation: target, -static, flag assembly, environment
+    'internal/toolbundle/elfcheck.go',      # static-ELF check of the output
+    'internal/toolbundle/files.go',         # safe file writing used by the extractors
+    'internal/toolbundle/sourcebuild.go',   # installation of the compiled output
+    'internal/toolbundle/zip.go',           # ZIP reading used by the source extractor
+    'internal/toolconfig/source_build.go',  # recipe vocabulary and validation
+)
+# Per tool, from the bundle's Dockerfile: the compile-<tool> stage (which includes its base image digest and
+# --network=none) and the fetch-sources line; and the tool's notice files from the catalog.
+APPROVAL_INPUT_KINDS = ('dockerfile compile-<tool> stage', 'dockerfile fetch-sources line of <tool>', 'catalog notices of <tool>')
+
+
+def dockerfile_inputs(text, tool):
+    """The compile-<tool> stage text and the fetch-sources line of the tool, both required."""
+    lines = text.split('\n')
+    stage, inside = [], False
+    for line in lines:
+        if line.startswith('FROM '):
+            inside = re.search(r'\sAS compile-' + re.escape(tool) + r'\s*$', line) is not None
+        if inside:
+            stage.append(line)
+    fetch = [line for line in lines if line.startswith('RUN tools-bundle fetch-sources -tool ' + tool + ' ')]
+    require(stage and len(fetch) == 1, GATE + 'the Dockerfile has no single compile-' + tool + ' stage and fetch-sources line (approved_digest)')
+    return '\n'.join(stage), fetch[0]
+
+
+def approval_inputs(read, bundle, tool, package):
+    """SHA256 of every file input of the approval; read(path) returns the file's bytes at the revision."""
+    sums = lambda data: hashlib.sha256(data).hexdigest()
+    inputs = {path: sums(read(path)) for path in APPROVAL_INPUT_FILES}
+    stage, fetch = dockerfile_inputs(read(bundle['directory'] + '/Dockerfile').decode(), tool)
+    inputs['dockerfile compile stage'], inputs['dockerfile fetch line'] = sums(stage.encode()), sums(fetch.encode())
+    for notice in package.get('notices') or []:
+        require(isinstance(notice, str), GATE + tool + ' notice is not a path')
+        inputs['notice ' + notice] = sums(read(bundle['directory'] + '/' + notice))
+    return inputs
+
+
+def approval_digest(tool, package, lock, inputs):
     """Digest of everything the owner approves for one source-build tool: its catalog recipe, its pins on both
-    architectures, its toolchain and its extra sources. A change of any of them changes the digest."""
+    architectures, its toolchain, its extra sources and the file inputs of approval_inputs. A change of any of
+    them changes the digest."""
     build = package.get('build') or {}
     toolchain = (lock.get('toolchains') or {}).get(build.get('toolchain'))
     require(toolchain is not None, GATE + tool + ' has no locked toolchain (approved_digest)')
@@ -203,18 +252,20 @@ def approval_digest(tool, package, lock):
     subject = {'tool': tool, 'package': package,
                'platforms': {arch: tools.get(tool) for arch, tools in (lock.get('platforms') or {}).items()},
                'toolchain': toolchain,
-               'extra_sources': {key: value for key, value in (lock.get('extra_sources') or {}).items() if key.startswith(prefix)}}
+               'extra_sources': {key: value for key, value in (lock.get('extra_sources') or {}).items() if key.startswith(prefix)},
+               'inputs': inputs}
     return hashlib.sha256(json.dumps(subject, sort_keys=True, separators=(',', ':'), ensure_ascii=True).encode()).hexdigest()
 
 
-def check_approvals(lock, catalog):
+def check_approvals(lock, catalog, bundle, read):
     """Every source-build tool of the catalog needs the owner's approved_digest of its current content."""
     packages = catalog.get('packages') or {}
     approvals = lock.get('approvals') or {}
     for tool in sorted(name for name, package in packages.items() if package.get('provider') == 'source-build'):
         approved = approvals.get(tool)
         require(approved is not None, GATE + tool + ' has no owner approval (approved_digest); its build and smoke need explicit owner approval first')
-        require(approved == approval_digest(tool, packages[tool], lock), GATE + tool + ' changed since the owner approved it (approved_digest is stale); explicit owner approval required')
+        current = approval_digest(tool, packages[tool], lock, approval_inputs(read, bundle, tool, packages[tool]))
+        require(approved == current, GATE + tool + ' changed since the owner approved it (approved_digest is stale); explicit owner approval required')
     stray = sorted(ascii(tool) for tool in approvals if (packages.get(tool) or {}).get('provider') != 'source-build')
     require(not stray, GATE + 'approval for a tool that is not a source build: ' + ', '.join(stray))
 
@@ -222,10 +273,11 @@ def check_approvals(lock, catalog):
 def require_approvals(get, bundle, revision, catalog_revision=None):
     """Refuse publication of a bundle whose source-build tools lack a current owner approval.
 
-    revision is the exact source to publish; the catalog is read at catalog_revision (default revision)."""
+    revision is the exact source to publish (lock and file inputs); the catalog is read at catalog_revision
+    (default revision)."""
     lock = parse_lock(lock_bytes(get, bundle, revision), 'published lock')
     catalog = parse_catalog(file_bytes(get, bundle['directory'] + '/packages.catalog.json', catalog_revision or revision), 'catalog')
-    check_approvals(lock, catalog)
+    check_approvals(lock, catalog, bundle, lambda path: file_bytes(get, path, revision))
 
 
 def safe_files(files, pr, bundles):
