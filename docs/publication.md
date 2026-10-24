@@ -220,7 +220,9 @@ publish even when tool pins are unchanged. Merged toolbox updates compare agains
 tool assets after approval. Historical scheduled no-op logic does not enable a
 schedule or authorize a build.
 New images carry `io.bundledock.tools.platforms-sha256`, a canonical digest of
-those pins, alongside the full-lock provenance hash. Both platform config labels
+those pins, alongside the full-lock provenance hash. For a lock with source builds
+the digest also covers the pinned `toolchains` and `extra_sources`, so a changed
+compiler or extra-source hash rebuilds; a lock without them keeps its earlier digest. Both platform config labels
 must agree, and downloaded immutable manifests/configs must match their digests.
 
 For older images without that semantic label, the adapter identifies their
