@@ -15,6 +15,9 @@ docker run --rm --network none --mount "type=volume,src=$volume,dst=/bundle,volu
 # Repeated initialization must validate and preserve the same content.
 docker run --rm --network none --mount "type=volume,src=$volume,dst=/bundle,volume-nocopy" "$image"
 
+# The version the lock pins for sqlite3; the consumer smoke requires the binary to report it.
+sqlite3_version=$(awk '/"sqlite3": \{/ { found = 1; next } found && /"version"/ { gsub(/[",]/, "", $2); print $2; exit }' "$script_dir/../packages.lock.json")
+[ -n "$sqlite3_version" ] || { printf "%s\n" "no sqlite3 version in the lock" >&2; exit 1; }
 check() {
     docker run --rm --network none --user 1000:1000 \
         --tmpfs /home/bundledock:exec,uid=1000,gid=1000,mode=0700 \
@@ -42,6 +45,7 @@ check() {
         --mount "type=bind,src=$script_dir/hugo-smoke.sh,dst=/hugo-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/http-disk-env-secrets-smoke.sh,dst=/http-disk-env-secrets-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/process-monitors-smoke.sh,dst=/process-monitors-smoke.sh,readonly" \
+        --env SQLITE3_VERSION="$sqlite3_version" \
         --env HOME=/home/bundledock --env DISABLE_UPDATES=1 --env DISABLE_AUTOUPDATER=1 \
         --entrypoint /bin/sh "$consumer" -ec '
             stage() { printf "Toolbox consumer smoke stage: %s\n" "$1" >&2; }
@@ -147,7 +151,7 @@ check() {
             stage "mise version"
             sh /mise-smoke.sh
             stage "sqlite3 static source build"
-            sh /sqlite3-smoke.sh
+            sh /sqlite3-smoke.sh "$SQLITE3_VERSION"
             stage "fzf bat lsd and registry utilities"
             sh /utilities-smoke.sh
             stage "shell formatting recipes Python diffs watching benchmarks and encryption"

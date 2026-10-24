@@ -1,6 +1,7 @@
 package toolbundle
 
 import (
+	"encoding/json"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -134,5 +135,50 @@ func TestSQLite3SmokeRejectsDeviations(t *testing.T) {
 				t.Fatalf("accepted:\n%s", out)
 			}
 		})
+	}
+}
+
+// The consumer smoke passes the version the lock pins to the sqlite3 smoke, so a binary
+// that reports another version fails.
+func TestToolboxSmokePassesTheLockedSQLiteVersion(t *testing.T) {
+	data, err := os.ReadFile("../../bundles/toolbox/scripts/smoke.sh")
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(data)
+	for _, want := range []string{`--env SQLITE3_VERSION="$sqlite3_version"`, `sh /sqlite3-smoke.sh "$SQLITE3_VERSION"`} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("smoke.sh lacks %q", want)
+		}
+	}
+	line := ""
+	for _, l := range strings.Split(text, "\n") {
+		if strings.HasPrefix(l, "sqlite3_version=$(") {
+			line = l
+		}
+	}
+	if line == "" {
+		t.Fatal("smoke.sh does not read the locked version")
+	}
+	scripts, err := filepath.Abs("../../bundles/toolbox/scripts")
+	if err != nil {
+		t.Fatal(err)
+	}
+	out, err := exec.Command("sh", "-c", "script_dir="+scripts+"\n"+line+"\nprintf '%s' \"$sqlite3_version\"").CombinedOutput()
+	if err != nil {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	lock, err := os.ReadFile("../../bundles/toolbox/packages.lock.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var parsed struct {
+		Platforms map[string]map[string]struct{ Version string } `json:"platforms"`
+	}
+	if err := json.Unmarshal(lock, &parsed); err != nil {
+		t.Fatal(err)
+	}
+	if want := parsed.Platforms["amd64"]["sqlite3"].Version; want == "" || string(out) != want {
+		t.Fatalf("smoke.sh reads %q, the lock pins %q", out, want)
 	}
 }
