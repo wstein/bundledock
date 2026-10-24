@@ -26,6 +26,10 @@ class InventoryLinksTests(unittest.TestCase):
             catalog = json.loads((root / "bundles/toolbox/packages.catalog.json").read_text())
             self.assertEqual(len([row for row in table.splitlines() if row.startswith("| ")]) - 2, len(catalog["packages"]) + 2)
             for package in catalog["packages"].values():
+                if package["provider"] == "source-build":
+                    # The publisher's download page is the source of a source build.
+                    self.assertIn("[Source](" + package["version_source"]["url"] + ")", table)
+                    continue
                 self.assertIn("[Source](https://github.com/" + package["repository"] + ")", table)
             self.assertIn("[Source](https://github.com/tldr-pages/tldr-python-client)", table)
             self.assertIn("[Source](https://github.com/github/spec-kit)", table)
@@ -53,3 +57,16 @@ class InventoryLinksTests(unittest.TestCase):
             catalog_path.write_text(json.dumps(catalog))
             with self.assertRaises(ValueError):
                 INVENTORY.generated(root)
+
+
+class SourceBuildLinkTests(unittest.TestCase):
+    def test_unsafe_source_build_url_is_rejected(self):
+        package = {"provider": "source-build", "allowed_hosts": ["www.sqlite.org"],
+                   "version_source": {"url": "https://www.sqlite.org/download.html"}}
+        self.assertEqual(INVENTORY.source_url(package), "https://www.sqlite.org/download.html")
+        for url in ("http://www.sqlite.org/download.html", "https://evil.example/download.html",
+                    "https://www.sqlite.org/download.html) | injected", "https://www.sqlite.org/a?b=1",
+                    "https://www.sqlite.org/a#frag", ""):
+            with self.subTest(url=url):
+                with self.assertRaises(ValueError):
+                    INVENTORY.source_url(dict(package, version_source={"url": url}))
