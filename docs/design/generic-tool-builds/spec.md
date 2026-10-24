@@ -518,10 +518,13 @@ content. The lock has an optional `approvals` map (`<tool>` to a lower-case SHA2
 by the owner's own commit after the approved real build and smoke. `approval_digest` (in
 `scripts/bundle-publication.py`) is the SHA256 of the canonical JSON (sorted keys, compact) of the tool name, its
 catalog package entry, its lock entries on both architectures, its locked toolchain, its locked extra sources and the
-SHA256 of a closed list of file inputs (`APPROVAL_INPUT_FILES` in the gate script, listed in `docs/publication.md`, printed by
-`scripts/approval-digest.py --list-inputs`): `.go-version`, the nine Go files of the compile, extract and ELF-check path, the
-`compile-<tool>` stage and `fetch-sources` line of the bundle Dockerfile (including the base image digest) and the tool's notice
-files. Smoke scripts, tests, documentation and the inventory are excluded because they do not change the artifact. Cost, intended:
+SHA256 of a closed list of file inputs (`APPROVAL_INPUT_FILES` and `APPROVAL_INPUT_DIRECTORIES` in the gate script, listed in
+`docs/publication.md`, printed by `scripts/approval-digest.py --list-inputs`): `go.mod`, `go.sum`, every non-test Go file of the
+module packages in the dependency closure of `./cmd/tools-bundle` and `./cmd/tools-init` (a test recomputes it with `go list -deps`),
+the `compiler` and `compile-<tool>` stages and the `fetch-sources` instruction of the bundle Dockerfile (golang image digest, build
+flags, base image digest) and the tool's notice files. Excluded, because they do not change the artifact or are verified otherwise:
+smoke scripts, tests, documentation, the inventory, `.go-version` (CI's Go setup only), the downloads stage and its base image (sources
+are hash-verified), the builder stage's `COPY` and the `# syntax` line. Cost, intended:
 a change to a listed driver file forces a new owner approval of every source-build tool, and one missing or stale approval refuses
 a whole updater PR, including the other bundles of a combined one.
 Both publication paths (updater merge, at the merged commit; manual dispatch, at the approved SHA) call
