@@ -38,7 +38,7 @@ The source inventory below describes the current lock; this publication retains 
 <!-- BEGIN GENERATED TOOL INVENTORY -->
 | Tool | Pinned version |
 | --- | --- |
-| code-server | 4.141.0 |
+| code-server | 4.143.1 |
 <!-- END GENERATED TOOL INVENTORY -->
 
 The initial 4.141.0 pin was released October 8, 2026, with VS Code 1.141.0;
