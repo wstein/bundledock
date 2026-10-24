@@ -22,7 +22,7 @@ def main():
     parser.add_argument('--list-inputs', action='store_true', help='print the closed list of file inputs and exit')
     args = parser.parse_args()
     if args.list_inputs:
-        print('\n'.join(gate.APPROVAL_INPUT_FILES + tuple('per tool: ' + kind for kind in gate.APPROVAL_INPUT_KINDS)))
+        print('\n'.join(gate.APPROVAL_INPUT_FILES + tuple(d + '/*.go (not *_test.go)' for d in gate.APPROVAL_INPUT_DIRECTORIES) + tuple('per tool: ' + kind for kind in gate.APPROVAL_INPUT_KINDS)))
         return 0
     if not args.tool:
         parser.error('a tool name or --list-inputs is required')
@@ -33,7 +33,8 @@ def main():
         package = (catalog.get('packages') or {}).get(args.tool)
         gate.require(package is not None and package.get('provider') == 'source-build', args.tool + ' is not a source-build tool of ' + args.bundle)
         read = lambda path: (args.root / path).read_bytes()
-        print(gate.approval_digest(args.tool, package, lock, gate.approval_inputs(read, bundle, args.tool, package)))
+        names = lambda directory: [entry.name for entry in (args.root / directory).iterdir() if entry.is_file()]
+        print(gate.approval_digest(args.tool, package, lock, gate.approval_inputs(read, names, bundle, args.tool, package)))
     except (OSError, ValueError) as error:
         print('approval digest: ' + str(error), file=sys.stderr)
         return 1
