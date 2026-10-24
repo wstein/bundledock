@@ -45,6 +45,7 @@ func TestSQLite3NoticesRetainTheUpstreamTexts(t *testing.T) {
 	source := read("SOURCE")
 	for _, s := range []string{
 		"Upstream: https://www.sqlite.org/\n",
+		"License: blessing (SQLite",
 		"antirez/linenoise",
 		"a473823d74b93eab2ba83480df16ed37617493f2",
 		"tls-download-sha256",
