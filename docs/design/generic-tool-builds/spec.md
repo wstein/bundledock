@@ -509,6 +509,25 @@ content check below. Those other changes are owner-authored PRs and need an expl
 publication likewise needs explicit approval of the exact source revision, like a first carrier
 publication, and cannot ride an updater PR.
 
+### Owner approval bound to the recipe digest (WP5c)
+
+The review of WP5 found that the first-publication rule above looks only at the updater PR: once the lock
+contains `sqlite3`, an unrelated updater PR (a `gh` bump) is a valid owner-merged updater and would compile and
+publish `sqlite3` for the first time without approval of the exact revision. The approval is therefore bound to
+content. The lock has an optional `approvals` map (`<tool>` to a lower-case SHA256, `approved_digest`), set only
+by the owner's own commit after the approved real build and smoke. `approval_digest` (in
+`scripts/bundle-publication.py`) is the SHA256 of the canonical JSON (sorted keys, compact) of the tool name, its
+catalog package entry, its lock entries on both architectures, its locked toolchain and its locked extra sources.
+Both publication paths (updater merge, at the merged commit; manual dispatch, at the approved SHA) call
+`require_approvals`, which rejects a bundle in which a catalog `source-build` tool has no approval, a different
+digest (any recipe, toolchain, extra-source, version or checksum change), or in which `approvals` names another
+tool. The updater scope check adds `approvals` to G1 (unchanged between parent and merged lock). Consequences:
+the lock that adds `sqlite3` ships without an approval and cannot publish; a later SQLite bump by the bot is
+accepted by T1-T4 but cannot publish until the owner commits a new approval (this narrows D2: the source bump
+is no longer published automatically). Go validates only the shape (`Lock.Approvals`; the upgrade carries it
+over unchanged); `scripts/approval-digest.py <tool>` prints the value for the owner. Notice files are not part of
+the digest.
+
 ### Publish-gate content check (N2)
 
 `scripts/bundle-publication.py` `safe_files` (lines 37-43) checks file **names** only: a PR may change only
