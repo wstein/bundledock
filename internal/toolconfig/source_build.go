@@ -3,7 +3,9 @@ package toolconfig
 import (
 	"encoding/hex"
 	"fmt"
+	"path"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -84,6 +86,12 @@ var (
 	}
 	allowedCflags = map[string]bool{"-Os": true, "-O2": true}
 	allowedLibs   = map[string]bool{"m": true, "pthread": true}
+	// toolchainURLs is the exact lock URL of each toolchain, per version and architecture.
+	toolchainURLs = map[string]string{"zig-cc": "https://ziglang.org/download/{version}/zig-{arch}-linux-{version}.tar.xz"}
+	toolchainArch = map[string]string{"amd64": "x86_64", "arm64": "aarch64"}
+	// sourcePaths is the grammar of the part of a source archive URL after base_url,
+	// per version source kind. The year directory is data of the publisher's listing.
+	sourcePaths = map[string]*regexp.Regexp{"sqlite-product-data": regexp.MustCompile(`^20[0-9]{2}/sqlite-amalgamation-[0-9]{7}\.zip$`)}
 	// sourceBuildClasses are the publisher-data classes allowed for a main archive.
 	sourceBuildClasses = map[string]bool{"publisher-sha256": true, "publisher-sha512": true, "publisher-sha3-256": true}
 )
@@ -190,6 +198,49 @@ func validateSourceBuildSpec(name, arch string, p Package, s Spec) error {
 	if s.Toolchain != p.Build.Toolchain {
 		return fmt.Errorf("%s/%s: lock toolchain %q differs from the catalog toolchain %q", arch, name, s.Toolchain, p.Build.Toolchain)
 	}
+	return validateSourceURL(name, arch, p, s)
+}
+
+// numericVersion maps x.y.z to the publisher's digit form major*1000000+minor*10000+patch*100
+// (3.54.1 to 3540100); minor and patch above 99 have no such form.
+func numericVersion(version string) (string, error) {
+	v, err := ParseVersion(version)
+	if err != nil {
+		return "", err
+	}
+	if v[0] > 9 || v[1] > 99 || v[2] > 99 {
+		return "", fmt.Errorf("version %q has no seven-digit numeric form", version)
+	}
+	return strconv.FormatUint(v[0]*1000000+v[1]*10000+v[2]*100, 10), nil
+}
+
+// validateSourceURL ties the locked archive URL to base_url, the version-source path
+// grammar and the asset template with the locked version's numeric form.
+func validateSourceURL(name, arch string, p Package, s Spec) error {
+	numeric, err := numericVersion(s.Version)
+	if err != nil {
+		return fmt.Errorf("%s/%s: %w", arch, name, err)
+	}
+	rel, ok := strings.CutPrefix(s.URL, p.BaseURL+"/")
+	asset := strings.NewReplacer("{version}", s.Version, "{arch}", p.Architectures[arch], "{numeric}", numeric).Replace(p.Asset)
+	if !ok || !sourcePaths[p.VersionSource.Kind].MatchString(rel) || path.Base(rel) != asset {
+		return fmt.Errorf("%s/%s: the source URL %q is not base_url, a year directory and the asset for version %s", arch, name, s.URL, s.Version)
+	}
+	return nil
+}
+
+// toolchainURL is the one URL the lock may pin for a toolchain version and architecture.
+func toolchainURL(toolchain, arch, version string) string {
+	return strings.NewReplacer("{version}", version, "{arch}", toolchainArch[arch]).Replace(toolchainURLs[toolchain])
+}
+
+// validateSourceBuildPins requires one source for both architectures.
+func (c Config) validateSourceBuildPins() error {
+	for name, p := range c.Catalog.Packages {
+		if p.Provider == "source-build" && c.Lock.Platforms["amd64"][name] != c.Lock.Platforms["arm64"][name] {
+			return fmt.Errorf("%s: the amd64 and arm64 pins of a source build differ", name)
+		}
+	}
 	return nil
 }
 
@@ -232,6 +283,9 @@ func (c Config) validateToolchains() error {
 			}
 			if err := ValidateURL(s.URL, hosts); err != nil {
 				return fmt.Errorf("toolchain %s/%s: %w", tc, arch, err)
+			}
+			if s.URL != toolchainURL(tc, arch, s.Version) {
+				return fmt.Errorf("toolchain %s/%s: the URL %q is not the %s archive of version %s", tc, arch, s.URL, arch, s.Version)
 			}
 			if version != "" && version != s.Version {
 				return fmt.Errorf("toolchain %q has different versions per architecture", tc)
