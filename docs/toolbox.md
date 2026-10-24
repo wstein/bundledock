@@ -52,7 +52,7 @@ The source inventory below describes the current lock; this publication retains 
 | fzf (`fzf`) | 0.74.5 | [Homepage](https://junegunn.github.io/fzf/) | [Source](https://github.com/junegunn/fzf) |
 | Git LFS (`git-lfs`) | 3.8.1 | [Homepage](https://git-lfs.com) | [Source](https://github.com/git-lfs/git-lfs) |
 | git-cliff (`git-cliff`) | 2.14.2 | [Homepage](https://github.com/orhun/git-cliff) | [Source](https://github.com/orhun/git-cliff) |
-| GitHub CLI | 2.103.0 | [Homepage](https://cli.github.com) | [Source](https://github.com/cli/cli) |
+| GitHub CLI | 2.103.2 | [Homepage](https://cli.github.com) | [Source](https://github.com/cli/cli) |
 | GitHub CLI Stacked PRs (`gh stack`) | 0.2.1 | [Homepage](https://gh.io/stacks) | [Source](https://github.com/github/gh-stack) |
 | Gitleaks (`gitleaks`) | 8.30.1 | [Homepage](https://gitleaks.io) | [Source](https://github.com/gitleaks/gitleaks) |
 | Hadolint (`hadolint`) | 2.15.1 | [Homepage](https://github.com/hadolint/hadolint) | [Source](https://github.com/hadolint/hadolint) |
@@ -89,7 +89,7 @@ The source inventory below describes the current lock; this publication retains 
 | tldr (`tldr`, first-use pip launcher) | 3.4.4 | [Homepage](https://pypi.org/project/tldr/) | [Source](https://github.com/tldr-pages/tldr-python-client) |
 | tmux (`tmux`) | 3.7c (official static builds) | [Homepage](https://github.com/tmux/tmux-builds) | [Source](https://github.com/tmux/tmux-builds) |
 | Trivy (`trivy`) | 0.76.1 | [Homepage](https://trivy.dev) | [Source](https://github.com/aquasecurity/trivy) |
-| TruffleHog (`trufflehog`) | 3.99.4 | [Homepage](https://github.com/trufflesecurity/trufflehog) | [Source](https://github.com/trufflesecurity/trufflehog) |
+| TruffleHog (`trufflehog`) | 3.99.7 | [Homepage](https://github.com/trufflesecurity/trufflehog) | [Source](https://github.com/trufflesecurity/trufflehog) |
 | typos (`typos`) | 1.51.1 | [Homepage](https://github.com/crate-ci/typos) | [Source](https://github.com/crate-ci/typos) |
 | Typst (`typst`) | 0.15.1 | [Homepage](https://typst.app) | [Source](https://github.com/typst/typst) |
 | uv (`uv`, `uvx`) | 0.13.5 | [Homepage](https://docs.astral.sh/uv) | [Source](https://github.com/astral-sh/uv) |
