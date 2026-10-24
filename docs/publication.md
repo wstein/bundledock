@@ -60,6 +60,20 @@ version, both architectures in agreement). The first publication of a
 explicit publication approval; see the generic tool builds design, "Publish-gate
 content check".
 
+**Owner approval of a source build (`lock.approvals`).** A lock that contains a
+`source-build` tool must also carry `approvals.<tool>`, the `approved_digest` that the
+owner commits after the approved real build and smoke of that exact revision. Both
+publication paths (the owner-merged updater and the exact-SHA manual dispatch) refuse
+a bundle whose source-build tool has no approval or a stale one. The digest covers the
+tool's catalog entry, its pins on both architectures, its toolchain and its extra
+sources, so a recipe, toolchain, extra-source, version or checksum change invalidates
+the approval, and an unrelated updater PR (say a `gh` bump) cannot publish a source
+build for the first time. The updater bot never writes or changes `approvals`; the gate
+rejects a bot PR that does. Compute the value with
+`python3 scripts/approval-digest.py <tool>` on the approved revision and commit it in
+an owner-authored change. A source bump therefore needs a new owner approval; the
+bot no longer publishes it by itself.
+
 An already merged ineligible updater cannot be repaired retroactively; use a
 separately approved exact-SHA manual publication of current `main`. Rerunning an
 old publication does not bypass current-main checks. `main` may advance during a
