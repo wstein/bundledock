@@ -3,8 +3,8 @@
 **Status**: owner decisions recorded 2026-10-24 (see [Decisions](#decisions)). Implemented so far: WP1 (rule), WP3/WP3b
 (schema), WP4b (publish-gate content check), and WP4 as four stacked changes (lock URL binding and tool digest, product-data
 resolver and updater scope, ELF checker and extractor, fetch/compile subcommands and stage layout); see the
-"implementation choices" paragraphs below. Open: WP5 (the `sqlite3` catalog entry and the stage in the production
-Dockerfile) and WP6 (guides). No image has been built; the WP2 local compile spike (outside the repository, outside
+"implementation choices" paragraphs below. WP5 is authored as two stacked Draft changes (notices and smoke script; catalog entry, lock, production
+Dockerfile stage and inventory) and awaits review and an approved build. Open: WP6 (guides). No image has been built; the WP2 local compile spike (outside the repository, outside
 BuildKit) is recorded in [spike-results.md](spike-results.md). Every statement is marked verified (with how) or unverified.
 
 ## Context and trigger
@@ -278,6 +278,20 @@ is the reviewed stage layout (never built): tests check it against the compile-s
 parser, and against the production Dockerfile, which it may differ from only by the source-build lines. WP5 adds the
 stage to `bundles/toolbox/Dockerfile` with the catalog entry. `RUN --network=none` on the real BuildKit frontend is
 still untested.
+
+*WP5 implementation choices* (`bundles/toolbox`): the catalog entry is the example below, appended to the catalog, with the
+package `allowed_hosts` `www.sqlite.org` and `raw.githubusercontent.com`. The notice installer copies each listed notice to
+`licenses/<tool>/<base name>`, so the nested path of the proposal is not possible and the notices are flat:
+`NOTICE` (SQLite public-domain dedication and the list of the combined works), `SOURCE` (pins and provenance),
+`LINENOISE-LICENSE` (the very file the lock pins, tested), `MUSL-COPYRIGHT` and `ZIG-LICENSE` (read from the pinned zig 0.17.0
+archive; the musl `COPYRIGHT` is byte-identical in the x86_64 and aarch64 archives). No catalog `source` block is added: no
+toolbox package has one yet. The lock was filled from publisher data and checked against it: the SHA3-256 and size of the
+amalgamation equal the `download.html` product-data row; the SHA256 covers the same bytes; both zig archives equal the `shasum`
+and `size` of `ziglang.org/download/index.json`; the three linenoise files are `tls-download-sha256` (builder-computed, no
+publisher value exists). The production Dockerfile has the fetch line, the `compile-sqlite3` stage and the builder copy; the
+fixture of WP4d is removed and its tests read the production Dockerfile. `sqlite3-smoke.sh` runs in the consumer smoke.
+Not done and needing the owner's approval: any build, the BuildKit `RUN --network=none` run, native smoke on both architectures,
+publication.
 
 ### Catalog: sqlite3
 
