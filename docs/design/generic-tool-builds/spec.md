@@ -218,8 +218,16 @@ code fixes them as closed Go lists, so a new entry is a reviewed code change):
 - Main-archive classes: `publisher-sha256`, `publisher-sha512` or `publisher-sha3-256`; `tls-download-sha256`
   is rejected for it. `sha3_256` is valid only with `publisher-sha3-256`, which in turn needs the builder
   `sha256` and is valid only for `source-build`.
-- The package-level `extra_sources` and the lock `extra_sources` are the separate WP3b change; until it lands
-  the loader rejects them as unknown fields.
+- WP3b (multi-source recipes): `build.extra_sources` lists exactly the package `extra_sources` entries
+  (names `^[a-z][a-z0-9-]*$`); each has `owner/repo`, a full 40-hex lowercase `commit`, `files`
+  (repository path to a build-directory base name, unique across all extra sources), a URL template with
+  exactly `{commit}` and `{file}`, and `allowed_hosts` that are also in the package `allowed_hosts`. Each
+  extra source must include a file named `LICENSE` or `COPYING`. `HAVE_LINENOISE=1` needs `linenoise.c`
+  and `linenoise.h` from an extra source. The lock `extra_sources` key is `<tool>/<name>`; the lock commit
+  equals the catalog commit, the locked files equal the catalog files, each locked URL is the template at
+  that commit, and each file carries a 64-hex `sha256` with class `tls-download-sha256`. Whether the other
+  `build.sources` really exist in the archive cannot be checked statically; the WP4 extractor fails on a
+  missing member.
 
 ### Catalog: sqlite3
 
