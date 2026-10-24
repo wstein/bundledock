@@ -7,10 +7,10 @@ import (
 	"testing"
 )
 
-// The fixture Dockerfile is what the compile mechanism is designed for: the
-// command lines it contains must parse with the real subcommand flags.
-func TestFixtureDockerfileCommandsParse(t *testing.T) {
-	data, err := os.ReadFile("testdata/source-build.Dockerfile")
+// The toolbox Dockerfile runs the compile mechanism: the command lines it contains
+// must parse with the real subcommand flags.
+func TestToolboxDockerfileCommandsParse(t *testing.T) {
+	data, err := os.ReadFile("../../bundles/toolbox/Dockerfile")
 	if err != nil {
 		t.Fatal(err)
 	}

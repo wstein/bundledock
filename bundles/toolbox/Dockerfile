@@ -18,6 +18,7 @@ FROM --platform=$BUILDPLATFORM alpine:3.23@sha256:85fe1e81d6758c208f3e1eed4338a1
 ARG TARGETARCH
 RUN apk add --no-cache ca-certificates
 COPY --from=compiler /out/tools-bundle /usr/local/bin/tools-bundle
+COPY --from=compiler /out/tools-bundle-native /build/native/tools-bundle
 COPY bundles/toolbox/packages.txt bundles/toolbox/packages.catalog.json bundles/toolbox/packages.lock.json /build/
 COPY bundles/toolbox/licenses /build/licenses
 # BundleDock's own shared shell layer (committed, generated files and notices);
@@ -25,9 +26,19 @@ COPY bundles/toolbox/licenses /build/licenses
 COPY internal/shelllayer/generated /build/shell-layer/generated
 COPY internal/shelllayer/notices /build/shell-layer/notices
 COPY internal/shelllayer/shortcuts.tsv /build/shell-layer/shortcuts.tsv
+RUN tools-bundle fetch-sources -tool sqlite3 -arch "${TARGETARCH}" -work /build/work/sqlite3
+
+FROM --platform=$TARGETPLATFORM alpine:3.23@sha256:85fe1e81d6758c208f3e1eed4338a1997e19d4be002d4dd32d3100c9a8c010a0 AS compile-sqlite3
+ARG TARGETARCH
+COPY --from=downloads /build/native/tools-bundle /usr/local/bin/tools-bundle
+COPY --from=downloads /build/packages.txt /build/packages.catalog.json /build/packages.lock.json /build/
+COPY --from=downloads /build/work/sqlite3 /work
+RUN --network=none tools-bundle compile -tool sqlite3 -arch "${TARGETARCH}" -work /work -output /out
+
 FROM downloads AS builder
 ARG TARGETARCH
-RUN tools-bundle -arch "${TARGETARCH}" -destination /image-root/opt/bdock/toolbox --shell-layer /build/shell-layer \
+COPY --from=compile-sqlite3 /out /compiled/sqlite3
+RUN tools-bundle -arch "${TARGETARCH}" -destination /image-root/opt/bdock/toolbox --shell-layer /build/shell-layer --build-outputs /compiled \
     && ln -s /opt/bdock /image-root/opt/bundledock
 
 FROM scratch
