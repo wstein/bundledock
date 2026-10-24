@@ -9,6 +9,7 @@ import re
 import subprocess
 import sys
 import time
+import unicodedata
 import urllib.request
 from pathlib import Path
 sys.dont_write_bytecode = True
@@ -28,10 +29,162 @@ def sha(value):
     return value
 
 
-def lock_bytes(get, bundle, revision):
-    content = get('/contents/' + bundle['lock'] + '?ref=' + sha(revision))
-    require(content['encoding'] == 'base64' and not content.get('truncated'), 'Complete lock bytes required')
+def file_bytes(get, path, revision):
+    content = get('/contents/' + path + '?ref=' + sha(revision))
+    require(content['encoding'] == 'base64' and not content.get('truncated'), 'Complete file bytes required')
     return base64.b64decode(content['content'].replace('\n', ''), validate=True)
+
+
+def lock_bytes(get, bundle, revision):
+    return file_bytes(get, bundle['lock'], revision)
+
+
+GATE = 'Source-build publish gate: '
+SOURCE_FIELDS = ('version', 'url', 'sha256', 'sha3_256')
+VERSION = re.compile(r'v?([0-9]+)\.([0-9]+)\.([0-9]+)')
+# Same grammar as toolconfig.ParseDesired: blanks removed, name(==|>=)x.y.z[,<x.y.z].
+REQUIREMENT = re.compile(r'([a-z][a-z0-9-]*)(==|>=)([^\s]+)')
+LOCK_KEYS = {'schema', 'desired_digest', 'catalog_digest', 'platforms', 'toolchains', 'extra_sources'}
+SPEC_KEYS = {'version', 'url', 'sha256', 'sha512', 'sha3_256', 'verification', 'toolchain'}
+CATALOG_KEYS = {'schema', 'packages'}
+PACKAGE_KEYS = {'channel', 'provider', 'repository', 'tag_prefix', 'base_url', 'metadata_url', 'normalization', 'architectures',
+                'asset', 'allowed_hosts', 'verification', 'sidecar', 'install', 'notices', 'source',
+                'version_source', 'build', 'extra_sources'}
+ARCHITECTURES = {'amd64', 'arm64'}
+
+
+def strict_object(pairs):
+    """The Go decoder matches keys ignoring case and Unicode variants and merges duplicates:
+    refuse any object whose keys could shadow one another so the gate and the builder read the same data."""
+    seen = set()
+    for key, _ in pairs:
+        folded = unicodedata.normalize('NFKC', key).casefold()
+        require(folded not in seen, GATE + 'duplicate or case/Unicode-shadowed key ' + ascii(key))
+        seen.add(folded)
+    return dict(pairs)
+
+
+def known_keys(value, allowed, what):
+    require(isinstance(value, dict), GATE + what + ' must be an object')
+    unknown = sorted(ascii(key) for key in value if key not in allowed)
+    require(not unknown, GATE + what + ' has unknown key ' + ', '.join(unknown))
+    return value
+
+
+def parse_json(data, what):
+    try:
+        value = json.loads(data, object_pairs_hook=strict_object)
+    except ValueError as error:
+        if str(error).startswith(GATE):
+            raise
+        raise ValueError(GATE + what + ' is not valid JSON') from None
+    require(isinstance(value, dict), GATE + what + ' must be a JSON object')
+    return value
+
+
+def parse_lock(data, what):
+    lock = known_keys(parse_json(data, what), LOCK_KEYS, what)
+    platforms = lock.get('platforms')
+    known_keys(platforms, ARCHITECTURES, what + ' platforms')
+    for arch, tools in platforms.items():
+        require(isinstance(tools, dict), GATE + what + ' ' + arch + ' must be an object')
+        for tool, spec in tools.items():
+            known_keys(spec, SPEC_KEYS, what + ' ' + arch + ' ' + ascii(tool))
+    return lock
+
+
+def parse_catalog(data, what):
+    catalog = known_keys(parse_json(data, what), CATALOG_KEYS, what)
+    packages = catalog.get('packages')
+    require(isinstance(packages, dict), GATE + what + ' packages must be an object')
+    for name, package in packages.items():
+        known_keys(package, PACKAGE_KEYS, what + ' package ' + ascii(name))
+    return catalog
+
+
+def version_tuple(value, what):
+    match = VERSION.fullmatch(value) if isinstance(value, str) else None
+    require(match is not None, GATE + what + ' is not a plain x.y.z version')
+    return tuple(int(part) for part in match.groups())
+
+
+def within_constraint(version, constraint, what):
+    """constraint is (exact, lower, upper-or-None), as parsed by desired_constraint."""
+    exact, lower, upper = constraint
+    if exact:
+        return version == lower
+    return version >= lower and (upper is None or version < upper)
+
+
+def desired_constraint(packages_txt, tool):
+    """Parse packages.txt exactly as toolconfig.ParseDesired does; anything else is rejected."""
+    found = None
+    for line in packages_txt.decode().splitlines():
+        text = ''.join(line.split('#')[0].split())
+        if not text:
+            continue
+        match = REQUIREMENT.fullmatch(text)
+        require(match is not None, GATE + 'packages.txt line is not name==x.y.z, name>=x.y.z or name>=x.y.z,<x.y.z (T2)')
+        if match[1] != tool:
+            continue
+        require(found is None, GATE + tool + ' is listed twice in packages.txt (T2)')
+        bounds = match[3].split(',<')
+        exact = match[2] == '=='
+        require(len(bounds) <= (1 if exact else 2), GATE + tool + ' constraint is not understood (T2)')
+        found = (exact, version_tuple(bounds[0], tool + ' constraint bound (T2)'), version_tuple(bounds[1], tool + ' constraint bound (T2)') if len(bounds) == 2 else None)
+    require(found is not None, GATE + tool + ' has no desired constraint in packages.txt (T2)')
+    return found
+
+
+def derived_url(package, tool, version):
+    """Pattern of the one source URL the resolver rule for the tool derives from the version (T3)."""
+    kind = (package.get('version_source') or {}).get('kind')
+    require(kind == 'sqlite-product-data', GATE + tool + ' has no known URL resolver rule (T3)')
+    major, minor, patch = version_tuple(version, tool + ' version')
+    numeric = str(major * 1000000 + minor * 10000 + patch * 100)
+    asset = package['asset'].replace('{numeric}', numeric)
+    return re.compile(re.escape(package['base_url'].rstrip('/')) + r'/20[0-9]{2}/' + re.escape(asset))
+
+
+def content_check(get, bundle, base, revision):
+    """Publish-gate content check (design N2): an updater may only raise source pins.
+
+    base is the merged commit's single parent, revision the merged commit; pull.base.sha is not used.
+    """
+    before = parse_lock(lock_bytes(get, bundle, base), 'parent lock')
+    after = parse_lock(lock_bytes(get, bundle, revision), 'merged lock')
+    # G1: toolchains and extra_sources are deeply equal.
+    for section in ('toolchains', 'extra_sources'):
+        require(before.get(section) == after.get(section), GATE + section + ' changed (G1); explicit owner approval required')
+    # G2: no package added or removed and the platform set unchanged.
+    old_platforms, new_platforms = before.get('platforms') or {}, after.get('platforms') or {}
+    require(set(old_platforms) == set(new_platforms), GATE + 'platform set changed (G2)')
+    catalog = parse_catalog(file_bytes(get, bundle['directory'] + '/packages.catalog.json', base), 'catalog')
+    packages = catalog.get('packages') or {}
+    source_builds = {name for name, package in packages.items() if package.get('provider') == 'source-build'}
+    for arch in new_platforms:
+        first = sorted((set(new_platforms[arch]) - set(old_platforms[arch])) & source_builds)
+        require(not first, GATE + 'first publication of source-build tool ' + ','.join(first) + ' (' + arch + ') needs explicit owner approval (T2/G2)')
+        require(set(old_platforms[arch]) == set(new_platforms[arch]), GATE + 'package set changed on ' + arch + ' (G2)')
+    changed = [name for name in sorted(source_builds)
+               if any(old_platforms[arch].get(name) != new_platforms[arch].get(name) for arch in new_platforms)]
+    if not changed:
+        return
+    desired = file_bytes(get, bundle['directory'] + '/packages.txt', base)
+    for tool in changed:
+        specs = {arch: (old_platforms[arch][tool], new_platforms[arch][tool]) for arch in new_platforms}
+        # T4: both architectures describe the same source.
+        require(len(specs) == 2 and len({tuple(new.get(key) for key in SOURCE_FIELDS) for _, new in specs.values()}) == 1, GATE + tool + ' architectures disagree on version, url or hashes (T4)')
+        for arch, (old, new) in specs.items():
+            # T1: only version, url and the hashes may differ.
+            rest = lambda spec: {key: value for key, value in spec.items() if key not in SOURCE_FIELDS}
+            require(rest(old) == rest(new), GATE + tool + ' ' + arch + ' changed beyond the source pin (T1)')
+            # T2: the version rises and stays within the desired constraint.
+            number = version_tuple(new.get('version'), tool + ' new version')
+            require(number > version_tuple(old.get('version'), tool + ' old version'), GATE + tool + ' ' + arch + ' version did not rise (T2)')
+            require(within_constraint(number, desired_constraint(desired, tool), tool), GATE + tool + ' ' + arch + ' version is outside the desired constraint (T2)')
+            # T3: the URL is the one derived from the new version.
+            require(isinstance(new.get('url'), str) and derived_url(packages[tool], tool, new['version']).fullmatch(new['url']) is not None, GATE + tool + ' ' + arch + ' url is not derived from the version (T3)')
 
 
 def safe_files(files, pr, bundles):
@@ -117,6 +270,7 @@ def merged_updater(pr, name, get, revision, members=None):
     updater_history(pr, get, base)
     for bundle in bundles:
         require(lock_bytes(get, bundle, revision) != lock_bytes(get, bundle, base), 'Lock is unchanged')
+        content_check(get, bundle, base, revision)
     return pr
 
 

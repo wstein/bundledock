@@ -12,6 +12,16 @@ gate = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(gate)
 A, B, H, T = 'a'*40, 'b'*40, 'd'*40, 'c'*40
 REPO = {'full_name':'wstein/bundledock','default_branch':'main'}
+import base64
+import json
+def b64(value):return base64.b64encode(value if isinstance(value,bytes) else json.dumps(value).encode()).decode()
+def plain_lock(version):return {'schema':2,'platforms':{arch:{'tool':{'version':version,'url':'https://example.test/'+version,'sha256':'0'*64,'verification':'publisher-sha256'}} for arch in ('amd64','arm64')}}
+OLD,NEW,CHANGED,OTHER=(b64(plain_lock(version)) for version in ('1.0.0','1.0.1','1.0.2','1.0.3'))
+PLAIN_CATALOG=b64({'schema':1,'packages':{'tool':{'provider':'github'}}})
+PLAIN_PACKAGES=b64(b'tool>=1.0.0\n')
+def stage_fixtures(data,bundle):
+ for name,content in (('packages.catalog.json',PLAIN_CATALOG),('packages.txt',PLAIN_PACKAGES)):
+  for revision in (A,B):data['/contents/'+bundle['directory']+'/'+name+'?ref='+revision]={'encoding':'base64','content':content}
 
 class OwnerMergeTests(unittest.TestCase):
  def setUp(self):
@@ -22,7 +32,8 @@ class OwnerMergeTests(unittest.TestCase):
   self.run={'id':123,'run_attempt':2,'workflow_id':7,'path':'.github/workflows/ci.yml','event':'push','head_sha':A,'head_branch':'main','status':'completed','conclusion':'success','repository':REPO,'head_repository':REPO}
   self.data={'':REPO,'/git/ref/heads/main':{'object':{'sha':A}},'/pulls/42':self.pr,'/pulls/42/files?per_page=100&page=1':self.files,'/git/commits/'+H:{'tree':{'sha':T}},'/commits/'+A:{'commit':{'tree':{'sha':T}},'parents':[{'sha':B}],'files':self.files},'/actions/workflows/ci.yml':{'id':7,'path':'.github/workflows/ci.yml'},'/actions/runs/123/attempts/2':self.run,'/commits/'+A+'/pulls?per_page=100&page=1':[{'number':42,'state':'closed','merge_commit_sha':A,'head':{'sha':H}}],'/actions/runs/123/attempts/2/jobs?per_page=100&page=1':{'jobs':[{'name':'check','status':'completed','conclusion':'success','head_sha':A,'check_run_url':'https://api.github.com/repos/wstein/bundledock/check-runs/99'}]},'/check-runs/99':{'app':{'id':15368},'name':'check','head_sha':A,'status':'completed','conclusion':'success'}}
   self.data['/actions/runs/123']=copy.deepcopy(self.run)
-  for revision,content in ((A,'bmV3'),(B,'b2xk')):self.data['/contents/'+self.bundle['lock']+'?ref='+revision]={'encoding':'base64','content':content}
+  for revision,content in ((A,NEW),(B,OLD)):self.data['/contents/'+self.bundle['lock']+'?ref='+revision]={'encoding':'base64','content':content}
+  stage_fixtures(self.data,self.bundle)
  def get(self,path):return copy.deepcopy(self.data[path])
  def test_transport_pins_api_contract_with_exact_merge_sha(self):
   import json
@@ -99,7 +110,7 @@ class OwnerMergeTests(unittest.TestCase):
     if kind=='files':self.files[1]['filename']='.github/workflows/ci.yml'
     if kind=='tree':self.data['/commits/'+A]['commit']['tree']['sha']=B
     if kind=='parents':self.data['/commits/'+A]['parents'].append({'sha':H})
-    if kind=='lock':self.data['/contents/'+self.bundle['lock']+'?ref='+A]['content']='b2xk'
+    if kind=='lock':self.data['/contents/'+self.bundle['lock']+'?ref='+A]['content']=OLD
     if kind=='commits':self.pr['commits']=0
     with self.assertRaises(ValueError):gate.validate(self.event,self.get)
  def test_exact_main_ci_and_check_identity(self):
@@ -115,7 +126,7 @@ class OwnerMergeTests(unittest.TestCase):
     if kind=='check':self.data['/check-runs/99']['head_sha']=B
     if kind=='job':self.data['/actions/runs/123/attempts/2/jobs?per_page=100&page=1']['jobs'][0]['conclusion']='failure'
     with self.assertRaises(ValueError):gate.validate(self.event,self.get)
- def advance_main(self,status='ahead',base=A,lock='bmV3'):
+ def advance_main(self,status='ahead',base=A,lock=NEW):
   newer='e'*40
   self.data['/git/ref/heads/main']['object']['sha']=newer
   self.data['/compare/'+A+'...'+newer]={'status':status,'merge_base_commit':{'sha':base}}
@@ -124,7 +135,7 @@ class OwnerMergeTests(unittest.TestCase):
   self.advance_main()
   self.assertEqual(gate.validate(self.event,self.get),(A,self.pr['html_url']))
  def test_main_advance_rejects_non_ancestor_or_changed_bundle_lock(self):
-  for kind,arguments in (('diverged',{'status':'diverged'}),('behind',{'status':'behind'}),('identical',{'status':'identical'}),('wrong-base',{'base':B}),('lock',{'lock':'b3RoZXI='})):
+  for kind,arguments in (('diverged',{'status':'diverged'}),('behind',{'status':'behind'}),('identical',{'status':'identical'}),('wrong-base',{'base':B}),('lock',{'lock':OTHER})):
    with self.subTest(kind=kind):
     self.setUp();self.advance_main(**arguments)
     with self.assertRaises(ValueError):gate.validate(self.event,self.get)
@@ -241,7 +252,7 @@ class OwnerMergeTests(unittest.TestCase):
     if kind=='commits':self.pr['commits']=0
     if kind=='files':self.files[1]['filename']='.github/workflows/ci.yml'
     if kind=='tree':self.data['/commits/'+A]['commit']['tree']['sha']=B
-    if kind=='lock':self.data['/contents/'+self.bundle['lock']+'?ref='+A]['content']='b2xk'
+    if kind=='lock':self.data['/contents/'+self.bundle['lock']+'?ref='+A]['content']=OLD
     if kind=='main':self.data['/git/ref/heads/main']['object']['sha']=B;self.data['/compare/'+A+'...'+B]={'status':'diverged','merge_base_commit':{'sha':T}}
     if kind=='ci':self.data['/check-runs/99']['app']['id']=42
     with patch('time.sleep'),self.assertRaises(ValueError):gate.validate(self.event,get)
@@ -336,7 +347,8 @@ class OwnerMergeTests(unittest.TestCase):
     self.setUp();bundle=gate.config.select_bundle(name)
     self.pr['head']['ref']='automation/'+name+'-upgrade-123-1'
     self.files[0]['filename']=bundle['lock'];self.files[1]['filename']=bundle['inventory']
-    for revision,content in ((A,'bmV3'),(B,'b2xk')):self.data['/contents/'+bundle['lock']+'?ref='+revision]={'encoding':'base64','content':content}
+    for revision,content in ((A,NEW),(B,OLD)):self.data['/contents/'+bundle['lock']+'?ref='+revision]={'encoding':'base64','content':content}
+    stage_fixtures(self.data,bundle)
     self.assertEqual(gate.validate(self.event,self.get,name)[0],A)
  def test_manual_plan_retains_real_approval_gate_and_current_main(self):
   import tempfile
@@ -372,6 +384,152 @@ class OwnerMergeTests(unittest.TestCase):
     self.assertIn('status='+status,output.read_text())
     self.assertIn(status,summary.read_text())
 
+class SourceBuildGateTests(unittest.TestCase):
+ """Publish-gate content check (design N2): conditions G1-G4 and T1-T4 against the merged commit's parent."""
+ setUp=OwnerMergeTests.setUp
+ get=OwnerMergeTests.get
+ refreshed_updater=OwnerMergeTests.refreshed_updater
+ CATALOG={'schema':1,'packages':{'tool':{'provider':'github'},'sqlite3':{'provider':'source-build','version_source':{'kind':'sqlite-product-data','url':'https://www.sqlite.org/download.html'},'asset':'sqlite-amalgamation-{numeric}.zip','base_url':'https://www.sqlite.org','build':{'kind':'c-amalgamation','toolchain':'zig-cc'}}}}
+ def sqlite(self,version='3.54.1',numeric='3540100',year='2026',**changes):
+  spec={'version':version,'url':'https://www.sqlite.org/'+year+'/sqlite-amalgamation-'+numeric+'.zip','sha256':'1'*64,'sha3_256':'2'*64,'verification':'publisher-sha3-256','toolchain':'zig-cc'}
+  spec.update(changes);return spec
+ def lock(self,sqlite,arm=None,toolchain='0.17.0',extra='a473823',tools=('tool','sqlite3')):
+  def platform(spec):
+   entries={'tool':{'version':'1.0.0','url':'https://example.test/1.0.0','sha256':'0'*64,'verification':'publisher-sha256'},'sqlite3':spec}
+   return {name:entries[name] for name in tools}
+  return {'schema':2,'toolchains':{'zig-cc':{'amd64':{'version':toolchain,'sha256':'3'*64},'arm64':{'version':toolchain,'sha256':'4'*64}}},
+          'platforms':{'amd64':platform(sqlite),'arm64':platform(arm or sqlite)},
+          'extra_sources':{'sqlite3/linenoise':{'commit':extra,'files':{'linenoise.c':{'sha256':'5'*64}}}}}
+ def stage(self,before,after,constraint=b'sqlite3>=3.54.0,<4.0.0\ntool>=1.0.0\n'):
+  """Parent lock B at the merged commit's parent, merged lock H at A; the PR base is stale and has no data."""
+  self.pr['base']['sha']='f'*40
+  put=lambda path,revision,content:self.data.__setitem__('/contents/'+path+'?ref='+revision,{'encoding':'base64','content':b64(content)})
+  put(self.bundle['lock'],B,before);put(self.bundle['lock'],A,after)
+  put(self.bundle['directory']+'/packages.catalog.json',B,self.CATALOG);put(self.bundle['directory']+'/packages.txt',B,constraint)
+ def accepted(self):self.assertEqual(gate.validate(self.event,self.get),(A,self.pr['html_url']))
+ def rejected(self,*needles):
+  with self.assertRaises(ValueError) as caught:gate.validate(self.event,self.get)
+  for needle in needles:self.assertIn(needle,str(caught.exception))
+ def test_source_version_and_checksum_bump_is_accepted(self):
+  self.stage(self.lock(self.sqlite()),self.lock(self.sqlite('3.54.2','3540200',sha256='6'*64,sha3_256='7'*64)));self.accepted()
+ def test_bump_accepted_under_rebase_merge_with_stale_pull_base(self):
+  self.stage(self.lock(self.sqlite()),self.lock(self.sqlite('3.54.2','3540200')));self.assertNotIn('/contents/'+self.bundle['lock']+'?ref='+self.pr['base']['sha'],self.data);self.accepted()
+ def test_bump_accepted_under_refresh_merge(self):
+  self.refreshed_updater();self.stage(self.lock(self.sqlite()),self.lock(self.sqlite('3.54.2','3540200')));self.accepted()
+ def test_merge_commit_with_two_parents_is_rejected(self):
+  self.stage(self.lock(self.sqlite()),self.lock(self.sqlite('3.54.2','3540200')));self.data['/commits/'+A]['parents'].append({'sha':H});self.rejected('linear')
+ def test_changes_not_touching_source_build_tools_are_accepted(self):
+  before=self.lock(self.sqlite());after=self.lock(self.sqlite());after['platforms']['amd64']['tool']['version']='1.0.1';after['platforms']['arm64']['tool']['version']='1.0.1'
+  self.stage(before,after);self.accepted()
+ def test_lock_without_source_build_tools_is_accepted(self):
+  self.accepted()
+ def test_g1_changed_toolchain_or_extra_source_is_rejected(self):
+  bump=self.sqlite('3.54.2','3540200')
+  for kind,after in (('toolchain',self.lock(bump,toolchain='0.18.0')),('extra-commit',self.lock(bump,extra='b'*7))):
+   with self.subTest(kind=kind):
+    self.setUp();self.stage(self.lock(self.sqlite()),after);self.rejected('(G1)','explicit owner approval')
+ def test_g1_changed_extra_source_hash_and_added_section_are_rejected(self):
+  bump=self.sqlite('3.54.2','3540200');hashed=self.lock(bump);hashed['extra_sources']['sqlite3/linenoise']['files']['linenoise.c']['sha256']='9'*64
+  removed=self.lock(bump);del removed['extra_sources']
+  for kind,after in (('hash',hashed),('removed',removed)):
+   with self.subTest(kind=kind):
+    self.setUp();self.stage(self.lock(self.sqlite()),after);self.rejected('(G1)')
+ def test_g2_added_removed_package_and_platform_changes_are_rejected(self):
+  bump=self.sqlite('3.54.2','3540200');removed=self.lock(bump,tools=('tool',));platform=self.lock(bump);del platform['platforms']['arm64']
+  for kind,before,after in (('removed',self.lock(self.sqlite()),removed),('platform',self.lock(self.sqlite()),platform)):
+   with self.subTest(kind=kind):
+    self.setUp();self.stage(before,after);self.rejected('(G2)')
+ def test_added_non_source_build_package_is_rejected(self):
+  before=self.lock(self.sqlite());after=self.lock(self.sqlite())
+  for arch in after['platforms']:after['platforms'][arch]['extra']=dict(after['platforms'][arch]['tool'])
+  self.stage(before,after);self.rejected('(G2)')
+ def test_first_publication_of_source_build_tool_needs_owner_approval(self):
+  self.stage(self.lock(self.sqlite(),tools=('tool',)),self.lock(self.sqlite()));self.rejected('first publication','explicit owner approval')
+ def test_t1_changes_beyond_the_source_pin_are_rejected(self):
+  for field,value in (('verification','publisher-sha256'),('toolchain','other'),('sha512','x')):
+   with self.subTest(field=field):
+    self.setUp();self.stage(self.lock(self.sqlite()),self.lock(self.sqlite('3.54.2','3540200',**{field:value})));self.rejected('(T1)')
+ def test_t2_downgrade_equal_version_and_out_of_constraint_are_rejected(self):
+  self.stage(self.lock(self.sqlite()),self.lock(self.sqlite('3.54.0','3540000')));self.rejected('(T2)','did not rise')
+  self.setUp();self.stage(self.lock(self.sqlite()),self.lock(self.sqlite(sha256='6'*64)));self.rejected('(T2)','did not rise')
+  self.setUp();self.stage(self.lock(self.sqlite()),self.lock(self.sqlite('4.0.0','4000000')));self.rejected('(T2)','outside the desired constraint')
+  self.setUp();self.stage(self.lock(self.sqlite()),self.lock(self.sqlite('3.54.2','3540200')),b'sqlite3==3.54.1\n');self.rejected('(T2)','outside the desired constraint')
+ def test_t2_missing_constraint_is_rejected(self):
+  self.stage(self.lock(self.sqlite()),self.lock(self.sqlite('3.54.2','3540200')),b'tool>=1.0.0\n');self.rejected('(T2)')
+ def test_t3_url_not_derived_from_the_version_is_rejected(self):
+  for kind,spec in (('numeric',self.sqlite('3.54.2','3540100')),('host',self.sqlite('3.54.2','3540200',url='https://evil.test/2026/sqlite-amalgamation-3540200.zip')),('year',self.sqlite('3.54.2','3540200',year='26')),('suffix',self.sqlite('3.54.2','3540200',url='https://www.sqlite.org/2026/sqlite-amalgamation-3540200.zip.evil'))):
+   with self.subTest(kind=kind):
+    self.setUp();self.stage(self.lock(self.sqlite()),self.lock(spec));self.rejected('(T3)')
+ def test_t3_unknown_resolver_rule_is_rejected(self):
+  self.CATALOG=copy.deepcopy(self.CATALOG);self.CATALOG['packages']['sqlite3']['version_source']['kind']='other'
+  self.stage(self.lock(self.sqlite()),self.lock(self.sqlite('3.54.2','3540200')));self.rejected('(T3)')
+ def test_t4_architecture_disagreement_is_rejected(self):
+  bump=self.sqlite('3.54.2','3540200')
+  for kind,arm in (('version',self.sqlite('3.54.3','3540300')),('hash',self.sqlite('3.54.2','3540200',sha3_256='8'*64))):
+   with self.subTest(kind=kind):
+    self.setUp();self.stage(self.lock(self.sqlite()),self.lock(bump,arm));self.rejected('(T4)')
+ def test_catalog_source_build_block_change_is_not_a_bump(self):
+  # G3: the existing name check forbids catalog and packages.txt changes in an updater PR.
+  self.stage(self.lock(self.sqlite()),self.lock(self.sqlite('3.54.2','3540200')))
+  self.files[1]['filename']=self.bundle['directory']+'/packages.catalog.json';self.rejected('Only own lock')
+ def raw(self,text):return text.encode()
+ def test_f1_shadowed_or_duplicate_lock_keys_are_rejected(self):
+  good=json.dumps(self.lock(self.sqlite('3.54.2','3540200')))
+  hidden=json.dumps(self.lock(self.sqlite('3.54.2','3540200'),toolchain='0.18.0'))
+  for kind,text in (('Platforms',good[:-1]+',"Platforms":{}}'),('TOOLCHAINS',good[:-1]+',"TOOLCHAINS":'+json.dumps(json.loads(hidden)['toolchains'])+'}'),
+                    ('long-s',good[:-1]+',"toolchain\u017f":{}}'),('duplicate',good[:-1]+',"toolchains":{}}'),('nfkc',good[:-1]+',"\uff54oolchains":{}}'),
+                    ('nested-case',good.replace('"sha256"','"SHA256"',1).replace('"version": ','"version": ',1)),
+                    ('nested-duplicate',good.replace('"verification": "publisher-sha3-256"','"verification": "publisher-sha3-256", "verification": "x"',1)),
+                    ('nested-shadow',good.replace('"sqlite3": {','"sqlite3": {"Version": "9.9.9", ',1)),
+                    ('arch-shadow',good[:-1].replace('"platforms": {','"platforms": {"AMD64": {}, ',1)+'}')):
+   with self.subTest(kind=kind):
+    self.setUp();self.stage(self.lock(self.sqlite()),self.raw(text));self.rejected('Source-build publish gate')
+ def test_f1_same_checks_apply_to_the_parent_lock_and_the_catalog(self):
+  bump=self.lock(self.sqlite('3.54.2','3540200'))
+  self.stage(self.raw(json.dumps(self.lock(self.sqlite()))[:-1]+',"Platforms":{}}'),bump);self.rejected('Source-build publish gate')
+  for kind,text in (('provider-case',json.dumps(self.CATALOG).replace('"provider": "source-build"','"Provider": "source-build"')),
+                    ('duplicate',json.dumps(self.CATALOG)[:-1]+',"packages":{}}'),('top-shadow',json.dumps(self.CATALOG)[:-1]+',"PACKAGES":{}}'),
+                    ('unknown-package-key',json.dumps(self.CATALOG).replace('"provider": "github"','"provider": "github", "Extra": 1',1)),
+                    ('package-shadow',json.dumps(self.CATALOG).replace('"tool": {','"tool": {"Provider": "x", ',1))):
+   with self.subTest(kind=kind):
+    self.setUp();self.stage(self.lock(self.sqlite()),bump);self.data['/contents/'+self.bundle['directory']+'/packages.catalog.json?ref='+B]['content']=b64(self.raw(text));self.rejected('Source-build publish gate')
+ def test_f1_unknown_lock_and_spec_keys_are_rejected(self):
+  extra=self.lock(self.sqlite('3.54.2','3540200'));extra['hidden']=1
+  self.stage(self.lock(self.sqlite()),extra);self.rejected('unknown key')
+ def test_f1_shadowing_inside_free_form_sections_is_rejected(self):
+  bump=self.lock(self.sqlite('3.54.2','3540200'))
+  for kind,old,new in (('nfkc','"commit": ','"commit": "a", "\uff43ommit": '),('case','"commit": ','"commit": "a", "COMMIT": '),('ligature','"files": ','"files": {}, "\ufb01les": ')):
+   with self.subTest(kind=kind):
+    self.setUp();text=json.dumps(bump).replace(old,new,1);self.stage(self.lock(self.sqlite()),self.raw(text));self.rejected('shadowed')
+ def test_f1_unknown_spec_key_is_rejected(self):
+  after=self.lock(self.sqlite('3.54.2','3540200'))
+  for arch in after['platforms']:after['platforms'][arch]['sqlite3']['bogus']=1
+  self.stage(self.lock(self.sqlite()),after);self.rejected('unknown key')
+ def test_t4_single_architecture_lock_is_rejected(self):
+  def single(spec):
+   lock=self.lock(spec);del lock['platforms']['arm64'];return lock
+  self.stage(single(self.sqlite()),single(self.sqlite('3.54.2','3540200')));self.rejected('(T4)')
+ def test_f2_change_on_one_architecture_only_is_rejected(self):
+  after=self.lock(self.sqlite());after['platforms']['amd64']['sqlite3']=self.sqlite('3.54.2','3540200')
+  self.stage(self.lock(self.sqlite()),after);self.rejected('(T4)')
+ def test_f2_base_url_is_matched_literally(self):
+  self.stage(self.lock(self.sqlite()),self.lock(self.sqlite('3.54.2','3540200',url='https://wwwXsqlite.org/2026/sqlite-amalgamation-3540200.zip')));self.rejected('(T3)')
+ def test_f2_other_providers_are_not_source_builds(self):
+  self.CATALOG=copy.deepcopy(self.CATALOG);self.CATALOG['packages']['tool']['provider']='gitlab'
+  before=self.lock(self.sqlite());after=self.lock(self.sqlite())
+  for arch in after['platforms']:after['platforms'][arch]['tool']['version']='1.0.1'
+  self.stage(before,after);self.accepted()
+ def test_f3_packages_txt_grammar_is_the_go_grammar(self):
+  bump=(self.lock(self.sqlite()),self.lock(self.sqlite('3.54.2','3540200')))
+  for text in (b'sqlite3 >= 3.54.0\n',b'sqlite3\t>=\t3.54.0 , < 4.0.0 # note\n',b'# c\n\ntool>=1.0.0\nsqlite3==3.54.2\n',b'sqlite3>=3.54.0,<3.54.3\n'):
+   with self.subTest(text=text):
+    self.setUp();self.stage(*bump,text);self.accepted()
+  for text in (b'sqlite3<=3.54.2\n',b'sqlite3>3.54.0\n',b'sqlite3>=3.54.0,<=4.0.0\n',b'sqlite3>=3.54.0\nsqlite3>=3.54.0\n',b'sqlite3==3.54.2,<4.0.0\n',b'sqlite3>=3.54\n',b'sqlite3>=3.54.0,<4.0.0,<5.0.0\n',b'tool>=1.0.0\nsqlite3!=3.54.1\n'):
+   with self.subTest(text=text):
+    self.setUp();self.stage(*bump,text);self.rejected('(T2)')
+ def test_unparsable_lock_fails_closed(self):
+  self.stage(self.lock(self.sqlite()),b'not json');self.rejected('not valid JSON')
+
 class CombinedUpdaterTests(unittest.TestCase):
  """One owner merge of automation/upgrades-<run>-<attempt> plans every bundle it changed."""
  setUp=OwnerMergeTests.setUp
@@ -382,7 +540,8 @@ class CombinedUpdaterTests(unittest.TestCase):
   for name in names:
    bundle=gate.config.select_bundle(name)
    self.files.extend([{'filename':bundle['lock'],'status':'modified','changes':2},{'filename':bundle['inventory'],'status':'modified','changes':2}])
-   for revision,content in ((A,'bmV3'),(B,'b2xk')):self.data['/contents/'+bundle['lock']+'?ref='+revision]={'encoding':'base64','content':content}
+   for revision,content in ((A,NEW),(B,OLD)):self.data['/contents/'+bundle['lock']+'?ref='+revision]={'encoding':'base64','content':content}
+   stage_fixtures(self.data,bundle)
   self.pr['changed_files']=len(self.files)
  def test_plan_lists_every_changed_bundle_in_canonical_order(self):
   self.combine(('agy','node','toolbox'))
@@ -409,7 +568,7 @@ class CombinedUpdaterTests(unittest.TestCase):
     self.setUp();self.combine()
     if kind=='outside-file':
      self.files.append({'filename':gate.config.select_bundle('claude')['inventory'],'status':'modified','changes':2});self.pr['changed_files']=5
-    if kind=='unchanged-lock':self.data['/contents/'+gate.config.select_bundle('agy')['lock']+'?ref='+A]['content']='b2xk'
+    if kind=='unchanged-lock':self.data['/contents/'+gate.config.select_bundle('agy')['lock']+'?ref='+A]['content']=OLD
     if kind=='bad-branch':self.pr['head']['ref']='automation/upgrades-tampered'
     if kind=='no-lock':
      self.files[:]=[{'filename':gate.config.select_bundle('agy')['inventory'],'status':'modified','changes':2}];self.pr['changed_files']=1
@@ -429,8 +588,8 @@ class CombinedUpdaterTests(unittest.TestCase):
   newer='e'*40
   self.data['/git/ref/heads/main']['object']['sha']=newer
   self.data['/compare/'+A+'...'+newer]={'status':'ahead','merge_base_commit':{'sha':A}}
-  self.data['/contents/'+gate.config.select_bundle('agy')['lock']+'?ref='+newer]={'encoding':'base64','content':'bmV3'}
-  self.data['/contents/'+gate.config.select_bundle('node')['lock']+'?ref='+newer]={'encoding':'base64','content':'Y2hhbmdlZA=='}
+  self.data['/contents/'+gate.config.select_bundle('agy')['lock']+'?ref='+newer]={'encoding':'base64','content':NEW}
+  self.data['/contents/'+gate.config.select_bundle('node')['lock']+'?ref='+newer]={'encoding':'base64','content':CHANGED}
   self.assertEqual(gate.validate(self.event,self.get,'agy'),(A,self.pr['html_url']))
   with self.assertRaises(ValueError):gate.validate(self.event,self.get,'node')
   with self.assertRaises(ValueError):gate.validate(self.event,self.get,None)
