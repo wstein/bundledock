@@ -387,18 +387,37 @@ class OwnerMergeTests(unittest.TestCase):
     self.assertIn('status='+status,output.read_text())
     self.assertIn(status,summary.read_text())
 
+DOCKERFILE='''FROM --platform=$BUILDPLATFORM alpine:3.23@sha256:@@DIGEST@@ AS downloads
+RUN apk add --no-cache ca-certificates
+RUN tools-bundle fetch-sources -tool sqlite3 -arch "${TARGETARCH}" -work /build/work/sqlite3
+
+FROM --platform=$TARGETPLATFORM alpine:3.23@sha256:@@DIGEST@@ AS compile-sqlite3
+ARG TARGETARCH
+RUN --network=none tools-bundle compile -tool sqlite3 -arch "${TARGETARCH}" -work /work -output /out
+
+FROM downloads AS builder
+RUN tools-bundle -arch "${TARGETARCH}" --build-outputs /compiled
+'''.replace('@@DIGEST@@','a'*64)
+# Every file the approval digest reads (gate.APPROVAL_INPUT_FILES, the Dockerfile and the notices) plus files it must ignore.
+INPUT_FILES={path:('package x // '+path+'\n').encode() for path in gate.APPROVAL_INPUT_FILES}
+INPUT_FILES['.go-version']=b'1.27.2\n'
+INPUT_FILES.update({'bundles/toolbox/Dockerfile':DOCKERFILE.encode(),'bundles/toolbox/licenses/sqlite3/NOTICE':b'notice\n','bundles/toolbox/licenses/sqlite3/SOURCE':b'source\n',
+                    'bundles/toolbox/scripts/sqlite3-smoke.sh':b'smoke\n','internal/toolbundle/compile_test.go':b'test\n'})
+
 class SourceBuildGateTests(unittest.TestCase):
  """Publish-gate content check (design N2): conditions G1-G4 and T1-T4 against the merged commit's parent."""
  setUp=OwnerMergeTests.setUp
  get=OwnerMergeTests.get
  refreshed_updater=OwnerMergeTests.refreshed_updater
- CATALOG={'schema':1,'packages':{'tool':{'provider':'github'},'sqlite3':{'provider':'source-build','version_source':{'kind':'sqlite-product-data','url':'https://www.sqlite.org/download.html'},'asset':'sqlite-amalgamation-{numeric}.zip','base_url':'https://www.sqlite.org','build':{'kind':'c-amalgamation','toolchain':'zig-cc'}}}}
+ CATALOG={'schema':1,'packages':{'tool':{'provider':'github'},'sqlite3':{'provider':'source-build','version_source':{'kind':'sqlite-product-data','url':'https://www.sqlite.org/download.html'},'asset':'sqlite-amalgamation-{numeric}.zip','base_url':'https://www.sqlite.org','build':{'kind':'c-amalgamation','toolchain':'zig-cc'},'notices':['licenses/sqlite3/NOTICE','licenses/sqlite3/SOURCE']}}}
  def sqlite(self,version='3.54.1',numeric='3540100',year='2026',**changes):
   spec={'version':version,'url':'https://www.sqlite.org/'+year+'/sqlite-amalgamation-'+numeric+'.zip','sha256':'1'*64,'sha3_256':'2'*64,'verification':'publisher-sha3-256','toolchain':'zig-cc'}
   spec.update(changes);return spec
  def approved(self):
   """The owner's approved_digest of the default sqlite3 recipe and pins (the revision that was built and smoked)."""
-  return gate.approval_digest('sqlite3',self.CATALOG['packages']['sqlite3'],self.lock(self.sqlite(),approvals=False))
+  package=self.CATALOG['packages']['sqlite3']
+  inputs=gate.approval_inputs(INPUT_FILES.__getitem__,gate.config.select_bundle('toolbox'),'sqlite3',package)
+  return gate.approval_digest('sqlite3',package,self.lock(self.sqlite(),approvals=False),inputs)
  def lock(self,sqlite,arm=None,toolchain='0.17.0',extra='a473823',tools=('tool','sqlite3'),approvals=None):
   def platform(spec):
    entries={'tool':{'version':'1.0.0','url':'https://example.test/1.0.0','sha256':'0'*64,'verification':'publisher-sha256'},'sqlite3':spec}
@@ -411,6 +430,7 @@ class SourceBuildGateTests(unittest.TestCase):
   self.pr['base']['sha']='f'*40
   put=lambda path,revision,content:self.data.__setitem__('/contents/'+path+'?ref='+revision,{'encoding':'base64','content':b64(content)})
   put(self.bundle['lock'],B,before);put(self.bundle['lock'],A,after)
+  for path,content in (getattr(self,'sources',None) or INPUT_FILES).items():put(path,A,content)
   put(self.bundle['directory']+'/packages.catalog.json',B,self.CATALOG);put(self.bundle['directory']+'/packages.txt',B,constraint)
  def accepted(self):self.assertEqual(gate.validate(self.event,self.get),(A,self.pr['html_url']))
  def bump_accepted(self):
@@ -552,6 +572,12 @@ class ApprovalGateTests(unittest.TestCase):
  accepted=SourceBuildGateTests.accepted
  rejected=SourceBuildGateTests.rejected
  raw=SourceBuildGateTests.raw
+ def check(self,lock,catalog,files=None):
+  gate.check_approvals(lock,catalog,gate.config.select_bundle('toolbox'),(files or INPUT_FILES).__getitem__)
+ def digest(self,lock,files=None,package=None):
+  package=package or self.CATALOG['packages']['sqlite3']
+  inputs=gate.approval_inputs((files or INPUT_FILES).__getitem__,gate.config.select_bundle('toolbox'),'sqlite3',package)
+  return gate.approval_digest('sqlite3',package,lock,inputs)
  def test_reviewer_scenario_unrelated_updater_cannot_publish_an_unapproved_source_build(self):
   # The lock of the catalog change ships without approved_digest; the next updater only bumps another tool.
   before=self.lock(self.sqlite(),approvals=False);after=self.lock(self.sqlite(),approvals=False)
@@ -574,15 +600,15 @@ class ApprovalGateTests(unittest.TestCase):
   # the second, independent wall, so test it directly on the merged lock.
   for kind in ('sha256','toolchain','extra-source hash'):
    with self.subTest(kind=kind):
-    with self.assertRaises(ValueError) as caught:gate.check_approvals(changed(kind),self.CATALOG)
+    with self.assertRaises(ValueError) as caught:self.check(changed(kind),self.CATALOG)
     self.assertIn('stale',str(caught.exception))
   recipe=copy.deepcopy(self.CATALOG);recipe['packages']['sqlite3']['build']['kind']='other'
-  with self.assertRaises(ValueError):gate.check_approvals(base,recipe)
-  gate.check_approvals(base,self.CATALOG)
+  with self.assertRaises(ValueError):self.check(base,recipe)
+  self.check(base,self.CATALOG)
  def test_digest_ignores_other_tools_and_the_approvals_themselves(self):
   base=self.lock(self.sqlite());other=self.lock(self.sqlite(),approvals='f'*64)
   other['platforms']['amd64']['tool']['version']='9.9.9'
-  digest=lambda lock:gate.approval_digest('sqlite3',self.CATALOG['packages']['sqlite3'],lock)
+  digest=self.digest
   self.assertEqual(digest(base),digest(other))
   bumped=self.lock(self.sqlite('3.54.2','3540200'))
   self.assertNotEqual(digest(base),digest(bumped))
@@ -594,7 +620,7 @@ class ApprovalGateTests(unittest.TestCase):
     self.setUp();self.stage(before,after);self.rejected('approvals changed (G1)')
  def test_approval_for_a_tool_that_is_not_a_source_build_is_rejected(self):
   lock=self.lock(self.sqlite());lock['approvals']['tool']='1'*64
-  with self.assertRaises(ValueError) as caught:gate.check_approvals(lock,self.CATALOG)
+  with self.assertRaises(ValueError) as caught:self.check(lock,self.CATALOG)
   self.assertIn('not a source build',str(caught.exception))
  def test_malformed_or_shadowed_approvals_are_rejected(self):
   good=json.dumps(self.lock(self.sqlite()))
@@ -604,10 +630,62 @@ class ApprovalGateTests(unittest.TestCase):
                     ('nested duplicate',good.replace('"approvals": {','"approvals": {"sqlite3": "'+'1'*64+'", ',1))):
    with self.subTest(kind=kind):
     self.setUp();self.stage(self.lock(self.sqlite()),self.raw(text));self.rejected('Source-build publish gate')
+ def test_inputs_are_a_closed_documented_list(self):
+  self.assertEqual(gate.APPROVAL_INPUT_FILES,('.go-version','cmd/tools-bundle/main.go','cmd/tools-bundle/source_build.go','internal/toolbundle/buildsources.go','internal/toolbundle/compile.go',
+   'internal/toolbundle/elfcheck.go','internal/toolbundle/files.go','internal/toolbundle/sourcebuild.go','internal/toolbundle/zip.go','internal/toolconfig/source_build.go'))
+  inputs=gate.approval_inputs(INPUT_FILES.__getitem__,gate.config.select_bundle('toolbox'),'sqlite3',self.CATALOG['packages']['sqlite3'])
+  self.assertEqual(set(inputs),set(gate.APPROVAL_INPUT_FILES)|{'dockerfile compile stage','dockerfile fetch line','notice licenses/sqlite3/NOTICE','notice licenses/sqlite3/SOURCE'})
+  docs=(Path(__file__).parents[1]/'docs/publication.md').read_text()
+  for path in gate.APPROVAL_INPUT_FILES:self.assertIn(path,docs)
+ def mutated(self,path,old,new):
+  files=dict(INPUT_FILES);files[path]=files[path].replace(old,new);self.assertNotEqual(files[path],INPUT_FILES[path]);return files
+ def unrelated_updater(self,files):
+  """The reviewer's shape: an updater PR that changes only another tool, on a lock the owner approved."""
+  before=self.lock(self.sqlite());after=self.lock(self.sqlite())
+  for arch in after['platforms']:after['platforms'][arch]['tool']['version']='1.0.1'
+  self.sources=files;self.stage(before,after)
+ def test_every_listed_input_changes_the_digest_and_makes_the_approval_stale(self):
+  docker='bundles/toolbox/Dockerfile'
+  cases=[(path,INPUT_FILES[path],INPUT_FILES[path]+b'// changed\n') for path in gate.APPROVAL_INPUT_FILES]
+  cases+=[(docker,b'--network=none tools-bundle compile',b'--network=none tools-bundle compile -x'),
+          (docker,b'AS compile-sqlite3',b'AS compile-sqlite3'),  # replaced below by the base image digest
+          (docker,b'fetch-sources -tool sqlite3 -arch',b'fetch-sources -tool sqlite3 -x -arch'),
+          ('bundles/toolbox/licenses/sqlite3/NOTICE',b'notice',b'notice changed'),('bundles/toolbox/licenses/sqlite3/SOURCE',b'source',b'source changed')]
+  # the base image digest of the compile stage only (the downloads stage keeps its own)
+  text=INPUT_FILES[docker].decode();stage_from=[line for line in text.split('\n') if line.endswith('AS compile-sqlite3')][0]
+  cases[-4]=(docker,stage_from.encode(),stage_from.replace('a'*64,'b'*64).encode())
+  for path,old,new in cases:
+   with self.subTest(path=path,change=new[-20:]):
+    self.setUp();files=self.mutated(path,old,new)
+    self.assertNotEqual(self.digest(self.lock(self.sqlite()),files),self.approved())
+    self.unrelated_updater(files);self.rejected('approved_digest is stale')
+ def test_files_the_artifact_does_not_depend_on_leave_the_approval_valid(self):
+  docker='bundles/toolbox/Dockerfile'
+  for path,old,new in (('bundles/toolbox/scripts/sqlite3-smoke.sh',b'smoke',b'smoke changed'),('internal/toolbundle/compile_test.go',b'test',b'test changed'),
+                       (docker,b'RUN apk add --no-cache ca-certificates',b'RUN apk add --no-cache ca-certificates curl'),(docker,b'tools-bundle -arch "${TARGETARCH}" --build-outputs',b'tools-bundle -arch "${TARGETARCH}" -x --build-outputs')):
+   with self.subTest(path=path):
+    self.setUp();files=self.mutated(path,old,new)
+    self.assertEqual(self.digest(self.lock(self.sqlite()),files),self.approved())
+    self.unrelated_updater(files);self.accepted()
+ def test_missing_or_ambiguous_dockerfile_stage_is_rejected(self):
+  docker='bundles/toolbox/Dockerfile'
+  for kind,old,new in (('no compile stage',b'AS compile-sqlite3',b'AS compile-other'),('no fetch line',b'RUN tools-bundle fetch-sources -tool sqlite3',b'RUN true sqlite3'),
+                       ('two fetch lines',b'RUN apk add --no-cache ca-certificates',b'RUN tools-bundle fetch-sources -tool sqlite3 -arch x')):
+   with self.subTest(kind=kind):
+    self.setUp();files=self.mutated(docker,old,new)
+    with self.assertRaises(ValueError):self.digest(self.lock(self.sqlite()),files)
+ def test_digest_covers_both_architectures_and_the_publisher_sha3(self):
+  base=self.digest(self.lock(self.sqlite()))
+  only_arm64=self.lock(self.sqlite(),arm=self.sqlite(sha256='9'*64))
+  self.assertNotEqual(self.digest(only_arm64),base)
+  only_amd64=self.lock(self.sqlite(sha256='9'*64),arm=self.sqlite())
+  self.assertNotEqual(self.digest(only_amd64),base)
+  self.assertNotEqual(self.digest(self.lock(self.sqlite(sha3_256='8'*64))),base)
  def test_manual_publication_needs_the_approval_too(self):
   put=lambda path,content:self.data.__setitem__('/contents/'+path+'?ref='+A,{'encoding':'base64','content':b64(content)})
   put(self.bundle['directory']+'/packages.catalog.json',self.CATALOG)
   put(self.bundle['lock'],self.lock(self.sqlite(),approvals=False))
+  for path,content in INPUT_FILES.items():put(path,content)
   with self.assertRaises(ValueError) as caught:gate.require_approvals(self.get,self.bundle,A)
   self.assertIn('no owner approval',str(caught.exception))
   put(self.bundle['lock'],self.lock(self.sqlite()))
@@ -712,8 +790,6 @@ class WorkflowResultTests(unittest.TestCase):
    github.event_name='workflow_dispatch';needs.preflight.result='success';inputs.approved_sha=B
    self.assertFalse(eval(expression,{'__builtins__':{}},{'github':github,'needs':needs,'inputs':inputs}))
 
-if __name__=='__main__':unittest.main()
-
 class ApprovalDigestToolTests(unittest.TestCase):
  def test_owner_tool_prints_the_digest_the_gate_checks(self):
   import subprocess,tempfile
@@ -723,9 +799,13 @@ class ApprovalDigestToolTests(unittest.TestCase):
    root=Path(directory)
    for path,content in ((bundle['lock'],lock),(bundle['directory']+'/packages.catalog.json',fixture.CATALOG)):
     (root/path).parent.mkdir(parents=True,exist_ok=True);(root/path).write_text(json.dumps(content))
+   for path,content in INPUT_FILES.items():
+    (root/path).parent.mkdir(parents=True,exist_ok=True);(root/path).write_bytes(content)
    script=str(Path(__file__).with_name('approval-digest.py'))
    run=lambda *args:subprocess.run([sys.executable,'-B',script,'--root',str(root),*args],capture_output=True,text=True)
    result=run('sqlite3')
    self.assertEqual((result.returncode,result.stdout.strip()),(0,fixture.approved()))
    for tool in ('tool','nonesuch'):
     self.assertEqual(run(tool).returncode,1)
+
+if __name__=='__main__':unittest.main()

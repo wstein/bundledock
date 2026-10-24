@@ -3,7 +3,7 @@
 
 Run it only after the approved real build and smoke of the exact revision checked out here. It reads the
 bundle's packages.catalog.json and packages.lock.json from the working tree with the publish gate's strict
-parser and digest; it changes nothing."""
+parser and digest, plus the file inputs listed in APPROVAL_INPUT_FILES; it changes nothing."""
 import argparse
 import importlib.util
 import sys
@@ -18,15 +18,22 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root', type=Path, default=Path('.'))
     parser.add_argument('--bundle', default='toolbox')
-    parser.add_argument('tool')
+    parser.add_argument('tool', nargs='?')
+    parser.add_argument('--list-inputs', action='store_true', help='print the closed list of file inputs and exit')
     args = parser.parse_args()
+    if args.list_inputs:
+        print('\n'.join(gate.APPROVAL_INPUT_FILES + tuple('per tool: ' + kind for kind in gate.APPROVAL_INPUT_KINDS)))
+        return 0
+    if not args.tool:
+        parser.error('a tool name or --list-inputs is required')
     bundle = gate.config.select_bundle(args.bundle)
     try:
         lock = gate.parse_lock((args.root / bundle['lock']).read_bytes(), 'lock')
         catalog = gate.parse_catalog((args.root / bundle['directory'] / 'packages.catalog.json').read_bytes(), 'catalog')
         package = (catalog.get('packages') or {}).get(args.tool)
         gate.require(package is not None and package.get('provider') == 'source-build', args.tool + ' is not a source-build tool of ' + args.bundle)
-        print(gate.approval_digest(args.tool, package, lock))
+        read = lambda path: (args.root / path).read_bytes()
+        print(gate.approval_digest(args.tool, package, lock, gate.approval_inputs(read, bundle, args.tool, package)))
     except (OSError, ValueError) as error:
         print('approval digest: ' + str(error), file=sys.stderr)
         return 1
