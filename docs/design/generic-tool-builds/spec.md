@@ -204,6 +204,23 @@ re-checks `catalog_digest`; (2) a new test loads each bundle lock (fixtures and 
 it with the repository serializer, asserting equal bytes for locks without new fields; (3) the PRs
 WP1-WP2 show `git diff --stat origin/main -- bundles` empty (review evidence, not a unit test).
 
+*WP3 implementation choices* (`internal/toolconfig/source_build.go`; the design left them open and the
+code fixes them as closed Go lists, so a new entry is a reviewed code change):
+
+- Toolchain names and their lock-URL hosts: `zig-cc` with `ziglang.org`. A lock `toolchains` entry for a
+  name no `source-build` package uses is rejected, as is one that is not pinned for exactly `amd64` and
+  `arm64` with one version and a `publisher-sha256` or `publisher-sha512` checksum.
+- Allowed `defines`: exactly the seven of the sqlite3 example. `cflags`: `-Os`, `-O2`. `libs`: `m`, `pthread`.
+  `kind`: `c-amalgamation`. `version_source.kind`: `sqlite-product-data`. `output_form`: `exec`, `static-pie`.
+- A `source-build` package allows only `semver` normalization, `install.kind: build-output` with the single
+  member equal to `build.output`, no install profile, and no repository, tag prefix, metadata URL or sidecar.
+  The asset template may use `{numeric}` only there. `build.sources` are base names ending in `.c`.
+- Main-archive classes: `publisher-sha256`, `publisher-sha512` or `publisher-sha3-256`; `tls-download-sha256`
+  is rejected for it. `sha3_256` is valid only with `publisher-sha3-256`, which in turn needs the builder
+  `sha256` and is valid only for `source-build`.
+- The package-level `extra_sources` and the lock `extra_sources` are the separate WP3b change; until it lands
+  the loader rejects them as unknown fields.
+
 ### Catalog: sqlite3
 
 ```json
