@@ -190,8 +190,9 @@ full-SHA approval gate. To change tool versions, review and commit an upgraded
 lock before approving publication of that exact source revision. Both paths
 upload the exact lock bytes and shared source commit, UTC build time, lock
 SHA256, run tag and full GitHub run ID (`run_id`).
-The lock pins official stable prebuilt releases; publication does not rebuild tools
-from source or patch embedded dependencies. A successful publication does not
+The lock pins official stable prebuilt releases, or a reviewed static source
+build that meets the [repository policy](../AGENTS.md); publication does not
+otherwise rebuild tools from source or patch embedded dependencies. A successful publication does not
 establish that upstream binaries are free of known vulnerabilities. Review the
 [remaining embedded dependency findings](development.md#embedded-dependency-findings)
 and wait for patched stable releases to remediate them.
