@@ -1866,6 +1866,34 @@
         "licenses/sqlite3/MUSL-COPYRIGHT",
         "licenses/sqlite3/ZIG-LICENSE"
       ]
+    },
+    "misspell": {
+      "provider": "github",
+      "repository": "golangci/misspell",
+      "tag_prefix": "v",
+      "normalization": "semver",
+      "architectures": {
+        "amd64": "amd64",
+        "arm64": "arm64"
+      },
+      "asset": "misspell_{version}_linux_{arch}.tar.gz",
+      "allowed_hosts": [
+        "github.com"
+      ],
+      "verification": "official-or-download",
+      "install": {
+        "kind": "tar.gz",
+        "members": {
+          "misspell": "bin/misspell"
+        },
+        "archive_notices": [
+          "LICENSE"
+        ]
+      },
+      "sidecar": "misspell_{version}_checksums.txt",
+      "notices": [
+        "licenses/misspell/SOURCE"
+      ]
     }
   }
 }

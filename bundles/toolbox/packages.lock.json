@@ -1,7 +1,7 @@
 {
   "schema": 2,
-  "desired_digest": "9d420ff9ee6da43dd40e13ea5d79907977ab432ac8ec54430fe83fa5d6a1223d",
-  "catalog_digest": "1839211ccccdbe2e38a812793ca6898731d9cb0093a429052a1966b0fb8cb66d",
+  "desired_digest": "6209d88618fcf90be116013c34031c7e909a1916baceae81725323276ac279b8",
+  "catalog_digest": "8521885f96a1a4c5ab156a3361650c01c863e4032752e34052efde97a5605475",
   "toolchains": {
     "zig-cc": {
       "amd64": {
@@ -228,6 +228,12 @@
         "version": "v2026.10.18",
         "url": "https://github.com/jdx/mise/releases/download/v2026.10.18/mise-v2026.10.18-linux-x64-musl",
         "sha256": "cab4710274e8c5bf0a4753a3e9bf1fd0ae2c0a525a4f2902e1c7658cee699fdb",
+        "verification": "publisher-sha256"
+      },
+      "misspell": {
+        "version": "v0.8.0",
+        "url": "https://github.com/golangci/misspell/releases/download/v0.8.0/misspell_0.8.0_linux_amd64.tar.gz",
+        "sha256": "0a889624797be3eed241eeef4dd2b982adadedd6556723fd00b9c3f721417b51",
         "verification": "publisher-sha256"
       },
       "navi": {
@@ -616,6 +622,12 @@
         "version": "v2026.10.18",
         "url": "https://github.com/jdx/mise/releases/download/v2026.10.18/mise-v2026.10.18-linux-arm64-musl",
         "sha256": "61c5773ca684d12907092263890cb0532c667b3efe64e373f3f7169938cc86d4",
+        "verification": "publisher-sha256"
+      },
+      "misspell": {
+        "version": "v0.8.0",
+        "url": "https://github.com/golangci/misspell/releases/download/v0.8.0/misspell_0.8.0_linux_arm64.tar.gz",
+        "sha256": "0fbe2b74a6d3631fd719a926f3dbc04ca05104673cd0f5e6feca223c1032631f",
         "verification": "publisher-sha256"
       },
       "navi": {

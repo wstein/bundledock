@@ -105,7 +105,7 @@ func fixture(t *testing.T) (map[string][]byte, map[string]Spec, *httptest.Server
 		"agy":      archive(t, member{"bundle/antigravity", "antigravity cli", 0755, 0}),
 		"codex":    archive(t, member{"bin/codex", "codex cli", 0755, 0}, member{"codex-package.json", `{"entrypoint":"bin/codex"}`, 0644, 0}, member{"bin/codex-code-mode-host", "host", 0755, 0}, member{"codex-path/rg", "rg", 0755, 0}, member{"codex-resources/bwrap", "bwrap", 0755, 0}, member{"codex-resources/zsh/bin/zsh", "zsh", 0755, 0}, member{"codex-resources/voice/", "", 0755, tar.TypeDir}, member{"./codex-resources/voice/lib/example.so", "shared library", 0644, 0}, member{"codex-resources/voice-other/keep", "other resource", 0644, 0}, member{"empty/", "", 0755, tar.TypeDir}),
 	}
-	for _, name := range []string{"stw", "whr", "opentofu", "cscribe", "zk", "smill", "scc", "fastfetch", "shellcheck", "shfmt", "just", "ruff", "delta", "watchexec", "hyperfine", "age", "leaf", "jj", "lazygit", "git-lfs", "navi", "typst", "trufflehog", "lsd", "actionlint", "hadolint", "pinact", "zizmor", "cosign", "git-cliff", "zoxide", "difftastic", "jsonschema-cli", "gh-stack", "xh", "dust", "direnv", "sops"} {
+	for _, name := range []string{"misspell", "stw", "whr", "opentofu", "cscribe", "zk", "smill", "scc", "fastfetch", "shellcheck", "shfmt", "just", "ruff", "delta", "watchexec", "hyperfine", "age", "leaf", "jj", "lazygit", "git-lfs", "navi", "typst", "trufflehog", "lsd", "actionlint", "hadolint", "pinact", "zizmor", "cosign", "git-cliff", "zoxide", "difftastic", "jsonschema-cli", "gh-stack", "xh", "dust", "direnv", "sops"} {
 		p := testPackages(t)[name]
 		var files []member
 		for executable := range p.Install.Members {
@@ -181,7 +181,8 @@ func TestVendorBuildBothArchitectures(t *testing.T) {
 				"bin/direnv": {"direnv executable", 0755}, "bin/sops": {"sops executable", 0755},
 				"bin/hugo": {"hugo executable", 0755}, "licenses/hugo/LICENSE": {"hugo license", 0644},
 				"bin/scc": {"scc executable", 0755}, "bin/smill": {"smill executable", 0755},
-				"bin/zk":        {"zk executable", 0755},
+				"bin/zk":       {"zk executable", 0755},
+				"bin/misspell": {"misspell executable", 0755}, "licenses/misspell/LICENSE": {"misspell license", 0644},
 				"bin/cscribe":   {"cscribe executable", 0755},
 				"bin/tofu":      {"tofu executable", 0755},
 				"bin/stw":       {"stw executable", 0755},

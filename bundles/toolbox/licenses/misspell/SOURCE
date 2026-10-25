@@ -1,0 +1,8 @@
+Upstream: https://github.com/golangci/misspell
+Initial reviewed release: v0.8.0 (stable, not a draft or pre-release), published 2026-02-10T21:40:43Z
+License: MIT; included Go-derived code (a modified strings.Replacer, upstream legal.go and stringreplacer.go) is under the Go BSD-style license, noted by `misspell -legal`. The archive LICENSE carries the MIT text only; the retained notice does not include the Go BSD text. The LICENSE at tag v0.8.0 has SHA256 fbe6f92fa4c9baaa17a06f89633c8af7540fa5506655a48c2a6d230527243baf; the release archives carry it per the release's goreleaser.yml (`files: LICENSE`), and the build retains it as licenses/misspell/LICENSE.
+Source for corresponding release: https://github.com/golangci/misspell/releases/tag/v0.8.0
+Tag v0.8.0 resolves to commit b565578a5ec9b815331bdae8f588021f7696ec6f.
+Linux AMD64/ARM64: official archives misspell_0.8.0_linux_{amd64,arm64}.tar.gz, unchanged executable, selected by tag prefix 'v'. The archives are wrapped in one directory (goreleaser wrap_in_directory). The release also ships darwin and windows archives, which BundleDock does not use.
+The archive SHA256 values are the entries of the release's misspell_0.8.0_checksums.txt (publisher checksum file) and equal the release API digests (checked 2026-10-25). The linux/arm64 archive digest was additionally verified against a downloaded copy by the owner-approved trial. The release publishes no signature, attestation or SBOM.
+The binary is built with CGO_ENABLED=0 (goreleaser.yml) and prints the bare version with `misspell -v`. No upstream binary was executed or modified for this entry; retained notices do not establish a complete transitive license audit.

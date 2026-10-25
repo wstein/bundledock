@@ -35,6 +35,7 @@ leaf>=1.29.0
 lsd>=1.2.0
 lychee>=0.24.2
 mise>=2026.10.8
+misspell>=0.8.0
 navi>=2.24.0
 nu>=0.116.1
 opentofu>=1.13.1,<2.0.0

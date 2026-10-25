@@ -189,8 +189,8 @@ func TestInventoryUsesDisplayedLabelAlphabeticalOrder(t *testing.T) {
 			labels = append(labels, strings.TrimSpace(strings.Split(line, "|")[1]))
 		}
 	}
-	if len(labels) != 66 {
-		t.Fatalf("expected 64 catalog tools and two launchers, got %d rows", len(labels))
+	if len(labels) != 67 {
+		t.Fatalf("expected 65 catalog tools and two launchers, got %d rows", len(labels))
 	}
 	// The source build links the publisher's download page, not a GitHub repository.
 	sqlite := "| SQLite (`sqlite3`) | " + strings.TrimPrefix(pinnedVersion(t, root, "sqlite3"), "v") + " | [Homepage](https://www.sqlite.org/) | [Source](https://www.sqlite.org/download.html) |"

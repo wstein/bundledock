@@ -49,6 +49,7 @@ LABELS = (
     ("tmux", "tmux (`tmux`)"),
     ("typst", "Typst (`typst`)"),
     ("typos", "typos (`typos`)"),
+    ("misspell", "misspell (`misspell`)"),
     ("lychee", "lychee (`lychee`)"),
     ("gitleaks", "Gitleaks (`gitleaks`)"),
     ("trivy", "Trivy (`trivy`)"),

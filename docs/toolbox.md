@@ -70,6 +70,7 @@ The source inventory below describes the current lock; this publication retains 
 | lychee (`lychee`) | 0.24.2 | [Homepage](https://lychee.cli.rs) | [Source](https://github.com/lycheeverse/lychee) |
 | Mike Farah yq (`yq`) | 4.54.1 | [Homepage](https://mikefarah.gitbook.io/yq/) | [Source](https://github.com/mikefarah/yq) |
 | mise (`mise`) | 2026.10.18 | [Homepage](https://mise.jdx.dev) | [Source](https://github.com/jdx/mise) |
+| misspell (`misspell`) | 0.8.0 | [Homepage](https://github.com/golangci/misspell) | [Source](https://github.com/golangci/misspell) |
 | navi (`navi`) | 2.24.0 | [Homepage](https://github.com/denisidoro/navi) | [Source](https://github.com/denisidoro/navi) |
 | Nushell (`nu`) | 0.116.1 | [Homepage](https://www.nushell.sh/) | [Source](https://github.com/nushell/nushell) |
 | OpenTofu (`tofu`) | 1.13.2 | [Homepage](https://opentofu.org) | [Source](https://github.com/opentofu/opentofu) |
@@ -104,7 +105,7 @@ The source inventory below describes the current lock; this publication retains 
 
 The default bundle lives in `bundles/toolbox/`: `packages.txt`,
 `packages.catalog.json`, `packages.lock.json`, its Dockerfile, smoke scripts and licenses.
-Shared Go code remains at the repository root. The source toolbox contains 63
+Shared Go code remains at the repository root. The source toolbox contains 64
 downloaded tools plus the two first-use Python launchers listed above. Codex, Antigravity and Claude are supplied by their separate
 [Codex](codex.md), [Antigravity](agy.md) and [Claude Code](claude.md) bundles.
 The published toolbox recorded above still includes those agents; this source
@@ -475,6 +476,30 @@ only executed as a separate program.
 The isolated consumer smoke runs only `zk --version` (expected `zk X.Y.Z`) with
 an empty home. The linux/arm64 v0.15.7 binary was executed once that way for this
 addition; the linux/amd64 binary was not executed. Native consumer smoke, image
+build/publication and consumer activation remain pending separate owner
+authorization.
+
+### misspell release
+
+The source lock includes [golangci/misspell v0.8.0](https://github.com/golangci/misspell/releases/tag/v0.8.0)
+(`misspell>=0.8.0`), a spelling checker for common English misspellings with a `-locale` option for
+US or UK spellings. The owner wants US spelling checks; `typos` remains the primary
+spelling gate and `misspell` is a complement, because `typos` was observed to miss
+"catalogue" and "cancelled". The tool is a static Go binary
+(`CGO_ENABLED=0` in the release's `goreleaser.yml`) with no runtime, state volume or
+independent release cadence. A future updater run resolves new stable releases
+through the normal toolbox path (tag prefix `v`, asset
+`misspell_{version}_linux_{arch}.tar.gz`). The lock records the archive digests from
+the release's `misspell_{version}_checksums.txt`; the arm64 digest equals the hash
+of an archive downloaded in the owner-approved trial, and the digests equal the
+release API digests (checked on 2026-10-25). The release publishes no signature,
+attestation or SBOM, so the checksum file only guards against transfer errors,
+not a compromised release. The archive is wrapped in one directory and carries the
+executable and the MIT `LICENSE`, which the build retains next to a `SOURCE` record
+under `licenses/misspell/`.
+
+The isolated consumer smoke runs only `misspell -v` (expected `X.Y.Z`) with an empty
+home. No upstream binary was executed for this addition; native consumer smoke, image
 build/publication and consumer activation remain pending separate owner
 authorization.
 
