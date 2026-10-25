@@ -116,6 +116,12 @@ pins; manifests and locks describe the installed artifacts. Separate docs-tool p
 
 Use test-driven development (TDD): write a failing test before implementing behavior changes, make it pass, then refactor.
 
+Write all English text in US spelling: documentation, comments, commit messages, pull
+request text and identifiers (color, behavior, license, canceled, catalog, labeled,
+analyzed, organization). This applies to new and changed text. Do not convert existing
+British spellings inside an unrelated change; a separate sweep does that. Keep exact
+quotations, testdata, goldens and external names unchanged.
+
 ## Pull requests and history
 
 Agents push only their own topic branches, rewrite their own branches with an
