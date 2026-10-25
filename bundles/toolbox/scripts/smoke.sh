@@ -33,6 +33,7 @@ check() {
         --mount "type=bind,src=$script_dir/stw-smoke.sh,dst=/stw-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/tofu-smoke.sh,dst=/tofu-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/zk-smoke.sh,dst=/zk-smoke.sh,readonly" \
+        --mount "type=bind,src=$script_dir/misspell-smoke.sh,dst=/misspell-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/fastfetch-smoke.sh,dst=/fastfetch-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/navi-smoke.sh,dst=/navi-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/mise-smoke.sh,dst=/mise-smoke.sh,readonly" \
@@ -144,6 +145,8 @@ check() {
             sh /tofu-smoke.sh
             stage "zk version"
             sh /zk-smoke.sh
+            stage "misspell version"
+            sh /misspell-smoke.sh
             stage "Fastfetch version"
             sh /fastfetch-smoke.sh
             stage "Navi version"
