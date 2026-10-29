@@ -37,7 +37,7 @@ Additional verified findings (2026-10-24 unless noted):
   It forbids every third-party source build today.
 - **Name clash.** The catalog `source` block (`internal/toolconfig/source.go`) describes licence
   source offers, not builds. The new block is called `build`.
-- **SQLite publishes SHA3-256**, in machine-readable lines `PRODUCT,VERSION,RELATIVE-URL,SIZE,SHA3-HASH`
+- **SQLite publishes SHA3-256**, in machine-readable lines `PRODUCT,VERSION,RELATIVE-URL,SIZE-IN-BYTES,SHA3-HASH`
   (for 3.54.1: `2026/sqlite-amalgamation-3540100.zip`, 2,990,966 bytes). Only the current version is
   listed. Review confirmed the downloaded bytes match the hash.
 - **The amalgamation ZIP contains five entries** under `sqlite-amalgamation-3540100/`: `sqlite3.c`,
