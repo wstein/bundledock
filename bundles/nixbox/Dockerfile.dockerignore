@@ -1,0 +1,15 @@
+**
+!go.mod
+!go.sum
+!cmd
+!cmd/nixbox
+!cmd/nixbox/**
+!internal
+!internal/nixbox
+!internal/nixbox/**
+!bundles
+!bundles/nixbox
+!bundles/nixbox/packages.catalog.json
+!bundles/nixbox/packages.lock.json
+!bundles/nixbox/shims
+!bundles/nixbox/shims/**
