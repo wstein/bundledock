@@ -16,9 +16,6 @@ func runCLI(t *testing.T, args ...string) (string, string, int) {
 }
 
 func TestCheckVerifiesTheProductionPair(t *testing.T) {
-	if _, err := os.Stat("../../bundles/nixbox/packages.lock.json"); err != nil {
-		t.Skip("lock not generated yet")
-	}
 	out, errs, code := runCLI(t, "check", "-catalog", "../../bundles/nixbox/packages.catalog.json", "-lock", "../../bundles/nixbox/packages.lock.json")
 	if code != 0 {
 		t.Fatalf("exit %d: %s%s", code, out, errs)
@@ -50,9 +47,6 @@ func TestUsageErrors(t *testing.T) {
 }
 
 func TestRootsListsOneStorePathPerNixPackage(t *testing.T) {
-	if _, err := os.Stat("../../bundles/nixbox/packages.lock.json"); err != nil {
-		t.Skip("lock not generated yet")
-	}
 	for _, arch := range []string{"amd64", "arm64"} {
 		out, errs, code := runCLI(t, "roots", "-arch", arch, "-catalog", "../../bundles/nixbox/packages.catalog.json", "-lock", "../../bundles/nixbox/packages.lock.json")
 		if code != 0 {

@@ -149,7 +149,7 @@ func TestProductionLockVerifies(t *testing.T) {
 	data, c := productionCatalog(t)
 	raw, err := os.ReadFile("../../bundles/nixbox/packages.lock.json")
 	if err != nil {
-		t.Skip("lock not generated yet")
+		t.Fatal(err)
 	}
 	l, err := ParseLock(raw)
 	if err != nil {
