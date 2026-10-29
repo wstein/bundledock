@@ -32,12 +32,29 @@ fail() {
     exit 127
 }
 [ -r "$table" ] || fail "missing shim table $table"
-binary=
-while IFS=$tab read -r kind a b c; do
-    if [ "$kind" = bin ] && [ "$a" = "$name" ]; then
-        binary=$b
-    fi
-done < "$table"
+lookup() {
+    binary=
+    while IFS=$tab read -r kind a b c; do
+        if [ "$kind" = bin ] && [ "$a" = "$1" ]; then
+            binary=$b
+        fi
+    done < "$table"
+}
+lookup "$name"
+# A user symlink with another name (helix -> hx) is followed link by link until
+# a name in the table is found.
+cur=$0
+hops=0
+while [ -z "$binary" ] && [ -L "$cur" ] && [ "$hops" -lt 10 ]; do
+    target=$(readlink -- "$cur")
+    case $target in
+    /*) cur=$target ;;
+    *) cur=$(dirname -- "$cur")/$target ;;
+    esac
+    lookup "${cur##*/}"
+    if [ -n "$binary" ]; then name=${cur##*/}; fi
+    hops=$((hops + 1))
+done
 [ -n "$binary" ] || fail "$name is not a nixbox shim"
 exe=$toolbox/$binary
 if [ ! -x "$exe" ]; then
