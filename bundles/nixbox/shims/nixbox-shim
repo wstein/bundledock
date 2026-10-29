@@ -1,0 +1,65 @@
+#!/bin/sh
+# nixbox shim. Every official toolbox binary that needs glibc has a symlink
+# <profile>/bin/<name> to this script. It runs the toolbox binary directly when
+# the host has a glibc loader and otherwise through the Nix glibc loader, so the
+# unmodified official bytes also start on musl images such as Alpine.
+#
+# Environment:
+#   BDOCK_TOOLBOX    toolbox bundle directory (default /opt/bdock/toolbox)
+#   NIXBOX_LOADER    auto (default), always or never use the Nix loader
+#   NIXBOX_HOST_LOADERS  space separated host loader paths to probe in auto mode
+#                    (test hook; the default depends on the machine type)
+set -eu
+profile=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+name=${0##*/}
+toolbox=${BDOCK_TOOLBOX:-/opt/bdock/toolbox}
+table=$profile/share/nixbox/shims.tsv
+tab=$(printf '\t')
+fail() {
+    printf 'nixbox: %s\n' "$1" >&2
+    exit 127
+}
+[ -r "$table" ] || fail "missing shim table $table"
+binary=
+while IFS=$tab read -r kind a b c; do
+    if [ "$kind" = bin ] && [ "$a" = "$name" ]; then
+        binary=$b
+    fi
+done < "$table"
+[ -n "$binary" ] || fail "$name is not a nixbox shim"
+exe=$toolbox/$binary
+if [ ! -x "$exe" ]; then
+    fail "$name needs the toolbox bundle at $toolbox (mount the toolbox volume there or set BDOCK_TOOLBOX)"
+fi
+while IFS=$tab read -r kind a b c; do
+    if [ "$kind" = env ] && [ "$a" = "$name" ]; then
+        export "$b=$toolbox/$c"
+    fi
+done < "$table"
+mode=${NIXBOX_LOADER:-auto}
+case $mode in
+always) direct=no ;;
+never) direct=yes ;;
+auto)
+    direct=no
+    candidates=${NIXBOX_HOST_LOADERS:-}
+    if [ -z "$candidates" ]; then
+        case $(uname -m) in
+        x86_64) candidates="/lib64/ld-linux-x86-64.so.2 /lib/x86_64-linux-gnu/ld-linux-x86-64.so.2" ;;
+        aarch64 | arm64) candidates="/lib/ld-linux-aarch64.so.1 /lib64/ld-linux-aarch64.so.1 /lib/aarch64-linux-gnu/ld-linux-aarch64.so.1" ;;
+        esac
+    fi
+    for loader in $candidates; do
+        if [ -e "$loader" ]; then
+            direct=yes
+            break
+        fi
+    done
+    ;;
+*) fail "NIXBOX_LOADER must be auto, always or never" ;;
+esac
+if [ "$direct" = yes ]; then
+    exec "$exe" "$@"
+fi
+[ -e "$profile/lib/ld.so" ] || fail "missing Nix loader $profile/lib/ld.so"
+exec "$profile/lib/ld.so" --library-path "$profile/lib/glibc:$profile/lib/gcc" "$exe" "$@"
