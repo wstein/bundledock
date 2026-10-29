@@ -6,21 +6,33 @@ set -euo pipefail
 : "${GITHUB_STEP_SUMMARY:?set GITHUB_STEP_SUMMARY}"
 all_bundles=(toolbox code-server node node-current bun codex agy claude opentofu)
 is_bundle() { local name; for name in "${all_bundles[@]}"; do [[ $1 != "$name" ]] || return 0; done; return 1; }
+# nixbox is proposed by its own flow: a lock refresh in the pinned nixos/nix image,
+# never the official-release resolver. It is not a publishable bundle (all_bundles
+# drives publication) and always gets its own pull request.
+nixbox_lock=bundles/nixbox/packages.lock.json
+is_upgrade_bundle() { [[ $1 == nixbox ]] || is_bundle "$1"; }
 # resolve handles the one BUNDLE of its matrix job. publish combines every
 # bundle whose resolved lock is in the result directory (canonical order).
 bundles=()
 if [[ ${1:-} == publish ]]; then
-  for bundle in "${all_bundles[@]}"; do
-    if [[ -e ${UPGRADE_RESULT:-}/$bundle.lock.json || -L ${UPGRADE_RESULT:-}/$bundle.lock.json ]]; then bundles+=("$bundle"); fi
-  done
+  case "${PROPOSAL_GROUP:-}" in
+    '') for bundle in "${all_bundles[@]}"; do
+          if [[ -e ${UPGRADE_RESULT:-}/$bundle.lock.json || -L ${UPGRADE_RESULT:-}/$bundle.lock.json ]]; then bundles+=("$bundle"); fi
+        done ;;
+    nixbox) if [[ -e ${UPGRADE_RESULT:-}/nixbox.lock.json || -L ${UPGRADE_RESULT:-}/nixbox.lock.json ]]; then bundles=(nixbox); fi ;;
+    *) echo 'PROPOSAL_GROUP must be empty or nixbox.' >&2; exit 1 ;;
+  esac
 else
-  is_bundle "${BUNDLE:-toolbox}" || { echo 'BUNDLE must be toolbox, code-server, node, node-current, bun, codex, agy, claude or opentofu.' >&2; exit 1; }
+  is_upgrade_bundle "${BUNDLE:-toolbox}" || { echo 'BUNDLE must be toolbox, code-server, node, node-current, bun, codex, agy, claude, opentofu or nixbox.' >&2; exit 1; }
   bundles=("${BUNDLE:-toolbox}")
 fi
 locks=() inventories=() artifacts=()
 for bundle in "${bundles[@]}"; do
   locks+=("bundles/$bundle/packages.lock.json")
-  if [[ $bundle == toolbox ]]; then
+  if [[ $bundle == nixbox ]]; then
+    # The lock is the only own file: nixbox has no generated inventory.
+    artifacts+=(nixbox.lock.json)
+  elif [[ $bundle == toolbox ]]; then
     inventories+=(docs/toolbox.md)
     artifacts+=(toolbox.lock.json toolbox.md)
   else
@@ -28,7 +40,8 @@ for bundle in "${bundles[@]}"; do
     artifacts+=("$bundle.lock.json" "$bundle.md")
   fi
 done
-paths=("${locks[@]}" "${inventories[@]}")
+paths=("${locks[@]}")
+if [[ ${#inventories[@]} -gt 0 ]]; then paths+=("${inventories[@]}"); fi
 proposal_name=tool
 if [[ ${bundles[0]:-} == toolbox ]]; then proposal_name=toolbox; fi
 needs_base=false
@@ -76,11 +89,106 @@ else:
 PYTHON
 }
 
+# Refresh the nixbox lock in the pinned nixos/nix image, then accept only a lock
+# that keeps the same package list. Nothing is built, published or dispatched.
+nixbox_resolve() {
+  if [[ -n ${TOOL:-} ]]; then
+    echo 'TOOL is not supported for nixbox: its lock is one closed list.' >&2; exit 1
+  fi
+  local old; old=$(mktemp)
+  cp "$nixbox_lock" "$old"
+  sh bundles/nixbox/scripts/refresh-lock.sh
+  require_changes_only "$nixbox_lock"
+  if ! python3 scripts/nixbox-lock-compat.py "$old" "$nixbox_lock" 2>"$old.err"; then
+    cat "$old.err" >&2
+    { echo '## nixbox lock refresh refused'; echo; cat "$old.err"; } >> "$GITHUB_STEP_SUMMARY"
+    exit 1
+  fi
+  go run ./cmd/nixbox check -catalog bundles/nixbox/packages.catalog.json -lock "$nixbox_lock"
+  mkdir -p "$UPGRADE_RESULT"
+  git diff -- "$nixbox_lock" > "$UPGRADE_RESULT/lock.diff"
+  if git diff --quiet -- "$nixbox_lock"; then
+    echo 'changed=false' >> "$GITHUB_OUTPUT"
+    echo 'No nixbox lock changes; no branch or pull request will be created.' >> "$GITHUB_STEP_SUMMARY"
+  else
+    cp "$nixbox_lock" "$UPGRADE_RESULT/nixbox.lock.json"
+    git rev-parse HEAD > "$UPGRADE_RESULT/base.sha"
+    echo 'changed=true' >> "$GITHUB_OUTPUT"
+    {
+      echo '## Proposed nixbox lock refresh'
+      echo
+      echo 'The refreshed lock keeps the same package list; only store paths, hashes and signatures differ. First publication and any package list change need explicit owner approval, and licenses must be recorded before the first publication. No image, release or publication was run.'
+      echo
+      echo '```diff'
+      head -c 500000 "$UPGRADE_RESULT/lock.diff"
+      echo '```'
+    } >> "$GITHUB_STEP_SUMMARY"
+  fi
+}
+
+# One nixbox-only pull request on its own topic. Publication never recognizes
+# this topic, and the body states that it authorizes nothing.
+nixbox_publish() {
+  : "${GITHUB_REPOSITORY:?set GITHUB_REPOSITORY}"
+  : "${DEFAULT_BRANCH:?set DEFAULT_BRANCH}"
+  : "${GITHUB_RUN_ID:?set GITHUB_RUN_ID}"
+  : "${GITHUB_RUN_ATTEMPT:?set GITHUB_RUN_ATTEMPT}"
+  [[ $GITHUB_RUN_ID =~ ^[0-9]+$ && $GITHUB_RUN_ATTEMPT =~ ^[0-9]+$ ]] || exit 1
+  check_result publish
+  if [[ ${#bundles[@]} -eq 0 ]]; then
+    echo 'No nixbox lock changes; no branch or pull request will be created.' >> "$GITHUB_STEP_SUMMARY"; exit 0
+  fi
+  local base; base=$(cat "$UPGRADE_RESULT/base.sha")
+  if [[ ! $base =~ ^[0-9a-f]{40}$ || $base != "$(git rev-parse HEAD)" ]]; then
+    echo 'Refusing stale proposal: artifact base differs from checkout.' >&2; exit 1
+  fi
+  git show "HEAD:$nixbox_lock" > "$UPGRADE_RESULT/previous.lock.json"
+  cp "$UPGRADE_RESULT/nixbox.lock.json" "$nixbox_lock"
+  # Re-verify from the checked-out catalog; never accept the artifact on trust.
+  python3 scripts/nixbox-lock-compat.py "$UPGRADE_RESULT/previous.lock.json" "$nixbox_lock"
+  go run ./cmd/nixbox check -catalog bundles/nixbox/packages.catalog.json -lock "$nixbox_lock"
+  require_changes_only "$nixbox_lock"
+  if git diff --quiet -- "$nixbox_lock"; then
+    echo 'No nixbox lock changes; no branch or pull request will be created.' >> "$GITHUB_STEP_SUMMARY"; exit 0
+  fi
+  local branch="automation/nixbox-upgrade-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+  local body="$UPGRADE_RESULT/pr-body.md" title='chore(nixbox): refresh the lock for the unchanged package list'
+  git switch -c "$branch"
+  git config user.name 'github-actions[bot]'
+  git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+  git add -- "$nixbox_lock"
+  git commit -m "$title"
+  cat > "$body" <<BODY
+Refreshed \`$nixbox_lock\` in the pinned nixos/nix image. The package list, catalog, platforms and signing key are unchanged; store paths, narHash values and signatures may differ. Every path was re-verified against the pinned key.
+
+This pull request authorizes no build and no publication:
+
+- The first publication of nixbox needs explicit owner approval of the exact source revision.
+- Any change to the package list needs explicit owner approval and can never come from an updater.
+- The licenses of the glibc runner and of every closure path must be recorded before the first publication.
+- nixbox is not part of the publication workflows; merging this changes the lock only.
+
+Run: https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID (attempt $GITHUB_RUN_ATTEMPT)
+BODY
+  if ! git push origin "HEAD:refs/heads/$branch"; then
+    echo 'Topic push failed. An administrator must explicitly permit GITHUB_TOKEN contents:write under repository/organization Actions policy. This workflow does not change permissions or use a PAT.' >&2; exit 1
+  fi
+  local url
+  if ! url=$(gh pr create --repo "$GITHUB_REPOSITORY" --base "$DEFAULT_BRANCH" --head "$branch" --title "$title" --body-file "$body" 2>&1); then
+    printf '%s\n' "$url" >&2
+    echo 'PR creation failed. An administrator must explicitly permit GITHUB_TOKEN contents:write and pull-requests:write, and enable Settings > Actions > General > Workflow permissions > Allow GitHub Actions to create and approve pull requests (subject to organization policy). This workflow never changes those settings or uses a PAT. The topic branch may already exist; inspect it before retrying.' >&2; exit 1
+  fi
+  printf '%s\n' "$url" >> "$GITHUB_STEP_SUMMARY"
+  python3 scripts/updater-source-ci.py --bundles nixbox --branch "$branch" \
+    --base "$base" --head "$(git rev-parse HEAD)" --pr-url "$url" >> "$GITHUB_STEP_SUMMARY"
+}
+
 case "${1:-}" in
   resolve)
     require_clean
     check_result resolve
     tool=${TOOL:-}
+    if [[ ${bundles[0]} == nixbox ]]; then nixbox_resolve; exit 0; fi
     for bundle in "${bundles[@]}"; do
       if [[ -n $tool ]]; then
         if [[ ! $tool =~ ^[a-z0-9][a-z0-9-]*$ ]] ||
@@ -122,6 +230,7 @@ case "${1:-}" in
     ;;
   publish)
     require_clean
+    if [[ ${PROPOSAL_GROUP:-} == nixbox ]]; then nixbox_publish; exit 0; fi
     : "${GITHUB_REPOSITORY:?set GITHUB_REPOSITORY}"
     : "${DEFAULT_BRANCH:?set DEFAULT_BRANCH}"
     : "${GITHUB_RUN_ID:?set GITHUB_RUN_ID}"
