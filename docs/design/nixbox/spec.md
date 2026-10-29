@@ -1,7 +1,8 @@
 # Design: nixbox, a Nix-store bundle next to the classic bundles
 
-Status: proposal, owner direction 2026-10-29. Nothing here is built or published.
-Any image build, smoke run or publication needs its own explicit owner approval.
+Status: decided, owner direction 2026-10-29 (name `nixbox`, option B below, hybrid
+sources). The first implementation is a local build only. Publication, tags and
+consumer pin changes stay with the owner and need their own approval.
 
 ## Problem
 
@@ -97,24 +98,58 @@ binaries passed on arm64 (the `hx` launcher needs the loader prefix on its inner
 binary). The needed files are about 3.5 MiB, or about 57 MiB as whole store paths.
 Not verified: a trimmed copy, the amd64 equivalent, and gcompat's segfault cause.
 
-Options for these eight tools, to decide after review:
+Decision (owner, 2026-10-29): option B. `fastfetch` and the other seven tools stay
+official binaries; nixbox adds glibc, libgcc and shims. `fastfetch` leaves the
+toolbox in a later toolbox release, after consumers mount nixbox.
 
 | Option | Content of nixbox | Cost |
 | --- | --- | --- |
-| A. nixpkgs builds | the tools' closures | 638 MiB, 987 with `fastfetch` |
-| B. glibc runner | glibc and libgcc, launchers for the official binaries | about 57 MiB, official bytes stay unmodified |
+| A. nixpkgs builds (rejected) | the tools' closures | 638 MiB, 987 with `fastfetch` |
+| B. glibc runner (chosen) | glibc and libgcc, shims for the official binaries | about 57 MiB, official bytes stay unmodified |
 
-Until decided, `fastfetch` stays in nixbox as option A.
+## Intended use
+
+Dev containers mount the classic toolbox and nixbox side by side. Later the toolbox
+bundle is combined with a native Nix store in place of nixbox. Recovery containers
+mount both. No temporary workaround is needed in between.
+
+## First implementation (one PR, a commit series)
+
+1. Bundle `bundles/nixbox` with a catalog (nixpkgs revision, cache URL and public
+   key, one attribute per tool) and a lock (per architecture: top-level store paths
+   and the closure with `narHash` and size from `nix path-info --json`).
+2. Build in a Dockerfile stage from a digest-pinned `nixos/nix` image: `nix copy
+   --from https://cache.nixos.org --to <image root>` with the pinned public key and
+   signature checking on, then verify every closure path against the lock and fail on
+   any mismatch. Nothing is compiled.
+3. Image layout: `/nix/store`, `/nix/var/nix` (registrations), and a profile at
+   `/nix/profile` with `bin/`, `share/`, `lib/ld.so` (symlink to the glibc loader)
+   and the shims. The carrier image fills a volume that is mounted at `/nix`.
+4. Shims in `/nix/profile/bin` for `fastfetch`, `ast-grep`, `delta`, `difft`, `leaf`,
+   `zizmor`, `zk` and `hx`. A shim runs the toolbox binary directly when the host has a
+   glibc loader and otherwise through `/nix/profile/lib/ld.so --library-path ...`. The
+   `hx` shim also sets `HELIX_RUNTIME`. A shim without the toolbox mounted fails with a
+   clear message. The toolbox itself is not changed.
+5. A lock refresh script (runs in the pinned `nixos/nix` image) that resolves the
+   catalog against the pinned nixpkgs revision. No updater bot change.
+6. A smoke test that mounts the built volume on pinned Debian slim, Fedora, openSUSE
+   Leap and Alpine images and runs the checks of the spikes, on arm64 and amd64.
+7. Documentation `docs/nixbox.md`, cross references in `docs/toolbox.md` and the
+   README bundle table, and the `AGENTS.md` rule for the class "distribution binary
+   cache".
+8. Tests in the existing patterns for the lock verification and the shims.
+
+Out of scope: publication, tags, quay.io pushes, pins in consumer repositories, removal
+of tools from the toolbox, changes to the `whr` recovery command.
 
 ## Rollout
 
 1. Done: arm64 and amd64 spikes above.
-2. Devcontainer test with nixbox mounted at `/nix`, PATH collisions with a system
-   `git`, and an explicit signature check of the fetched store paths.
-3. Catalog `provider` field and the nixbox recipe, then owner approval to build and
-   publish.
+2. The first implementation above, built locally.
+3. Owner approval to publish, then pins in the dev container and the `whr` recovery
+   command mount nixbox.
 4. Remove the eight tools from the toolbox in a later toolbox release, after
-   consumers mount nixbox.
+   consumers mount nixbox. The catalog `provider` field records the placement.
 5. Move further bundles per tool when their Nix flavor passes its smoke test.
 
 ## Rule change
