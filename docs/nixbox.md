@@ -202,7 +202,9 @@ root, plus one uid 1000 run on Debian):
 
 After the review fixes, the arm64 smoke test (with stub glibc loader files on
 Alpine that simulate gcompat, plus added auto-mode and symlink checks) passed 34 of 34 on Debian, Fedora, openSUSE and Debian uid 1000, and 36 of 36
-on Alpine. It was not rerun on amd64.
+on Alpine. It was not rerun on amd64. The amd64 loader stub path and the
+symlink-with-another-name check were added after that run, so the totals are
+not verified for the current script; rerun the smoke test to refresh them.
 
 The lock closure is 52 store paths and 197.3 MiB on arm64, and 51 paths and
 180.1 MiB on amd64. The initialized volume is 221 MB on arm64 and 203 MB on amd64.
