@@ -34,6 +34,7 @@ update; packaging revisions remain in the bundle guides.
 | Bundle | Purpose and guide | Published version | Publication workflow |
 | --- | --- | --- | --- |
 | Toolbox | [Development CLIs and common utilities](docs/toolbox.md) | [![Published toolbox version](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fwstein%2Fbundledock%2Fmain%2Fdocs%2Ftoolbox-published.json&query=%24.tag&label=version&color=5eead4&labelColor=0b2545)](https://quay.io/repository/bundledock/toolbox?tab=tags) | [![Publish bundles](https://github.com/wstein/bundledock/actions/workflows/publish-bundles.yml/badge.svg?branch=main)](https://github.com/wstein/bundledock/actions/workflows/publish-bundles.yml) |
+| Nixbox | [glibc runner, shims and distribution tools in Nix store layout](docs/nixbox.md); designed, not yet published | Not yet published | Not yet published |
 
 ### Runtimes
 
