@@ -10,7 +10,7 @@
 #                         /opt/bdock/toolbox for the eight shimmed binaries
 #   NIXBOX_OFFLINE=1      skip the one check that needs the network
 set -eu
-script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 image=${1:-bundledock-nixbox:poc}
 platform=${NIXBOX_PLATFORM:-}
 toolbox_image=${NIXBOX_TOOLBOX_IMAGE:-}
