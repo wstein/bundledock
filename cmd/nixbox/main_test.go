@@ -39,7 +39,7 @@ func TestCheckFailsOnAStaleLock(t *testing.T) {
 }
 
 func TestUsageErrors(t *testing.T) {
-	for _, args := range [][]string{{}, {"bogus"}, {"check"}, {"check", "-catalog", "x"}, {"verify-store", "-arch", "ppc"}, {"roots", "-arch", "ppc"}} {
+	for _, args := range [][]string{{}, {"bogus"}, {"check"}, {"check", "-catalog", "x"}, {"verify-store", "-arch", "ppc"}, {"roots", "-arch", "ppc"}, {"profile"}, {"profile", "-arch", "ppc"}} {
 		if _, _, code := runCLI(t, args...); code != 2 {
 			t.Errorf("%v: exit %d, want 2", args, code)
 		}
@@ -61,5 +61,19 @@ func TestRootsListsOneStorePathPerNixPackage(t *testing.T) {
 				t.Errorf("not a store path: %q", line)
 			}
 		}
+	}
+}
+
+func TestProfileRefusesAStoreThatDoesNotMatchTheLock(t *testing.T) {
+	dir := t.TempDir()
+	shim := filepath.Join(t.TempDir(), "shim")
+	os.WriteFile(shim, []byte("#!/bin/sh\n"), 0o755)
+	_, errs, code := runCLI(t, "profile", "-catalog", "../../bundles/nixbox/packages.catalog.json", "-lock", "../../bundles/nixbox/packages.lock.json",
+		"-store", dir, "-out", filepath.Join(dir, "out"), "-shim", shim, "-arch", "arm64")
+	if code != 1 || !strings.Contains(errs, "lacks") {
+		t.Fatalf("exit %d: %s", code, errs)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "out")); err == nil {
+		t.Error("wrote a profile for an unverified store")
 	}
 }
