@@ -80,7 +80,10 @@ class RollingLockTests(unittest.TestCase):
             desired_path.write_text(desired_path.read_text().replace(
                 'scc==4.1.1', '  scc == 4.1.1  # same exact pin'))
             changed = []
-            for catalog_path in sorted((root / 'bundles').glob('*/packages.catalog.json')):
+            # nixbox is a Nix store bundle with its own catalog and lock format
+            # (internal/nixbox): it has no packages.txt and no rolling pins.
+            for catalog_path in sorted(p for p in (root / 'bundles').glob('*/packages.catalog.json')
+                                       if p.parent.name != 'nixbox'):
                 catalog = json.loads(catalog_path.read_text())
                 path = catalog_path.with_name('packages.lock.json')
                 lock = json.loads(path.read_text())
