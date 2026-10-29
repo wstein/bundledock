@@ -8,10 +8,10 @@ export GO VERSION RELEASE_DIR
 
 BUNDLE ?= toolbox
 ifneq ($(words $(BUNDLE)),1)
-$(error BUNDLE must be toolbox, code-server, node, node-current, bun, codex, agy, claude or opentofu)
+$(error BUNDLE must be toolbox, code-server, node, node-current, bun, codex, agy, claude, opentofu or nixbox)
 endif
-ifneq ($(filter toolbox code-server node node-current bun codex agy claude opentofu,$(BUNDLE)),$(BUNDLE))
-$(error BUNDLE must be toolbox, code-server, node, node-current, bun, codex, agy, claude or opentofu)
+ifneq ($(filter toolbox code-server node node-current bun codex agy claude opentofu nixbox,$(BUNDLE)),$(BUNDLE))
+$(error BUNDLE must be toolbox, code-server, node, node-current, bun, codex, agy, claude, opentofu or nixbox)
 endif
 IMAGE ?= bundledock-$(BUNDLE):poc
 CONSUMER ?= mcr.microsoft.com/devcontainers/go:2-1.27-trixie
@@ -37,7 +37,7 @@ help:
 	@printf '%s\n' 'make bundle-volume     Initialize the selected bundle volume' \
 	  'make bundle-smoke      Verify selected bundle in a read-only consumer' \
 	  'make bundle-test       Run focused source tests (no OCI build)' \
-	  'BUNDLE=toolbox|code-server|node|node-current|bun|codex|agy|claude|opentofu; override IMAGE and CONSUMER as needed'
+	  'BUNDLE=toolbox|code-server|node|node-current|bun|codex|agy|claude|opentofu|nixbox; override IMAGE and CONSUMER as needed'
 
 bundle-build:
 	docker build -f bundles/$(BUNDLE)/Dockerfile -t "$$IMAGE" .
