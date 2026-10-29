@@ -75,13 +75,16 @@ volume without changing paths.
 | Shims | `fastfetch`, `ast-grep`, `delta`, `difft`, `leaf`, `zizmor`, `zk` and `hx`. |
 
 The shims keep the official binaries from the toolbox unmodified. A shim runs the
-toolbox binary directly when the host has a glibc loader, and otherwise through
+toolbox binary directly on a glibc host, and otherwise (a musl host such as Alpine)
+through
 `/nix/profile/lib/ld.so --library-path ...`. The `hx` shim also sets
 `HELIX_RUNTIME`. A shim without the toolbox mounted fails with a clear message.
 All shims are symlinks to one script that reads a shim table generated from the
 catalog. `BDOCK_TOOLBOX` names the toolbox directory (default `/opt/bdock/toolbox`).
-`NIXBOX_LOADER` selects the mode: `auto` (the default: direct on a glibc host,
-through the loader otherwise), `always` or `never`. For `git` over https set
+`NIXBOX_LOADER` selects the mode: `auto` (the default: through the loader when a
+musl loader such as `/lib/ld-musl-*.so.1` exists, because Alpine with gcompat also
+has a glibc-looking loader file; direct on a host with a glibc loader), `always`
+or `never`. For `git` over https set
 `SSL_CERT_FILE=/nix/profile/etc/ssl/certs/ca-bundle.crt`.
 The `fastfetch` binary leaves the toolbox only in a later toolbox release, after
 consumers mount nixbox.
@@ -161,6 +164,10 @@ root, plus one uid 1000 run on Debian):
 | --- | --- | --- | --- | --- | --- |
 | arm64 | 32 of 32 | 32 of 32 | 32 of 32 | 33 of 33 | 32 of 32 |
 | amd64 (Rosetta) | 32 of 32 | 32 of 32 | 32 of 32 | 33 of 33 | 32 of 32 |
+
+After the review fixes, the arm64 smoke test (with stub glibc loader files on
+Alpine that simulate gcompat, plus added auto-mode and symlink checks) passed 34 of 34 on Debian, Fedora, openSUSE and Debian uid 1000, and 36 of 36
+on Alpine. It was not rerun on amd64.
 
 The lock closure is 52 store paths and 197.3 MiB on arm64, and 51 paths and
 180.1 MiB on amd64. The initialized volume is 221 MB on arm64 and 203 MB on amd64.
