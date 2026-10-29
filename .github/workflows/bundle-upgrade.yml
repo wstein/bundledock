@@ -37,7 +37,7 @@ jobs:
         with:
           go-version-file: .go-version
           cache: false
-      - name: Resolve stable releases and summarize the proposed lock diff
+      - name: Resolve stable releases (nixbox refreshes its lock) and summarize the proposed lock diff
         id: resolve
         env:
           BUNDLE: ${{ inputs.bundle }}
@@ -50,7 +50,8 @@ jobs:
         if: ${{ steps.resolve.outputs.changed == 'true' && (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && !inputs.dry_run)) }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: ${{ inputs.bundle }}-upgrade-${{ github.run_attempt }}
+          # nixbox uses a name the combined proposal job's *-upgrade-N pattern never matches.
+          name: ${{ inputs.bundle == 'nixbox' && 'nixbox-lockrefresh' || format('{0}-upgrade', inputs.bundle) }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/bundle-upgrade/
           if-no-files-found: error
           retention-days: 1
@@ -58,7 +59,7 @@ jobs:
       # the combined proposal still includes the other bundles and names this one.
       - name: Record the failed resolution for the combined proposal
         id: failed
-        if: ${{ failure() && (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && !inputs.dry_run)) }}
+        if: ${{ failure() && inputs.bundle != 'nixbox' && (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && !inputs.dry_run)) }}
         env:
           BUNDLE: ${{ inputs.bundle }}
         run: mkdir -p "$RUNNER_TEMP/bundle-failed" && printf '%s\n' "$BUNDLE" > "$RUNNER_TEMP/bundle-failed/$BUNDLE"
