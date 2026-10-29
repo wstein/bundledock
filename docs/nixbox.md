@@ -53,6 +53,10 @@ read-only at `/nix`:
 | `/nix/profile/bin`, `/nix/profile/share` | Symlinks to the tools, and the shims. |
 | `/nix/profile/lib/ld.so` | Symlink to the glibc loader (`ld-linux-aarch64.so.1` on arm64, `ld-linux-x86-64.so.2` on amd64). |
 
+The initializer runs as root when it fills a volume. The Nix database files
+`big-lock` and `reserved` keep their mode 0600, so a non-root initialization is
+not supported. Consumers mount the volume read-only and can run as any uid.
+
 Add `/nix/profile/bin` to `PATH`. The classic `/opt/bdock/<name>` mounts stay as
 they are. Because this is a real Nix store, a native store can later replace the
 volume without changing paths.

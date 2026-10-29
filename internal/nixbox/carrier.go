@@ -163,7 +163,9 @@ func compareTrees(source, target string) error {
 
 // copyTree copies regular files, directories and symlinks, keeping permission
 // bits. Directories are made writable while filled and get their final mode
-// afterwards, so read-only store directories copy as a non-root user too.
+// afterwards, so read-only store directories can be filled. The initializer
+// runs as root when it fills a volume: the Nix database files big-lock and
+// reserved are mode 0600 and stay so. Consumers only read the volume.
 func copyTree(source, target string) error {
 	type dirMode struct {
 		path string
