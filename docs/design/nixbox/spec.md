@@ -110,7 +110,7 @@ toolbox in a later toolbox release, after consumers mount nixbox.
 | Option | Content of nixbox | Cost |
 | --- | --- | --- |
 | A. nixpkgs builds (rejected) | the tools' closures | 638 MiB, 987 with `fastfetch` |
-| B. glibc runner (chosen) | glibc and libgcc, shims for the official binaries | about 57 MiB, official bytes stay unmodified |
+| B. glibc runner (chosen) | glibc and libgcc, shims for the official binaries | about 57 MiB for the glibc runner (the bundle closure is 197.3 MiB on arm64, 180.1 MiB on amd64), official bytes stay unmodified |
 
 ## Intended use
 
