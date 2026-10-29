@@ -131,17 +131,15 @@ What exists:
   digest-pinned published toolbox image. It signs in nowhere, pushes nothing,
   uses no secrets and publishes nothing.
 - **Upgrade proposals** (the `nixbox` option of `propose-upgrades.yml`, selected
-  for `all` and the schedule, with `dry_run` defaulting to true): a lock refresh
-  with `bundles/nixbox/scripts/refresh-lock.sh` in the pinned `nixos/nix` image,
-  not the official-release resolver. The refresh keeps the catalog, so it
-  re-resolves the pinned nixpkgs revision; it does not move that revision.
-  `scripts/nixbox-lock-compat.py` accepts only a lock with the same package
-  list. A lock with added or removed packages, a changed catalog, platform set
-  or signing key, or an unsigned path fails the run with a message instead of a
-  pull request. An accepted change becomes a separate nixbox-only pull request on
-  an `automation/nixbox-upgrade-<run>-<attempt>` topic, never part of the combined
-  proposal. The pull request authorizes no build and no publication, and
-  publication never recognizes its topic.
+  for `all` and the schedule, with `dry_run` defaulting to true): moves the
+  catalog's nixpkgs `rev`, release `url` and `narHash` to the head of
+  `nixpkgs-unstable` (`scripts/nixbox-bump-rev.py`, `bundles/nixbox/scripts/bump-rev.sh`),
+  then refreshes the lock with `bundles/nixbox/scripts/refresh-lock.sh` in the
+  pinned `nixos/nix` image and runs `nixbox check`. If nixpkgs is already at the
+  head, nothing changes and no pull request opens. A change becomes a separate
+  nixbox-only pull request on an `automation/nixbox-upgrade-<run>-<attempt>`
+  topic; the smoke run (`nixbox-build.yml`) is its check. Nothing is built or
+  published by the updater.
 - **Staging cleanup** (`staging-cleanup.yml`): nixbox is in the repository
   list. Before a first publication its Quay repository does not exist, and the
   run is an empty dry run. Staging tags of nixbox are never eligible for
@@ -232,7 +230,7 @@ layout is identical.
 - Unfree packages are not available from the cache (`claude-code`,
   `antigravity`), and `code-server` is not cached, so those bundles stay as they
   are.
-- Open points: nixpkgs revision update flow, Nix in CI, and the licenses and
+- Open points: Nix in CI, and the licenses and
   redistribution terms of glibc and the closures. The lock does not record
   licenses. Recording them, with the owner's approval, is an open precondition of
   the first publication (`AGENTS.md`, condition (e)); it is not a build gate, and

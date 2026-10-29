@@ -26,9 +26,9 @@ changed, accepts only those bundles' own locks and inventories, and runs one
 publication leg per bundle with the same per-bundle checks.
 
 [Nixbox](nixbox.md) is deliberately outside publication. `propose-upgrades.yml`
-offers it as a lock refresh that keeps the package list and opens its own
-`automation/nixbox-upgrade-...` pull request, which authorizes nothing; its
-manual build and smoke is `nixbox-build.yml`. None of `publish-bundles.yml`,
+offers it as a nixpkgs bump plus lock refresh that opens its own
+`automation/nixbox-upgrade-...` pull request; its manual build and smoke is
+`nixbox-build.yml`. None of `publish-bundles.yml`,
 `bundle-publish.yml` and `bundle-publication.py` names it, because its first
 publication needs separate explicit owner approval and recorded licenses.
 

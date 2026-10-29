@@ -114,10 +114,8 @@ jobs:
           trap 'git config --local --unset-all http.https://github.com/.extraheader' EXIT
           bash scripts/tool-upgrade.sh publish
 
-  # nixbox is not resolved from official releases: its lock is refreshed in the
-  # pinned nixos/nix image and accepted only with an unchanged package list. It
-  # always gets its own pull request, on a topic that publication never
-  # recognizes. The pull request authorizes no build and no publication.
+  # nixbox is not resolved from official releases: it moves nixpkgs to the head of
+  # nixpkgs-unstable and refreshes its lock. It always gets its own pull request.
   propose-nixbox:
     needs: [plan, proposal]
     if: ${{ !cancelled() && needs.plan.result == 'success' && contains(fromJSON(needs.plan.outputs.bundles), 'nixbox') && (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && !inputs.dry_run)) }}
