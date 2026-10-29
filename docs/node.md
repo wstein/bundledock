@@ -37,7 +37,7 @@ The source inventory below describes the current lock; this publication retains 
 <!-- BEGIN GENERATED TOOL INVENTORY -->
 | Tool | Pinned version |
 | --- | --- |
-| node | 24.22.1 |
+| node | 24.22.2 |
 <!-- END GENERATED TOOL INVENTORY -->
 
 The official [distribution index](https://nodejs.org/dist/index.json), checked
