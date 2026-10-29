@@ -187,4 +187,7 @@ layout is identical.
   `antigravity`), and `code-server` is not cached, so those bundles stay as they
   are.
 - Open points: nixpkgs revision update flow, Nix in CI, and the licenses and
-  redistribution terms of glibc and the closures, which the lock must record.
+  redistribution terms of glibc and the closures. The lock does not record
+  licenses. Recording them, with the owner's approval, is an open precondition of
+  the first publication (`AGENTS.md`, condition (e)); it is not a build gate, and
+  the build and the smoke test do not check it.

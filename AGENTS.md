@@ -103,7 +103,8 @@ these hold: (a) the content is a closed list of store paths in a committed lock,
 pinned by nixpkgs revision and `narHash`; (b) it is fetched only from
 `cache.nixos.org` with signature checking on, and every path is verified against
 the lock; (c) nothing is compiled; (d) unfree packages are excluded; (e) the
-licenses of glibc and of every closure path are recorded; (f) Nix-sourced store
+licenses of the glibc runner and of every closure path are recorded before the
+first publication, which needs explicit owner approval; (f) Nix-sourced store
 paths are limited to the glibc and libgcc runner and to tools that have no
 official stable prebuilt for both architectures, so a tool with official
 prebuilts for both architectures (for example node or opentofu) stays on the
