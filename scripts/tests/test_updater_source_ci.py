@@ -255,9 +255,14 @@ else:
     def test_one_write_job_proposes_all_bundles_with_narrow_permissions(self):
         caller = (ROOT / '.github/workflows/propose-upgrades.yml').read_text()
         helper = (ROOT / '.github/workflows/bundle-upgrade.yml').read_text()
-        proposal = caller.split('\n  propose:\n')[1]
+        proposal = caller.split('\n  propose:\n')[1].split('\n  propose-nixbox:\n')[0]
+        nixbox = caller.split('\n  propose-nixbox:\n')[1]
         resolvers = caller.split('\n  propose:\n')[0] + helper
-        self.assertEqual(caller.count('scripts/tool-upgrade.sh publish'), 1)
+        # The combined job and the separate nixbox job are the only write jobs.
+        self.assertEqual(caller.count('scripts/tool-upgrade.sh publish'), 2)
+        permissions = nixbox.split('    permissions:\n')[1].split('    concurrency:')[0]
+        self.assertEqual(sorted(line.strip() for line in permissions.splitlines()),
+                         ['actions: write', 'contents: write', 'pull-requests: write'])
         self.assertNotIn('tool-upgrade.sh publish', helper)
         for text in ('actions: write', 'contents: write', 'pull-requests: write'):
             self.assertIn(text, proposal)
@@ -270,7 +275,7 @@ else:
         self.assertNotIn('permissions:', caller.split('\n  proposal:\n')[1].split('\n  propose:\n')[0])
         # Any failed step of a resolve job, not only the resolver, marks the bundle failed.
         marker = helper.split('id: failed\n')[1].split('run:')[0]
-        self.assertIn('if: ${{ failure() && (github.event_name', marker)
+        self.assertIn("if: ${{ failure() && inputs.bundle != 'nixbox' && (github.event_name", marker)
         self.assertNotIn('steps.resolve.outcome', marker)
         self.assertIn('needs: [plan, proposal]', proposal)
         self.assertIn('!inputs.dry_run', proposal)
