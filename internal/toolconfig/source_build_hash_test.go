@@ -46,6 +46,8 @@ func TestSHA3256AvailableInStandardLibrary(t *testing.T) {
 // source-build fields are omitted when empty, so existing locks are untouched.
 func TestExistingLocksRoundTripByteIdentical(t *testing.T) {
 	locks, err := filepath.Glob("../../bundles/*/packages.lock.json")
+	// nixbox is a Nix store bundle with its own lock format (internal/nixbox).
+	locks = withoutNixbox(locks)
 	if err != nil || len(locks) != 9 {
 		t.Fatalf("expected the nine bundle locks, got %v (%v)", locks, err)
 	}

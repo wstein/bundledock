@@ -14,7 +14,7 @@ func TestEveryCatalogPackageRetainsDirectUpstreamNotices(t *testing.T) {
 	if err != nil || len(catalogs) == 0 {
 		t.Fatalf("catalog discovery: %v", err)
 	}
-	for _, catalog := range catalogs {
+	for _, catalog := range withoutNixbox(catalogs) {
 		directory := filepath.Dir(catalog)
 		c, err := Load(directory)
 		if err != nil {
