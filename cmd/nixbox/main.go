@@ -14,7 +14,7 @@ import (
 
 func main() { os.Exit(run(os.Args[1:], os.Stdout, os.Stderr)) }
 
-const usage = "usage: nixbox check|lock|roots|verify-store ... (see docs/nixbox.md)"
+const usage = "usage: nixbox check|lock|roots|profile|verify-store ... (see docs/nixbox.md)"
 
 func run(args []string, stdout, stderr io.Writer) int {
 	if len(args) == 0 {
@@ -29,6 +29,8 @@ func run(args []string, stdout, stderr io.Writer) int {
 		err = lock(args[1:], stdout)
 	case "verify-store":
 		err = verifyStore(args[1:], stdout)
+	case "profile":
+		err = profile(args[1:], stdout)
 	case "roots":
 		err = roots(args[1:], stdout)
 	default:
@@ -184,5 +186,44 @@ func roots(args []string, stdout io.Writer) error {
 	for _, path := range paths {
 		fmt.Fprintln(stdout, path)
 	}
+	return nil
+}
+
+// profile writes the Nix profile (symlinks, loader links, shim and table) for
+// an architecture. The store must already verify against the lock.
+func profile(args []string, stdout io.Writer) error {
+	fs := newFlags("profile")
+	catalog := fs.String("catalog", "", "catalog file")
+	lockPath := fs.String("lock", "", "lock file")
+	arch := fs.String("arch", runtime.GOARCH, "amd64 or arm64")
+	store := fs.String("store", "", "physical store directory")
+	out := fs.String("out", "", "profile directory to create")
+	shimPath := fs.String("shim", "", "shim script to install")
+	if err := fs.Parse(args); err != nil || fs.NArg() != 0 || *catalog == "" || *lockPath == "" || *store == "" || *out == "" || *shimPath == "" || (*arch != "amd64" && *arch != "arm64") {
+		return usageError("usage: nixbox profile -catalog FILE -lock FILE -store DIR -out DIR -shim FILE [-arch amd64|arm64]")
+	}
+	c, cdata, l, err := load(*catalog, *lockPath)
+	if err != nil {
+		return err
+	}
+	if err := nixbox.CheckLock(c, cdata, l, c.Cache.PublicKey); err != nil {
+		return err
+	}
+	ldata, err := os.ReadFile(*lockPath)
+	if err != nil {
+		return err
+	}
+	shim, err := os.ReadFile(*shimPath)
+	if err != nil {
+		return err
+	}
+	p := l.Platforms[*arch]
+	if err := nixbox.VerifyStore(p, *store); err != nil {
+		return err
+	}
+	if err := nixbox.BuildProfile(c, cdata, ldata, p, *arch, *store, *out, shim); err != nil {
+		return err
+	}
+	fmt.Fprintf(stdout, "profile written to %s\n", *out)
 	return nil
 }
