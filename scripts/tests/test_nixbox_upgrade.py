@@ -30,6 +30,43 @@ def lock(tag, digest='c' * 64):
     return {'schema': 1, 'catalog_digest': digest, 'platforms': {'amd64': platform(tag), 'arm64': platform(tag)}}
 
 
+# Stand-in for gh: `pr create` answers a URL; `api` is a forge fake derived from the fixture repository,
+# so the real scripts/updater-source-ci.py runs end to end. A POST (the CI dispatch) is only logged.
+GH = '''#!/usr/bin/env python3
+import json, os, subprocess, sys
+args = sys.argv[1:]
+with open(os.environ["CALLS"], "a") as log:
+    log.write("gh " + " ".join(args) + "\\n")
+if args[0] == "pr":
+    print("https://github.com/wstein/bundledock/pull/1")
+    sys.exit(0)
+if "--method" in args:
+    sys.stdin.read()
+    sys.exit(0)
+def git(*a): return subprocess.check_output(["git", *a], text=True).strip()
+repo, endpoint = "wstein/bundledock", args[1].removeprefix("repos/wstein/bundledock")
+head, base, branch = git("rev-parse", "HEAD"), git("rev-parse", "main"), git("branch", "--show-current")
+files = [{"filename": f, "status": "modified"} for f in git("diff", "--name-only", base, head).split()]
+data = {
+    "": {"full_name": repo, "default_branch": "main"},
+    "/pulls/1": {"number": 1, "state": "open", "draft": False, "merged": False,
+                 "user": {"login": "github-actions[bot]", "type": "Bot"},
+                 "head": {"sha": head, "ref": branch, "repo": {"full_name": repo}},
+                 "base": {"sha": base, "ref": "main", "repo": {"full_name": repo}},
+                 "commits": 1, "changed_files": len(files), "html_url": "https://github.com/wstein/bundledock/pull/1"},
+    "/git/ref/heads/main": {"object": {"sha": base}},
+    "/git/ref/heads/" + branch: {"object": {"sha": head}},
+    "/pulls/1/files?per_page=100&page=1": files,
+    "/compare/" + base + "..." + head: {"status": "ahead", "ahead_by": 1, "behind_by": 0, "total_commits": 1,
+        "commits": [{"sha": head, "parents": [{"sha": base}]}], "files": files},
+    "/actions/workflows/ci.yml": {"id": 7, "path": ".github/workflows/ci.yml", "state": "active"},
+    "/actions/workflows/ci.yml/runs?branch=" + branch + "&event=workflow_dispatch&per_page=100&page=1":
+        {"total_count": 0, "workflow_runs": []},
+}
+print(json.dumps(data[endpoint]))
+'''
+
+
 def write_exec(path, text):
     path.write_text(text)
     path.chmod(path.stat().st_mode | stat.S_IXUSR)
@@ -66,19 +103,13 @@ class NixboxUpgradeTests(unittest.TestCase):
         self.bin.mkdir()
         self.calls = tmp / 'calls'
         write_exec(self.bin / 'go', '#!/bin/sh\necho "go $*" >> "$CALLS"\n')
-        write_exec(self.bin / 'gh', '#!/bin/sh\necho "gh $*" >> "$CALLS"\n'
-                   'case "$1 $2" in "pr create") echo https://github.com/wstein/bundledock/pull/1;; esac\n')
+        write_exec(self.bin / 'gh', GH)
         write_exec(self.bin / 'docker', '#!/bin/sh\necho "docker $*" >> "$CALLS"\nexit 99\n')
         self.result = tmp / 'result'
         self.output = tmp / 'output'
         self.summary = tmp / 'summary'
         self.new_lock = tmp / 'new.lock.json'
         self.new_catalog = tmp / 'new.catalog.json'
-        # An inert updater-source-ci stand-in records the request; the real one is tested elsewhere.
-        write_exec(self.repo / 'scripts/updater-source-ci.py', '#!/usr/bin/env python3\nimport os, sys\n'
-                   'open(os.environ["CALLS"], "a").write("source-ci " + " ".join(sys.argv[1:]) + "\\n")\n')
-        self.git('add', '.')
-        self.git('commit', '-q', '-m', 'adapter')
 
     def git(self, *args):
         return subprocess.run(['git', *args], cwd=self.repo, check=True, capture_output=True, text=True).stdout.strip()
@@ -150,11 +181,12 @@ class NixboxUpgradeTests(unittest.TestCase):
                          {'bundles/nixbox/packages.lock.json', 'bundles/nixbox/packages.catalog.json'})
         self.assertEqual(self.git('log', '-1', '--format=%s'), 'chore(nixbox): bump nixpkgs to bbbbbbbbbbbb')
         body = (self.result / 'pr-body.md').read_text()
-        for text in (OLD_REV, NEW_REV, 'nixbox-build.yml'):
+        for text in (OLD_REV, NEW_REV, 'dispatched source CI', 'nixbox-build.yml'):
             self.assertIn(text, body)
         calls = self.call_log()
         self.assertTrue(any(c.startswith('gh pr create') and '--head automation/nixbox-upgrade-7-1' in c for c in calls))
-        self.assertTrue(any(c.startswith('source-ci --bundles nixbox --branch automation/nixbox-upgrade-7-1') for c in calls))
+        self.assertTrue(any(c.startswith('gh api') and c.endswith('--method POST --input -') and 'workflows/ci.yml/dispatches' in c
+                            for c in calls), calls)
         self.assertFalse(any('workflow' in c and 'run' in c.split() for c in calls if c.startswith('gh')), calls)
 
     def test_publish_without_artifact_changes_opens_nothing_and_ignores_the_default_group(self):

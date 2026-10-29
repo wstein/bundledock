@@ -2,7 +2,7 @@
 """Dispatch source-only CI for one fresh, base-derived bot updater PR.
 
 The PR carries one commit for one or several bundles; only those bundles' own
-locks and generated inventories may change.
+locks and generated inventories (nixbox: lock and catalog) may change.
 """
 import argparse
 import json
@@ -65,9 +65,10 @@ def dispatch(args):
             'Proposal source/repository changed')
     require(pr['commits'] == 1 and 1 <= pr['changed_files'] <= 2 * len(bundles), 'One bounded updater commit required')
     files = api('/pulls/' + number + '/files?per_page=100&page=1')
-    # An upgrade-only bundle has no generated inventory: its lock is the only own file.
+    # An upgrade-only bundle has no generated inventory: its lock and catalog (nixpkgs pin) are its own files.
     allowed = {path for name in bundles for path in
-               ('bundles/' + name + '/packages.lock.json',) + (() if name in UPGRADE_ONLY else ('docs/' + name + '.md',))}
+               ('bundles/' + name + '/packages.lock.json',) +
+               (('bundles/' + name + '/packages.catalog.json',) if name in UPGRADE_ONLY else ('docs/' + name + '.md',))}
     require(isinstance(files, list) and len(files) == pr['changed_files'] and
             len({item['filename'] for item in files}) == len(files) and
             all(item['filename'] in allowed and item['status'] == 'modified' for item in files),

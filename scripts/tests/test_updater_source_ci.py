@@ -157,19 +157,21 @@ else:
     def nixbox_evidence(self, extra=None):
         branch = 'automation/nixbox-upgrade-123-1'
         data = evidence(('nixbox',), branch)
-        files = [{'filename': 'bundles/nixbox/packages.lock.json', 'status': 'modified'}] + (extra or [])
+        files = [{'filename': 'bundles/nixbox/packages.lock.json', 'status': 'modified'}] + (extra if extra is not None else [])
         data['/pulls/42/files?per_page=100&page=1'] = files
         data['/pulls/42']['changed_files'] = len(files)
         data['/compare/' + BASE + '...' + HEAD]['files'] = files
         return data, branch
 
-    def test_nixbox_proposal_is_its_own_lock_only_pull_request(self):
-        data, branch = self.nixbox_evidence()
-        result, calls = self.run_dispatch(data, bundles='nixbox', branch=branch)
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(len([call for call in calls if '--method' in call['args']]), 1)
+    def test_nixbox_proposal_is_its_own_lock_and_catalog_pull_request(self):
+        catalog = {'filename': 'bundles/nixbox/packages.catalog.json', 'status': 'modified'}
+        for extra in ([], [catalog]):
+            data, branch = self.nixbox_evidence(extra)
+            result, calls = self.run_dispatch(data, bundles='nixbox', branch=branch)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(len([call for call in calls if '--method' in call['args']]), 1)
         for extra in ([{'filename': 'docs/nixbox.md', 'status': 'modified'}],
-                      [{'filename': 'bundles/nixbox/packages.catalog.json', 'status': 'modified'}]):
+                      [{'filename': 'bundles/nixbox/packages.catalog.json', 'status': 'added'}]):
             with self.subTest(extra=extra):
                 data, branch = self.nixbox_evidence(extra)
                 result, calls = self.run_dispatch(data, bundles='nixbox', branch=branch)
