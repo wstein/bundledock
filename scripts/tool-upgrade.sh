@@ -10,6 +10,7 @@ is_bundle() { local name; for name in "${all_bundles[@]}"; do [[ $1 != "$name" ]
 # never the official-release resolver. It is not a publishable bundle (all_bundles
 # drives publication) and always gets its own pull request.
 nixbox_lock=bundles/nixbox/packages.lock.json
+nixbox_catalog=bundles/nixbox/packages.catalog.json
 is_upgrade_bundle() { [[ $1 == nixbox ]] || is_bundle "$1"; }
 # resolve handles the one BUNDLE of its matrix job. publish combines every
 # bundle whose resolved lock is in the result directory (canonical order).
@@ -30,8 +31,8 @@ locks=() inventories=() artifacts=()
 for bundle in "${bundles[@]}"; do
   locks+=("bundles/$bundle/packages.lock.json")
   if [[ $bundle == nixbox ]]; then
-    # The lock is the only own file: nixbox has no generated inventory.
-    artifacts+=(nixbox.lock.json)
+    # The lock and the catalog (nixpkgs pin) are the own files; no generated inventory.
+    artifacts+=(nixbox.lock.json nixbox.catalog.json)
   elif [[ $bundle == toolbox ]]; then
     inventories+=(docs/toolbox.md)
     artifacts+=(toolbox.lock.json toolbox.md)
@@ -89,35 +90,28 @@ else:
 PYTHON
 }
 
-# Refresh the nixbox lock in the pinned nixos/nix image, then accept only a lock
-# that keeps the same package list. Nothing is built, published or dispatched.
+# Move the nixpkgs pin to the head of nixpkgs-unstable and refresh the lock in the
+# pinned nixos/nix image. `nixbox check` is the sanity check. Nothing is built.
 nixbox_resolve() {
   if [[ -n ${TOOL:-} ]]; then
     echo 'TOOL is not supported for nixbox: its lock is one closed list.' >&2; exit 1
   fi
-  local old; old=$(mktemp)
-  cp "$nixbox_lock" "$old"
+  sh bundles/nixbox/scripts/bump-rev.sh
   sh bundles/nixbox/scripts/refresh-lock.sh
-  require_changes_only "$nixbox_lock"
-  if ! python3 scripts/nixbox-lock-compat.py "$old" "$nixbox_lock" 2>"$old.err"; then
-    cat "$old.err" >&2
-    { echo '## nixbox lock refresh refused'; echo; cat "$old.err"; } >> "$GITHUB_STEP_SUMMARY"
-    exit 1
-  fi
-  go run ./cmd/nixbox check -catalog bundles/nixbox/packages.catalog.json -lock "$nixbox_lock"
+  require_changes_only "$nixbox_lock" "$nixbox_catalog"
+  go run ./cmd/nixbox check -catalog "$nixbox_catalog" -lock "$nixbox_lock"
   mkdir -p "$UPGRADE_RESULT"
-  git diff -- "$nixbox_lock" > "$UPGRADE_RESULT/lock.diff"
-  if git diff --quiet -- "$nixbox_lock"; then
+  git diff -- "$nixbox_catalog" "$nixbox_lock" > "$UPGRADE_RESULT/lock.diff"
+  if git diff --quiet -- "$nixbox_catalog" "$nixbox_lock"; then
     echo 'changed=false' >> "$GITHUB_OUTPUT"
-    echo 'No nixbox lock changes; no branch or pull request will be created.' >> "$GITHUB_STEP_SUMMARY"
+    echo 'No nixbox changes; no branch or pull request will be created.' >> "$GITHUB_STEP_SUMMARY"
   else
     cp "$nixbox_lock" "$UPGRADE_RESULT/nixbox.lock.json"
+    cp "$nixbox_catalog" "$UPGRADE_RESULT/nixbox.catalog.json"
     git rev-parse HEAD > "$UPGRADE_RESULT/base.sha"
     echo 'changed=true' >> "$GITHUB_OUTPUT"
     {
-      echo '## Proposed nixbox lock refresh'
-      echo
-      echo 'The refreshed lock keeps the same package list; only store paths, hashes and signatures differ. First publication and any package list change need explicit owner approval, and licenses must be recorded before the first publication. No image, release or publication was run.'
+      echo '## Proposed nixbox update'
       echo
       echo '```diff'
       head -c 500000 "$UPGRADE_RESULT/lock.diff"
@@ -126,8 +120,7 @@ nixbox_resolve() {
   fi
 }
 
-# One nixbox-only pull request on its own topic. Publication never recognizes
-# this topic, and the body states that it authorizes nothing.
+# One nixbox-only pull request on its own topic (publication never recognizes it).
 nixbox_publish() {
   : "${GITHUB_REPOSITORY:?set GITHUB_REPOSITORY}"
   : "${DEFAULT_BRANCH:?set DEFAULT_BRANCH}"
@@ -136,37 +129,33 @@ nixbox_publish() {
   [[ $GITHUB_RUN_ID =~ ^[0-9]+$ && $GITHUB_RUN_ATTEMPT =~ ^[0-9]+$ ]] || exit 1
   check_result publish
   if [[ ${#bundles[@]} -eq 0 ]]; then
-    echo 'No nixbox lock changes; no branch or pull request will be created.' >> "$GITHUB_STEP_SUMMARY"; exit 0
+    echo 'No nixbox changes; no branch or pull request will be created.' >> "$GITHUB_STEP_SUMMARY"; exit 0
   fi
   local base; base=$(cat "$UPGRADE_RESULT/base.sha")
   if [[ ! $base =~ ^[0-9a-f]{40}$ || $base != "$(git rev-parse HEAD)" ]]; then
     echo 'Refusing stale proposal: artifact base differs from checkout.' >&2; exit 1
   fi
-  git show "HEAD:$nixbox_lock" > "$UPGRADE_RESULT/previous.lock.json"
+  local old_rev new_rev
+  old_rev=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["nixpkgs"]["rev"])' "$nixbox_catalog")
   cp "$UPGRADE_RESULT/nixbox.lock.json" "$nixbox_lock"
-  # Re-verify from the checked-out catalog; never accept the artifact on trust.
-  python3 scripts/nixbox-lock-compat.py "$UPGRADE_RESULT/previous.lock.json" "$nixbox_lock"
-  go run ./cmd/nixbox check -catalog bundles/nixbox/packages.catalog.json -lock "$nixbox_lock"
-  require_changes_only "$nixbox_lock"
-  if git diff --quiet -- "$nixbox_lock"; then
-    echo 'No nixbox lock changes; no branch or pull request will be created.' >> "$GITHUB_STEP_SUMMARY"; exit 0
+  cp "$UPGRADE_RESULT/nixbox.catalog.json" "$nixbox_catalog"
+  new_rev=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["nixpkgs"]["rev"])' "$nixbox_catalog")
+  go run ./cmd/nixbox check -catalog "$nixbox_catalog" -lock "$nixbox_lock"
+  require_changes_only "$nixbox_lock" "$nixbox_catalog"
+  if git diff --quiet -- "$nixbox_catalog" "$nixbox_lock"; then
+    echo 'No nixbox changes; no branch or pull request will be created.' >> "$GITHUB_STEP_SUMMARY"; exit 0
   fi
   local branch="automation/nixbox-upgrade-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
-  local body="$UPGRADE_RESULT/pr-body.md" title='chore(nixbox): refresh the lock for the unchanged package list'
+  local body="$UPGRADE_RESULT/pr-body.md" title="chore(nixbox): bump nixpkgs to ${new_rev:0:12}"
   git switch -c "$branch"
   git config user.name 'github-actions[bot]'
   git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-  git add -- "$nixbox_lock"
+  git add -- "$nixbox_catalog" "$nixbox_lock"
   git commit -m "$title"
   cat > "$body" <<BODY
-Refreshed \`$nixbox_lock\` in the pinned nixos/nix image. The package list, catalog, platforms and signing key are unchanged; store paths, narHash values and signatures may differ. Every path was re-verified against the pinned key.
+Bumps nixpkgs from \`$old_rev\` to \`$new_rev\` (head of nixpkgs-unstable) and refreshes \`$nixbox_lock\`.
 
-This pull request authorizes no build and no publication:
-
-- The first publication of nixbox needs explicit owner approval of the exact source revision.
-- Any change to the package list needs explicit owner approval and can never come from an updater.
-- The licenses of the glibc runner and of every closure path must be recorded before the first publication.
-- nixbox is not part of the publication workflows; merging this changes the lock only.
+The check is the nixbox smoke run (\`nixbox-build.yml\`); nothing was built or published here.
 
 Run: https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID (attempt $GITHUB_RUN_ATTEMPT)
 BODY
