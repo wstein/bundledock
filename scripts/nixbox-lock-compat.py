@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
-"""Check that a refreshed nixbox lock keeps the same package list.
+"""Check that a refreshed nixbox lock and catalog keep the same package list.
 
-An updater may change the nixpkgs revision, store paths, narHash values and
-signatures. It must not add or remove packages, change the catalog, the
-platforms or the signing keys. Those changes need explicit owner approval
-(AGENTS.md, class "distribution binary cache") and are never proposed.
+An updater may move the nixpkgs pin: the catalog fields nixpkgs.rev,
+nixpkgs.narHash and the nixpkgs.url of that release (which names the revision),
+and with them the store paths, narHash values and signatures of the lock. It
+must not add or remove packages, change attributes, providers, shims, the
+platforms, the cache URL or the signing keys. Those changes need explicit owner
+approval (AGENTS.md, class "distribution binary cache") and are never proposed.
+
+Usage: nixbox-lock-compat.py OLD_LOCK NEW_LOCK [OLD_CATALOG NEW_CATALOG]
+Without catalogs the catalog must be unchanged (equal lock catalog digest).
 """
 import json
 import re
@@ -23,12 +28,47 @@ def keys(platform):
     return {sig.split(':', 1)[0] for info in platform['paths'].values() for sig in info.get('signatures', [])}
 
 
-def compare(old, new):
+PIN_FIELDS = ('rev', 'narHash', 'url')
+REV = re.compile(r'^[0-9a-f]{40}$')
+SRI = re.compile(r'^sha256-[A-Za-z0-9+/]{43}=$')
+URL_PREFIX = 'https://releases.nixos.org/nixpkgs/'
+
+
+def compare_catalog(old, new):
+    """Only the nixpkgs pin may differ; everything else must be identical."""
+    def rest(catalog):
+        copy = json.loads(json.dumps(catalog))
+        pin = copy.get('nixpkgs')
+        if isinstance(pin, dict):
+            for field in PIN_FIELDS:
+                pin.pop(field, None)
+        return copy
+    problems = []
+    if rest(old) != rest(new):
+        problems.append('catalog changed beyond nixpkgs rev and narHash (package, attribute, provider, shim, '
+                        'platform, cache URL, public key or other field)')
+    pin = new.get('nixpkgs') if isinstance(new.get('nixpkgs'), dict) else {}
+    before = old.get('nixpkgs') if isinstance(old.get('nixpkgs'), dict) else {}
+    if any(pin.get(f) != before.get(f) for f in PIN_FIELDS):
+        rev = pin.get('rev', '')
+        if not isinstance(rev, str) or not REV.match(rev):
+            problems.append('nixpkgs rev is not a 40 digit commit hash')
+        elif not (isinstance(pin.get('url'), str) and pin['url'].startswith(URL_PREFIX) and rev[:12] in pin['url']):
+            problems.append(f'nixpkgs url is not a {URL_PREFIX} release of the new rev')
+        if not isinstance(pin.get('narHash'), str) or not SRI.match(pin['narHash']):
+            problems.append('nixpkgs narHash is not an SRI sha256 hash')
+    return problems
+
+
+def compare(old, new, old_catalog=None, new_catalog=None):
     problems = []
     if old.get('schema') != new.get('schema'):
         problems.append('lock schema changed')
-    if old.get('catalog_digest') != new.get('catalog_digest'):
-        problems.append('catalog changed (nixpkgs revision pin, cache, key, package or placeholder list)')
+    if old_catalog is None or new_catalog is None:
+        if old.get('catalog_digest') != new.get('catalog_digest'):
+            problems.append('catalog changed (nixpkgs revision pin, cache, key, package or placeholder list)')
+    else:
+        problems += compare_catalog(old_catalog, new_catalog)
     if set(old['platforms']) != set(new['platforms']):
         problems.append('platform set changed')
         return problems
@@ -51,12 +91,12 @@ def compare(old, new):
 
 
 def main(argv):
-    if len(argv) != 3:
-        raise SystemExit('Usage: nixbox-lock-compat.py OLD_LOCK NEW_LOCK')
-    old, new = (json.loads(Path(p).read_text()) for p in argv[1:])
-    problems = compare(old, new)
+    if len(argv) not in (3, 5):
+        raise SystemExit('Usage: nixbox-lock-compat.py OLD_LOCK NEW_LOCK [OLD_CATALOG NEW_CATALOG]')
+    loaded = [json.loads(Path(p).read_text()) for p in argv[1:]]
+    problems = compare(*loaded)
     if problems:
-        print('Refusing nixbox proposal: ' + '; '.join(problems) + '. Any change to the package list needs '
+        print('Refusing nixbox proposal: ' + '; '.join(problems) + '. Any change to the package list or the catalog beyond the nixpkgs pin needs '
               'explicit owner approval and cannot come from an updater pull request.', file=sys.stderr)
         return 1
     return 0
