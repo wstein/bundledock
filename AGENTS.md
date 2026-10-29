@@ -92,6 +92,10 @@ commit-pinned source fixed by commit SHA plus the builder-computed SHA256 of the
 fetched files (class `tls-download-sha256`), which is a named exception with its residual risk
 recorded and needs owner approval for every bump of that pin; and (d) a test
 proves the output is statically linked. Each new case needs its own review.
+If a
+security fix is not yet available in an official stable prebuilt release, wait
+for that release and record the remaining findings in existing documentation.
+This does not restrict compiling BundleDock's own CLI, builder, or initializer.
 
 The class "distribution binary cache" is a second, separate exception, used only
 by the nixbox bundle. It allows content from the Nix binary cache when all of
@@ -103,10 +107,6 @@ licenses of glibc and of every closure path are recorded; and (f) the first
 publication and every change to the list of store paths need explicit owner
 approval, and an updater PR cannot supply either. Anything outside this class
 follows the rules above.
-If a
-security fix is not yet available in an official stable prebuilt release, wait
-for that release and record the remaining findings in existing documentation.
-This does not restrict compiling BundleDock's own CLI, builder, or initializer.
 
 Before the next release, review every item in the local TODO list and its
 supporting evidence. Resolve unfinished or blocked items, or obtain an explicit
