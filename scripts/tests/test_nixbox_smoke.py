@@ -89,6 +89,7 @@ elif '/nixbox-smoke.sh' in args:
         self.assertIn('auto mode runs the toolbox binary directly on a glibc host', text)
         self.assertIn('auto mode uses the Nix loader on musl', text)
         self.assertIn('NIXBOX_GCOMPAT_SIM', text)
+        self.assertIn('a user symlink to a shim finds the profile', text)
 
     def test_platform_and_offline_are_forwarded(self):
         result, calls = self.invoke(NIXBOX_PLATFORM='linux/amd64', NIXBOX_OFFLINE='1')

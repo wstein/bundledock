@@ -76,6 +76,14 @@ class ShimTests(unittest.TestCase):
         self.assertTrue(self.run_shim('zk', NIXBOX_LOADER='never', **both).stdout.startswith('DIRECT'))
         self.assertTrue(self.run_shim('zk', NIXBOX_LOADER='always', NIXBOX_HOST_LOADERS=str(self.host_loader)).stdout.startswith('LOADER'))
 
+    def test_user_symlink_to_a_shim_resolves_the_profile(self):
+        link_dir = self.dir / 'ub'
+        link_dir.mkdir()
+        (link_dir / 'zk').symlink_to(self.profile / 'bin/zk')
+        environment = dict(os.environ, BDOCK_TOOLBOX=str(self.toolbox), NIXBOX_LOADER='never')
+        result = subprocess.run([str(link_dir / 'zk'), 'x'], env=environment, capture_output=True, text=True)
+        self.assertEqual((result.returncode, result.stdout), (0, 'DIRECT [x] HELIX_RUNTIME=unset\n'), result.stderr)
+
     def test_loader_modes_override_detection(self):
         self.assertTrue(self.run_shim('zk', NIXBOX_LOADER='always', NIXBOX_HOST_LOADERS=str(self.host_loader)).stdout.startswith('LOADER'))
         self.assertTrue(self.run_shim('zk', NIXBOX_LOADER='never').stdout.startswith('DIRECT'))

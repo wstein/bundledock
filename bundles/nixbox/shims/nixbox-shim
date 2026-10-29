@@ -12,8 +12,18 @@
 #   NIXBOX_MUSL_LOADERS  space separated musl loader globs; a match makes auto
 #                    mode use the Nix loader (test hook; default /lib/ld-musl-*)
 set -eu
-profile=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
 name=${0##*/}
+# The shim may be started through a user symlink to <profile>/bin/<name>, so
+# find the profile from the resolved script. readlink -f exists on GNU and
+# BusyBox (the four smoke images); without it use the default profile path.
+self=$0
+if resolved=$(readlink -f -- "$0" 2>/dev/null) && [ -n "$resolved" ]; then
+    self=$resolved
+fi
+profile=$(CDPATH='' cd -- "$(dirname -- "$self")/.." && pwd)
+if [ ! -r "$profile/share/nixbox/shims.tsv" ] && [ -r /nix/profile/share/nixbox/shims.tsv ]; then
+    profile=/nix/profile
+fi
 toolbox=${BDOCK_TOOLBOX:-/opt/bdock/toolbox}
 table=$profile/share/nixbox/shims.tsv
 tab=$(printf '\t')

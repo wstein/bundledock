@@ -71,6 +71,7 @@ if [ -f "$toolbox/.ready" ]; then
     else
         check 'auto mode runs the toolbox binary directly on a glibc host' "sh -x /nix/profile/bin/zk --version 2>&1 | grep -q 'exec $toolbox/bin/zk --version'"
     fi
+    check 'a user symlink to a shim finds the profile' 'mkdir ub && ln -s /nix/profile/bin/zk ub/zk && ub/zk --version'
     for mode in auto always; do
         export NIXBOX_LOADER=$mode
         check "ast-grep [$mode]" 'ast-grep --version && printf "foo(1)\n" > a.js && ast-grep run -p "foo(\$A)" -l js a.js | grep -q foo'
