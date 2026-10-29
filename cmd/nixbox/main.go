@@ -8,13 +8,14 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"runtime"
 	"sort"
 )
 
 func main() { os.Exit(run(os.Args[1:], os.Stdout, os.Stderr)) }
 
-const usage = "usage: nixbox check|lock|roots|profile|verify-store ... (see docs/nixbox.md)"
+const usage = "usage: nixbox check|lock|roots|profile|init|verify-store ... (see docs/nixbox.md)"
 
 func run(args []string, stdout, stderr io.Writer) int {
 	if len(args) == 0 {
@@ -29,6 +30,8 @@ func run(args []string, stdout, stderr io.Writer) int {
 		err = lock(args[1:], stdout)
 	case "verify-store":
 		err = verifyStore(args[1:], stdout)
+	case "init":
+		err = initVolume(args[1:], stdout)
 	case "profile":
 		err = profile(args[1:], stdout)
 	case "roots":
@@ -226,4 +229,25 @@ func profile(args []string, stdout io.Writer) error {
 	}
 	fmt.Fprintf(stdout, "profile written to %s\n", *out)
 	return nil
+}
+
+// initVolume is the carrier entrypoint: it fills the volume mounted at -target
+// from the image tree at -source, using the catalog and lock the image carries.
+func initVolume(args []string, stdout io.Writer) error {
+	fs := newFlags("init")
+	source := fs.String("source", "/opt/bdock/nixbox", "image tree (store, var/nix, profile)")
+	target := fs.String("target", "/bundle", "mounted volume directory")
+	arch := fs.String("arch", runtime.GOARCH, "amd64 or arm64")
+	if err := fs.Parse(args); err != nil || fs.NArg() != 0 || (*arch != "amd64" && *arch != "arm64") {
+		return usageError("usage: nixbox init [-source DIR] [-target DIR] [-arch amd64|arm64]")
+	}
+	meta := filepath.Join(*source, "profile", "share", "nixbox")
+	c, cdata, l, err := load(filepath.Join(meta, "catalog.json"), filepath.Join(meta, "lock.json"))
+	if err != nil {
+		return err
+	}
+	if err := nixbox.CheckLock(c, cdata, l, c.Cache.PublicKey); err != nil {
+		return err
+	}
+	return nixbox.Initialize(*source, *target, l.Platforms[*arch], stdout)
 }
