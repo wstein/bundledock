@@ -86,8 +86,11 @@ through the loader otherwise), `always` or `never`. For `git` over https set
 The `fastfetch` binary leaves the toolbox only in a later toolbox release, after
 consumers mount nixbox.
 
-Choosing the glibc runner over nixpkgs builds of these tools keeps nixbox at
-about 57 MiB instead of 638 MiB (987 MiB with nixpkgs `fastfetch`).
+Choosing the glibc runner over nixpkgs builds of these tools means the eight tools
+add only the glibc runner, about 57 MiB, instead of 638 MiB of nixpkgs closures
+(987 MiB with nixpkgs `fastfetch`). The 57 MiB is the runner alone. The whole
+bundle closure, including `git`, `rsync`, `zstd`, `less` and `openssh`, is 197.3 MiB
+on arm64 and 180.1 MiB on amd64 (see "Local build of the bundle").
 
 ## Lock and verification
 
