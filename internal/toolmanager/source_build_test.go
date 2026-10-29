@@ -21,8 +21,40 @@ func hexOf(c string) string { return strings.Repeat(c, 64) }
 
 func sha3Hex(b []byte) string { s := sha3.Sum256(b); return fmt.Sprintf("%x", s) }
 
+// publisherHeader is the header line exactly as https://www.sqlite.org/download.html
+// publishes it (checked 2026-10-29). It is a literal, not productHeader, so a
+// header the parser expects but the publisher does not write fails here.
+const publisherHeader = "PRODUCT,VERSION,RELATIVE-URL,SIZE-IN-BYTES,SHA3-HASH"
+
 func productPage(rows ...string) []byte {
-	return []byte("<html><body>\n<!--\nDownload product data for scripts to read\n" + productHeader + "\n" + strings.Join(rows, "\n") + "\n-->\n</body></html>\n")
+	return []byte("<html><body>\n<!-- Download product data for scripts to read\n" + publisherHeader + "\n" + strings.Join(rows, "\n") + "\n-->\n</body></html>\n")
+}
+
+// TestParseSQLitePublisherExcerpt parses the product data block of the
+// publisher's download page as served on 2026-10-29 for 3.54.1.
+func TestParseSQLitePublisherExcerpt(t *testing.T) {
+	page := []byte(`<p>Other content</p>
+<!-- Download product data for scripts to read
+PRODUCT,VERSION,RELATIVE-URL,SIZE-IN-BYTES,SHA3-HASH
+PRODUCT,3.54.1,2026/sqlite-src-3540100.zip,14899528,877c6f4996ce7adb368686bce21638de9e3d91534832ad3d9d119037d1bc22ad
+PRODUCT,3.54.1,2026/sqlite-amalgamation-3540100.zip,2990966,92281c86e2957f9b9305890f9ac04204caa7b677cc868dc326d942689df28e30
+PRODUCT,3.54.1,2026/sqlite-autoconf-3540100.tar.gz,3332984,b6ced585c750916b1052667239a12c25a7ff34e7f06e1e6e01ecb0427657d9c4
+PRODUCT,3.54.1,2026/sqlite-preprocessed-3540100.zip,3139216,77320e1ed40b7e655f27b97bff9010b3f159800eddfc4f28b9d96254d8a5bd17
+PRODUCT,3.54.1,2026/sqlite-doc-3540100.zip,11961740,6ea5c0eff56c7fb305ca85e820070eacd96da44ae9edfb04d4c82d909540297b
+PRODUCT,3.54.1,2026/sqlite-android-3540100.aar,3688530,3afb0568a107d753b640e4d65cdb1d9a2247e9833c25e72ca7d1086b78365de1
+PRODUCT,3.54.1,2026/sqlite-tools-linux-x64-3540100.zip,4324601,555635de98534d87a67ee2e6e1b0d79f494b1b33b223477d3e7a8ea0c66e416f
+PRODUCT,3.54.1,2026/sqlite-tools-osx-arm64-3540100.zip,4538997,a3106c6db3b50ec9ef4fde4edfafe7504179e9bfd7e0816a280b29c4d56a2e7b
+-->
+`)
+	c := toolconfig.Constraint{Lower: toolconfig.Version{3, 54, 1}, Upper: toolconfig.Version{4, 0, 0}}
+	row, err := parseSQLiteProducts(page, c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := sqliteProduct{Version: "3.54.1", Path: "2026/sqlite-amalgamation-3540100.zip", SHA3256: "92281c86e2957f9b9305890f9ac04204caa7b677cc868dc326d942689df28e30"}
+	if row != want {
+		t.Fatalf("got %+v, want %+v", row, want)
+	}
 }
 
 func amalgamationRow(version, rel string, size int, hash string) string {

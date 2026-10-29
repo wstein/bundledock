@@ -10,7 +10,8 @@ import (
 	"strings"
 )
 
-const productHeader = "PRODUCT,VERSION,RELATIVE-URL,SIZE,SHA3-HASH"
+// productHeader is the header line of the product data exactly as the publisher writes it.
+const productHeader = "PRODUCT,VERSION,RELATIVE-URL,SIZE-IN-BYTES,SHA3-HASH"
 
 // sqliteProduct is the amalgamation row of the machine-readable product data
 // embedded in https://www.sqlite.org/download.html.
