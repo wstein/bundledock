@@ -42,7 +42,8 @@ class ShimTests(unittest.TestCase):
 
     def run_shim(self, name, *args, **env):
         environment = {k: v for k, v in os.environ.items() if not k.startswith(('NIXBOX_', 'BDOCK_', 'HELIX_'))}
-        environment.update(BDOCK_TOOLBOX=str(self.toolbox), NIXBOX_HOST_LOADERS=str(self.dir / 'absent'))
+        environment.update(BDOCK_TOOLBOX=str(self.toolbox), NIXBOX_HOST_LOADERS=str(self.dir / 'absent'),
+                           NIXBOX_MUSL_LOADERS=str(self.dir / 'absent'))
         environment.update(env)
         return subprocess.run([str(self.profile / 'bin' / name), *args], env=environment, capture_output=True, text=True)
 
@@ -55,6 +56,25 @@ class ShimTests(unittest.TestCase):
     def test_with_a_host_loader_the_binary_runs_directly(self):
         result = self.run_shim('zk', 'list', NIXBOX_HOST_LOADERS='%s %s' % (self.dir / 'absent', self.host_loader))
         self.assertEqual(result.stdout, 'DIRECT [list] HELIX_RUNTIME=unset\n', result.stderr)
+
+    def test_musl_host_uses_the_nix_loader_even_with_a_glibc_looking_loader(self):
+        # Alpine with gcompat has /lib/ld-linux-<arch>.so.1 but its binaries still fail.
+        result = self.run_shim('zk', 'list', NIXBOX_HOST_LOADERS=str(self.host_loader), NIXBOX_MUSL_LOADERS=str(self.host_loader))
+        self.assertTrue(result.stdout.startswith('LOADER'), result.stdout + result.stderr)
+
+    def test_musl_loader_patterns_are_globs(self):
+        (self.dir / 'ld-musl-x.so.1').write_text('')
+        result = self.run_shim('zk', NIXBOX_HOST_LOADERS=str(self.host_loader), NIXBOX_MUSL_LOADERS=str(self.dir / 'ld-musl-*.so.1'))
+        self.assertTrue(result.stdout.startswith('LOADER'), result.stdout)
+
+    def test_glibc_host_without_musl_runs_directly(self):
+        result = self.run_shim('zk', NIXBOX_HOST_LOADERS=str(self.host_loader), NIXBOX_MUSL_LOADERS=str(self.dir / 'ld-musl-*.so.1'))
+        self.assertTrue(result.stdout.startswith('DIRECT'), result.stdout + result.stderr)
+
+    def test_forced_modes_ignore_musl_detection(self):
+        both = dict(NIXBOX_HOST_LOADERS=str(self.host_loader), NIXBOX_MUSL_LOADERS=str(self.host_loader))
+        self.assertTrue(self.run_shim('zk', NIXBOX_LOADER='never', **both).stdout.startswith('DIRECT'))
+        self.assertTrue(self.run_shim('zk', NIXBOX_LOADER='always', NIXBOX_HOST_LOADERS=str(self.host_loader)).stdout.startswith('LOADER'))
 
     def test_loader_modes_override_detection(self):
         self.assertTrue(self.run_shim('zk', NIXBOX_LOADER='always', NIXBOX_HOST_LOADERS=str(self.host_loader)).stdout.startswith('LOADER'))

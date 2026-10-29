@@ -1,7 +1,7 @@
 #!/bin/sh
 # nixbox shim. Every official toolbox binary that needs glibc has a symlink
 # <profile>/bin/<name> to this script. It runs the toolbox binary directly when
-# the host has a glibc loader and otherwise through the Nix glibc loader, so the
+# the host is a glibc host and otherwise through the Nix glibc loader, so the
 # unmodified official bytes also start on musl images such as Alpine.
 #
 # Environment:
@@ -9,6 +9,8 @@
 #   NIXBOX_LOADER    auto (default), always or never use the Nix loader
 #   NIXBOX_HOST_LOADERS  space separated host loader paths to probe in auto mode
 #                    (test hook; the default depends on the machine type)
+#   NIXBOX_MUSL_LOADERS  space separated musl loader globs; a match makes auto
+#                    mode use the Nix loader (test hook; default /lib/ld-musl-*)
 set -eu
 profile=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
 name=${0##*/}
@@ -41,20 +43,33 @@ case $mode in
 always) direct=no ;;
 never) direct=yes ;;
 auto)
+    # A musl host (Alpine) needs the Nix loader even when a glibc-looking
+    # loader file exists there, for example the stubs that gcompat installs.
+    # Only a host without musl is probed for a real glibc loader.
     direct=no
-    candidates=${NIXBOX_HOST_LOADERS:-}
-    if [ -z "$candidates" ]; then
-        case $(uname -m) in
-        x86_64) candidates="/lib64/ld-linux-x86-64.so.2 /lib/x86_64-linux-gnu/ld-linux-x86-64.so.2" ;;
-        aarch64 | arm64) candidates="/lib/ld-linux-aarch64.so.1 /lib64/ld-linux-aarch64.so.1 /lib/aarch64-linux-gnu/ld-linux-aarch64.so.1" ;;
-        esac
-    fi
-    for loader in $candidates; do
+    musl=${NIXBOX_MUSL_LOADERS:-/lib/ld-musl-*.so.1 /lib/libc.musl-*.so.1 /usr/lib/ld-musl-*.so.1}
+    is_musl=no
+    for loader in $musl; do
         if [ -e "$loader" ]; then
-            direct=yes
+            is_musl=yes
             break
         fi
     done
+    if [ "$is_musl" = no ]; then
+        candidates=${NIXBOX_HOST_LOADERS:-}
+        if [ -z "$candidates" ]; then
+            case $(uname -m) in
+            x86_64) candidates="/lib64/ld-linux-x86-64.so.2 /lib/x86_64-linux-gnu/ld-linux-x86-64.so.2" ;;
+            aarch64 | arm64) candidates="/lib/ld-linux-aarch64.so.1 /lib64/ld-linux-aarch64.so.1 /lib/aarch64-linux-gnu/ld-linux-aarch64.so.1" ;;
+            esac
+        fi
+        for loader in $candidates; do
+            if [ -e "$loader" ]; then
+                direct=yes
+                break
+            fi
+        done
+    fi
     ;;
 *) fail "NIXBOX_LOADER must be auto, always or never" ;;
 esac
