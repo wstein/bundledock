@@ -39,7 +39,7 @@ func TestCheckFailsOnAStaleLock(t *testing.T) {
 }
 
 func TestUsageErrors(t *testing.T) {
-	for _, args := range [][]string{{}, {"bogus"}, {"check"}, {"check", "-catalog", "x"}, {"verify-store", "-arch", "ppc"}, {"roots", "-arch", "ppc"}, {"profile"}, {"profile", "-arch", "ppc"}} {
+	for _, args := range [][]string{{}, {"bogus"}, {"check"}, {"check", "-catalog", "x"}, {"verify-store", "-arch", "ppc"}, {"roots", "-arch", "ppc"}, {"profile"}, {"init", "-arch", "ppc"}, {"init", "extra"}, {"profile", "-arch", "ppc"}} {
 		if _, _, code := runCLI(t, args...); code != 2 {
 			t.Errorf("%v: exit %d, want 2", args, code)
 		}
@@ -75,5 +75,12 @@ func TestProfileRefusesAStoreThatDoesNotMatchTheLock(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(dir, "out")); err == nil {
 		t.Error("wrote a profile for an unverified store")
+	}
+}
+
+func TestInitNeedsTheImageCatalogAndLock(t *testing.T) {
+	_, errs, code := runCLI(t, "init", "-source", t.TempDir(), "-target", t.TempDir())
+	if code != 1 || errs == "" {
+		t.Fatalf("exit %d: %s", code, errs)
 	}
 }

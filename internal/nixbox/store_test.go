@@ -10,7 +10,11 @@ import (
 // platform lock that describes it exactly.
 func fakeStore(t *testing.T) (string, PlatformLock) {
 	t.Helper()
-	store := t.TempDir()
+	return fakeStoreIn(t, t.TempDir())
+}
+
+func fakeStoreIn(t *testing.T, store string) (string, PlatformLock) {
+	t.Helper()
 	pl := PlatformLock{System: "x86_64-linux", Roots: map[string]string{"git": pathA}, Paths: map[string]PathInfo{}}
 	for path, body := range map[string]string{pathA: "alpha", pathB: "beta"} {
 		dir := filepath.Join(store, filepath.Base(path))
