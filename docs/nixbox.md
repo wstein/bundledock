@@ -138,8 +138,9 @@ What exists:
   pinned `nixos/nix` image and runs `nixbox check`. If nixpkgs is already at the
   head, nothing changes and no pull request opens. A change becomes a separate
   nixbox-only pull request on an `automation/nixbox-upgrade-<run>-<attempt>`
-  topic; the smoke run (`nixbox-build.yml`) is its check. Nothing is built or
-  published by the updater.
+  topic; its check is the dispatched source CI. The build and smoke run
+  (`nixbox-build.yml`) is dispatched by the owner on `main`. Nothing is built
+  or published by the updater.
 - **Staging cleanup** (`staging-cleanup.yml`): nixbox is in the repository
   list. Before a first publication its Quay repository does not exist, and the
   run is an empty dry run. Staging tags of nixbox are never eligible for

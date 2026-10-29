@@ -155,7 +155,7 @@ nixbox_publish() {
   cat > "$body" <<BODY
 Bumps nixpkgs from \`$old_rev\` to \`$new_rev\` (head of nixpkgs-unstable) and refreshes \`$nixbox_lock\`.
 
-The check is the nixbox smoke run (\`nixbox-build.yml\`); nothing was built or published here.
+The check is the dispatched source CI. The build and smoke (\`nixbox-build.yml\`) is an owner-dispatched run on main; nothing was built or published here.
 
 Run: https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID (attempt $GITHUB_RUN_ATTEMPT)
 BODY
