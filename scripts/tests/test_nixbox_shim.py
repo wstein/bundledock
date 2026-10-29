@@ -84,6 +84,17 @@ class ShimTests(unittest.TestCase):
         result = subprocess.run([str(link_dir / 'zk'), 'x'], env=environment, capture_output=True, text=True)
         self.assertEqual((result.returncode, result.stdout), (0, 'DIRECT [x] HELIX_RUNTIME=unset\n'), result.stderr)
 
+    def test_user_symlink_with_another_name_resolves_the_shim_entry(self):
+        link_dir = self.dir / 'ub'
+        link_dir.mkdir()
+        (link_dir / 'helix').symlink_to(self.profile / 'bin/hx')
+        (link_dir / 'again').symlink_to('helix')
+        environment = dict(os.environ, BDOCK_TOOLBOX=str(self.toolbox), NIXBOX_LOADER='never')
+        environment.pop('HELIX_RUNTIME', None)
+        for name in ('helix', 'again'):
+            result = subprocess.run([str(link_dir / name), 'x'], env=environment, capture_output=True, text=True)
+            self.assertEqual((result.returncode, result.stdout), (0, 'DIRECT [x] HELIX_RUNTIME=%s/lib/helix/runtime\n' % self.toolbox), result.stderr)
+
     def test_loader_modes_override_detection(self):
         self.assertTrue(self.run_shim('zk', NIXBOX_LOADER='always', NIXBOX_HOST_LOADERS=str(self.host_loader)).stdout.startswith('LOADER'))
         self.assertTrue(self.run_shim('zk', NIXBOX_LOADER='never').stdout.startswith('DIRECT'))
