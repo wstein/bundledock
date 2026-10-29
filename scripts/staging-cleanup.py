@@ -25,7 +25,11 @@ def load(name, filename):
 
 tags = load('cleanup_tags', 'bundle-git-tags.py')
 docs = load('cleanup_docs', 'publication-docs.py')
-REPOSITORIES = tuple(sorted({tags._CONFIG.select_bundle(b)['repository'] for b in tags.BUNDLES}))
+# nixbox is cleaned but not published by the publication workflows. Its repository does not
+# exist before an owner-approved first publication, and no staging tag of it is ever eligible
+# (assess requires a publishable bundle), so nothing is ever deleted from it.
+UNPUBLISHED = tuple(tags._CONFIG.UPGRADE_ONLY)
+REPOSITORIES = tuple(sorted({tags._CONFIG.select_bundle(b)['repository'] for b in tags.BUNDLES} | set(UNPUBLISHED)))
 STAGING = re.compile(r'staging-(.+)-(amd64|arm64)\Z')
 
 
@@ -77,7 +81,12 @@ class Quay:
             query = dict(onlyActiveTags='true', limit=100, page=page)
             if name is not None:
                 query['specificTag'] = name
-            data = self.request(repository + '/tag/?' + urllib.parse.urlencode(query))
+            try:
+                data = self.request(repository + '/tag/?' + urllib.parse.urlencode(query))
+            except ValueError as error:
+                if repository in UNPUBLISHED and str(error) == 'Quay HTTP 404':
+                    return []
+                raise
             require(data.get('page') == page and isinstance(data.get('tags'), list) and isinstance(data.get('has_additional'), bool), 'Malformed Quay pagination')
             for row in data['tags']:
                 require(isinstance(row, dict) and isinstance(row.get('name'), str) and row['name'] not in seen, 'Duplicate or invalid tag')
@@ -323,7 +332,12 @@ def main():
     target = dict(run_id=failed_run[0], attempt=failed_run[1]) if failed_run else None
     publication = publication_proof(args.publication, args.bundle, github) if args.publication else None
     repos = [tags._CONFIG.select_bundle(args.bundle)['repository']] if publication else (REPOSITORIES if args.repository == 'all' else [args.repository])
-    registries = {repo: tags.Registry('quay.io/bundledock/' + repo) for repo in repos}
+    class Registries(dict):
+        # Created on first use: an unpublished repository has no tags and needs no registry token.
+        def __missing__(self, repo):
+            self[repo] = tags.Registry('quay.io/bundledock/' + repo)
+            return self[repo]
+    registries = Registries()
     now = datetime.now(timezone.utc)
     def check(repo, row):
         require(repo in repos, 'Plan repository outside selected scope')

@@ -335,5 +335,38 @@ class CleanupTests(unittest.TestCase):
             with self.subTest(repository=repository, name=name), self.assertRaises(ValueError):
                 api.delete(repository, name)
 
+    def test_nixbox_is_cleaned_but_never_published_and_never_deleted_from(self):
+        self.assertIn('nixbox', cleanup.REPOSITORIES)
+        self.assertNotIn('nixbox', cleanup.tags.BUNDLES)
+        api = cleanup.Quay()
+        # Before a first publication the repository does not exist: an empty list, not an error.
+        with patch.object(api, 'request', side_effect=ValueError('Quay HTTP 404')):
+            self.assertEqual(api.list_tags('nixbox'), [])
+            with self.assertRaisesRegex(ValueError, 'HTTP 404'):
+                api.list_tags('toolbox')
+        with patch.object(api, 'request', side_effect=ValueError('Quay HTTP 500')), self.assertRaisesRegex(ValueError, 'HTTP 500'):
+            api.list_tags('nixbox')
+        # Even an existing staging tag is never eligible: publication cannot have produced it.
+        self.labels['io.bundledock.bundle'] = 'nixbox'
+        raw = json.dumps({'os': 'linux', 'architecture': 'amd64', 'config': {'Labels': self.labels}}).encode()
+        digest = 'sha256:' + hashlib.sha256(raw).hexdigest()
+        self.documents['blobs', digest] = raw
+        raw = json.dumps({'config': {'digest': digest}}).encode()
+        manifest = 'sha256:' + hashlib.sha256(raw).hexdigest()
+        self.documents['manifests', manifest] = raw
+        row = cleanup.assess('nixbox', dict(self.row, manifest_digest=manifest), self.registry, self.github, NOW)
+        self.assertFalse(row['eligible'], row)
+
+    def test_nixbox_cli_run_before_first_publication_is_an_empty_dry_run(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / 'plan.json'
+            args = ['cleanup', '--repository', 'nixbox', '--output', str(output)]
+            with patch.object(cleanup.sys, 'argv', args), patch.object(cleanup, 'GitHub', return_value=self.github), \
+                 patch.object(cleanup.tags, 'Registry') as registry, \
+                 patch.object(cleanup.Quay, 'request', side_effect=ValueError('Quay HTTP 404')):
+                cleanup.main()
+            registry.assert_not_called()
+            self.assertEqual(json.loads(output.read_text())['rows'], [])
+
 
 if __name__ == '__main__': unittest.main()
