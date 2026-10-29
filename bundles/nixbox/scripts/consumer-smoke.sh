@@ -66,12 +66,13 @@ if [ -f "$toolbox/.ready" ]; then
         check 'official binary does not start on musl without the loader' '! NIXBOX_LOADER=never zk --version >/dev/null 2>&1'
         check 'auto mode uses the Nix loader on musl' 'sh -x /nix/profile/bin/zk --version 2>&1 | grep -q "exec .*lib/ld.so --library-path"'
         if [ -n "${NIXBOX_GCOMPAT_SIM:-}" ]; then
-            check 'gcompat-like glibc loader stub is present' 'test -e /lib/ld-linux-aarch64.so.1 && test -e /lib/ld-linux-x86-64.so.1'
+            check 'gcompat-like glibc loader stub is present' 'test -e /lib/ld-linux-aarch64.so.1 && test -e /lib64/ld-linux-x86-64.so.2'
         fi
     else
         check 'auto mode runs the toolbox binary directly on a glibc host' "sh -x /nix/profile/bin/zk --version 2>&1 | grep -q 'exec $toolbox/bin/zk --version'"
     fi
     check 'a user symlink to a shim finds the profile' 'mkdir ub && ln -s /nix/profile/bin/zk ub/zk && ub/zk --version'
+    check 'a user symlink with another name resolves to the shim entry' 'mkdir ub && ln -s /nix/profile/bin/zk ub/notes && ub/notes --version'
     for mode in auto always; do
         export NIXBOX_LOADER=$mode
         check "ast-grep [$mode]" 'ast-grep --version && printf "foo(1)\n" > a.js && ast-grep run -p "foo(\$A)" -l js a.js | grep -q foo'
