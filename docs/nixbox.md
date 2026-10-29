@@ -36,6 +36,11 @@ Mount nixbox together with the toolbox when you need one of these:
 | `official` | An official static prebuilt exists for amd64 and arm64. It stays in the toolbox. |
 | `nix` | The tool needs glibc libraries or has no official prebuilt. nixbox delivers it. |
 
+Nix-sourced store paths are limited to the glibc and libgcc runner and to tools
+that have no official stable prebuilt for both architectures. A tool with
+official prebuilts for both architectures (for example `node` or `opentofu`) stays
+on the official route and never enters nixbox.
+
 The toolbox is static and standalone. nixbox is for glibc needs and for tools
 sourced from a distribution. BundleDock's own tools (`whr`, `stw`, `smill`,
 `cscribe`, `herdr`) stay in the toolbox. The catalog `provider` field records
