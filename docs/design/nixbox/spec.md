@@ -170,4 +170,6 @@ cache signature. This needs an owner decision.
 - The pinned nixpkgs revision and its update flow; versions lag upstream (`node`).
 - Nix in CI.
 - `leaf` has no nixpkgs attribute; it would use option B or stay classic.
-- Licenses and redistribution of glibc and the nixpkgs closures.
+- Licenses and redistribution of glibc and the nixpkgs closures. The lock records no
+  licenses; recording them, with explicit owner approval, is a precondition of the
+  first publication, not a build gate.
