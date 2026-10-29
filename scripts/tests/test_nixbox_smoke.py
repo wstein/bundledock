@@ -77,7 +77,7 @@ elif '/nixbox-smoke.sh' in args:
         consumers = [c for c in calls if '/nixbox-smoke.sh' in c]
         by_image = {c[c.index('--entrypoint') + 2].split('@')[0]: c for c in consumers[:4]}
         alpine = by_image['alpine']
-        for loader in ('/lib/ld-linux-aarch64.so.1', '/lib/ld-linux-x86-64.so.1'):
+        for loader in ('/lib/ld-linux-aarch64.so.1', '/lib64/ld-linux-x86-64.so.2'):
             self.assertTrue(any(a.startswith('type=bind,src=') and a.endswith(',dst=%s,readonly' % loader) for a in alpine), loader)
         self.assertIn('NIXBOX_GCOMPAT_SIM=1', alpine)
         for image in ('debian', 'fedora', 'opensuse/leap'):
