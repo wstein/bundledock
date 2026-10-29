@@ -111,14 +111,50 @@ The build runs in a Dockerfile stage from a digest-pinned `nixos/nix` image:
 Signatures are checked three ways: an ed25519 check of every closure path against
 the pinned key, `nix copy` with `require-sigs`, and the NAR-hash comparison of the
 copied store with the lock. A wrong key makes `nix copy` fail with "lacks a
-signature by a trusted key". The nixbox bundle is excluded from the updater and
-publication machinery.
+signature by a trusted key". The nixbox bundle is excluded from the publication machinery;
+the [CI](#ci) section lists the workflows it does have.
 
 The lock refresh script runs in the same pinned image and resolves the catalog
 against the pinned nixpkgs revision. It also fetches the nixpkgs source from
 `releases.nixos.org`. The repository rule for this class of
 source is in `AGENTS.md` ("distribution binary cache"); the first publication and
 any change to the list of store paths need explicit owner approval. 
+
+## CI
+
+What exists:
+
+- **Build and smoke** (`nixbox-build.yml`): manual `workflow_dispatch`, with the
+  same approval guard as the toolbox build (`scripts/approve-build.sh`, the exact
+  approved `main` SHA, no bots, no automatic trigger). It builds on native amd64
+  and arm64 runners and runs `bundles/nixbox/scripts/smoke.sh` with the
+  digest-pinned published toolbox image. It signs in nowhere, pushes nothing,
+  uses no secrets and publishes nothing.
+- **Upgrade proposals** (the `nixbox` option of `propose-upgrades.yml`, selected
+  for `all` and the schedule, with `dry_run` defaulting to true): a lock refresh
+  with `bundles/nixbox/scripts/refresh-lock.sh` in the pinned `nixos/nix` image,
+  not the official-release resolver. The refresh keeps the catalog, so it
+  re-resolves the pinned nixpkgs revision; it does not move that revision.
+  `scripts/nixbox-lock-compat.py` accepts only a lock with the same package
+  list. A lock with added or removed packages, a changed catalog, platform set
+  or signing key, or an unsigned path fails the run with a message instead of a
+  pull request. An accepted change becomes a separate nixbox-only pull request on
+  an `automation/nixbox-upgrade-<run>-<attempt>` topic, never part of the combined
+  proposal. The pull request authorizes no build and no publication, and
+  publication never recognizes its topic.
+- **Staging cleanup** (`staging-cleanup.yml`): nixbox is in the repository
+  list. Before a first publication its Quay repository does not exist, and the
+  run is an empty dry run. Staging tags of nixbox are never eligible for
+  deletion until the publication code supports the bundle.
+
+What is deliberately missing is publication: nixbox is in none of
+`publish-bundles.yml`, `bundle-publish.yml` and `scripts/bundle-publication.py`,
+and `published-consumers.yml` verifies only already published pins. The first
+publication needs explicit owner approval of the exact source revision, every
+change to the list of store paths needs explicit owner approval, and the licenses
+of the glibc runner and of every closure path must be recorded before the first
+publication (`AGENTS.md`, condition (e) and (g)). An updater pull request cannot
+supply any of these, so the workflows are added only together with that approval.
 
 ## Evidence
 
