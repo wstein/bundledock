@@ -51,7 +51,7 @@ read-only at `/nix`:
 | `/nix/store/<hash>-<name>` | Store paths and their closures. |
 | `/nix/var/nix` | Nix database registrations. |
 | `/nix/profile/bin`, `/nix/profile/share` | Symlinks to the tools, and the shims. |
-| `/nix/profile/lib/ld.so` | Symlink to the glibc loader. |
+| `/nix/profile/lib/ld.so` | Symlink to the glibc loader (`ld-linux-aarch64.so.1` on arm64, `ld-linux-x86-64.so.2` on amd64). |
 
 Add `/nix/profile/bin` to `PATH`. The classic `/opt/bdock/<name>` mounts stay as
 they are. Because this is a real Nix store, a native store can later replace the
@@ -69,6 +69,11 @@ The shims keep the official binaries from the toolbox unmodified. A shim runs th
 toolbox binary directly when the host has a glibc loader, and otherwise through
 `/nix/profile/lib/ld.so --library-path ...`. The `hx` shim also sets
 `HELIX_RUNTIME`. A shim without the toolbox mounted fails with a clear message.
+All shims are symlinks to one script that reads a shim table generated from the
+catalog. `BDOCK_TOOLBOX` names the toolbox directory (default `/opt/bdock/toolbox`).
+`NIXBOX_LOADER` selects the mode: `auto` (the default: direct on a glibc host,
+through the loader otherwise), `always` or `never`. For `git` over https set
+`SSL_CERT_FILE=/nix/profile/etc/ssl/certs/ca-bundle.crt`.
 The `fastfetch` binary leaves the toolbox only in a later toolbox release, after
 consumers mount nixbox.
 
@@ -88,12 +93,17 @@ The build runs in a Dockerfile stage from a digest-pinned `nixos/nix` image:
 2. Every closure path is verified against the lock, and any mismatch fails the
    build.
 
+Signatures are checked three ways: an ed25519 check of every closure path against
+the pinned key, `nix copy` with `require-sigs`, and the NAR-hash comparison of the
+copied store with the lock. A wrong key makes `nix copy` fail with "lacks a
+signature by a trusted key". The nixbox bundle is excluded from the updater and
+publication machinery.
+
 The lock refresh script runs in the same pinned image and resolves the catalog
-against the pinned nixpkgs revision. The repository rule for this class of
+against the pinned nixpkgs revision. It also fetches the nixpkgs source from
+`releases.nixos.org`. The repository rule for this class of
 source is in `AGENTS.md` ("distribution binary cache"); the first publication and
-any change to the list of store paths need explicit owner approval. Verifying
-the signature as its own tested step is still an open point: the spikes relied on
-`nix copy`.
+any change to the list of store paths need explicit owner approval. 
 
 ## Evidence
 
@@ -127,6 +137,24 @@ An unmodified official binary runs on Alpine through the Nix glibc loader. All
 eight binaries passed on arm64. The needed files are about 3.5 MiB, or about
 57 MiB as whole store paths. Not verified: a trimmed copy, the amd64 equivalent,
 and the cause of gcompat's segfault.
+
+### Local build of the bundle
+
+The first implementation was built locally from the lock and run through
+`bundles/nixbox/scripts/smoke.sh`, with the published toolbox volume mounted for the
+shims (pinned Debian trixie-slim, Fedora 44, openSUSE Leap 16.0 and Alpine 3.23, as
+root, plus one uid 1000 run on Debian):
+
+| Platform | Debian | Fedora | openSUSE | Alpine | Debian, uid 1000 |
+| --- | --- | --- | --- | --- | --- |
+| arm64 | 32 of 32 | 32 of 32 | 32 of 32 | 33 of 33 | 32 of 32 |
+| amd64 (Rosetta) | 32 of 32 | 32 of 32 | 32 of 32 | 33 of 33 | 32 of 32 |
+
+The lock closure is 52 store paths and 197.3 MiB on arm64, and 51 paths and
+180.1 MiB on amd64. The initialized volume is 221 MB on arm64 and 203 MB on amd64.
+The local image is 308 MB on arm64 and 291 MB on amd64. The image is not
+byte-reproducible because the Nix database holds registration times. The smoke
+test reads `NIXBOX_PLATFORM`, `NIXBOX_TOOLBOX_IMAGE` and `NIXBOX_OFFLINE`.
 
 ## Combining with a native Nix store
 
