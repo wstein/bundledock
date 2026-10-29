@@ -25,7 +25,7 @@ class BundleMakeTests(unittest.TestCase):
             self.assertEqual(result.returncode,0,result.stdout+result.stderr)
             return [json.loads(line) for line in calls.read_text().splitlines()] if calls.exists() else []
     def test_all_bundle_targets_forward_overrides(self):
-        for bundle in ['toolbox','code-server','node','node-current','bun','codex','agy','claude','opentofu']:
+        for bundle in ['toolbox','code-server','node','node-current','bun','codex','agy','claude','opentofu','nixbox']:
             with self.subTest(bundle=bundle):
                 calls=self.invoke(['bundle-build','bundle-smoke','bundle-volume','bundle-test'],
                     ['BUNDLE='+bundle,'IMAGE=example/image:fixture','CONSUMER=example/consumer:fixture'])
@@ -37,14 +37,14 @@ class BundleMakeTests(unittest.TestCase):
                 self.assertIn('./internal/toolvolume',calls[3])
                 self.assertIn('./internal/dockercli',calls[3])
     def test_bundle_defaults(self):
-        for bundle in ['toolbox','code-server','node','node-current','bun','codex','agy','claude','opentofu']:
+        for bundle in ['toolbox','code-server','node','node-current','bun','codex','agy','claude','opentofu','nixbox']:
             with self.subTest(bundle=bundle):
                 calls=self.invoke(['bundle-build','bundle-smoke','bundle-volume'],[] if bundle=='toolbox' else ['BUNDLE='+bundle])
                 self.assertEqual(calls[0][-2:],['bundledock-'+bundle+':poc','.'])
                 self.assertEqual(calls[1][-2:],['bundledock-'+bundle+':poc','mcr.microsoft.com/devcontainers/go:2-1.27-trixie'])
                 self.assertEqual(calls[2][-2:],['bundledock-'+bundle+':poc',bundle])
     def test_shared_volume_uses_exact_id_and_bundle_namespace(self):
-        for bundle in ['toolbox','code-server','node','node-current','bun','codex','agy','claude','opentofu']:
+        for bundle in ['toolbox','code-server','node','node-current','bun','codex','agy','claude','opentofu','nixbox']:
             with self.subTest(bundle=bundle), tempfile.TemporaryDirectory() as directory:
                 root=Path(directory); log=root/'calls'; adapter=root/'docker'
                 adapter.write_text('#!'+sys.executable+'\nimport json,os,sys\nwith open(os.environ["CALLS"],"a") as stream:stream.write(json.dumps(sys.argv[1:])+"\\n")\nif sys.argv[1]=="image":print("sha256:"+"a"*64)\n')
