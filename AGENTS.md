@@ -105,8 +105,9 @@ pinned by nixpkgs revision and `narHash`; (b) it is fetched only from
 the lock; (c) nothing is compiled; (d) unfree packages are excluded; (e) the
 licenses of the glibc runner and of every closure path are recorded before the
 first publication, which needs explicit owner approval; (f) Nix-sourced store
-paths are limited to the glibc and libgcc runner and to tools that have no
-official stable prebuilt for both architectures, so a tool with official
+paths are limited to the glibc and libgcc runner, to tools that have no
+official stable prebuilt for both architectures, and to the closures of those
+tools (their dependencies from the cache), so a tool with official
 prebuilts for both architectures (for example node or opentofu) stays on the
 official route and never enters this class; and (g) the first publication and
 every change to the list of store paths need explicit owner approval, and an
