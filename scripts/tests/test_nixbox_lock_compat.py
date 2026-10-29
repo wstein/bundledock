@@ -29,6 +29,16 @@ def platform(hash_, glibc='glibc-2.44-57', git='git-minimal-2.56.0'):
             'paths': paths}
 
 
+def catalog():
+    return {'schema': 1,
+            'nixpkgs': {'rev': 'e' * 40, 'url': 'https://releases.nixos.org/nixpkgs/nixpkgs-26.11pre1.' + 'e' * 12 + '/nixexprs.tar.zst',
+                        'narHash': 'sha256-' + 'A' * 43 + '='},
+            'cache': {'url': 'https://cache.nixos.org', 'public_key': KEY + '6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY='},
+            'platforms': {'amd64': 'x86_64-linux', 'arm64': 'aarch64-linux'},
+            'packages': {'git': {'provider': 'nix', 'attr': 'gitMinimal'},
+                         'zk': {'provider': 'official', 'bundle': 'toolbox', 'binary': 'bin/zk'}}}
+
+
 def lock(hash_='a', **kw):
     return {'schema': 1, 'catalog_digest': 'c' * 64,
             'platforms': {'amd64': platform(hash_, **kw), 'arm64': platform(hash_, **kw)}}
@@ -75,10 +85,62 @@ class CompatTests(unittest.TestCase):
         next(iter(new['platforms']['amd64']['paths'].values()))['signatures'] = []
         self.rejects(new, 'signature')
 
-    def run_cli(self, old, new):
+    def test_catalog_may_change_only_the_nixpkgs_pin(self):
+        old = catalog()
+        self.assertEqual(compat.compare(lock(), lock('b'), old, catalog()), [])
+        bumped = catalog()
+        bumped['nixpkgs'].update(rev='1' * 40, narHash='sha256-' + 'B' * 43 + '=',
+                                 url='https://releases.nixos.org/nixpkgs/nixpkgs-26.11pre2.' + '1' * 12 + '/nixexprs.tar.zst')
+        # The digest of the lock follows the catalog, so a changed digest is fine here.
+        moved = lock('b'); moved['catalog_digest'] = 'd' * 64
+        self.assertEqual(compat.compare(lock(), moved, old, bumped), [])
+
+    def test_any_other_catalog_change_is_rejected(self):
+        def edited(change):
+            new = catalog(); change(new); return new
+        cases = {
+            'package added': lambda c: c['packages'].update(extra={'provider': 'nix', 'attr': 'hello'}),
+            'package removed': lambda c: c['packages'].pop('git'),
+            'attribute changed': lambda c: c['packages']['git'].update(attr='git'),
+            'provider changed': lambda c: c['packages']['git'].update(provider='official'),
+            'shim changed': lambda c: c['packages']['zk'].update(binary='bin/other'),
+            'platforms': lambda c: c['platforms'].update(arm64='riscv64-linux'),
+            'cache url': lambda c: c['cache'].update(url='https://example.invalid'),
+            'public key': lambda c: c['cache'].update(public_key='other-1:abc'),
+            'schema': lambda c: c.update(schema=2),
+            'extra field': lambda c: c.update(extra=1),
+            'extra nixpkgs field': lambda c: c['nixpkgs'].update(channel='nixos-25.05'),
+        }
+        for name, change in cases.items():
+            with self.subTest(name):
+                problems = compat.compare(lock(), lock('b'), catalog(), edited(change))
+                self.assertTrue(any('catalog' in p for p in problems), problems)
+
+    def test_pin_changes_must_be_well_formed_and_consistent(self):
+        for name, fields in (('bad rev', {'rev': 'xyz'}), ('bad hash', {'narHash': 'md5-1'}),
+                             ('url of another rev', {'rev': '2' * 40}),
+                             ('foreign host', {'rev': '1' * 40, 'url': 'https://example.invalid/' + '1' * 12})):
+            with self.subTest(name):
+                new = catalog(); new['nixpkgs'].update(fields)
+                problems = compat.compare(lock(), lock('b'), catalog(), new)
+                self.assertTrue(any('nixpkgs' in p for p in problems), problems)
+
+    def test_lock_package_list_must_still_match_with_a_new_catalog(self):
+        bumped = catalog(); bumped['nixpkgs']['rev'] = '1' * 40
+        bumped['nixpkgs']['url'] = 'https://releases.nixos.org/nixpkgs/x.' + '1' * 12 + '/nixexprs.tar.zst'
+        added = lock('b')
+        added['platforms']['amd64']['paths'][store('d', 'extra-1.0')] = {
+            'narHash': 'x', 'narSize': 1, 'references': [], 'signatures': [KEY + 'x']}
+        self.assertTrue(any('package list' in p for p in compat.compare(lock(), added, catalog(), bumped)))
+
+    def run_cli(self, old, new, catalogs=None):
         with tempfile.TemporaryDirectory() as directory:
             paths = []
             for name, value in (('old', old), ('new', new)):
+                path = Path(directory) / (name + '.json')
+                path.write_text(json.dumps(value))
+                paths.append(str(path))
+            for name, value in zip(('old-catalog', 'new-catalog'), catalogs or ()):
                 path = Path(directory) / (name + '.json')
                 path.write_text(json.dumps(value))
                 paths.append(str(path))
@@ -92,6 +154,16 @@ class CompatTests(unittest.TestCase):
         self.assertEqual(result.returncode, 1)
         self.assertIn('Refusing nixbox proposal:', result.stderr)
         self.assertIn('explicit owner approval', result.stderr)
+
+    def test_cli_accepts_catalogs_and_rejects_a_partial_pair(self):
+        bumped = catalog(); bumped['nixpkgs']['rev'] = '1' * 40
+        bumped['nixpkgs']['url'] = 'https://releases.nixos.org/nixpkgs/x.' + '1' * 12 + '/nixexprs.tar.zst'
+        ok = self.run_cli(lock(), lock('b'), (catalog(), bumped))
+        self.assertEqual(ok.returncode, 0, ok.stderr)
+        bumped['packages']['git']['attr'] = 'git'
+        bad = self.run_cli(lock(), lock('b'), (catalog(), bumped))
+        self.assertEqual(bad.returncode, 1)
+        self.assertIn('catalog', bad.stderr)
 
     def test_the_committed_lock_is_compatible_with_itself(self):
         real = json.loads((ROOT / 'bundles/nixbox/packages.lock.json').read_text())
