@@ -66,6 +66,16 @@ run_consumer() {
         --mount "type=volume,src=$nix_volume,dst=/nix,readonly,volume-nocopy" \
         --mount "type=bind,src=$script_dir/consumer-smoke.sh,dst=/nixbox-smoke.sh,readonly"
     if [ -n "$toolbox_mount" ]; then set -- "$@" --mount "$toolbox_mount"; fi
+    case $consumer in
+    alpine@*)
+        # Simulate gcompat offline: Alpine then has glibc-looking loader files
+        # although its binaries still need the Nix loader.
+        : > "$workdir/gcompat-stub"
+        set -- "$@" --env NIXBOX_GCOMPAT_SIM=1 \
+            --mount "type=bind,src=$workdir/gcompat-stub,dst=/lib/ld-linux-aarch64.so.1,readonly" \
+            --mount "type=bind,src=$workdir/gcompat-stub,dst=/lib/ld-linux-x86-64.so.1,readonly"
+        ;;
+    esac
     if [ "$user" != 0:0 ]; then
         # OpenSSH refuses a uid without a passwd entry; give the unprivileged
         # run one, read-only, without touching the consumer image.

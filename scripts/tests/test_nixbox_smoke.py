@@ -71,6 +71,25 @@ elif '/nixbox-smoke.sh' in args:
         removed = [c for c in calls if c[:2] == ['volume', 'rm']]
         self.assertEqual(len(removed), 2)
 
+    def test_alpine_consumer_simulates_gcompat_glibc_loader_stubs(self):
+        result, calls = self.invoke()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        consumers = [c for c in calls if '/nixbox-smoke.sh' in c]
+        by_image = {c[c.index('--entrypoint') + 2].split('@')[0]: c for c in consumers[:4]}
+        alpine = by_image['alpine']
+        for loader in ('/lib/ld-linux-aarch64.so.1', '/lib/ld-linux-x86-64.so.1'):
+            self.assertTrue(any(a.startswith('type=bind,src=') and a.endswith(',dst=%s,readonly' % loader) for a in alpine), loader)
+        self.assertIn('NIXBOX_GCOMPAT_SIM=1', alpine)
+        for image in ('debian', 'fedora', 'opensuse/leap'):
+            self.assertFalse(any('ld-linux' in a for a in by_image[image]), image)
+            self.assertNotIn('NIXBOX_GCOMPAT_SIM=1', by_image[image])
+
+    def test_consumer_script_checks_the_auto_mode_path_per_libc(self):
+        text = CONSUMER.read_text()
+        self.assertIn('auto mode runs the toolbox binary directly on a glibc host', text)
+        self.assertIn('auto mode uses the Nix loader on musl', text)
+        self.assertIn('NIXBOX_GCOMPAT_SIM', text)
+
     def test_platform_and_offline_are_forwarded(self):
         result, calls = self.invoke(NIXBOX_PLATFORM='linux/amd64', NIXBOX_OFFLINE='1')
         self.assertEqual(result.returncode, 0, result.stderr)

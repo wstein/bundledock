@@ -64,6 +64,12 @@ if [ -f "$toolbox/.ready" ]; then
     check 'shim without the toolbox fails clearly' 'if BDOCK_TOOLBOX=/nonexistent zk --version >out 2>&1; then exit 1; fi; grep -q "needs the toolbox bundle" out'
     if [ -f /etc/alpine-release ]; then
         check 'official binary does not start on musl without the loader' '! NIXBOX_LOADER=never zk --version >/dev/null 2>&1'
+        check 'auto mode uses the Nix loader on musl' 'sh -x /nix/profile/bin/zk --version 2>&1 | grep -q "exec .*lib/ld.so --library-path"'
+        if [ -n "${NIXBOX_GCOMPAT_SIM:-}" ]; then
+            check 'gcompat-like glibc loader stub is present' 'test -e /lib/ld-linux-aarch64.so.1 && test -e /lib/ld-linux-x86-64.so.1'
+        fi
+    else
+        check 'auto mode runs the toolbox binary directly on a glibc host' "sh -x /nix/profile/bin/zk --version 2>&1 | grep -q 'exec $toolbox/bin/zk --version'"
     fi
     for mode in auto always; do
         export NIXBOX_LOADER=$mode
