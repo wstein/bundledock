@@ -246,6 +246,15 @@ Stock language images provide Python, `venv` and pip; BundleDock does not instal
 an interpreter. See the source-only [package installation policy](package-tools.md)
 for dependency pins, npm defaults and the existing-tool inventory.
 
+## glibc-dynamic tools and nixbox
+
+Eight toolbox binaries are glibc-dynamic and do not start on musl images such as
+Alpine: `ast-grep`, `delta`, `difft`, `fastfetch`, `leaf`, `zizmor`, `zk` and the
+`hx` launcher's `lib/helix/hx`. The other binaries are static. The toolbox itself
+is unchanged. The [nixbox](nixbox.md) bundle adds a glibc runner and shims with
+the same names that run these official binaries on such images; mount both
+bundles. Nixbox is designed but not yet published.
+
 ## Retained notices
 
 New bundles store all staged `licenses/<package>/...` files, including full
