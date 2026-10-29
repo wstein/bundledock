@@ -27,6 +27,11 @@ toolbox stays as it is. Each tool gets a provider in the catalog:
 
 Own tools (`whr`, `stw`, `smill`, `cscribe`, `herdr`) stay in the toolbox.
 
+Placement limit: Nix-sourced store paths are limited to the glibc and libgcc runner
+and to tools that have no official stable prebuilt for both architectures. A tool
+with official prebuilts for both architectures (for example `node` or `opentofu`)
+stays on the official route and never enters nixbox.
+
 ## Names and layout
 
 - Repository `quay.io/bundledock/nixbox`, tags in the existing `YYYY.MM.DD-b<N>`

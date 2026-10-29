@@ -103,9 +103,13 @@ these hold: (a) the content is a closed list of store paths in a committed lock,
 pinned by nixpkgs revision and `narHash`; (b) it is fetched only from
 `cache.nixos.org` with signature checking on, and every path is verified against
 the lock; (c) nothing is compiled; (d) unfree packages are excluded; (e) the
-licenses of glibc and of every closure path are recorded; and (f) the first
-publication and every change to the list of store paths need explicit owner
-approval, and an updater PR cannot supply either. Anything outside this class
+licenses of glibc and of every closure path are recorded; (f) Nix-sourced store
+paths are limited to the glibc and libgcc runner and to tools that have no
+official stable prebuilt for both architectures, so a tool with official
+prebuilts for both architectures (for example node or opentofu) stays on the
+official route and never enters this class; and (g) the first publication and
+every change to the list of store paths need explicit owner approval, and an
+updater PR cannot supply either. Anything outside this class
 follows the rules above.
 
 Before the next release, review every item in the local TODO list and its
