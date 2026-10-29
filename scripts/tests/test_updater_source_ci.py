@@ -154,6 +154,35 @@ else:
         self.assertEqual(len(writes), 1)
         self.assertEqual(json.loads(writes[0]['payload']), {'ref': branch, 'inputs': {'expected_head_sha': HEAD}})
 
+    def nixbox_evidence(self, extra=None):
+        branch = 'automation/nixbox-upgrade-123-1'
+        data = evidence(('nixbox',), branch)
+        files = [{'filename': 'bundles/nixbox/packages.lock.json', 'status': 'modified'}] + (extra or [])
+        data['/pulls/42/files?per_page=100&page=1'] = files
+        data['/pulls/42']['changed_files'] = len(files)
+        data['/compare/' + BASE + '...' + HEAD]['files'] = files
+        return data, branch
+
+    def test_nixbox_proposal_is_its_own_lock_only_pull_request(self):
+        data, branch = self.nixbox_evidence()
+        result, calls = self.run_dispatch(data, bundles='nixbox', branch=branch)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(len([call for call in calls if '--method' in call['args']]), 1)
+        for extra in ([{'filename': 'docs/nixbox.md', 'status': 'modified'}],
+                      [{'filename': 'bundles/nixbox/packages.catalog.json', 'status': 'modified'}]):
+            with self.subTest(extra=extra):
+                data, branch = self.nixbox_evidence(extra)
+                result, calls = self.run_dispatch(data, bundles='nixbox', branch=branch)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertFalse([call for call in calls if '--method' in call['args']])
+
+    def test_nixbox_never_joins_a_combined_proposal(self):
+        branch = 'automation/upgrades-123-1'
+        result, calls = self.run_dispatch(evidence(('agy', 'nixbox'), branch), bundles='agy,nixbox', branch=branch)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('nixbox', result.stderr)
+        self.assertFalse(calls)
+
     def test_combined_proposal_may_leave_a_bundle_inventory_untouched(self):
         branch = 'automation/upgrades-123-1'
         data = evidence(('agy', 'node'), branch)
