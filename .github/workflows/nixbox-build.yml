@@ -1,0 +1,49 @@
+name: Build and smoke nixbox
+
+on:
+  workflow_dispatch:
+    inputs:
+      approved_sha:
+        description: Full current main SHA explicitly approved for nixbox build and smoke
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+# Build and smoke only. Nothing here signs in to a registry, pushes or publishes.
+# First publication of nixbox needs separate explicit owner approval (AGENTS.md).
+jobs:
+  native:
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - architecture: amd64
+            runner: ubuntu-24.04
+            platform: linux/amd64
+          - architecture: arm64
+            runner: ubuntu-24.04-arm
+            platform: linux/arm64
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          # Guard code comes from the dispatch revision, never unchecked input.
+          ref: ${{ github.sha }}
+      - name: Require approval of the exact checked-out current main before building
+        env:
+          APPROVED_SHA: ${{ inputs.approved_sha }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          SENDER_TYPE: ${{ github.event.sender.type }}
+          TRIGGERING_ACTOR: ${{ github.triggering_actor }}
+        run: sh scripts/approve-build.sh
+      - name: Build nixbox locally
+        run: make bundle-build BUNDLE=nixbox IMAGE=bundledock-nixbox:build-only
+      - name: Smoke the local nixbox on the pinned consumer matrix with the published toolbox
+        env:
+          NIXBOX_PLATFORM: ${{ matrix.platform }}
+          NIXBOX_TOOLBOX_IMAGE: quay.io/bundledock/toolbox@sha256:d3a83465d5223e7d7e2e870b48bbd996dba37cbe92d7230bdcf3ef22f46f5f75
+        run: sh bundles/nixbox/scripts/smoke.sh bundledock-nixbox:build-only
