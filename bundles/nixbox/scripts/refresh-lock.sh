@@ -4,8 +4,8 @@
 # path information from cache.nixos.org; nothing is built or copied. Needs
 # Docker and network access to the nixpkgs release host and cache.nixos.org.
 set -eu
-script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-repo=$(CDPATH= cd -- "$script_dir/../../.." && pwd)
+script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
+repo=$(CDPATH='' cd -- "$script_dir/../../.." && pwd)
 nix_image=nixos/nix@sha256:f159a58f390677f41e8e900a74b6e2f9c7f27b364122ae6acf7a652ce6c551c0
 go_image=golang:1.27.2-alpine@sha256:f92b6ef800e499660581efdabdf25d9d817a9d124eaf900924f0504e7e27e12d
 work=$(mktemp -d)

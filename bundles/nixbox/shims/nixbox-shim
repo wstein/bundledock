@@ -10,7 +10,7 @@
 #   NIXBOX_HOST_LOADERS  space separated host loader paths to probe in auto mode
 #                    (test hook; the default depends on the machine type)
 set -eu
-profile=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+profile=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
 name=${0##*/}
 toolbox=${BDOCK_TOOLBOX:-/opt/bdock/toolbox}
 table=$profile/share/nixbox/shims.tsv
