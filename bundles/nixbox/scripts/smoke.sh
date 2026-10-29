@@ -73,7 +73,7 @@ run_consumer() {
         : > "$workdir/gcompat-stub"
         set -- "$@" --env NIXBOX_GCOMPAT_SIM=1 \
             --mount "type=bind,src=$workdir/gcompat-stub,dst=/lib/ld-linux-aarch64.so.1,readonly" \
-            --mount "type=bind,src=$workdir/gcompat-stub,dst=/lib/ld-linux-x86-64.so.1,readonly"
+            --mount "type=bind,src=$workdir/gcompat-stub,dst=/lib64/ld-linux-x86-64.so.2,readonly"
         ;;
     esac
     if [ "$user" != 0:0 ]; then
