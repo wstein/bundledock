@@ -2,9 +2,13 @@ package main
 
 import (
 	"bundledock/internal/quay"
+	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
+	"regexp"
+	"strconv"
 	"strings"
 	"text/tabwriter"
 	"time"
@@ -35,7 +39,7 @@ func newQuayCommandWithClient(client *http.Client) *cobra.Command {
 	cmd.PersistentFlags().StringVar(&o.root, "root", ".", "repository root that holds docs/ and bundles/")
 	cmd.PersistentFlags().StringVar(&o.apiURL, "api-url", quay.DefaultBaseURL, "Quay endpoint (for testing)")
 	_ = cmd.PersistentFlags().MarkHidden("api-url")
-	cmd.AddCommand(newQuayListCommand(o), newQuayStatusCommand(o), newQuayInfoCommand(o), newQuayDescribeCommand(o))
+	cmd.AddCommand(newQuayListCommand(o), newQuayStatusCommand(o), newQuayInfoCommand(o), newQuayDescribeCommand(o), newQuayPruneCommand(o))
 	return cmd
 }
 
@@ -197,4 +201,161 @@ func newQuayDescribeCommand(o *quayOptions) *cobra.Command {
 	}
 	cmd.Flags().BoolVar(&apply, "apply", false, "write differing descriptions (needs QUAY_TOKEN)")
 	return cmd
+}
+
+// newGitHub supplies the GitHub evidence for prune; tests replace it.
+var newGitHub = func() quay.GitHub { return &quay.GitHubAPI{Fetch: quay.GHCLI} }
+
+func newQuayPruneCommand(o *quayOptions) *cobra.Command {
+	var apply bool
+	var repository, failedRun, failedAttempt, output, approved string
+	cmd := &cobra.Command{
+		Use: "prune", Short: "Plan the removal of verified staging tags; --apply deletes a saved plan", Args: cobra.NoArgs,
+		Long: "Plan the removal of architecture staging tags (staging-<version>-<arch>) whose publication run is complete\n" +
+			"and older than seven days, or that belong to one exact failed run (--failed-run and --failed-attempt).\n" +
+			"Without --apply nothing changes. --apply deletes only the tags of a saved plan (--approved-plan) that\n" +
+			"are still eligible after a fresh recheck, with the robot account in REPOSITORY_USERNAME and\n" +
+			"REPOSITORY_TOKEN. Version, alias and source tags are never deleted.",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if apply && approved == "" {
+				return fmt.Errorf("--apply requires a saved plan (--approved-plan)")
+			}
+			if !apply && approved != "" {
+				return fmt.Errorf("--approved-plan needs --apply")
+			}
+			username, password := os.Getenv("REPOSITORY_USERNAME"), os.Getenv("REPOSITORY_TOKEN")
+			if apply && (username == "" || password == "") {
+				return fmt.Errorf("REPOSITORY_USERNAME and REPOSITORY_TOKEN required for deletion")
+			}
+			var target *quay.FailedRun
+			if failedRun != "" || failedAttempt != "" {
+				positive := regexp.MustCompile(`^[1-9][0-9]*$`)
+				if !positive.MatchString(failedRun) || !positive.MatchString(failedAttempt) {
+					return fmt.Errorf("both --failed-run and --failed-attempt must be positive integers")
+				}
+				attempt, _ := strconv.Atoi(failedAttempt)
+				target = &quay.FailedRun{RunID: failedRun, Attempt: attempt}
+			}
+			repos := quay.Repositories()
+			if repository != "all" {
+				if !contains(repos, repository) {
+					return fmt.Errorf("unknown repository %q", repository)
+				}
+				repos = []string{repository}
+			}
+			client := o.api()
+			p := &quay.Pruner{
+				Store:     quay.Store{Client: client, Username: username, Password: password, Unpublished: func(r string) bool { return unpublished(o.root, r) }},
+				Registry:  func(ctx context.Context, repo string) (quay.Evidence, error) { return client.Registry(ctx, repo) },
+				GitHub:    newGitHub(),
+				Now:       time.Now,
+				Repos:     repos,
+				FailedRun: target,
+			}
+			save := func(v any) error {
+				if output == "" {
+					return nil
+				}
+				raw, err := json.MarshalIndent(v, "", "  ")
+				if err != nil {
+					return err
+				}
+				return os.WriteFile(output, append(raw, '\n'), 0o644)
+			}
+			if apply {
+				raw, err := os.ReadFile(approved)
+				if err != nil {
+					return err
+				}
+				var plan quay.Plan
+				if err := json.Unmarshal(raw, &plan); err != nil {
+					return fmt.Errorf("invalid cleanup plan")
+				}
+				result := struct {
+					Schema      int             `json:"schema"`
+					Mode        string          `json:"mode"`
+					GeneratedAt string          `json:"generated_at"`
+					Target      *quay.FailedRun `json:"target,omitempty"`
+					Actions     []quay.Action   `json:"actions"`
+				}{1, plan.Mode, time.Now().UTC().Format(time.RFC3339Nano), plan.Target, []quay.Action{}}
+				if err := save(result); err != nil {
+					return err
+				}
+				actions, err := p.Apply(cmd.Context(), plan, func(a []quay.Action) { result.Actions = a; _ = save(result) })
+				result.Actions = actions
+				if actions == nil {
+					result.Actions = []quay.Action{}
+				}
+				if serr := save(result); serr != nil && err == nil {
+					err = serr
+				}
+				if o.json {
+					if werr := quay.WriteJSON(cmd.OutOrStdout(), "bdock.quay.prune/v1", result); werr != nil && err == nil {
+						err = werr
+					}
+				} else {
+					for _, a := range actions {
+						fmt.Fprintf(cmd.OutOrStdout(), "%s: %s/%s\n", a.Action, a.Repository, a.Name)
+					}
+				}
+				return err
+			}
+			plan, err := p.Plan(cmd.Context())
+			if err != nil {
+				return err
+			}
+			if err := save(plan); err != nil {
+				return err
+			}
+			eligible := 0
+			for _, r := range plan.Rows {
+				if r.Eligible {
+					eligible++
+				}
+			}
+			if o.json {
+				fmt.Fprintf(cmd.ErrOrStderr(), "Staging tags: %d; eligible: %d (dry run, nothing changed)\n", len(plan.Rows), eligible)
+				return quay.WriteJSON(cmd.OutOrStdout(), "bdock.quay.prune/v1", plan)
+			}
+			out := cmd.OutOrStdout()
+			for _, r := range plan.Rows {
+				state := "retain"
+				if r.Eligible {
+					state = "eligible"
+				}
+				fmt.Fprintf(out, "%s %s/%s: %s\n", state, r.Repository, r.Name, r.Reason)
+			}
+			fmt.Fprintf(out, "Staging tags: %d; eligible: %d (dry run, nothing changed)\n", len(plan.Rows), eligible)
+			return nil
+		},
+	}
+	cmd.Flags().BoolVar(&apply, "apply", false, "delete the eligible tags of the saved plan (needs REPOSITORY_USERNAME and REPOSITORY_TOKEN)")
+	cmd.Flags().StringVar(&repository, "repository", "all", "Quay repository to scan, or all")
+	cmd.Flags().StringVar(&failedRun, "failed-run", "", "exact completed failed publication run ID")
+	cmd.Flags().StringVar(&failedAttempt, "failed-attempt", "", "exact latest attempt of the failed run")
+	cmd.Flags().StringVar(&output, "output", "", "save the plan (or, with --apply, the result) to this file")
+	cmd.Flags().StringVar(&approved, "approved-plan", "", "saved plan to apply")
+	return cmd
+}
+
+func contains(list []string, s string) bool {
+	for _, item := range list {
+		if item == s {
+			return true
+		}
+	}
+	return false
+}
+
+// unpublished reports whether no bundle of the repository has a publication record yet.
+func unpublished(root, repository string) bool {
+	for _, b := range quay.Bundles() {
+		if b.Repository != repository {
+			continue
+		}
+		if record, err := quay.LoadRecord(root, b.Name); err != nil || record != nil {
+			return false
+		}
+	}
+	return true
 }

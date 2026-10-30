@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bundledock/internal/quay"
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
@@ -231,5 +233,124 @@ func TestCommittedDescriptions(t *testing.T) {
 		if err != nil || len([]rune(string(raw))) > 5000 || !strings.Contains(string(raw), "https://wstein.github.io/bundledock/") || !strings.Contains(string(raw), "https://github.com/wstein/bundledock") {
 			t.Fatalf("%s description: err = %v", name, err)
 		}
+	}
+}
+
+type stubGitHub struct{ run quay.Run }
+
+func (g stubGitHub) Run(context.Context, string, bool) (quay.Run, error)          { return g.run, nil }
+func (g stubGitHub) Attempt(context.Context, string, int, bool) (quay.Run, error) { return g.run, nil }
+func (g stubGitHub) Workflow(context.Context, bool) (quay.Workflow, error) {
+	return quay.Workflow{ID: 1, Path: g.run.Path, State: "active"}, nil
+}
+func (g stubGitHub) Jobs(context.Context, string, int, bool) ([]quay.Job, error) {
+	return []quay.Job{{ID: 1, RunID: g.run.ID, RunAttempt: g.run.RunAttempt, Status: "completed", Conclusion: "failure"}}, nil
+}
+
+func TestQuayPrune(t *testing.T) {
+	labels := map[string]string{
+		"io.bundledock.bundle": "toolbox", "io.bundledock.github.run-id": "123", "io.bundledock.github.run-attempt": "1",
+		"org.opencontainers.image.source": "https://github.com/wstein/bundledock", "org.opencontainers.image.revision": strings.Repeat("a", 40),
+		"org.opencontainers.image.version": "2026.10.01-b4.1",
+	}
+	docs := map[string][]byte{}
+	add := func(v any) string {
+		raw, _ := json.Marshal(v)
+		d := fmt.Sprintf("sha256:%x", sha256.Sum256(raw))
+		docs[d] = raw
+		return d
+	}
+	config := add(map[string]any{"os": "linux", "architecture": "amd64", "config": map[string]any{"Labels": labels}})
+	digest := add(map[string]any{"config": map[string]any{"digest": config}})
+	tags := []quayTag{
+		{Name: "staging-2026.10.01-b4.1-amd64", ManifestDigest: digest, LastModified: "Thu, 01 Oct 2026 00:00:00 -0000"},
+		{Name: "2026.10.01-b4.1", ManifestDigest: "sha256:" + strings.Repeat("c", 64), LastModified: "Thu, 01 Oct 2026 00:00:00 -0000"},
+		{Name: "stable", ManifestDigest: "sha256:" + strings.Repeat("c", 64), LastModified: "Thu, 01 Oct 2026 00:00:00 -0000"},
+	}
+	var deletes []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		path := r.URL.Path
+		switch {
+		case path == "/v2/auth":
+			w.Write([]byte(`{"token":"tok"}`))
+		case r.Method == http.MethodDelete:
+			deletes = append(deletes, path)
+			w.WriteHeader(202)
+		case strings.HasPrefix(path, "/v2/bundledock/toolbox/"):
+			parts := strings.Split(path, "/")
+			if raw, ok := docs[parts[len(parts)-1]]; ok {
+				w.Write(raw)
+				return
+			}
+			http.NotFound(w, r)
+		case strings.HasSuffix(path, "/tag/"):
+			var rows []quayTag
+			if strings.Contains(path, "/toolbox/") {
+				rows = tags
+				if name := r.URL.Query().Get("specificTag"); name != "" {
+					rows = nil
+					for _, tag := range tags {
+						if tag.Name == name {
+							rows = append(rows, tag)
+						}
+					}
+				}
+			}
+			if rows == nil {
+				rows = []quayTag{}
+			}
+			json.NewEncoder(w).Encode(map[string]any{"page": 1, "tags": rows, "has_additional": false})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+	run := quay.Run{ID: 123, RunNumber: 4, RunAttempt: 1, Status: "completed", Conclusion: "failure", UpdatedAt: "2026-10-01T00:00:00Z",
+		Event: "workflow_dispatch", HeadBranch: "main", HeadSHA: strings.Repeat("a", 40), WorkflowID: 1, Path: ".github/workflows/publish-bundles.yml"}
+	run.Repository.FullName, run.HeadRepository.FullName = "wstein/bundledock", "wstein/bundledock"
+	defer func(old func() quay.GitHub) { newGitHub = old }(newGitHub)
+	newGitHub = func() quay.GitHub { return stubGitHub{run} }
+
+	root := t.TempDir()
+	for _, bundle := range []string{"toolbox", "code-server", "node", "bun", "codex", "agy", "claude", "opentofu", "nixbox"} {
+		writeRecord(t, root, bundle, "2026.10.30-b3", "sha256:"+strings.Repeat("a", 64))
+	}
+	planFile := filepath.Join(t.TempDir(), "plan.json")
+	t.Setenv("REPOSITORY_USERNAME", "")
+	t.Setenv("REPOSITORY_TOKEN", "")
+
+	out, errOut, err := runQuayAt(t, root, srv, "prune", "--json", "--output", planFile)
+	if err != nil || len(deletes) != 0 || !strings.Contains(out, "bdock.quay.prune/v1") || !strings.Contains(errOut, "nothing changed") {
+		t.Fatalf("dry run: err = %v deletes = %v out = %q", err, deletes, out)
+	}
+	var plan struct {
+		Schema int `json:"schema"`
+		Rows   []struct {
+			Name     string
+			Eligible bool
+		}
+	}
+	raw, _ := os.ReadFile(planFile)
+	if json.Unmarshal(raw, &plan) != nil || plan.Schema != 1 || len(plan.Rows) != 1 || !plan.Rows[0].Eligible {
+		t.Fatalf("plan = %s", raw)
+	}
+	if _, _, err = runQuayAt(t, root, srv, "prune", "--apply"); err == nil {
+		t.Fatal("apply without a saved plan accepted")
+	}
+	if _, _, err = runQuayAt(t, root, srv, "prune", "--apply", "--approved-plan", planFile); err == nil || len(deletes) != 0 {
+		t.Fatalf("apply without credentials: err = %v deletes = %v", err, deletes)
+	}
+	t.Setenv("REPOSITORY_USERNAME", "robot")
+	t.Setenv("REPOSITORY_TOKEN", "pw")
+	result := filepath.Join(t.TempDir(), "result.json")
+	out, _, err = runQuayAt(t, root, srv, "prune", "--apply", "--approved-plan", planFile, "--output", result, "--json")
+	if err != nil || len(deletes) != 1 || deletes[0] != "/v2/bundledock/toolbox/manifests/staging-2026.10.01-b4.1-amd64" || !strings.Contains(out, `"deleted"`) {
+		t.Fatalf("apply: err = %v deletes = %v out = %q", err, deletes, out)
+	}
+	if saved, _ := os.ReadFile(result); !strings.Contains(string(saved), "deleted") || strings.Contains(string(saved), "pw") {
+		t.Fatalf("result = %s", saved)
+	}
+	if _, _, err = runQuayAt(t, root, srv, "prune", "--failed-run", "123"); err == nil {
+		t.Fatal("failed-run without attempt accepted")
 	}
 }
