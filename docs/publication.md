@@ -25,12 +25,14 @@ below: for a combined PR the planner derives the bundles from the locks it
 changed, accepts only those bundles' own locks and inventories, and runs one
 publication leg per bundle with the same per-bundle checks.
 
-[Nixbox](nixbox.md) is deliberately outside publication. `propose-upgrades.yml`
+[Nixbox](nixbox.md) is published only by the owner's manual dispatch of
+`publish-bundles.yml`: selecting `nixbox` there is the approval, and the
+publication is the same shared workflow as for every other bundle. No updater
+pull request, schedule or CI completion publishes it. `propose-upgrades.yml`
 offers it as a nixpkgs bump plus lock refresh that opens its own
-`automation/nixbox-upgrade-...` pull request; its manual build and smoke is
-`nixbox-build.yml`. None of `publish-bundles.yml`,
-`bundle-publish.yml` and `bundle-publication.py` names it, because its first
-publication needs separate explicit owner approval and recorded licenses.
+`automation/nixbox-upgrade-...` pull request, which the publication planner does
+not recognize; its manual build and smoke is `nixbox-build.yml`. Its tags are
+`<date>-b<N>` like the toolbox.
 
 The [Codex](codex.md), [Antigravity](agy.md) and [Claude Code](claude.md)
 guides record their verified initial publications and native AMD64/ARM64 smoke
