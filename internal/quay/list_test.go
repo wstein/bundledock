@@ -2,6 +2,9 @@ package quay
 
 import (
 	"context"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -56,11 +59,27 @@ func TestList(t *testing.T) {
 }
 
 func TestListUnpublishedMissingRepository(t *testing.T) {
+	// Only a manual-only bundle (nixbox) without a record may be absent on Quay.
+	root := t.TempDir()
+	for _, b := range Bundles() {
+		if !b.ManualOnly {
+			writeTestRecord(t, root, b.Name)
+		}
+	}
+	empty := []Tag{}
+	srv := fakeQuay(t, map[string][]Tag{"toolbox": empty, "code-server": empty, "node": empty, "bun": empty, "codex": empty, "agy": empty, "claude": empty, "opentofu": empty})
+	defer srv.Close()
+	rows, err := List(context.Background(), &Inventory{Client: New(srv.Client(), srv.URL)}, root)
+	if err != nil || len(rows) != 10 || rows[9].Bundle != "nixbox" || rows[9].Published || rows[9].Version != "" {
+		t.Fatalf("rows = %v, err = %v", rows, err)
+	}
+}
+
+func TestListUnpublishedAutomaticBundleWithMissingRepositoryFails(t *testing.T) {
 	srv := fakeQuay(t, nil)
 	defer srv.Close()
-	rows, err := List(context.Background(), &Inventory{Client: New(srv.Client(), srv.URL)}, t.TempDir())
-	if err != nil || len(rows) != 10 || rows[0].Published || rows[0].Version != "" {
-		t.Fatalf("rows = %v, err = %v", rows, err)
+	if _, err := List(context.Background(), &Inventory{Client: New(srv.Client(), srv.URL)}, t.TempDir()); err == nil {
+		t.Fatal("a missing repository of an automatic bundle was accepted")
 	}
 }
 
@@ -69,5 +88,14 @@ func TestListPublishedMissingRepositoryFails(t *testing.T) {
 	defer srv.Close()
 	if _, err := List(context.Background(), &Inventory{Client: New(srv.Client(), srv.URL)}, repoRoot(t)); err == nil {
 		t.Fatal("published bundle with a missing repository accepted")
+	}
+}
+
+func writeTestRecord(t *testing.T, root, bundle string) {
+	t.Helper()
+	os.MkdirAll(filepath.Join(root, "docs"), 0o755)
+	record := `{"bundle":"` + bundle + `","tag":"2026.10.30-b3","digest":"sha256:` + strings.Repeat("a", 64) + `"}`
+	if err := os.WriteFile(filepath.Join(root, "docs", bundle+"-published.json"), []byte(record), 0o644); err != nil {
+		t.Fatal(err)
 	}
 }

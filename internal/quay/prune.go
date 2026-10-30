@@ -62,18 +62,38 @@ type Run struct {
 	RunAttempt int    `json:"run_attempt"`
 	Status     string `json:"status"`
 	Conclusion string `json:"conclusion"`
-	UpdatedAt  string `json:"updated_at"`
-	Event      string `json:"event"`
-	HeadBranch string `json:"head_branch"`
-	HeadSHA    string `json:"head_sha"`
-	WorkflowID int64  `json:"workflow_id"`
-	Path       string `json:"path"`
-	Repository struct {
+	// ConclusionNull is true when GitHub reports no conclusion yet (null or absent).
+	ConclusionNull bool   `json:"-"`
+	UpdatedAt      string `json:"updated_at"`
+	Event          string `json:"event"`
+	HeadBranch     string `json:"head_branch"`
+	HeadSHA        string `json:"head_sha"`
+	WorkflowID     int64  `json:"workflow_id"`
+	Path           string `json:"path"`
+	Repository     struct {
 		FullName string `json:"full_name"`
 	} `json:"repository"`
 	HeadRepository struct {
 		FullName string `json:"full_name"`
 	} `json:"head_repository"`
+}
+
+// UnmarshalJSON records whether the conclusion is null.
+func (r *Run) UnmarshalJSON(data []byte) error {
+	type plain Run
+	aux := struct {
+		*plain
+		Conclusion *string `json:"conclusion"`
+	}{plain: (*plain)(r)}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	r.ConclusionNull = aux.Conclusion == nil
+	r.Conclusion = ""
+	if aux.Conclusion != nil {
+		r.Conclusion = *aux.Conclusion
+	}
+	return nil
 }
 
 // Workflow is the GitHub evidence for the publication workflow.
@@ -214,7 +234,7 @@ func Identity(repository, name string) (version, arch string, err error) {
 var failedConclusions = map[string]bool{"failure": true, "cancelled": true, "timed_out": true}
 
 func sameAttempt(a, b Run) bool {
-	return a.ID == b.ID && a.RunAttempt == b.RunAttempt && a.Status == b.Status && a.Conclusion == b.Conclusion &&
+	return a.ID == b.ID && a.RunAttempt == b.RunAttempt && a.Status == b.Status && a.Conclusion == b.Conclusion && a.ConclusionNull == b.ConclusionNull &&
 		a.Path == b.Path && a.Event == b.Event && a.HeadBranch == b.HeadBranch && a.HeadSHA == b.HeadSHA && a.WorkflowID == b.WorkflowID
 }
 
@@ -234,7 +254,7 @@ func ProveFailedRun(ctx context.Context, gh GitHub, runID string, attempt int, f
 	r := *run
 	if err := first(
 		check(strconv.FormatInt(r.ID, 10) == runID && r.RunAttempt == attempt, "Failed run was rerun or its attempt changed"),
-		check(r.Status == "completed" && failedConclusions[r.Conclusion], "Selected run is not a completed failed or cancelled publication"),
+		check(r.Status == "completed" && !r.ConclusionNull && failedConclusions[r.Conclusion], "Selected run is not a completed failed or cancelled publication"),
 		check(r.Repository.FullName == GitHubRepository && r.HeadRepository.FullName == GitHubRepository, "Foreign run repository"),
 		check(r.HeadBranch == "main" && (r.Event == "workflow_dispatch" || r.Event == "workflow_run"), "Not an official main publication event"),
 		check(r.Path == ".github/workflows/publish-bundles.yml" && commitPattern.MatchString(r.HeadSHA), "Not the official publication workflow"),
@@ -530,7 +550,7 @@ func (p *Pruner) assess(ctx context.Context, repository string, row Tag, fresh b
 	cutoff := now.AddDate(0, 0, -7)
 	if err := first(
 		check(!modified.After(cutoff), "Staging tag younger than seven days"),
-		check(run.Status == "completed" && run.Conclusion != "", "Publication run still active"),
+		check(run.Status == "completed" && !run.ConclusionNull, "Publication run still active"),
 		check(!updated.After(cutoff), "Run or rerun younger than seven days"),
 	); err != nil {
 		return "", err
@@ -580,8 +600,11 @@ func (p *Pruner) inScope(repository string) bool {
 
 // Apply deletes the eligible tags of a saved plan, each after a fresh recheck.
 // Every approved row is validated before the first deletion. report is
-// called after each action.
-func (p *Pruner) Apply(ctx context.Context, plan Plan, report func([]Action)) ([]Action, error) {
+// called after each action; its error stops the run.
+func (p *Pruner) Apply(ctx context.Context, plan Plan, report func([]Action) error) ([]Action, error) {
+	if plan.Mode == "publication" {
+		return nil, reasonError("Publication-mode plans are not supported by bdock quay prune; use scripts/staging-cleanup.py")
+	}
 	if err := check(plan.Schema == 1 && (plan.Mode == ModeFallback || plan.Mode == ModeFailedRun), "Invalid cleanup plan"); err != nil {
 		return nil, err
 	}
@@ -621,11 +644,12 @@ func (p *Pruner) Apply(ctx context.Context, plan Plan, report func([]Action)) ([
 		approved = append(approved, row)
 	}
 	actions := []Action{}
-	note := func(row PlanRow, action string) {
+	note := func(row PlanRow, action string) error {
 		actions = append(actions, Action{Repository: row.Repository, Name: row.Name, Action: action})
 		if report != nil {
-			report(actions)
+			return report(actions)
 		}
+		return nil
 	}
 	for _, row := range approved {
 		current, err := p.Store.Tags(ctx, row.Repository, row.Name)
@@ -633,7 +657,9 @@ func (p *Pruner) Apply(ctx context.Context, plan Plan, report func([]Action)) ([
 			return actions, err
 		}
 		if len(current) == 0 {
-			note(row, "already absent")
+			if err := note(row, "already absent"); err != nil {
+				return actions, err
+			}
 			continue
 		}
 		if err := check(len(current) == 1 && current[0].Name == row.Name && current[0].ManifestDigest == row.ManifestDigest && current[0].LastModified == row.LastModified, "Staging tag changed since dry run"); err != nil {
@@ -647,7 +673,9 @@ func (p *Pruner) Apply(ctx context.Context, plan Plan, report func([]Action)) ([
 		if err := p.Store.Delete(ctx, row.Repository, row.Name); err != nil {
 			return actions, err
 		}
-		note(row, "deleted")
+		if err := note(row, "deleted"); err != nil {
+			return actions, err
+		}
 	}
 	return actions, nil
 }
