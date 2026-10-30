@@ -51,9 +51,9 @@
         "verification": "publisher-sha256"
       },
       "btop": {
-        "version": "v1.4.7",
-        "url": "https://github.com/aristocratos/btop/releases/download/v1.4.7/btop-x86_64-unknown-linux-musl.tar.gz",
-        "sha256": "5099054dd6a101bd12eb6ff3702a9a6a3f57aaa27923a0da478ae5b517faf335",
+        "version": "v1.4.8",
+        "url": "https://github.com/aristocratos/btop/releases/download/v1.4.8/btop-x86_64-unknown-linux-musl.tar.gz",
+        "sha256": "af589cf82cc9ea9c29ce050b9239a13bef2d1492256d476156e1054a42ce89ad",
         "verification": "publisher-sha256"
       },
       "cosign": {
@@ -75,9 +75,9 @@
         "verification": "publisher-sha256"
       },
       "difftastic": {
-        "version": "0.71.0",
-        "url": "https://github.com/Wilfred/difftastic/releases/download/0.71.0/difft-0.71.0-x86_64-unknown-linux-musl.tar.gz",
-        "sha256": "0a65e6715df992b0adae012e606bd9cc74fa6cfe90eaf13bbae165a0a19b3086",
+        "version": "0.72.0",
+        "url": "https://github.com/Wilfred/difftastic/releases/download/0.72.0/difft-0.72.0-x86_64-unknown-linux-musl.tar.gz",
+        "sha256": "27b9c1fe038a95682eed241265a3cacb781227730f106104b617e10067d38ff4",
         "verification": "publisher-sha256"
       },
       "direnv": {
@@ -117,15 +117,15 @@
         "verification": "publisher-sha256"
       },
       "gh": {
-        "version": "v2.103.2",
-        "url": "https://github.com/cli/cli/releases/download/v2.103.2/gh_2.103.2_linux_amd64.tar.gz",
-        "sha256": "62ccf747115ddc61237efffdde66a3c8f70ba249433dc64f70801089b59c59c8",
+        "version": "v2.103.3",
+        "url": "https://github.com/cli/cli/releases/download/v2.103.3/gh_2.103.3_linux_amd64.tar.gz",
+        "sha256": "4c806978ffce1cec70853302a56d70ac6da4f19bae7adca4e1a8ab00633dd91d",
         "verification": "publisher-sha256"
       },
       "gh-stack": {
-        "version": "v0.2.1",
-        "url": "https://github.com/github/gh-stack/releases/download/v0.2.1/linux-amd64",
-        "sha256": "ffe9d48b6342faffc3b0cb420202ff1df32e24faf32693debd7423274bbdf859",
+        "version": "v0.3.0",
+        "url": "https://github.com/github/gh-stack/releases/download/v0.3.0/linux-amd64",
+        "sha256": "957e822cfa7e435cd84a297cd96c419b58e51e3ac58be249762c24bd9e45099b",
         "verification": "publisher-sha256"
       },
       "git-cliff": {
@@ -165,9 +165,9 @@
         "verification": "publisher-sha256"
       },
       "hugo": {
-        "version": "v0.168.0",
-        "url": "https://github.com/gohugoio/hugo/releases/download/v0.168.0/hugo_0.168.0_linux-amd64.tar.gz",
-        "sha256": "fada83ad56bb27ed4cb7dd81590303bdac16140f944ac4e66fc248117e2d5594",
+        "version": "v0.169.0",
+        "url": "https://github.com/gohugoio/hugo/releases/download/v0.169.0/hugo_0.169.0_linux-amd64.tar.gz",
+        "sha256": "2d2f0bfe357d8cb4cec02f6bb28a3bff34978c8dda44b618029c5eb9d66765a7",
         "verification": "publisher-sha256"
       },
       "hyperfine": {
@@ -207,9 +207,9 @@
         "verification": "publisher-sha256"
       },
       "leaf": {
-        "version": "1.29.1",
-        "url": "https://github.com/RivoLink/leaf/releases/download/1.29.1/leaf-linux-x86_64",
-        "sha256": "04e9716562cdf89ce240181e287e8b79ee0a2c096b02151d4f69247d86d3f186",
+        "version": "1.29.2",
+        "url": "https://github.com/RivoLink/leaf/releases/download/1.29.2/leaf-linux-x86_64",
+        "sha256": "ee31e39a58c848053685f4302a94cf942f8fd36c8d2f5d7d77bdac54417c6da7",
         "verification": "publisher-sha256"
       },
       "lsd": {
@@ -225,9 +225,9 @@
         "verification": "publisher-sha256"
       },
       "mise": {
-        "version": "v2026.10.18",
-        "url": "https://github.com/jdx/mise/releases/download/v2026.10.18/mise-v2026.10.18-linux-x64-musl",
-        "sha256": "cab4710274e8c5bf0a4753a3e9bf1fd0ae2c0a525a4f2902e1c7658cee699fdb",
+        "version": "v2026.10.23",
+        "url": "https://github.com/jdx/mise/releases/download/v2026.10.23/mise-v2026.10.23-linux-x64-musl",
+        "sha256": "fb39c8d278793bff7489840fa347973f254704349e383f18391beeac1cd07c04",
         "verification": "publisher-sha256"
       },
       "misspell": {
@@ -255,9 +255,9 @@
         "verification": "publisher-sha256"
       },
       "pinact": {
-        "version": "v5.0.1",
-        "url": "https://github.com/suzuki-shunsuke/pinact/releases/download/v5.0.1/pinact_linux_amd64.tar.gz",
-        "sha256": "12500c0fff5db94a0155e2e76ed959d1dc0e899056ee168d8fb7b4840e7c04f0",
+        "version": "v5.0.2",
+        "url": "https://github.com/suzuki-shunsuke/pinact/releases/download/v5.0.2/pinact_linux_amd64.tar.gz",
+        "sha256": "7f003d8f51e984c2264d2009d430e3e0e87ae404a0e2dc2a9a277b0f731bf5b7",
         "verification": "publisher-sha256"
       },
       "regctl": {
@@ -273,9 +273,9 @@
         "verification": "publisher-sha256"
       },
       "ruff": {
-        "version": "0.17.2",
-        "url": "https://github.com/astral-sh/ruff/releases/download/0.17.2/ruff-x86_64-unknown-linux-musl.tar.gz",
-        "sha256": "d6407f429ef15e558cbe980d30a67f27d02e3d2f72780be141ee006b2fdf7df3",
+        "version": "0.17.3",
+        "url": "https://github.com/astral-sh/ruff/releases/download/0.17.3/ruff-x86_64-unknown-linux-musl.tar.gz",
+        "sha256": "85e76bbb60e708a22624b31efb227e8bdaa6978177b93c146d352de4caf37ba1",
         "verification": "publisher-sha256"
       },
       "scc": {
@@ -365,9 +365,9 @@
         "verification": "publisher-sha256"
       },
       "uv": {
-        "version": "0.13.5",
-        "url": "https://github.com/astral-sh/uv/releases/download/0.13.5/uv-x86_64-unknown-linux-musl.tar.gz",
-        "sha256": "57ef9d9ccb01fb1bd998df995b0dd221b52f7d7841fbea93f2d4463bf61fb7a9",
+        "version": "0.13.6",
+        "url": "https://github.com/astral-sh/uv/releases/download/0.13.6/uv-x86_64-unknown-linux-musl.tar.gz",
+        "sha256": "5d61f26b6c7213779eda90edc6971ea6b0b796bfb8d49a574c8ad69b59838548",
         "verification": "publisher-sha256"
       },
       "watchexec": {
@@ -445,9 +445,9 @@
         "verification": "publisher-sha256"
       },
       "btop": {
-        "version": "v1.4.7",
-        "url": "https://github.com/aristocratos/btop/releases/download/v1.4.7/btop-aarch64-unknown-linux-musl.tar.gz",
-        "sha256": "6270de0ef4c84cf0eea61cb148b3ad9ae91a11e9c3309867ffc6b3751024c252",
+        "version": "v1.4.8",
+        "url": "https://github.com/aristocratos/btop/releases/download/v1.4.8/btop-aarch64-unknown-linux-musl.tar.gz",
+        "sha256": "95328e26ab08f42033af26628e2d169206a5a420f35669ce17459ef85114c14c",
         "verification": "publisher-sha256"
       },
       "cosign": {
@@ -469,9 +469,9 @@
         "verification": "publisher-sha256"
       },
       "difftastic": {
-        "version": "0.71.0",
-        "url": "https://github.com/Wilfred/difftastic/releases/download/0.71.0/difft-0.71.0-aarch64-unknown-linux-gnu.tar.gz",
-        "sha256": "5f046098b36ff985d0f99fec6f22cf74961db60386ff9d40df39fd99660aae2c",
+        "version": "0.72.0",
+        "url": "https://github.com/Wilfred/difftastic/releases/download/0.72.0/difft-0.72.0-aarch64-unknown-linux-gnu.tar.gz",
+        "sha256": "0993a82a6708a24adc6c6b8de366924728ed08f537a5b488940082c8edc79353",
         "verification": "publisher-sha256"
       },
       "direnv": {
@@ -511,15 +511,15 @@
         "verification": "publisher-sha256"
       },
       "gh": {
-        "version": "v2.103.2",
-        "url": "https://github.com/cli/cli/releases/download/v2.103.2/gh_2.103.2_linux_arm64.tar.gz",
-        "sha256": "4c3e99a50bd8b181a3fe9d69b25dd978bac768148d88f01507c6b4d1ef61a443",
+        "version": "v2.103.3",
+        "url": "https://github.com/cli/cli/releases/download/v2.103.3/gh_2.103.3_linux_arm64.tar.gz",
+        "sha256": "ee32df2323c8847f5fac6cb6b4b69ca75828e9329a8f22f677021f7b3306ce63",
         "verification": "publisher-sha256"
       },
       "gh-stack": {
-        "version": "v0.2.1",
-        "url": "https://github.com/github/gh-stack/releases/download/v0.2.1/linux-arm64",
-        "sha256": "25ec261a391261a1462d38f85c230b0e0b14ae3547926130996541f62f25f78b",
+        "version": "v0.3.0",
+        "url": "https://github.com/github/gh-stack/releases/download/v0.3.0/linux-arm64",
+        "sha256": "803ec91eeba9b2ac38827e299a79830fe75ca7284f0c28d60e6a2704bb34ed13",
         "verification": "publisher-sha256"
       },
       "git-cliff": {
@@ -559,9 +559,9 @@
         "verification": "publisher-sha256"
       },
       "hugo": {
-        "version": "v0.168.0",
-        "url": "https://github.com/gohugoio/hugo/releases/download/v0.168.0/hugo_0.168.0_linux-arm64.tar.gz",
-        "sha256": "91ce984e998a955a3dc1b5852eb4e65d0ed0f6d12a5c51690df97a548e1fdeeb",
+        "version": "v0.169.0",
+        "url": "https://github.com/gohugoio/hugo/releases/download/v0.169.0/hugo_0.169.0_linux-arm64.tar.gz",
+        "sha256": "ddadaaccbf437e3d39c33140b80c2180c4f46d027d16b7716c1282ea2e14e00c",
         "verification": "publisher-sha256"
       },
       "hyperfine": {
@@ -601,9 +601,9 @@
         "verification": "publisher-sha256"
       },
       "leaf": {
-        "version": "1.29.1",
-        "url": "https://github.com/RivoLink/leaf/releases/download/1.29.1/leaf-linux-arm64",
-        "sha256": "f65fe24b5b5abfb83a69f7d5482f7ca2fefde2028899ef2a10a77731ad6ecf84",
+        "version": "1.29.2",
+        "url": "https://github.com/RivoLink/leaf/releases/download/1.29.2/leaf-linux-arm64",
+        "sha256": "748b0e91889d429f3a9002fb3440f42d3324a2e7c645011f423aec07c7bc44d3",
         "verification": "publisher-sha256"
       },
       "lsd": {
@@ -619,9 +619,9 @@
         "verification": "publisher-sha256"
       },
       "mise": {
-        "version": "v2026.10.18",
-        "url": "https://github.com/jdx/mise/releases/download/v2026.10.18/mise-v2026.10.18-linux-arm64-musl",
-        "sha256": "61c5773ca684d12907092263890cb0532c667b3efe64e373f3f7169938cc86d4",
+        "version": "v2026.10.23",
+        "url": "https://github.com/jdx/mise/releases/download/v2026.10.23/mise-v2026.10.23-linux-arm64-musl",
+        "sha256": "6e3283a89f493568d456b85b0d60e4e593ad8e32be9c6e8ee6a75819e891944e",
         "verification": "publisher-sha256"
       },
       "misspell": {
@@ -649,9 +649,9 @@
         "verification": "publisher-sha256"
       },
       "pinact": {
-        "version": "v5.0.1",
-        "url": "https://github.com/suzuki-shunsuke/pinact/releases/download/v5.0.1/pinact_linux_arm64.tar.gz",
-        "sha256": "fc1432004f378ae51d549a356195b4d2e3ee05935dbd20e3bbca66db1cdf6590",
+        "version": "v5.0.2",
+        "url": "https://github.com/suzuki-shunsuke/pinact/releases/download/v5.0.2/pinact_linux_arm64.tar.gz",
+        "sha256": "326e27f5b3b5fca21e6a169b2785ba2023df3dd9ee82dd0f4e438cb1220b68d7",
         "verification": "publisher-sha256"
       },
       "regctl": {
@@ -667,9 +667,9 @@
         "verification": "publisher-sha256"
       },
       "ruff": {
-        "version": "0.17.2",
-        "url": "https://github.com/astral-sh/ruff/releases/download/0.17.2/ruff-aarch64-unknown-linux-musl.tar.gz",
-        "sha256": "ba1a3a43f8afc7bda55f8be2c600a1c8966390c3de17526bb1e6c5609c2e9fa0",
+        "version": "0.17.3",
+        "url": "https://github.com/astral-sh/ruff/releases/download/0.17.3/ruff-aarch64-unknown-linux-musl.tar.gz",
+        "sha256": "650d5991fea0baf8a5ee17672a3b20c45ac238ac85fa09077d66ef0cec31cdcf",
         "verification": "publisher-sha256"
       },
       "scc": {
@@ -759,9 +759,9 @@
         "verification": "publisher-sha256"
       },
       "uv": {
-        "version": "0.13.5",
-        "url": "https://github.com/astral-sh/uv/releases/download/0.13.5/uv-aarch64-unknown-linux-musl.tar.gz",
-        "sha256": "7906c79adb21c81abd559841ba76bb1d9af9d791acac7a041b2972e03ae16538",
+        "version": "0.13.6",
+        "url": "https://github.com/astral-sh/uv/releases/download/0.13.6/uv-aarch64-unknown-linux-musl.tar.gz",
+        "sha256": "819692e404d23e5aae6bc44c0e260f1f5492fd1910ab4693b2c650f926dbe800",
         "verification": "publisher-sha256"
       },
       "watchexec": {
