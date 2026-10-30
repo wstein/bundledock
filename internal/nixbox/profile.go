@@ -100,6 +100,11 @@ func BuildProfile(c *Catalog, catalogData, lockData []byte, p PlatformLock, arch
 		if !info.Mode().IsRegular() || info.Mode().Perm()&0o111 == 0 {
 			return fmt.Errorf("shim %s: %s is not an executable file", name, pkg.Binary)
 		}
+		for v, target := range pkg.Env {
+			if _, err := os.Stat(filepath.Join(out, filepath.FromSlash(OfficialDirectory), filepath.FromSlash(target))); err != nil {
+				return fmt.Errorf("shim %s: %s target: %w", name, v, err)
+			}
+		}
 		fmt.Fprintf(&table, "bin\t%s\t%s\n", name, pkg.Binary)
 		var vars []string
 		for v := range pkg.Env {

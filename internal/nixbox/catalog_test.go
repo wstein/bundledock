@@ -50,6 +50,32 @@ func TestProductionOfficialBinariesAreInstalledByTheToolsCatalog(t *testing.T) {
 	}
 }
 
+func TestCheckOfficialAcceptsAShimOnAnAlias(t *testing.T) {
+	_, c := productionCatalog(t)
+	tools, err := toolconfig.Load("../../bundles/nixbox/tools")
+	if err != nil {
+		t.Fatal(err)
+	}
+	zk := tools.Catalog.Packages["zk"]
+	zk.Install.Aliases = map[string]string{"bin/zk-alias": "bin/zk"}
+	tools.Catalog.Packages["zk"] = zk
+	alias := *c
+	alias.Packages = map[string]Package{}
+	for name, p := range c.Packages {
+		alias.Packages[name] = p
+	}
+	p := alias.Packages["zk"]
+	p.Binary = "bin/zk-alias"
+	alias.Packages["zk"] = p
+	// The alias is installed, but bin/zk then has no shim.
+	if err := CheckOfficial(&alias, tools); err == nil {
+		t.Fatal("accepted a recipe member without a shim")
+	}
+	if err := CheckOfficial(c, tools); err != nil {
+		t.Fatalf("an alias must not need a shim: %v", err)
+	}
+}
+
 func TestCheckOfficialRefusesAShimWithoutARecipe(t *testing.T) {
 	_, c := productionCatalog(t)
 	tools, err := toolconfig.Load("../../bundles/nixbox/tools")
