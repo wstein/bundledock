@@ -86,12 +86,12 @@ Separate PRs, each independently useful:
    owner).
 3. Move the cleanup plan into the package; the workflow switches to `bdock quay clean`.
 
-## Open questions for the owner
+## Decisions (owner, 2026-10-30)
 
-1. May a Quay OAuth token with repository admin rights become a CI secret, or does
-   `describe --apply` stay a local owner command? Recommendation: local command;
-   the CI only runs `describe` as a check.
-2. Should `verify` after promotion fail the publication run, or only report?
-   Recommendation: report; a late registry lag must not turn a good publication red.
-3. Replace the Python cleanup script, or keep it beside the Go command? Recommendation:
-   replace it in stage 3 after the Go plan matches the script's test cases.
+1. The Quay OAuth token stays on the owner's machine. `describe --apply` is an
+   owner command; CI runs `describe` only as a check and holds no admin token.
+2. `verify` after promotion only reports (run summary); it does not fail the
+   publication run. It can be tightened once it has proved stable.
+3. The Python cleanup script is replaced in stage 3, after the Go plan passes the
+   same test cases as `scripts/tests/test_staging_cleanup*`; both are never active
+   writers at the same time.
