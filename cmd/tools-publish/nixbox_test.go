@@ -1,9 +1,12 @@
 package main
 
 import (
+	"crypto/sha256"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -135,6 +138,43 @@ func TestNixboxValidationCoversTheToolsLock(t *testing.T) {
 	}
 }
 
+// A shim naming a file no recipe installs passes every other check (the Nix lock and
+// the tools lock are untouched and valid); only CheckOfficial catches it.
+func TestNixboxValidationRefusesAShimWithoutItsRecipe(t *testing.T) {
+	repo, err := filepath.Abs("../../bundles/nixbox")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Chdir(t.TempDir())
+	for _, name := range []string{"packages.catalog.json", "packages.lock.json", "tools/packages.catalog.json", "tools/packages.lock.json", "tools/packages.txt"} {
+		data, err := os.ReadFile(filepath.Join(repo, name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if name == "packages.catalog.json" {
+			data = []byte(strings.Replace(string(data), `"binary": "bin/zk"`, `"binary": "bin/not-installed"`, 1))
+		}
+		if err = os.MkdirAll(filepath.Join("bundles/nixbox", filepath.Dir(name)), 0700); err != nil {
+			t.Fatal(err)
+		}
+		if err = os.WriteFile(filepath.Join("bundles/nixbox", name), data, 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// The catalog digest in the lock no longer matches, so rebuild a consistent pair first.
+	lock, _ := os.ReadFile("bundles/nixbox/packages.lock.json")
+	catalog, _ := os.ReadFile("bundles/nixbox/packages.catalog.json")
+	sum := fmt.Sprintf("%x", sha256.Sum256(catalog))
+	lock = regexp.MustCompile(`("catalog_digest": ")[0-9a-f]{64}`).ReplaceAll(lock, []byte("${1}"+sum))
+	if err = os.WriteFile("bundles/nixbox/packages.lock.json", lock, 0600); err != nil {
+		t.Fatal(err)
+	}
+	err = validateBundleSource(toolpublish.Bundle{Name: "nixbox", Directory: "bundles/nixbox"})
+	if err == nil || !strings.Contains(err.Error(), "no tools recipe installs") {
+		t.Fatalf("%v", err)
+	}
+}
+
 func TestNixboxHasNoUpstreamResolution(t *testing.T) {
 	t.Chdir(t.TempDir())
 	t.Setenv("GITHUB_EVENT_NAME", "workflow_dispatch")
@@ -146,5 +186,46 @@ func TestNixboxHasNoUpstreamResolution(t *testing.T) {
 	}
 	if _, err := os.Stat("resolved"); !os.IsNotExist(err) {
 		t.Fatalf("wrote an artifact: %v", err)
+	}
+}
+
+func TestBuildRestoresTheResolvedToolsLockForNixbox(t *testing.T) {
+	t.Chdir(t.TempDir())
+	for path, body := range map[string]string{
+		"resolved/packages.lock.json": "resolved nix", "resolved/tools/packages.lock.json": "resolved tools",
+		"bundles/nixbox/packages.lock.json": "old nix", "bundles/nixbox/tools/packages.lock.json": "old tools",
+	} {
+		if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte(body), 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	bundle := toolpublish.Bundle{Name: "nixbox", Directory: "bundles/nixbox"}
+	if err := restoreResolvedLocks(bundle, "resolved/packages.lock.json"); err != nil {
+		t.Fatal(err)
+	}
+	for path, want := range map[string]string{"bundles/nixbox/packages.lock.json": "resolved nix", "bundles/nixbox/tools/packages.lock.json": "resolved tools"} {
+		if got, _ := os.ReadFile(path); string(got) != want {
+			t.Errorf("%s = %q, want %q", path, got, want)
+		}
+	}
+	// Another bundle never touches a tools lock.
+	if err := os.MkdirAll("bundles/node", 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := restoreResolvedLocks(toolpublish.Bundle{Name: "node", Directory: "bundles/node"}, "resolved/packages.lock.json"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat("bundles/node/tools"); err == nil {
+		t.Error("a non-nixbox bundle got a tools lock")
+	}
+	// A missing resolved tools lock fails.
+	if err := os.Remove("resolved/tools/packages.lock.json"); err != nil {
+		t.Fatal(err)
+	}
+	if err := restoreResolvedLocks(bundle, "resolved/packages.lock.json"); err == nil {
+		t.Error("restored without the resolved tools lock")
 	}
 }

@@ -165,6 +165,19 @@ func resolveVersion(directory string, meta toolpublish.Metadata, frozen bool, at
 	return resolveFrozen(directory, meta)
 }
 
+// restoreResolvedLocks puts the resolved lock back into the bundle directory the
+// image build reads; for nixbox also the lock of its official release binaries, so
+// the labels provably describe what the build uses.
+func restoreResolvedLocks(bundle toolpublish.Bundle, lock string) error {
+	if err := copyFile(lock, bundle.Directory+"/packages.lock.json"); err != nil {
+		return err
+	}
+	if bundle.Name != "nixbox" {
+		return nil
+	}
+	return copyFile(toolpublish.ToolsLockPath(lock), toolpublish.ToolsLockPath(bundle.Directory+"/packages.lock.json"))
+}
+
 // resolveFrozen copies the reviewed lock without upstream discovery or commands.
 func resolveFrozen(directory string, meta toolpublish.Metadata) error {
 	bundle := toolpublish.BundleForMetadata(meta)
@@ -433,7 +446,7 @@ func executeWithAllocator(args []string, allocator func(toolpublish.Bundle, stri
 		defer cancel()
 		return toolpublish.CheckNewestForBundle(ctx, nil, os.Getenv("GITHUB_REPOSITORY"), os.Getenv("DEFAULT_BRANCH"), id, attempt, os.Getenv("GITHUB_SHA"), os.Getenv("GITHUB_TOKEN"), bundle.Name)
 	case "build":
-		if err := copyFile(lock, bundle.Directory+"/packages.lock.json"); err != nil {
+		if err := restoreResolvedLocks(bundle, lock); err != nil {
 			return err
 		}
 		if err := validateBundleSource(bundle); err != nil {
