@@ -306,7 +306,7 @@ class PublicationDocsTest(unittest.TestCase):
         self.assertNotIn('-publication-${{ github.run_attempt }}', docs)
         self.assertIn('pattern: ${{ inputs.bundle }}-publication-*', docs)
         self.assertNotIn('run-id:', docs)
-        self.assertIn('Expected exactly one publication receipt of this run', docs)
+        self.assertIn('scripts/select-receipt.py "$dir" "$BUNDLE" "$GITHUB_RUN_ATTEMPT"', docs)
         self.assertIn('--attempt "$PUBLICATION_ATTEMPT"', docs)
         self.assertNotIn('--attempt "$GITHUB_RUN_ATTEMPT"', docs)
         self.assertIn('--run-id "$GITHUB_RUN_ID"', docs)
