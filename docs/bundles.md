@@ -26,7 +26,7 @@ consumer requirements and verification limits.
 
 | Bundle | Purpose and guide | Registry tags |
 | --- | --- | --- |
-| Nixbox (`nixbox`) | [glibc runner, shims and distribution tools in Nix store layout](nixbox.md), for use beside the toolbox. Designed, not yet published. | Not yet published |
+| Nixbox (`nixbox`) | [glibc runner, shims and distribution tools in Nix store layout](nixbox.md), for use beside the toolbox. | [Nixbox tags](https://quay.io/repository/bundledock/nixbox?tab=tags) |
 | OpenTofu (`opentofu`) | [Infrastructure CLI (`tofu`)](opentofu.md); providers and project state stay with the consumer. The toolbox also ships `tofu`; this separate bundle remains supported until retired. | [OpenTofu tags](https://quay.io/repository/bundledock/opentofu?tab=tags) |
 | Toolbox (`toolbox`) | [Common development utilities](toolbox.md), including search, shells, GitHub/registry tools and source checks. | [Toolbox tags](https://quay.io/repository/bundledock/toolbox?tab=tags) |
 

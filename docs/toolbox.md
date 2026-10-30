@@ -253,7 +253,7 @@ Alpine: `ast-grep`, `delta`, `difft`, `fastfetch`, `leaf`, `zizmor`, `zk` and th
 `hx` launcher's `lib/helix/hx`. The other binaries are static. The toolbox itself
 is unchanged. The [nixbox](nixbox.md) bundle adds a glibc runner and shims with
 the same names that run these official binaries on such images; mount both
-bundles. Nixbox is designed but not yet published.
+bundles.
 
 ## Retained notices
 

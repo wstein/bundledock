@@ -8,11 +8,10 @@ weight: 21
 
 [Back to BundleDock](../README.md) · [All bundles](bundles.md) · [Toolbox](toolbox.md)
 
-Status: designed and decided, see the [design](design/nixbox/spec.md). It can be
-published to `quay.io/bundledock/nixbox`, but only when the owner selects `nixbox`
-in a manual dispatch of Publish bundles (see [CI](#ci)). Nothing is published yet:
-there is no image, no tag, and no consumer pins it. The record below is filled by
-the first publication.
+Status: published to `quay.io/bundledock/nixbox` with tags `<date>-b<N>`, `stable` and
+`latest`; see the record below and the [design](design/nixbox/spec.md). New versions
+are published only when the owner selects `nixbox` in a manual dispatch of Publish
+bundles (see [CI](#ci)). No consumer pins it yet.
 
 <!-- BEGIN PUBLISHED BUNDLE -->
 <!-- publication-record: {"attempt":"1","bundle":"nixbox","commit":"a4f4495ab6c03b887ef21c6368c5682fc51a6660","created":"2026-10-30T02:01:24Z","digest":"sha256:c20d3778c2843f66de3739a024c6bafa758afa252e54646321b0558639cdbc9f","image":"quay.io/bundledock/nixbox","lock_sha256":"d2ddff16742c269139281204d4674e0c520c46ca822624a197af0684e5cbefcf","reference":"quay.io/bundledock/nixbox@sha256:c20d3778c2843f66de3739a024c6bafa758afa252e54646321b0558639cdbc9f","run_attempt":"1","run_id":"40989024653","source":"https://github.com/wstein/bundledock","tag":"2026.10.30-b2"} -->
