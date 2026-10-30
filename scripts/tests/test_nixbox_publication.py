@@ -75,11 +75,6 @@ class NixboxPublicationTests(unittest.TestCase):
                 with self.assertRaisesRegex(SystemExit, 'manual dispatch'):
                     publication.run()
 
-    def test_dispatch_approval_has_no_tool_lock_to_inspect(self):
-        def get(path):
-            raise AssertionError('nixbox approval must not read tool locks: ' + path)
-        publication.require_approvals(get, config.select_bundle('nixbox'), 'a' * 40)
-
     def test_nixbox_publication_records_use_the_daily_tag(self):
         record = dict(bundle='nixbox', image='quay.io/bundledock/nixbox', source=tags.SOURCE, commit='a' * 40,
                       digest='sha256:' + 'b' * 64, run_id='123', tag='2026.10.30-b1', run_attempt='1')

@@ -2,7 +2,6 @@
 """Exact owner-merged updater provenance. No variable is authorization proof."""
 import argparse
 import base64
-import hashlib
 import importlib.util
 import json
 import os
@@ -36,12 +35,6 @@ def file_bytes(get, path, revision):
     return base64.b64decode(content['content'].replace('\n', ''), validate=True)
 
 
-def directory_names(get, directory, revision):
-    listing = get('/contents/' + directory + '?ref=' + sha(revision))
-    require(isinstance(listing, list) and len(listing) < 1000, 'Complete directory listing required')
-    return [item['name'] for item in listing if item['type'] == 'file']
-
-
 def lock_bytes(get, bundle, revision):
     return file_bytes(get, bundle['lock'], revision)
 
@@ -51,7 +44,7 @@ SOURCE_FIELDS = ('version', 'url', 'sha256', 'sha3_256')
 VERSION = re.compile(r'v?([0-9]+)\.([0-9]+)\.([0-9]+)')
 # Same grammar as toolconfig.ParseDesired: blanks removed, name(==|>=)x.y.z[,<x.y.z].
 REQUIREMENT = re.compile(r'([a-z][a-z0-9-]*)(==|>=)([^\s]+)')
-LOCK_KEYS = {'schema', 'desired_digest', 'catalog_digest', 'platforms', 'toolchains', 'extra_sources', 'approvals'}
+LOCK_KEYS = {'schema', 'desired_digest', 'catalog_digest', 'platforms', 'toolchains', 'extra_sources'}
 SPEC_KEYS = {'version', 'url', 'sha256', 'sha512', 'sha3_256', 'verification', 'toolchain'}
 CATALOG_KEYS = {'schema', 'packages'}
 PACKAGE_KEYS = {'channel', 'provider', 'repository', 'tag_prefix', 'base_url', 'metadata_url', 'normalization', 'architectures',
@@ -97,10 +90,6 @@ def parse_lock(data, what):
         require(isinstance(tools, dict), GATE + what + ' ' + arch + ' must be an object')
         for tool, spec in tools.items():
             known_keys(spec, SPEC_KEYS, what + ' ' + arch + ' ' + ascii(tool))
-    approvals = lock.get('approvals', {})
-    require(isinstance(approvals, dict), GATE + what + ' approvals must be an object')
-    for tool, digest in approvals.items():
-        require(isinstance(digest, str) and re.fullmatch('[0-9a-f]{64}', digest) is not None, GATE + what + ' approval of ' + ascii(tool) + ' is not a lower-case SHA256')
     return lock
 
 
@@ -165,8 +154,7 @@ def content_check(get, bundle, base, revision):
     before = parse_lock(lock_bytes(get, bundle, base), 'parent lock')
     after = parse_lock(lock_bytes(get, bundle, revision), 'merged lock')
     # G1: toolchains and extra_sources are deeply equal.
-    # The owner's approvals are written only by the owner's own commit, never by the updater bot.
-    for section in ('toolchains', 'extra_sources', 'approvals'):
+    for section in ('toolchains', 'extra_sources'):
         require(before.get(section) == after.get(section), GATE + section + ' changed (G1); explicit owner approval required')
     # G2: no package added or removed and the platform set unchanged.
     old_platforms, new_platforms = before.get('platforms') or {}, after.get('platforms') or {}
@@ -197,112 +185,6 @@ def content_check(get, bundle, base, revision):
             require(within_constraint(number, desired_constraint(desired, tool), tool), GATE + tool + ' ' + arch + ' version is outside the desired constraint (T2)')
             # T3: the URL is the one derived from the new version.
             require(isinstance(new.get('url'), str) and derived_url(packages[tool], tool, new['version']).fullmatch(new['url']) is not None, GATE + tool + ' ' + arch + ' url is not derived from the version (T3)')
-
-
-# The closed list of repository inputs, besides the catalog entry and the lock pins, that the owner's
-# approved_digest covers (documented in docs/publication.md and the generic tool builds design, printed by
-# scripts/approval-digest.py). They are the files whose change alters the produced bytes or the shipped licence
-# content of a source build. The binary that runs the compiler is built by the Dockerfile's `compiler` stage, so
-# that stage (golang image digest, go build flags), go.mod and go.sum and every non-test .go file of every module
-# package in the dependency closure of the two binaries it builds are covered. A test recomputes the closure with
-# `go list -deps` and fails when the directories below miss a package. Excluded on purpose, because they do not
-# change the artifact: smoke scripts, tests, documentation, the inventory, .go-version (only CI's Go setup reads it),
-# the downloads stage and its base image (every fetched source is hash-verified), the builder stage's COPY from the
-# compile stage, the `# syntax` line, and files embedded into the driver for other tools.
-APPROVAL_INPUT_FILES = ('go.mod', 'go.sum')
-APPROVAL_INPUT_DIRECTORIES = ('cmd/tools-bundle', 'cmd/tools-init', 'internal/toolbundle', 'internal/toolconfig', 'internal/toolvolume')
-# Per tool, from the bundle's Dockerfile: the compiler stage, the compile-<tool> stage (which includes its base image
-# digest and --network=none) and the fetch-sources instruction of the tool (with its continuation lines); and the
-# tool's notice files from the catalog.
-APPROVAL_INPUT_KINDS = ('dockerfile compiler stage', 'dockerfile compile-<tool> stage', 'dockerfile fetch-sources instruction of <tool>', 'catalog notices of <tool>')
-
-
-def dockerfile_stage(lines, name):
-    """The text of the stage `FROM ... AS <name>` (instruction keywords are case-insensitive), or None."""
-    stage, inside = [], False
-    for line in lines:
-        if re.match(r'\s*from\s', line, re.IGNORECASE):
-            inside = re.search(r'\sas\s+' + re.escape(name) + r'\s*$', line, re.IGNORECASE) is not None
-        if inside:
-            stage.append(line)
-    return '\n'.join(stage) if stage else None
-
-
-def dockerfile_inputs(text, tool):
-    """The compiler stage, the compile-<tool> stage and the fetch-sources instruction of the tool, all required."""
-    lines = text.split('\n')
-    compiler, compile_stage = dockerfile_stage(lines, 'compiler'), dockerfile_stage(lines, 'compile-' + tool)
-    fetch = []
-    for index, line in enumerate(lines):
-        if re.match(r'\s*run\s+tools-bundle\s+fetch-sources\s+-tool\s+' + re.escape(tool) + r'\s', line, re.IGNORECASE):
-            end = index
-            while lines[end].rstrip().endswith('\\') and end + 1 < len(lines):
-                end += 1
-            fetch.append('\n'.join(lines[index:end + 1]))
-    require(compiler and compile_stage and len(fetch) == 1, GATE + 'the Dockerfile has no single compiler stage, compile-' + tool + ' stage and fetch-sources instruction (approved_digest)')
-    return compiler, compile_stage, fetch[0]
-
-
-def approval_inputs(read, names, bundle, tool, package):
-    """SHA256 of every file input of the approval. read(path) returns a file's bytes at the revision and
-    names(directory) the names of the files directly in a directory."""
-    sums = lambda data: hashlib.sha256(data).hexdigest()
-    inputs = {path: sums(read(path)) for path in APPROVAL_INPUT_FILES}
-    for directory in APPROVAL_INPUT_DIRECTORIES:
-        sources = sorted(name for name in names(directory) if name.endswith('.go') and not name.endswith('_test.go'))
-        require(sources, GATE + directory + ' has no Go source (approved_digest)')
-        for name in sources:
-            inputs[directory + '/' + name] = sums(read(directory + '/' + name))
-    compiler, compile_stage, fetch = dockerfile_inputs(read(bundle['directory'] + '/Dockerfile').decode(), tool)
-    inputs['dockerfile compiler stage'], inputs['dockerfile compile stage'], inputs['dockerfile fetch instruction'] = sums(compiler.encode()), sums(compile_stage.encode()), sums(fetch.encode())
-    for notice in package.get('notices') or []:
-        require(isinstance(notice, str), GATE + tool + ' notice is not a path')
-        inputs['notice ' + notice] = sums(read(bundle['directory'] + '/' + notice))
-    return inputs
-
-
-def approval_digest(tool, package, lock, inputs):
-    """Digest of everything the owner approves for one source-build tool: its catalog recipe, its pins on both
-    architectures, its toolchain, its extra sources and the file inputs of approval_inputs. A change of any of
-    them changes the digest."""
-    build = package.get('build') or {}
-    toolchain = (lock.get('toolchains') or {}).get(build.get('toolchain'))
-    require(toolchain is not None, GATE + tool + ' has no locked toolchain (approved_digest)')
-    prefix = tool + '/'
-    subject = {'tool': tool, 'package': package,
-               'platforms': {arch: tools.get(tool) for arch, tools in (lock.get('platforms') or {}).items()},
-               'toolchain': toolchain,
-               'extra_sources': {key: value for key, value in (lock.get('extra_sources') or {}).items() if key.startswith(prefix)},
-               'inputs': inputs}
-    return hashlib.sha256(json.dumps(subject, sort_keys=True, separators=(',', ':'), ensure_ascii=True).encode()).hexdigest()
-
-
-def check_approvals(lock, catalog, bundle, read, names):
-    """Every source-build tool of the catalog needs the owner's approved_digest of its current content."""
-    packages = catalog.get('packages') or {}
-    approvals = lock.get('approvals') or {}
-    for tool in sorted(name for name, package in packages.items() if package.get('provider') == 'source-build'):
-        approved = approvals.get(tool)
-        require(approved is not None, GATE + tool + ' has no owner approval (approved_digest); its build and smoke need explicit owner approval first')
-        current = approval_digest(tool, packages[tool], lock, approval_inputs(read, names, bundle, tool, packages[tool]))
-        require(approved == current, GATE + tool + ' changed since the owner approved it (approved_digest is stale); explicit owner approval required')
-    stray = sorted(ascii(tool) for tool in approvals if (packages.get(tool) or {}).get('provider') != 'source-build')
-    require(not stray, GATE + 'approval for a tool that is not a source build: ' + ', '.join(stray))
-
-
-def require_approvals(get, bundle, revision, catalog_revision=None):
-    """Refuse publication of a bundle whose source-build tools lack a current owner approval.
-
-    nixbox has no source builds: its closure is pinned by narHash and signature-checked by
-    `nixbox check` in make check, and its dispatch is the owner's approval.
-
-    revision is the exact source to publish (lock and file inputs); the catalog is read at catalog_revision
-    (default revision)."""
-    if bundle['name'] in config.MANUAL_ONLY:
-        return
-    lock = parse_lock(lock_bytes(get, bundle, revision), 'published lock')
-    catalog = parse_catalog(file_bytes(get, bundle['directory'] + '/packages.catalog.json', catalog_revision or revision), 'catalog')
-    check_approvals(lock, catalog, bundle, lambda path: file_bytes(get, path, revision), lambda directory: directory_names(get, directory, revision))
 
 
 def safe_files(files, pr, bundles):
@@ -389,8 +271,6 @@ def merged_updater(pr, name, get, revision, members=None):
     for bundle in bundles:
         require(lock_bytes(get, bundle, revision) != lock_bytes(get, bundle, base), 'Lock is unchanged')
         content_check(get, bundle, base, revision)
-        # The catalog of an updater PR cannot change (own lock and inventory only), so the parent's is the merged one.
-        require_approvals(get, bundle, revision, base)
     return pr
 
 
@@ -589,7 +469,6 @@ def main():
         subprocess.run(['sh', str(Path(__file__).with_name('approve-publication.sh'))], check=True)
         revision = sha(os.environ['APPROVED_SHA'])
         require(api.request('/git/ref/heads/main')['object']['sha'] == revision, 'Source is no longer current main')
-        require_approvals(api.request, bundle, revision)
         require(subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip() == revision, 'Checkout differs from authorized source')
         output = dict(bundle, bundle=name, bundles=json.dumps([name]), sha=revision, eligible='true', status='eligible', reason='Exact full-SHA human manual dispatch verified')
     else:

@@ -43,11 +43,6 @@ type Lock struct {
 	Platforms  map[string]map[string]Spec `json:"platforms"`
 	// ExtraSources pins the further sources of source builds, keyed "<tool>/<name>".
 	ExtraSources map[string]LockedSource `json:"extra_sources,omitempty"`
-	// Approvals holds, per source-build tool, the approved_digest the owner committed after the
-	// real build and smoke of that exact recipe and pins. Only the owner writes it; the publish gate
-	// (scripts/bundle-publication.py) computes the digest and refuses a bundle whose source-build
-	// tool has none or a stale one. Go validates the shape only.
-	Approvals map[string]string `json:"approvals,omitempty"`
 }
 type Catalog struct {
 	Schema   int                `json:"schema"`
@@ -548,8 +543,5 @@ func (c Config) validate(strict bool) error {
 	if err := c.validateToolchains(); err != nil {
 		return err
 	}
-	if err := c.validateLockedExtraSources(); err != nil {
-		return err
-	}
-	return c.validateApprovals()
+	return c.validateLockedExtraSources()
 }

@@ -387,35 +387,6 @@ class OwnerMergeTests(unittest.TestCase):
     self.assertIn('status='+status,output.read_text())
     self.assertIn(status,summary.read_text())
 
-DOCKERFILE='''# syntax=docker/dockerfile:1
-FROM --platform=$BUILDPLATFORM golang:1.27.2-alpine@sha256:@@GO@@ AS compiler
-ARG TARGETARCH
-RUN CGO_ENABLED=0 go build -trimpath -o /out/tools-bundle ./cmd/tools-bundle
-
-FROM --platform=$BUILDPLATFORM alpine:3.23@sha256:@@DIGEST@@ AS downloads
-RUN apk add --no-cache ca-certificates
-RUN tools-bundle fetch-sources -tool sqlite3 -arch "${TARGETARCH}" -work /build/work/sqlite3
-
-FROM --platform=$TARGETPLATFORM alpine:3.23@sha256:@@DIGEST@@ AS compile-sqlite3
-ARG TARGETARCH
-RUN --network=none tools-bundle compile -tool sqlite3 -arch "${TARGETARCH}" -work /work -output /out
-
-FROM downloads AS builder
-RUN tools-bundle -arch "${TARGETARCH}" --build-outputs /compiled
-'''.replace('@@DIGEST@@','a'*64).replace('@@GO@@','c'*64)
-# Every file the approval digest reads plus files it must ignore.
-INPUT_FILES={'go.mod':b'module bundledock\n','go.sum':b'sum\n'}
-for directory in gate.APPROVAL_INPUT_DIRECTORIES:
- INPUT_FILES[directory+'/main.go']=('package x // '+directory+'/main.go\n').encode()
- INPUT_FILES[directory+'/main_test.go']=b'package x // test\n'
-INPUT_FILES['internal/toolconfig/config.go']=b'package toolconfig // config\n'
-INPUT_FILES.update({'bundles/toolbox/Dockerfile':DOCKERFILE.encode(),'bundles/toolbox/licenses/sqlite3/NOTICE':b'notice\n','bundles/toolbox/licenses/sqlite3/SOURCE':b'source\n',
-                    'bundles/toolbox/scripts/sqlite3-smoke.sh':b'smoke\n','.go-version':b'1.27.2\n'})
-def names_in(files):
- return lambda directory:[path[len(directory)+1:] for path in files if path.startswith(directory+'/') and '/' not in path[len(directory)+1:]]
-def inputs_of(files,package):
- return gate.approval_inputs(files.__getitem__,names_in(files),gate.config.select_bundle('toolbox'),'sqlite3',package)
-
 class SourceBuildGateTests(unittest.TestCase):
  """Publish-gate content check (design N2): conditions G1-G4 and T1-T4 against the merged commit's parent."""
  setUp=OwnerMergeTests.setUp
@@ -425,32 +396,24 @@ class SourceBuildGateTests(unittest.TestCase):
  def sqlite(self,version='3.54.1',numeric='3540100',year='2026',**changes):
   spec={'version':version,'url':'https://www.sqlite.org/'+year+'/sqlite-amalgamation-'+numeric+'.zip','sha256':'1'*64,'sha3_256':'2'*64,'verification':'publisher-sha3-256','toolchain':'zig-cc'}
   spec.update(changes);return spec
- def approved(self):
-  """The owner's approved_digest of the default sqlite3 recipe and pins (the revision that was built and smoked)."""
-  package=self.CATALOG['packages']['sqlite3']
-  return gate.approval_digest('sqlite3',package,self.lock(self.sqlite(),approvals=False),inputs_of(INPUT_FILES,package))
- def lock(self,sqlite,arm=None,toolchain='0.17.0',extra='a473823',tools=('tool','sqlite3'),approvals=None):
+ def lock(self,sqlite,arm=None,toolchain='0.17.0',extra='a473823',tools=('tool','sqlite3')):
   def platform(spec):
    entries={'tool':{'version':'1.0.0','url':'https://example.test/1.0.0','sha256':'0'*64,'verification':'publisher-sha256'},'sqlite3':spec}
    return {name:entries[name] for name in tools}
   return {'schema':2,'toolchains':{'zig-cc':{'amd64':{'version':toolchain,'sha256':'3'*64},'arm64':{'version':toolchain,'sha256':'4'*64}}},
           'platforms':{'amd64':platform(sqlite),'arm64':platform(arm or sqlite)},
-          'extra_sources':{'sqlite3/linenoise':{'commit':extra,'files':{'linenoise.c':{'sha256':'5'*64}}}}} | ({} if approvals is False else {'approvals':{'sqlite3':self.approved() if approvals is None else approvals}})
+          'extra_sources':{'sqlite3/linenoise':{'commit':extra,'files':{'linenoise.c':{'sha256':'5'*64}}}}}
  def stage(self,before,after,constraint=b'sqlite3>=3.54.0,<4.0.0\ntool>=1.0.0\n'):
   """Parent lock B at the merged commit's parent, merged lock H at A; the PR base is stale and has no data."""
   self.pr['base']['sha']='f'*40
   put=lambda path,revision,content:self.data.__setitem__('/contents/'+path+'?ref='+revision,{'encoding':'base64','content':b64(content)})
   put(self.bundle['lock'],B,before);put(self.bundle['lock'],A,after)
-  sources=getattr(self,'sources',None) or INPUT_FILES
-  for path,content in sources.items():put(path,A,content)
-  for directory in gate.APPROVAL_INPUT_DIRECTORIES:
-   self.data['/contents/'+directory+'?ref='+A]=[{'name':name,'type':'file'} for name in names_in(sources)(directory)]
   put(self.bundle['directory']+'/packages.catalog.json',B,self.CATALOG);put(self.bundle['directory']+'/packages.txt',B,constraint)
  def accepted(self):self.assertEqual(gate.validate(self.event,self.get),(A,self.pr['html_url']))
  def bump_accepted(self):
-  """A source bump satisfies every content rule (G1-G4, T1-T4), but the owner's approval no longer matches it."""
+  """A source bump satisfies every content rule (G1-G4, T1-T4); the owner's merge is the approval."""
   gate.content_check(self.get,self.bundle,B,A)
-  self.rejected('approved_digest is stale')
+  self.accepted()
  def rejected(self,*needles):
   with self.assertRaises(ValueError) as caught:gate.validate(self.event,self.get)
   for needle in needles:self.assertIn(needle,str(caught.exception))
@@ -574,180 +537,41 @@ class SourceBuildGateTests(unittest.TestCase):
  def test_unparsable_lock_fails_closed(self):
   self.stage(self.lock(self.sqlite()),b'not json');self.rejected('not valid JSON')
 
-class ApprovalGateTests(unittest.TestCase):
- """The owner's approved_digest binds the approval of a source build to its exact recipe, pins and toolchain."""
+class NoApprovalGateTests(unittest.TestCase):
+ """The owner's merge of the updater PR, or the exact-SHA dispatch of the owner, is the approval of a source build."""
  setUp=OwnerMergeTests.setUp
  get=OwnerMergeTests.get
  CATALOG=SourceBuildGateTests.CATALOG
  sqlite=SourceBuildGateTests.sqlite
- approved=SourceBuildGateTests.approved
  lock=SourceBuildGateTests.lock
  stage=SourceBuildGateTests.stage
  accepted=SourceBuildGateTests.accepted
  rejected=SourceBuildGateTests.rejected
  raw=SourceBuildGateTests.raw
- def check(self,lock,catalog,files=None):
-  files=files or INPUT_FILES
-  gate.check_approvals(lock,catalog,gate.config.select_bundle('toolbox'),files.__getitem__,names_in(files))
- def digest(self,lock,files=None,package=None):
-  package=package or self.CATALOG['packages']['sqlite3']
-  return gate.approval_digest('sqlite3',package,lock,inputs_of(files or INPUT_FILES,package))
- def test_reviewer_scenario_unrelated_updater_cannot_publish_an_unapproved_source_build(self):
-  # The lock of the catalog change ships without approved_digest; the next updater only bumps another tool.
-  before=self.lock(self.sqlite(),approvals=False);after=self.lock(self.sqlite(),approvals=False)
-  for arch in after['platforms']:after['platforms'][arch]['tool']['version']='1.0.1'
-  self.stage(before,after);self.rejected('sqlite3 has no owner approval','approved_digest')
- def test_matching_approval_lets_an_unrelated_updater_publish(self):
+ def test_updater_pr_of_an_unrelated_tool_publishes_a_source_build_without_approval(self):
   before=self.lock(self.sqlite());after=self.lock(self.sqlite())
   for arch in after['platforms']:after['platforms'][arch]['tool']['version']='1.0.1'
   self.stage(before,after);self.accepted()
- def test_a_stale_approval_after_a_source_change_is_rejected_for_every_change_kind(self):
-  base=self.lock(self.sqlite())
-  def changed(kind):
-   after=self.lock(self.sqlite())
-   if kind=='sha256':
-    for arch in after['platforms']:after['platforms'][arch]['sqlite3']['sha256']='6'*64
-   elif kind=='toolchain':after['toolchains']['zig-cc']['amd64']['sha256']='9'*64
-   elif kind=='extra-source hash':after['extra_sources']['sqlite3/linenoise']['files']['linenoise.c']['sha256']='8'*64
-   return after
-  # Changes the updater could never make are already refused by G1/T1; the approval check is
-  # the second, independent wall, so test it directly on the merged lock.
-  for kind in ('sha256','toolchain','extra-source hash'):
-   with self.subTest(kind=kind):
-    with self.assertRaises(ValueError) as caught:self.check(changed(kind),self.CATALOG)
-    self.assertIn('stale',str(caught.exception))
-  recipe=copy.deepcopy(self.CATALOG);recipe['packages']['sqlite3']['build']['kind']='other'
-  with self.assertRaises(ValueError):self.check(base,recipe)
-  self.check(base,self.CATALOG)
- def test_digest_ignores_other_tools_and_the_approvals_themselves(self):
-  base=self.lock(self.sqlite());other=self.lock(self.sqlite(),approvals='f'*64)
-  other['platforms']['amd64']['tool']['version']='9.9.9'
-  digest=self.digest
-  self.assertEqual(digest(base),digest(other))
-  bumped=self.lock(self.sqlite('3.54.2','3540200'))
-  self.assertNotEqual(digest(base),digest(bumped))
- def test_the_updater_bot_cannot_write_or_change_an_approval(self):
-  for kind,before,after in (('set',self.lock(self.sqlite(),approvals=False),self.lock(self.sqlite())),
-                            ('changed',self.lock(self.sqlite()),self.lock(self.sqlite(),approvals='e'*64)),
-                            ('removed',self.lock(self.sqlite()),self.lock(self.sqlite(),approvals=False))):
-   with self.subTest(kind=kind):
-    self.setUp();self.stage(before,after);self.rejected('approvals changed (G1)')
- def test_approval_for_a_tool_that_is_not_a_source_build_is_rejected(self):
-  lock=self.lock(self.sqlite());lock['approvals']['tool']='1'*64
-  with self.assertRaises(ValueError) as caught:self.check(lock,self.CATALOG)
-  self.assertIn('not a source build',str(caught.exception))
- def test_malformed_or_shadowed_approvals_are_rejected(self):
-  good=json.dumps(self.lock(self.sqlite()))
-  for kind,text in (('not hex',good.replace(self.approved(),'z'*64)),('upper',good.replace(self.approved(),self.approved().upper())),
-                    ('not an object',good.replace('"approvals": {','"approvals": [], "x": {',1)),
-                    ('duplicate key',good[:-1]+',"approvals":{}}'),('shadowed key',good[:-1]+',"Approvals":{}}'),
-                    ('nested duplicate',good.replace('"approvals": {','"approvals": {"sqlite3": "'+'1'*64+'", ',1))):
-   with self.subTest(kind=kind):
-    self.setUp();self.stage(self.lock(self.sqlite()),self.raw(text));self.rejected('Source-build publish gate')
- def test_inputs_are_a_closed_documented_list(self):
-  self.assertEqual(gate.APPROVAL_INPUT_FILES,('go.mod','go.sum'))
-  self.assertEqual(gate.APPROVAL_INPUT_DIRECTORIES,('cmd/tools-bundle','cmd/tools-init','internal/toolbundle','internal/toolconfig','internal/toolvolume'))
-  inputs=inputs_of(INPUT_FILES,self.CATALOG['packages']['sqlite3'])
-  self.assertEqual(set(inputs),{'go.mod','go.sum','dockerfile compiler stage','dockerfile compile stage','dockerfile fetch instruction','notice licenses/sqlite3/NOTICE','notice licenses/sqlite3/SOURCE'}
-                   |{d+'/main.go' for d in gate.APPROVAL_INPUT_DIRECTORIES}|{'internal/toolconfig/config.go'})
-  self.assertNotIn('.go-version',inputs)
- def test_docs_name_exactly_the_listed_inputs(self):
-  import re
-  docs=(Path(__file__).parents[1]/'docs/publication.md').read_text()
-  region=docs[docs.index('<!-- BEGIN APPROVAL INPUTS -->'):docs.index('<!-- END APPROVAL INPUTS -->')]
-  documented=set(re.findall(r'`([^`]+)`',region))
-  listed=set(gate.APPROVAL_INPUT_FILES)|{d+'/*.go' for d in gate.APPROVAL_INPUT_DIRECTORIES}
-  self.assertEqual({item for item in documented if re.fullmatch(r'go\.mod|go\.sum|[a-z0-9/_-]+/\*\.go',item)},listed)
- def mutated(self,path,old,new):
-  files=dict(INPUT_FILES);files[path]=files[path].replace(old,new);self.assertNotEqual(files[path],INPUT_FILES[path]);return files
- def unrelated_updater(self,files):
-  """The reviewer's shape: an updater PR that changes only another tool, on a lock the owner approved."""
-  before=self.lock(self.sqlite());after=self.lock(self.sqlite())
-  for arch in after['platforms']:after['platforms'][arch]['tool']['version']='1.0.1'
-  self.sources=files;self.stage(before,after)
- def test_every_listed_input_changes_the_digest_and_makes_the_approval_stale(self):
-  docker='bundles/toolbox/Dockerfile'
-  text=INPUT_FILES[docker].decode()
-  compile_from=[line for line in text.split('\n') if line.endswith('AS compile-sqlite3')][0].encode()
-  cases=[('go.mod',b'module',b'module x'),('go.sum',b'sum',b'sum changed'),
-         ('internal/toolconfig/config.go',b'config',b'config changed')]  # the reviewer's examples on real data
-  cases+=[(d+'/main.go',b'package',b'package changed') for d in gate.APPROVAL_INPUT_DIRECTORIES]
-  cases+=[(docker,b'golang:1.27.2-alpine@sha256:'+b'c'*64,b'golang:1.27.2-alpine@sha256:'+b'd'*64),  # another golang image digest
-          (docker,b'go build -trimpath',b'go build'),                                           # -trimpath removed
-          (docker,b'CGO_ENABLED=0',b'CGO_ENABLED=1'),
-          (docker,b'--network=none tools-bundle compile',b'--network=none tools-bundle compile -x'),
-          (docker,compile_from,compile_from.replace(b'a'*64,b'b'*64)),                          # the compile stage's base image digest only
-          (docker,b'fetch-sources -tool sqlite3 -arch',b'fetch-sources -tool sqlite3 -x -arch'),
-          ('bundles/toolbox/licenses/sqlite3/NOTICE',b'notice',b'notice changed'),('bundles/toolbox/licenses/sqlite3/SOURCE',b'source',b'source changed')]
-  for path,old,new in cases:
-   with self.subTest(path=path,change=new[-24:]):
-    self.setUp();files=self.mutated(path,old,new)
-    self.assertNotEqual(self.digest(self.lock(self.sqlite()),files),self.approved())
-    self.unrelated_updater(files);self.rejected('approved_digest is stale')
- def test_a_new_go_source_in_a_listed_directory_is_covered_but_a_new_test_is_not(self):
-  added=dict(INPUT_FILES);added['internal/toolbundle/extra.go']=b'package x\n'
-  self.assertNotEqual(self.digest(self.lock(self.sqlite()),added),self.approved())
-  tested=dict(INPUT_FILES);tested['internal/toolbundle/extra_test.go']=b'package x\n'
-  self.assertEqual(self.digest(self.lock(self.sqlite()),tested),self.approved())
-  emptied={path:content for path,content in INPUT_FILES.items() if not path.startswith('internal/toolvolume/')}
-  with self.assertRaises(ValueError):self.digest(self.lock(self.sqlite()),emptied)
- def test_files_the_artifact_does_not_depend_on_leave_the_approval_valid(self):
-  docker='bundles/toolbox/Dockerfile'
-  for path,old,new in (('bundles/toolbox/scripts/sqlite3-smoke.sh',b'smoke',b'smoke changed'),('internal/toolbundle/main_test.go',b'test',b'test changed'),('.go-version',b'1.27.2',b'1.28.0'),
-                       (docker,b'# syntax=docker/dockerfile:1',b'# syntax=docker/dockerfile:1.99'),
-                       (docker,b'RUN apk add --no-cache ca-certificates',b'RUN apk add --no-cache ca-certificates curl'),(docker,b'tools-bundle -arch "${TARGETARCH}" --build-outputs',b'tools-bundle -arch "${TARGETARCH}" -x --build-outputs'),
-                       (docker,b'AS downloads',b'AS downloads')):
-   if path==docker and old==b'AS downloads':old,new=b'alpine:3.23@sha256:'+b'a'*64+b' AS downloads',b'alpine:3.23@sha256:'+b'e'*64+b' AS downloads'
-   with self.subTest(path=path,change=new[-24:]):
-    self.setUp();files=self.mutated(path,old,new)
-    self.assertEqual(self.digest(self.lock(self.sqlite()),files),self.approved())
-    self.unrelated_updater(files);self.accepted()
- def test_dockerfile_parsing_is_case_insensitive_and_reads_continuation_lines(self):
-  docker='bundles/toolbox/Dockerfile'
-  lower=self.mutated(docker,b'FROM --platform=$TARGETPLATFORM',b'from --platform=$TARGETPLATFORM')
-  lower=dict(lower);lower[docker]=lower[docker].replace(b'AS compile-sqlite3',b'as compile-sqlite3')
-  self.assertEqual(self.digest(self.lock(self.sqlite()),lower),self.digest(self.lock(self.sqlite()),lower))
-  lowered=gate.dockerfile_inputs(lower[docker].decode(),'sqlite3')
-  self.assertIn('from --platform',lowered[1])
-  split=self.mutated(docker,b'fetch-sources -tool sqlite3 -arch "${TARGETARCH}" -work /build/work/sqlite3',b'fetch-sources -tool sqlite3 \\\n    -arch "${TARGETARCH}" -work /build/work/sqlite3')
-  base=self.digest(self.lock(self.sqlite()),split)
-  changed=dict(split);changed[docker]=split[docker].replace(b'-work /build/work/sqlite3',b'-work /elsewhere')
-  self.assertNotEqual(self.digest(self.lock(self.sqlite()),changed),base)
- def test_missing_or_ambiguous_dockerfile_stage_is_rejected(self):
-  docker='bundles/toolbox/Dockerfile'
-  for kind,old,new in (('no compile stage',b'AS compile-sqlite3',b'AS compile-other'),('no compiler stage',b'AS compiler',b'AS builder-go'),('no fetch line',b'RUN tools-bundle fetch-sources -tool sqlite3',b'RUN true sqlite3'),
-                       ('two fetch lines',b'RUN apk add --no-cache ca-certificates',b'RUN tools-bundle fetch-sources -tool sqlite3 -arch x')):
-   with self.subTest(kind=kind):
-    self.setUp();files=self.mutated(docker,old,new)
-    with self.assertRaises(ValueError):self.digest(self.lock(self.sqlite()),files)
- def test_digest_covers_both_architectures_and_the_publisher_sha3(self):
-  base=self.digest(self.lock(self.sqlite()))
-  only_arm64=self.lock(self.sqlite(),arm=self.sqlite(sha256='9'*64))
-  self.assertNotEqual(self.digest(only_arm64),base)
-  only_amd64=self.lock(self.sqlite(sha256='9'*64),arm=self.sqlite())
-  self.assertNotEqual(self.digest(only_amd64),base)
-  self.assertNotEqual(self.digest(self.lock(self.sqlite(sha3_256='8'*64))),base)
- def test_manual_publication_needs_the_approval_too(self):
+ def test_updater_pr_bumping_the_source_build_is_accepted_without_approval(self):
+  self.stage(self.lock(self.sqlite()),self.lock(self.sqlite('3.54.2','3540200')));self.accepted()
+ def test_a_recipe_or_toolchain_change_is_still_not_an_updater_change(self):
+  self.stage(self.lock(self.sqlite()),self.lock(self.sqlite(),toolchain='0.18.0'));self.rejected('(G1)')
+  self.setUp();self.stage(self.lock(self.sqlite()),self.lock(self.sqlite()));self.files[1]['filename']=self.bundle['directory']+'/Dockerfile';self.rejected('Only own lock')
+ def test_lock_with_the_retired_approvals_map_is_rejected_as_an_unknown_key(self):
+  retired=self.lock(self.sqlite());retired['approvals']={'sqlite3':'1'*64}
+  self.stage(self.lock(self.sqlite()),retired);self.rejected('unknown key')
+ def test_manual_dispatch_plan_accepts_a_source_build_without_approval(self):
+  import tempfile
   put=lambda path,content:self.data.__setitem__('/contents/'+path+'?ref='+A,{'encoding':'base64','content':b64(content)})
   put(self.bundle['directory']+'/packages.catalog.json',self.CATALOG)
-  put(self.bundle['lock'],self.lock(self.sqlite(),approvals=False))
-  for path,content in INPUT_FILES.items():put(path,content)
-  for directory in gate.APPROVAL_INPUT_DIRECTORIES:self.data['/contents/'+directory+'?ref='+A]=[{'name':name,'type':'file'} for name in names_in(INPUT_FILES)(directory)]
-  with self.assertRaises(ValueError) as caught:gate.require_approvals(self.get,self.bundle,A)
-  self.assertIn('no owner approval',str(caught.exception))
   put(self.bundle['lock'],self.lock(self.sqlite()))
-  gate.require_approvals(self.get,self.bundle,A)
- def test_manual_dispatch_plan_calls_the_approval_check(self):
-  import tempfile
   with tempfile.TemporaryDirectory() as directory:
    event=Path(directory)/'event';event.write_text(json.dumps({'repository':REPO}));output=Path(directory)/'output'
-   env={'GITHUB_REPOSITORY':REPO['full_name'],'GITHUB_EVENT_NAME':'workflow_dispatch','GITHUB_EVENT_PATH':str(event),'GITHUB_TOKEN':'fixture','GITHUB_OUTPUT':str(output),'BUNDLE':'node','APPROVED_SHA':A,'GITHUB_SHA':A,'DEFAULT_BRANCH':'main','GITHUB_REF':'refs/heads/main','SENDER_TYPE':'User','GITHUB_ACTOR':'wstein','TRIGGERING_ACTOR':'wstein'}
-   with patch.dict(os.environ,env,clear=True),patch.object(sys,'argv',['gate','--mode','plan']),patch.object(gate,'GitHub') as api,patch.object(gate,'validate_caller'),patch.object(gate.subprocess,'check_output',return_value=A),patch.object(gate,'require_approvals',side_effect=ValueError('no owner approval')) as check:
+   env={'GITHUB_REPOSITORY':REPO['full_name'],'GITHUB_EVENT_NAME':'workflow_dispatch','GITHUB_EVENT_PATH':str(event),'GITHUB_TOKEN':'fixture','GITHUB_OUTPUT':str(output),'BUNDLE':'toolbox','APPROVED_SHA':A,'GITHUB_SHA':A,'DEFAULT_BRANCH':'main','GITHUB_REF':'refs/heads/main','SENDER_TYPE':'User','GITHUB_ACTOR':'wstein','TRIGGERING_ACTOR':'wstein'}
+   with patch.dict(os.environ,env,clear=True),patch.object(sys,'argv',['gate','--mode','plan']),patch.object(gate,'GitHub') as api,patch.object(gate,'validate_caller'),patch.object(gate.subprocess,'check_output',return_value=A):
     api.return_value.request.side_effect=self.get
-    with self.assertRaises(SystemExit):gate.run()
-    check.assert_called_once()
-    self.assertEqual(check.call_args.args[2],A)
-    self.assertNotIn('eligible=true',output.read_text())
+    gate.main()
+   self.assertIn('eligible=true',output.read_text())
 
 class CombinedUpdaterTests(unittest.TestCase):
  """One owner merge of automation/upgrades-<run>-<attempt> plans every bundle it changed."""
@@ -836,23 +660,5 @@ class WorkflowResultTests(unittest.TestCase):
    needs.preflight.outputs.eligible='true'
    github.event_name='workflow_dispatch';needs.preflight.result='success';inputs.approved_sha=B
    self.assertFalse(eval(expression,{'__builtins__':{}},{'github':github,'needs':needs,'inputs':inputs}))
-
-class ApprovalDigestToolTests(unittest.TestCase):
- def test_owner_tool_prints_the_digest_the_gate_checks(self):
-  import subprocess,tempfile
-  fixture=SourceBuildGateTests();bundle=gate.config.select_bundle('toolbox')
-  lock=fixture.lock(fixture.sqlite(),approvals=False)
-  with tempfile.TemporaryDirectory() as directory:
-   root=Path(directory)
-   for path,content in ((bundle['lock'],lock),(bundle['directory']+'/packages.catalog.json',fixture.CATALOG)):
-    (root/path).parent.mkdir(parents=True,exist_ok=True);(root/path).write_text(json.dumps(content))
-   for path,content in INPUT_FILES.items():
-    (root/path).parent.mkdir(parents=True,exist_ok=True);(root/path).write_bytes(content)
-   script=str(Path(__file__).with_name('approval-digest.py'))
-   run=lambda *args:subprocess.run([sys.executable,'-B',script,'--root',str(root),*args],capture_output=True,text=True)
-   result=run('sqlite3')
-   self.assertEqual((result.returncode,result.stdout.strip()),(0,fixture.approved()))
-   for tool in ('tool','nonesuch'):
-    self.assertEqual(run(tool).returncode,1)
 
 if __name__=='__main__':unittest.main()
