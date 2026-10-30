@@ -153,8 +153,15 @@ of tools from the toolbox, changes to the `whr` recovery command.
 2. The first implementation above, built locally.
 3. Owner approval to publish, then pins in the dev container and the `whr` recovery
    command mount nixbox.
-4. Remove the eight tools from the toolbox in a later toolbox release, after
-   consumers mount nixbox. The catalog `provider` field records the placement.
+4. Done in source (owner decision 2026-10-30), not published: the eight tools move
+   from the toolbox into nixbox, unmodified. The nixbox image build runs the toolbox
+   builder on the pins in `bundles/nixbox/tools` (toolbox schema, sha256 checked
+   against that lock) and installs the result in `/nix/profile/libexec/nixbox`; the
+   shims run that copy, so nixbox needs no toolbox mount. The toolbox no longer
+   contains them. The nixbox updater resolves the pins with the toolbox resolver and
+   still opens one nixbox-only pull request. The new toolbox and nixbox versions
+   are not published yet; consumers that mount only the new toolbox lose the eight
+   tools until they mount nixbox. The catalog `provider` field records the placement.
 5. Move further bundles per tool when their Nix flavor passes its smoke test.
 
 ## Rule change
