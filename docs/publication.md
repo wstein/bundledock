@@ -573,10 +573,10 @@ accumulate in the same single pending PR.
 changed: GitHub re-uses the original commit, so the old code runs again. Use the
 steps above from current `main` instead. A re-run of failed jobs can repair the
 `documentation` job itself: it uses this attempt's receipt, else the run's only
-one. `cleanup` then fails (it and `tag` need the current attempt's receipt); the
-run stays red and the staging tags remain, so run the manual staging cleanup
-afterwards with `failed_run` and `failed_attempt`. **Re-run all jobs** has no
-such gap.
+one. `cleanup` then fails (it and `tag` need the current attempt's receipt), the
+run stays red, and its staging tags remain: manual cleanup rejects the rerun
+attempt and the tags carry the earlier one, so only the seven-day fallback
+removes them. Use **Re-run all jobs** when prompt cleanup matters.
 
 ## List unpublished updaters
 

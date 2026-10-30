@@ -42,6 +42,16 @@ class SelectReceiptTest(unittest.TestCase):
             result = subprocess.run([sys.executable, '-I', '-B', str(SCRIPT), directory, 'nixbox', '2'], capture_output=True, text=True)
             self.assertEqual(result.returncode, 1)
 
+    def test_symlinked_receipt_is_refused(self):
+        with tempfile.TemporaryDirectory() as directory:
+            folder = pathlib.Path(directory) / 'nixbox-publication-1'
+            folder.mkdir()
+            target = pathlib.Path(directory) / 'elsewhere.json'
+            target.write_text('{}')
+            (folder / 'publication.json').symlink_to(target)
+            result = subprocess.run([sys.executable, '-I', '-B', str(SCRIPT), directory, 'nixbox', '2'], capture_output=True, text=True)
+            self.assertEqual(result.returncode, 1)
+
 
 if __name__ == '__main__':
     unittest.main()
