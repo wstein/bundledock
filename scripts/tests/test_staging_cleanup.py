@@ -340,6 +340,9 @@ class CleanupTests(unittest.TestCase):
         self.assertIn('nixbox', cleanup.tags.BUNDLES)
         api = cleanup.Quay()
         # Before the owner's first dispatch the repository does not exist: an empty list, not an error.
+        # Pin that state; the real one follows docs/nixbox-published.json.
+        patch.object(cleanup, 'NOT_YET_PUBLISHED', ('nixbox',)).start()
+        self.addCleanup(patch.stopall)
         with patch.object(api, 'request', side_effect=ValueError('Quay HTTP 404')):
             self.assertEqual(api.list_tags('nixbox'), [])
             with self.assertRaisesRegex(ValueError, 'HTTP 404'):
@@ -385,6 +388,8 @@ class CleanupTests(unittest.TestCase):
         self.assertFalse(cleanup.assess('nixbox', dict(self.row, manifest_digest=other), self.registry, self.github, NOW)['eligible'])
 
     def test_nixbox_cli_run_before_first_publication_is_an_empty_dry_run(self):
+        patch.object(cleanup, 'NOT_YET_PUBLISHED', ('nixbox',)).start()
+        self.addCleanup(patch.stopall)
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / 'plan.json'
             args = ['cleanup', '--repository', 'nixbox', '--output', str(output)]
