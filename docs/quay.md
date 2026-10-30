@@ -65,18 +65,30 @@ bdock quay prune --apply --approved-plan plan.json
 ```
 
 GitHub evidence comes from the `gh` CLI. `--repository <name>` limits the scan to
-one Quay repository.
+one Quay repository. `--apply` reads the plan file saved with `--output`; the
+`--json` output on stdout is a report, not a plan file. Registry evidence is read
+with the robot account when `REPOSITORY_USERNAME` and `REPOSITORY_TOKEN` are set,
+else anonymously. `prune` does not write `GITHUB_STEP_SUMMARY`.
+
+Out of scope for now: the publication mode of `scripts/staging-cleanup.py`
+(`--publication` with `--bundle`, which removes the staging tags of one verified
+publication receipt). The workflow keeps using `scripts/staging-cleanup.py` for that
+mode until a later PR, and `bdock quay prune --apply` rejects such plans.
 
 ## Safety rules
 
-- The REST API is read anonymously. A robot password is never sent to it.
+- The REST API is read anonymously. A robot password is never sent to it, and the
+  OAuth token and the robot credentials are sent only to `https://quay.io`; there
+  is no option to change the endpoint.
 - Tokens come from the environment only, never from a flag or file, and never
   appear in output, errors or saved plans. The `QUAY_TOKEN` stays on the owner's
   machine; CI runs `describe` as a check only.
-- Write commands print the change first and write only with `--apply`.
+- Write commands change nothing without `--apply`; without it they only report
+  the difference or the plan.
 - `prune` deletes only tags that match the staging pattern, by tag name, never by
   digest, and never a version, alias or source tag. `--apply` accepts only a saved
   plan and rechecks every tag against fresh registry and GitHub evidence first.
-- Responses are limited to 4 MiB, redirects are not followed, and requests time
-  out after 30 seconds.
+- Responses are limited to 4 MiB and requests time out after 30 seconds. Redirects
+  are not followed, except that a registry blob may redirect once to signed https
+  storage, which receives no credential.
 - Tests use local fakes. They never call quay.io.
