@@ -94,7 +94,9 @@ class NixboxPublicationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             (root / 'docs').mkdir()
-            guide_source = (ROOT / 'docs/nixbox.md').read_text()
+            # The unpublished guide, whatever record the real one carries.
+            guide_source = re.sub(r'(<!-- BEGIN PUBLISHED BUNDLE -->).*?(<!-- END PUBLISHED BUNDLE -->)', r'\1\nNot yet published.\n\2',
+                                  (ROOT / 'docs/nixbox.md').read_text(), flags=re.S)
             (root / 'docs/nixbox.md').write_text(guide_source)
             self.assertTrue(docs.update(root, 'nixbox', verified))
             guide = (root / 'docs/nixbox.md').read_text()
