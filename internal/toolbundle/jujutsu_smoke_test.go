@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"bundledock/internal/testdir"
 )
 
 // The fixture validates the smoke's exact native CLI arguments and rejects
@@ -19,9 +21,9 @@ func TestJujutsuSmokeIsolatedAndRejectsWrongBehavior(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	external := t.TempDir()
+	external := testdir.New(t)
 	init := exec.Command(git, "init", "--bare", external)
-	init.Env = []string{"PATH=" + os.Getenv("PATH"), "HOME=" + t.TempDir(), "GIT_CONFIG_NOSYSTEM=1", "GIT_CONFIG_GLOBAL=/dev/null"}
+	init.Env = []string{"PATH=" + os.Getenv("PATH"), "HOME=" + testdir.New(t), "GIT_CONFIG_NOSYSTEM=1", "GIT_CONFIG_GLOBAL=/dev/null"}
 	if out, err := init.CombinedOutput(); err != nil {
 		t.Fatalf("git fixture: %v\n%s", err, out)
 	}
@@ -32,8 +34,8 @@ func TestJujutsuSmokeIsolatedAndRejectsWrongBehavior(t *testing.T) {
 	}
 	for _, broken := range []string{"", "init", "new", "log"} {
 		t.Run("broken-"+broken, func(t *testing.T) {
-			home := t.TempDir()
-			fake := filepath.Join(t.TempDir(), "jj")
+			home := testdir.New(t)
+			fake := filepath.Join(testdir.New(t), "jj")
 			body := `#!/bin/sh
 set -eu
 # env -i must remove every caller-controlled Git selector and Jujutsu config.

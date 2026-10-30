@@ -1,6 +1,7 @@
 package toolbundle
 
 import (
+	"bundledock/internal/testdir"
 	"bundledock/internal/toolconfig"
 	"bytes"
 	"os"
@@ -17,7 +18,7 @@ func TestCscribeArchiveInstallsExecutableAndLicense(t *testing.T) {
 	if !ok {
 		t.Fatal("cscribe official native recipe missing")
 	}
-	dst := t.TempDir()
+	dst := testdir.New(t)
 	root, err := os.OpenRoot(dst)
 	if err != nil {
 		t.Fatal(err)

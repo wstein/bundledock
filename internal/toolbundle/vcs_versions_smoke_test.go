@@ -5,6 +5,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"testing"
+
+	"bundledock/internal/testdir"
 )
 
 func TestVCSVersionSmokeUsesOnlyNoninteractiveVersion(t *testing.T) {
@@ -14,8 +16,8 @@ func TestVCSVersionSmokeUsesOnlyNoninteractiveVersion(t *testing.T) {
 	}
 	for _, broken := range []string{"", "lazygit", "git-lfs"} {
 		t.Run("broken-"+broken, func(t *testing.T) {
-			bin := t.TempDir()
-			home := t.TempDir()
+			bin := testdir.New(t)
+			home := testdir.New(t)
 			stubs := map[string]string{
 				"lazygit": `test "$#" = 1
 test "$1" = --version

@@ -2,6 +2,7 @@ package toolbundle
 
 import (
 	"archive/tar"
+	"bundledock/internal/testdir"
 	"bundledock/internal/toolconfig"
 	"bytes"
 	"compress/gzip"
@@ -19,7 +20,7 @@ import (
 
 func licenseFixture(t *testing.T, reverse bool) (string, *os.Root) {
 	t.Helper()
-	dir := t.TempDir()
+	dir := testdir.New(t)
 	root, err := os.OpenRoot(dir)
 	if err != nil {
 		t.Fatal(err)
@@ -155,7 +156,7 @@ func TestLicenseArchiveRefusesUnsafeStageAndOverwrite(t *testing.T) {
 
 func hostileLicenses(t *testing.T, names []string, kind byte, claimedSize int64, indexChange string) *os.Root {
 	t.Helper()
-	dir := t.TempDir()
+	dir := testdir.New(t)
 	root, err := os.OpenRoot(dir)
 	if err != nil {
 		t.Fatal(err)

@@ -5,6 +5,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"testing"
+
+	"bundledock/internal/testdir"
 )
 
 func TestMiseSmokeVersionOnlyAndIsolated(t *testing.T) {
@@ -14,12 +16,13 @@ func TestMiseSmokeVersionOnlyAndIsolated(t *testing.T) {
 	}
 	for _, version := range []string{"2026.10.8 linux-x64 (synthetic)", "wrong"} {
 		t.Run(version, func(t *testing.T) {
-			bin := t.TempDir()
+			bin := testdir.New(t)
 			stub := `#!/bin/sh
 set -eu
 test "$#" = 1 && test "$1" = --version
 test -z "${CALLER_HOME:-}"
-test "$PWD" = "$HOME"
+# BSD mktemp -d ignores TMPDIR and returns a /var link; compare physical paths.
+test "$(pwd -P)" = "$(cd "$HOME" && pwd -P)"
 test "$XDG_CONFIG_HOME" = "$HOME/.config"
 test "$XDG_CACHE_HOME" = "$HOME/.cache"
 test "$XDG_DATA_HOME" = "$HOME/.local/share"
@@ -32,7 +35,7 @@ printf '%s\n' '` + version + `'
 				t.Fatal(err)
 			}
 			cmd := exec.Command("sh", script)
-			cmd.Env = append(os.Environ(), "PATH="+bin+":"+os.Getenv("PATH"), "CALLER_HOME="+os.Getenv("HOME"), "MISE_CONFIG_FILE=/host/config.toml", "MISE_ENV=production", "MISE_INSTALL_PATH=/host/install")
+			cmd.Env = append(os.Environ(), "PATH="+bin+":"+os.Getenv("PATH"), "CALLER_HOME="+os.Getenv("HOME"), "TMPDIR="+bin, "MISE_CONFIG_FILE=/host/config.toml", "MISE_ENV=production", "MISE_INSTALL_PATH=/host/install")
 			out, err := cmd.CombinedOutput()
 			if version != "wrong" && err != nil {
 				t.Fatalf("isolated version failed: %v\n%s", err, out)

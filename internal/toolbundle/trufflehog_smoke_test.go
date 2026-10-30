@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"bundledock/internal/testdir"
 )
 
 func TestTruffleHogSmokeOfflineDetectionAndCleanControl(t *testing.T) {
@@ -18,8 +20,8 @@ func TestTruffleHogSmokeOfflineDetectionAndCleanControl(t *testing.T) {
 	}
 	for _, broken := range []string{"", "version", "exit", "result", "clean"} {
 		t.Run("broken-"+broken, func(t *testing.T) {
-			home := t.TempDir()
-			fake := filepath.Join(t.TempDir(), "trufflehog")
+			home := testdir.New(t)
+			fake := filepath.Join(testdir.New(t), "trufflehog")
 			body := `#!/bin/sh
 set -eu
 test "$HOME" != '$CALLER_HOME'

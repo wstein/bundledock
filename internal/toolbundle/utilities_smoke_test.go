@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"bundledock/internal/testdir"
 )
 
 func TestUtilitiesSmokeRejectsWrongOutput(t *testing.T) {
@@ -15,8 +17,8 @@ func TestUtilitiesSmokeRejectsWrongOutput(t *testing.T) {
 	}
 	for _, broken := range []string{"", "fzf", "bat", "lsd", "regctl", "actionlint", "hadolint", "pinact", "cosign", "git-cliff", "zoxide", "jsonschema-cli", "gh-stack", "gh", "fail:gh-stack", "fail:gh", "missing:gh-stack", "no-gh", "dotted:gh-stack", "prefixed:gh-stack", "fail:actionlint", "fail:hadolint", "fail:pinact", "fail:cosign", "fail:git-cliff", "fail:zoxide", "fail:jsonschema-cli", "dotted:actionlint", "dotted:hadolint", "dotted:pinact", "dotted:cosign", "dotted:git-cliff", "dotted:zoxide", "dotted:jsonschema-cli", "prefixed:actionlint", "prefixed:hadolint", "prefixed:pinact", "prefixed:cosign", "prefixed:git-cliff", "prefixed:zoxide", "prefixed:jsonschema-cli", "keyword:pinact"} {
 		t.Run("broken-"+broken, func(t *testing.T) {
-			home := t.TempDir()
-			root := t.TempDir()
+			home := testdir.New(t)
+			root := testdir.New(t)
 			bin := filepath.Join(root, "bin")
 			if err := os.MkdirAll(filepath.Join(root, "libexec"), 0755); err != nil || os.MkdirAll(bin, 0755) != nil {
 				t.Fatal("cannot create toolbox layout")

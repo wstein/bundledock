@@ -1,6 +1,7 @@
 package toolbundle
 
 import (
+	"bundledock/internal/testdir"
 	"bundledock/internal/toolconfig"
 	"context"
 	"crypto/sha256"
@@ -34,7 +35,7 @@ func TestJujutsuArchiveInstallsBinaryAndExactLicense(t *testing.T) {
 				}
 				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.Write(payload) }))
 				defer server.Close()
-				dst := t.TempDir()
+				dst := testdir.New(t)
 				spec := c.Lock.Platforms[arch]["jj"]
 				spec.URL = server.URL
 				spec.SHA256 = sum
@@ -77,7 +78,7 @@ func TestSingleToolBuildHasNoShellLayer(t *testing.T) {
 	spec := c.Lock.Platforms["amd64"]["jj"]
 	spec.URL = server.URL
 	spec.SHA256 = fmt.Sprintf("%x", sha256.Sum256(payload))
-	dst := t.TempDir()
+	dst := testdir.New(t)
 	if err := Build(context.Background(), server.Client(), map[string]Spec{"jj": spec}, map[string]toolconfig.Package{"jj": c.Catalog.Packages["jj"]}, os.DirFS("../../bundles/toolbox"), "amd64", dst, io.Discard); err != nil {
 		t.Fatal(err)
 	}
@@ -99,7 +100,7 @@ func TestSingleToolBuildRefusesShellLayer(t *testing.T) {
 	spec := c.Lock.Platforms["amd64"]["jj"]
 	spec.URL = server.URL
 	spec.SHA256 = fmt.Sprintf("%x", sha256.Sum256(payload))
-	err = Build(context.Background(), server.Client(), map[string]Spec{"jj": spec}, map[string]toolconfig.Package{"jj": c.Catalog.Packages["jj"]}, os.DirFS("../../bundles/toolbox"), "amd64", t.TempDir(), io.Discard, WithShellLayer(os.DirFS("../shelllayer")))
+	err = Build(context.Background(), server.Client(), map[string]Spec{"jj": spec}, map[string]toolconfig.Package{"jj": c.Catalog.Packages["jj"]}, os.DirFS("../../bundles/toolbox"), "amd64", testdir.New(t), io.Discard, WithShellLayer(os.DirFS("../shelllayer")))
 	if err == nil || !strings.Contains(err.Error(), "toolbox only") {
 		t.Fatalf("single-tool build accepted the shell layer: %v", err)
 	}

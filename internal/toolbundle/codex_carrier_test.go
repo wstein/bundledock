@@ -1,6 +1,7 @@
 package toolbundle
 
 import (
+	"bundledock/internal/testdir"
 	"bundledock/internal/toolconfig"
 	"context"
 	"io"
@@ -30,7 +31,7 @@ func TestCodexStandaloneCarrierPreservesHelpers(t *testing.T) {
 				if len(c.Catalog.Packages[name].Notices) == 0 {
 					t.Fatal("agent notices missing")
 				}
-				source := t.TempDir()
+				source := testdir.New(t)
 				if err := Build(context.Background(), server.Client(), map[string]Spec{name: specs[name]}, c.Catalog.Packages, os.DirFS(directory), arch, source, io.Discard); err != nil {
 					t.Fatal(err)
 				}

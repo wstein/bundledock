@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"bundledock/internal/testdir"
 	"bundledock/internal/toolconfig"
 )
 
@@ -24,7 +25,7 @@ func TestNoticeTreeBelowArchiveRootIsRetained(t *testing.T) {
 		member{"tool_1.0_linux_amd64/third_party/dep/LICENSE", "dep license", 0644, 0},
 		member{"tool_1.0_linux_amd64/other/third_party/x", "deeper", 0644, 0},
 	)
-	dst := t.TempDir()
+	dst := testdir.New(t)
 	root, err := os.OpenRoot(dst)
 	if err != nil {
 		t.Fatal(err)

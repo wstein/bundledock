@@ -2,6 +2,7 @@ package toolbundle
 
 import (
 	"archive/tar"
+	"bundledock/internal/testdir"
 	"bundledock/internal/toolconfig"
 	"bytes"
 	"os"
@@ -52,7 +53,7 @@ func helixPackage() toolconfig.Package {
 func TestHelixRelocatedRuntime(t *testing.T) {
 	for _, arch := range []string{"x86_64", "aarch64"} {
 		t.Run(arch, func(t *testing.T) {
-			dst := t.TempDir()
+			dst := testdir.New(t)
 			r, err := os.OpenRoot(dst)
 			if err != nil {
 				t.Fatal(err)
@@ -67,7 +68,7 @@ func TestHelixRelocatedRuntime(t *testing.T) {
 				}
 			}
 			// Execute only our synthetic fixture script, never an upstream binary.
-			home := t.TempDir()
+			home := testdir.New(t)
 			cmd := exec.Command(filepath.Join(dst, "bin/hx"), "file with spaces", "--health")
 			cmd.Env = append(os.Environ(), "HOME="+home, "HELIX_RUNTIME=/wrong")
 			got, err := cmd.CombinedOutput()
@@ -86,7 +87,7 @@ func TestHelixRejectsForeignAndLinkedMembers(t *testing.T) {
 		root, extra string
 		kind        byte
 	}{{"foreign", "", 0}, {"helix-25.07.1-x86_64-linux", "other/runtime/query", tar.TypeReg}, {"helix-25.07.1-x86_64-linux", "helix-25.07.1-x86_64-linux/runtime/link", tar.TypeSymlink}, {"helix-25.07.1-x86_64-linux", "helix-25.07.1-x86_64-linux/runtime/link", tar.TypeLink}, {"helix-25.07.1-x86_64-linux", "helix-25.07.1-x86_64-linux/../escape", tar.TypeReg}} {
-		r, err := os.OpenRoot(t.TempDir())
+		r, err := os.OpenRoot(testdir.New(t))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -98,7 +99,7 @@ func TestHelixRejectsForeignAndLinkedMembers(t *testing.T) {
 	}
 	p := helixPackage()
 	p.Install.Profile = ""
-	r, err := os.OpenRoot(t.TempDir())
+	r, err := os.OpenRoot(testdir.New(t))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -112,7 +113,7 @@ func TestHelixRejectsForeignAndLinkedMembers(t *testing.T) {
 func TestHelixRootMatchesVerifiedPin(t *testing.T) {
 	for _, archiveRoot := range []string{"helix-25.07.1-aarch64-linux", "helix-26.01.1-x86_64-linux"} {
 		t.Run(archiveRoot, func(t *testing.T) {
-			r, err := os.OpenRoot(t.TempDir())
+			r, err := os.OpenRoot(testdir.New(t))
 			if err != nil {
 				t.Fatal(err)
 			}

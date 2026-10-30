@@ -5,6 +5,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"testing"
+
+	"bundledock/internal/testdir"
 )
 
 // Set BUNDLEDOCK_SMOKE_PATH to a PATH containing the five real executables.
@@ -18,7 +20,7 @@ func TestQualitySecurityOfflineSmoke(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	home := t.TempDir()
+	home := testdir.New(t)
 	cmd := exec.Command("sh", script)
 	cmd.Dir = home
 	cmd.Env = append(os.Environ(), "HOME="+home, "PATH="+toolPath+":"+os.Getenv("PATH"))

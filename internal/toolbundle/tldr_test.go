@@ -31,7 +31,7 @@ func TestTldrRequirements(t *testing.T) {
 
 // Shared fixture records synthetic pip/venv calls; it never installs packages.
 func TestTldrLauncher(t *testing.T) {
-	dst, home, bin := pythonToolFixture(t, "tldr")
+	dst, home, bin := runnableFixture(t, "tldr")
 	for i := 0; i < 2; i++ {
 		got, err := pythonToolCommand(dst, home, bin, "tldr", "tar", "argument with spaces", "--markdown").CombinedOutput()
 		if exit, ok := err.(*exec.ExitError); !ok || exit.ExitCode() != 23 || string(got) != "tar\nargument with spaces\n--markdown\n" {

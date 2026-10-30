@@ -1,6 +1,7 @@
 package toolbundle
 
 import (
+	"bundledock/internal/testdir"
 	"bundledock/internal/toolconfig"
 	"bytes"
 	"os"
@@ -25,7 +26,7 @@ func TestUtilityArchivesRetainBatAssets(t *testing.T) {
 				}
 				files = append(files, member{entry, "upstream " + name, 0644, 0})
 			}
-			dst := t.TempDir()
+			dst := testdir.New(t)
 			root, err := os.OpenRoot(dst)
 			if err != nil {
 				t.Fatal(err)

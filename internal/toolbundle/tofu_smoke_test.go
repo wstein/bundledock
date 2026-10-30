@@ -5,6 +5,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"testing"
+
+	"bundledock/internal/testdir"
 )
 
 func TestToolboxTofuSmokeVersionOnlyAndIsolated(t *testing.T) {
@@ -14,7 +16,7 @@ func TestToolboxTofuSmokeVersionOnlyAndIsolated(t *testing.T) {
 	}
 	for _, version := range []string{"OpenTofu v1.13.2", "OpenTofu 1.13.2", "wrong"} {
 		t.Run(version, func(t *testing.T) {
-			bin := t.TempDir()
+			bin := testdir.New(t)
 			// tofu version prints "OpenTofu vX.Y.Z".
 			stub := `#!/bin/sh
 set -eu
@@ -31,7 +33,7 @@ printf '%s\n' '` + version + `'
 				t.Fatal(err)
 			}
 			cmd := exec.Command("sh", script)
-			cmd.Env = append(os.Environ(), "PATH="+bin+":"+os.Getenv("PATH"), "CALLER_HOME="+os.Getenv("HOME"))
+			cmd.Env = append(os.Environ(), "PATH="+bin+":"+os.Getenv("PATH"), "CALLER_HOME="+os.Getenv("HOME"), "TMPDIR="+bin)
 			out, err := cmd.CombinedOutput()
 			if version == "OpenTofu v1.13.2" && err != nil {
 				t.Fatalf("isolated version failed: %v\n%s", err, out)

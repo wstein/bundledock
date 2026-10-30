@@ -5,6 +5,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"testing"
+
+	"bundledock/internal/testdir"
 )
 
 func TestMisspellSmokeVersionOnlyAndIsolated(t *testing.T) {
@@ -14,7 +16,7 @@ func TestMisspellSmokeVersionOnlyAndIsolated(t *testing.T) {
 	}
 	for _, version := range []string{"0.8.0", "v0.8.0", "dev", "wrong"} {
 		t.Run(version, func(t *testing.T) {
-			bin := t.TempDir()
+			bin := testdir.New(t)
 			// misspell -v prints the bare version (goreleaser sets main.version to X.Y.Z).
 			stub := `#!/bin/sh
 set -eu
@@ -30,7 +32,7 @@ printf '%s\n' '` + version + `'
 				t.Fatal(err)
 			}
 			cmd := exec.Command("sh", script)
-			cmd.Env = append(os.Environ(), "PATH="+bin+":"+os.Getenv("PATH"), "CALLER_HOME="+os.Getenv("HOME"))
+			cmd.Env = append(os.Environ(), "PATH="+bin+":"+os.Getenv("PATH"), "CALLER_HOME="+os.Getenv("HOME"), "TMPDIR="+bin)
 			out, err := cmd.CombinedOutput()
 			if version == "0.8.0" && err != nil {
 				t.Fatalf("isolated version failed: %v\n%s", err, out)

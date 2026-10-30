@@ -1,6 +1,7 @@
 package toolbundle
 
 import (
+	"bundledock/internal/testdir"
 	"bundledock/internal/toolconfig"
 	"crypto/sha256"
 	"fmt"
@@ -40,7 +41,7 @@ func TestTruffleHogOfficialArchives(t *testing.T) {
 			if _, err := archive.Seek(0, io.SeekStart); err != nil {
 				t.Fatal(err)
 			}
-			dst := t.TempDir()
+			dst := testdir.New(t)
 			root, err := os.OpenRoot(dst)
 			if err != nil {
 				t.Fatal(err)

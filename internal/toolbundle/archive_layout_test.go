@@ -2,6 +2,7 @@ package toolbundle
 
 import (
 	"archive/tar"
+	"bundledock/internal/testdir"
 	"bundledock/internal/toolconfig"
 	"bytes"
 	"os"
@@ -19,7 +20,7 @@ func extractLayout(t *testing.T, tool string, members ...member) (string, []stri
 	if err != nil {
 		t.Fatal(err)
 	}
-	dst := t.TempDir()
+	dst := testdir.New(t)
 	root, err := os.OpenRoot(dst)
 	if err != nil {
 		t.Fatal(err)

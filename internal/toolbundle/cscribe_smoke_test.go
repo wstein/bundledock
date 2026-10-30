@@ -5,6 +5,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"testing"
+
+	"bundledock/internal/testdir"
 )
 
 func TestCscribeSmokeVersionOnlyAndIsolated(t *testing.T) {
@@ -14,7 +16,7 @@ func TestCscribeSmokeVersionOnlyAndIsolated(t *testing.T) {
 	}
 	for _, version := range []string{"cscribe v0.2.0", "cscribe 0.2.0", "wrong"} {
 		t.Run(version, func(t *testing.T) {
-			bin := t.TempDir()
+			bin := testdir.New(t)
 			// cscribe has no --version flag; its version subcommand prints "cscribe vX.Y.Z".
 			stub := `#!/bin/sh
 set -eu
@@ -30,7 +32,7 @@ printf '%s\n' '` + version + `'
 				t.Fatal(err)
 			}
 			cmd := exec.Command("sh", script)
-			cmd.Env = append(os.Environ(), "PATH="+bin+":"+os.Getenv("PATH"), "CALLER_HOME="+os.Getenv("HOME"))
+			cmd.Env = append(os.Environ(), "PATH="+bin+":"+os.Getenv("PATH"), "CALLER_HOME="+os.Getenv("HOME"), "TMPDIR="+bin)
 			out, err := cmd.CombinedOutput()
 			if version == "cscribe v0.2.0" && err != nil {
 				t.Fatalf("isolated version failed: %v\n%s", err, out)

@@ -1,6 +1,7 @@
 package toolbundle
 
 import (
+	"bundledock/internal/testdir"
 	"bundledock/internal/toolconfig"
 	"bytes"
 	"os"
@@ -23,7 +24,7 @@ func TestSCCArchiveInstallsOnlyExecutable(t *testing.T) {
 	if len(p.Notices) < 2 {
 		t.Fatalf("missing source and full upstream license: %v", p.Notices)
 	}
-	dst := t.TempDir()
+	dst := testdir.New(t)
 	root, err := os.OpenRoot(dst)
 	if err != nil {
 		t.Fatal(err)

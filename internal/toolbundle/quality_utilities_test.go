@@ -1,6 +1,7 @@
 package toolbundle
 
 import (
+	"bundledock/internal/testdir"
 	"bundledock/internal/toolconfig"
 	"context"
 	"crypto/sha256"
@@ -64,7 +65,7 @@ func installAndCheckNotices(t *testing.T, directory string, names []string) {
 			for name, payload := range payloads {
 				specs[name] = Spec{Version: c.Lock.Platforms[arch][name].Version, URL: server.URL + "/" + name, SHA256: fmt.Sprintf("%x", sha256.Sum256(payload))}
 			}
-			dst := t.TempDir()
+			dst := testdir.New(t)
 			if err := Build(context.Background(), server.Client(), specs, packages, os.DirFS(directory), arch, dst, io.Discard); err != nil {
 				t.Fatal(err)
 			}

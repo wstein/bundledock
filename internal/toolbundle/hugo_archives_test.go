@@ -1,6 +1,7 @@
 package toolbundle
 
 import (
+	"bundledock/internal/testdir"
 	"bundledock/internal/toolconfig"
 	"context"
 	"io"
@@ -38,7 +39,7 @@ func TestHugoOfficialArchives(t *testing.T) {
 				t.Fatal(err)
 			}
 			spec.URL = server.URL + "/" + path.Base(u.Path)
-			dst := t.TempDir()
+			dst := testdir.New(t)
 			if err := Build(context.Background(), server.Client(), map[string]Spec{"hugo": spec}, map[string]toolconfig.Package{"hugo": p}, os.DirFS("../../bundles/toolbox"), arch, dst, io.Discard); err != nil {
 				t.Fatal(err)
 			}
@@ -66,7 +67,7 @@ func TestHugoOfficialArchives(t *testing.T) {
 				t.Fatalf("standard pinned Hugo version: %v: %s", err, data)
 			}
 			t.Log(strings.TrimSpace(string(data)))
-			home := t.TempDir()
+			home := testdir.New(t)
 			smoke := exec.Command("sh", "../../bundles/toolbox/scripts/hugo-smoke.sh", binary)
 			smoke.Env = append(os.Environ(), "HOME="+home)
 			if data, err := smoke.CombinedOutput(); err != nil {
@@ -76,7 +77,7 @@ func TestHugoOfficialArchives(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			output := t.TempDir()
+			output := testdir.New(t)
 			docs := exec.Command(binary, "--source", root, "--destination", output, "--cacheDir", filepath.Join(home, ".cache", "hugo"), "--noBuildLock", "--baseURL", "https://example.invalid/bundledock/", "--panicOnWarning")
 			docs.Env = append(os.Environ(), "HOME="+home, "HUGO_RESOURCEDIR="+filepath.Join(home, "resources"))
 			if data, err := docs.CombinedOutput(); err != nil {

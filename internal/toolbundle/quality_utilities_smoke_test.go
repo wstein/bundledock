@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"bundledock/internal/testdir"
 )
 
 func runQualityUtilitiesSmoke(t *testing.T, broken string, override map[string]string) (string, error) {
@@ -43,8 +45,8 @@ PYJSON`,
 		"age-keygen": `case "$*" in --version) echo v1.3.2;; -o*) echo AGE-SECRET-KEY-SYNTHETIC > "$2";; -y*) echo age1synthetic;; esac`,
 		"age":        `case "$*" in --version) echo v1.3.2;; *) while test "$1" != -o; do shift; done; shift; output=$1; shift; cat "$1" > "$output";; esac`,
 	}
-	home := t.TempDir()
-	bin := t.TempDir()
+	home := testdir.New(t)
+	bin := testdir.New(t)
 	for name, body := range stubs {
 		if name == broken {
 			body = "echo wrong"
