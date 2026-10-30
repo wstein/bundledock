@@ -96,8 +96,8 @@ class PublicationDocsTest(unittest.TestCase):
                 _, suffix = managed.split(self.module.END)
                 expected = prefix + self.module.BEGIN + self.module.render(record) + self.module.END + suffix
                 self.assertEqual(path.read_bytes(), expected.encode())
-                if bundle != 'nixbox':  # nixbox has a hand-written guide, no generated tool inventory
-                    self.assertIn('<!-- BEGIN GENERATED TOOL INVENTORY -->', suffix)
+                # Every guide, nixbox included, carries a generated tool inventory after the record.
+                self.assertIn('<!-- BEGIN GENERATED TOOL INVENTORY -->', suffix)
                 self.assertFalse(self.module.update(root, bundle, record))
 
     def test_missing_duplicate_and_reversed_publication_markers_fail_without_write(self):
