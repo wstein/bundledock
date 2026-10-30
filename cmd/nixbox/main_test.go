@@ -27,6 +27,22 @@ func TestCheckVerifiesTheProductionPair(t *testing.T) {
 	}
 }
 
+func TestCheckVerifiesTheOfficialBinariesAgainstTheShims(t *testing.T) {
+	args := []string{"check", "-catalog", "../../bundles/nixbox/packages.catalog.json", "-lock", "../../bundles/nixbox/packages.lock.json"}
+	out, errs, code := runCLI(t, append(args, "-tools", "../../bundles/nixbox/tools")...)
+	if code != 0 || !strings.Contains(out, "8 official release binaries") {
+		t.Fatalf("exit %d: %s%s", code, out, errs)
+	}
+	// The toolbox has other tools and no matching shims.
+	_, errs, code = runCLI(t, append(args, "-tools", "../../bundles/toolbox")...)
+	if code == 0 || !strings.Contains(errs, "no shim") && !strings.Contains(errs, "no tools recipe") {
+		t.Fatalf("exit %d: %s", code, errs)
+	}
+	if _, _, code = runCLI(t, append(args, "-tools", t.TempDir())...); code == 0 {
+		t.Error("accepted an empty tools directory")
+	}
+}
+
 func TestCheckFailsOnAStaleLock(t *testing.T) {
 	dir := t.TempDir()
 	catalog, _ := os.ReadFile("../../bundles/nixbox/packages.catalog.json")
