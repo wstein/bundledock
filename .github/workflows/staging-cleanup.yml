@@ -42,8 +42,8 @@ jobs:
       max-parallel: 2
       matrix:
         repository: [agy, bun, claude, code-server, codex, nixbox, node, opentofu, toolbox]
-    # Same lock as publication; both Node channels share the node repository. nixbox is
-    # not published yet: its repository does not exist, so its run is an empty dry run.
+    # Same lock as publication; both Node channels share the node repository. Before the
+    # owner's first nixbox dispatch its repository does not exist, so that run is an empty dry run.
     concurrency:
       group: bundledock-${{ matrix.repository }}-publish
       cancel-in-progress: false

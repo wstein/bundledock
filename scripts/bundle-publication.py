@@ -293,8 +293,13 @@ def check_approvals(lock, catalog, bundle, read, names):
 def require_approvals(get, bundle, revision, catalog_revision=None):
     """Refuse publication of a bundle whose source-build tools lack a current owner approval.
 
+    nixbox has no source builds: its closure is pinned by narHash and signature-checked by
+    `nixbox check` in make check, and its dispatch is the owner's approval.
+
     revision is the exact source to publish (lock and file inputs); the catalog is read at catalog_revision
     (default revision)."""
+    if bundle['name'] in config.MANUAL_ONLY:
+        return
     lock = parse_lock(lock_bytes(get, bundle, revision), 'published lock')
     catalog = parse_catalog(file_bytes(get, bundle['directory'] + '/packages.catalog.json', catalog_revision or revision), 'catalog')
     check_approvals(lock, catalog, bundle, lambda path: file_bytes(get, path, revision), lambda directory: directory_names(get, directory, revision))
@@ -351,7 +356,7 @@ def updater_members(pr, name, get):
     files = get('/pulls/' + str(pr['number']) + '/files?per_page=100&page=1')
     require(isinstance(files, list) and len(files) == pr['changed_files'], 'Missing or truncated files')
     changed = {item['filename'] for item in files}
-    members = [member for member in config.BUNDLES if config.select_bundle(member)['lock'] in changed]
+    members = [member for member in config.AUTOMATIC if config.select_bundle(member)['lock'] in changed]
     require(members, 'Combined updater changes no bundle lock')
     return members
 
@@ -418,7 +423,7 @@ def bundle_for_branch(branch):
     if re.fullmatch(r'automation/upgrades-[1-9][0-9]*-[1-9][0-9]*', branch):
         return COMBINED
     require(not re.match(r'automation/upgrades', branch), 'Malformed combined updater branch')
-    for name in config.BUNDLES:
+    for name in config.AUTOMATIC:
         prefix = '(?:toolbox|tool)' if name == 'toolbox' else re.escape(name)
         if re.fullmatch('automation/' + prefix + r'-upgrade-[1-9][0-9]*-[1-9][0-9]*', branch):
             return name
@@ -589,6 +594,7 @@ def main():
         output = dict(bundle, bundle=name, bundles=json.dumps([name]), sha=revision, eligible='true', status='eligible', reason='Exact full-SHA human manual dispatch verified')
     else:
         require(os.environ['GITHUB_EVENT_NAME'] == 'workflow_run', 'Only CI completion is automatic publication authority')
+        require(args.bundle not in config.MANUAL_ONLY, args.bundle + ' publishes only by manual dispatch')
         validate_caller(api.request, config.select_bundle(args.bundle))
         planning = args.mode == 'plan'
         candidate = validate(event, api.request, None if planning else args.bundle, allow_ineligible=args.mode in ('preflight', 'plan'))

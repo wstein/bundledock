@@ -39,7 +39,7 @@ def validate_record(record, legacy=False):
         raise ValueError('invalid index digest or workflow run')
     r.update(validate_version(r.get('tag', ''), r['run_id'], legacy))
     if DAILY.fullmatch(r['tag']) or SINGLETON.fullmatch(r['tag']):
-        if (r['bundle'] == 'toolbox' and not DAILY.fullmatch(r['tag'])) or not isinstance(r.get('run_attempt'), str) or not re.fullmatch('[1-9][0-9]*', r['run_attempt']):
+        if (r['bundle'] in _CONFIG.DATED and not DAILY.fullmatch(r['tag'])) or not isinstance(r.get('run_attempt'), str) or not re.fullmatch('[1-9][0-9]*', r['run_attempt']):
             raise ValueError('singleton version requires explicit workflow attempt')
         r['attempt'] = int(r['run_attempt'])
     return r

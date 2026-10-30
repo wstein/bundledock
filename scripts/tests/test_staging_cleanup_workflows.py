@@ -34,12 +34,11 @@ class WorkflowTests(unittest.TestCase):
         self.assertNotIn('docker ', source)
         self.assertNotIn('contents: write', source)
 
-    def test_fallback_matrix_lists_nixbox_beside_the_published_repositories(self):
+    def test_fallback_matrix_lists_every_publication_repository(self):
         source = (ROOT / '.github/workflows/staging-cleanup.yml').read_text()
         match = re.search(r'repository: \[([^\]]+)\]', source)
         self.assertEqual([name.strip() for name in match.group(1).split(',')],
                          ['agy', 'bun', 'claude', 'code-server', 'codex', 'nixbox', 'node', 'opentofu', 'toolbox'])
-        self.assertNotIn('nixbox', (ROOT / '.github/workflows/bundle-publish.yml').read_text())
 
     def test_failed_completion_cleanup_uses_trusted_code_saved_plan_and_same_lock(self):
         source = (ROOT / '.github/workflows/staging-cleanup.yml').read_text()

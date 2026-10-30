@@ -342,7 +342,7 @@ class OwnerMergeTests(unittest.TestCase):
       self.assertEqual(summary.read_text(),'Publisher summary remains unchanged\n')
       self.assertFalse((Path(directory)/'output').exists())
  def test_all_bundle_owner_merges_use_own_paths(self):
-  for name in gate.config.BUNDLES:
+  for name in gate.config.AUTOMATIC:
    with self.subTest(name=name):
     self.setUp();bundle=gate.config.select_bundle(name)
     self.pr['head']['ref']='automation/'+name+'-upgrade-123-1'

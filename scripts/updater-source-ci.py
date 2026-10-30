@@ -15,7 +15,7 @@ import subprocess
 REPOSITORY = 'wstein/bundledock'
 CONFIG = runpy.run_path(str(Path(__file__).with_name('bundle-config.py')))
 BUNDLES = CONFIG['BUNDLES']
-UPGRADE_ONLY = CONFIG['UPGRADE_ONLY']
+MANUAL_ONLY = CONFIG['MANUAL_ONLY']
 
 
 def require(condition, message):
@@ -42,10 +42,10 @@ def dispatch(args):
     run, attempt = os.environ.get('GITHUB_RUN_ID', ''), os.environ.get('GITHUB_RUN_ATTEMPT', '')
     require(re.fullmatch('[1-9][0-9]*', run) and re.fullmatch('[1-9][0-9]*', attempt), 'Invalid proposer identity')
     bundles = args.bundles.split(',')
-    require(all(name in BUNDLES or name in UPGRADE_ONLY for name in bundles) and len(set(bundles)) == len(bundles),
+    require(all(name in BUNDLES for name in bundles) and len(set(bundles)) == len(bundles),
             'Known, unique bundles required')
-    require(not set(bundles) & set(UPGRADE_ONLY) or len(bundles) == 1,
-            'An upgrade-only bundle such as nixbox needs its own proposal')
+    require(not set(bundles) & set(MANUAL_ONLY) or len(bundles) == 1,
+            'A manually published bundle such as nixbox needs its own proposal')
     # One bundle keeps its own topic name (publication recognises it); several share one.
     topic = bundles[0] + '-upgrade-' if len(bundles) == 1 else 'upgrades-'
     require(args.branch == 'automation/' + topic + run + '-' + attempt,
@@ -65,10 +65,10 @@ def dispatch(args):
             'Proposal source/repository changed')
     require(pr['commits'] == 1 and 1 <= pr['changed_files'] <= 2 * len(bundles), 'One bounded updater commit required')
     files = api('/pulls/' + number + '/files?per_page=100&page=1')
-    # An upgrade-only bundle has no generated inventory: its lock and catalog (nixpkgs pin) are its own files.
+    # nixbox has no generated inventory: its lock and catalog (nixpkgs pin) are its own files.
     allowed = {path for name in bundles for path in
                ('bundles/' + name + '/packages.lock.json',) +
-               (('bundles/' + name + '/packages.catalog.json',) if name in UPGRADE_ONLY else ('docs/' + name + '.md',))}
+               (('bundles/' + name + '/packages.catalog.json',) if name in MANUAL_ONLY else ('docs/' + name + '.md',))}
     require(isinstance(files, list) and len(files) == pr['changed_files'] and
             len({item['filename'] for item in files}) == len(files) and
             all(item['filename'] in allowed and item['status'] == 'modified' for item in files),

@@ -25,11 +25,18 @@ def load(name, filename):
 
 tags = load('cleanup_tags', 'bundle-git-tags.py')
 docs = load('cleanup_docs', 'publication-docs.py')
-# nixbox is cleaned but not published by the publication workflows. Its repository does not
-# exist before an owner-approved first publication, and no staging tag of it is ever eligible
-# (assess requires a publishable bundle), so nothing is ever deleted from it.
-UNPUBLISHED = tuple(tags._CONFIG.UPGRADE_ONLY)
-REPOSITORIES = tuple(sorted({tags._CONFIG.select_bundle(b)['repository'] for b in tags.BUNDLES} | set(UNPUBLISHED)))
+ROOT = Path(__file__).resolve().parent.parent
+
+
+def not_yet_published(root=ROOT):
+    """Manually published bundles without a recorded publication (docs/<bundle>-published.json)."""
+    return tuple(name for name in tags._CONFIG.MANUAL_ONLY if not (root / 'docs' / (name + '-published.json')).exists())
+
+
+# The Quay repository of such a bundle (nixbox) does not exist before the owner's first dispatch,
+# and Quay answers a robot with 404 or 401: an empty list there, an error for every other repository.
+NOT_YET_PUBLISHED = not_yet_published()
+REPOSITORIES = tuple(sorted({tags._CONFIG.select_bundle(b)['repository'] for b in tags.BUNDLES}))
 STAGING = re.compile(r'staging-(.+)-(amd64|arm64)\Z')
 
 
@@ -84,7 +91,7 @@ class Quay:
             try:
                 data = self.request(repository + '/tag/?' + urllib.parse.urlencode(query))
             except ValueError as error:
-                if repository in UNPUBLISHED and str(error) == 'Quay HTTP 404':
+                if repository in NOT_YET_PUBLISHED and str(error) in ('Quay HTTP 404', 'Quay HTTP 401'):
                     return []
                 raise
             require(data.get('page') == page and isinstance(data.get('tags'), list) and isinstance(data.get('has_additional'), bool), 'Malformed Quay pagination')
