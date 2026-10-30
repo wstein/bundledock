@@ -12,7 +12,8 @@ import (
 )
 
 func TestGitHubPaginationKeepsConfiguredRepository(t *testing.T) {
-	c, err := toolconfig.Load(checkout(t))
+	// ast-grep is pinned in the nixbox tools directory.
+	c, err := toolconfig.Load("../../bundles/nixbox/tools")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -1,7 +1,6 @@
 package toolmanager
 
 import (
-	"bundledock/internal/toolconfig"
 	"context"
 	"crypto/sha256"
 	"encoding/json"
@@ -12,12 +11,9 @@ import (
 )
 
 func TestQualityUtilitiesResolveOfficialStableBothArchitectures(t *testing.T) {
-	c, err := toolconfig.Load("../../bundles/toolbox")
-	if err != nil {
-		t.Fatal(err)
-	}
 	for _, name := range []string{"shellcheck", "shfmt", "just", "ruff", "delta", "watchexec", "hyperfine", "age", "leaf", "jj", "lazygit", "git-lfs", "navi", "typst", "xh", "dust", "direnv", "sops"} {
 		t.Run(name, func(t *testing.T) {
+			c := recipeConfig(t, name)
 			p := c.Catalog.Packages[name]
 			payload := []byte("synthetic official artifact")
 			sum := fmt.Sprintf("sha256:%x", sha256.Sum256(payload))

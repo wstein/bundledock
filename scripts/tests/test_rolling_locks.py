@@ -80,10 +80,12 @@ class RollingLockTests(unittest.TestCase):
             desired_path.write_text(desired_path.read_text().replace(
                 'scc==4.1.1', '  scc == 4.1.1  # same exact pin'))
             changed = []
-            # nixbox is a Nix store bundle with its own catalog and lock format
-            # (internal/nixbox): it has no packages.txt and no rolling pins.
-            for catalog_path in sorted(p for p in (root / 'bundles').glob('*/packages.catalog.json')
-                                       if p.parent.name != 'nixbox'):
+            # nixbox's Nix store lock (internal/nixbox) has its own format and no rolling
+            # pins; its official release binaries use the toolbox schema in nixbox/tools.
+            catalogs = [p for p in (root / 'bundles').glob('*/packages.catalog.json') if p.parent.name != 'nixbox']
+            catalogs.append(root / 'bundles/nixbox/tools/packages.catalog.json')
+            for catalog_path in sorted(catalogs):
+                bundle_name = 'nixbox' if catalog_path.parent.name == 'tools' else catalog_path.parent.name
                 catalog = json.loads(catalog_path.read_text())
                 path = catalog_path.with_name('packages.lock.json')
                 lock = json.loads(path.read_text())
@@ -115,15 +117,15 @@ class RollingLockTests(unittest.TestCase):
                             pin['sha512'] = hashlib.sha512(seed.encode()).hexdigest()
                         else:
                             pin['sha256'] = hashlib.sha256(seed.encode()).hexdigest()
-                    changed.append(catalog_path.parent.name + '/' + name)
+                    changed.append(bundle_name + '/' + name)
                 path.write_text(json.dumps(lock, indent=2) + '\n')
                 # Workflow no-op cases require a consistent baseline inventory,
                 # just like a real bot lock-and-inventory updater PR.
-                subprocess.run(['python3', 'scripts/tool-inventory.py', '--bundle', catalog_path.parent.name],
+                subprocess.run(['python3', 'scripts/tool-inventory.py', '--bundle', bundle_name],
                                cwd=root, check=True, capture_output=True, text=True, timeout=30)
             self.assertGreaterEqual(len(changed), 48)
             self.assertEqual({name.split('/')[0] for name in changed},
-                             {'toolbox', 'bun', 'code-server', 'node', 'node-current', 'codex', 'agy', 'claude', 'opentofu'})
+                             {'toolbox', 'nixbox', 'bun', 'code-server', 'node', 'node-current', 'codex', 'agy', 'claude', 'opentofu'})
             result = run_config_tests(root, packages=['./internal/toolconfig', './internal/toolupgrade', './internal/toolinventory', './internal/toolmanager'])
             self.assertEqual(result.returncode, 0, 'Future stable lock-and-inventory updates must pass config, workflow, inventory and manager tests:\n' + result.stdout + result.stderr)
             # Allocation is a platform-neutral source contract. Native OCI gate
@@ -175,7 +177,7 @@ class RollingLockTests(unittest.TestCase):
                     self.assertIn(reason, result.stdout + result.stderr)
             path.write_text(original)
             # License bytes remain protected even when the binary lock rolls.
-            license_path = root / 'bundles/toolbox/licenses/leaf/LICENSE'
+            license_path = root / 'bundles/nixbox/tools/licenses/leaf/LICENSE'
             license_path.write_text(license_path.read_text() + '\nchanged bytes\n')
             result = run_config_tests(root, '^TestReviewedLicenseSnapshots$')
             self.assertNotEqual(result.returncode, 0)

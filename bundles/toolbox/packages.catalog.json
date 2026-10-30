@@ -140,30 +140,6 @@
       },
       "sidecar": "{asset}.sha256"
     },
-    "ast-grep": {
-      "provider": "github",
-      "repository": "ast-grep/ast-grep",
-      "normalization": "semver",
-      "architectures": {
-        "amd64": "x86_64",
-        "arm64": "aarch64"
-      },
-      "asset": "app-{arch}-unknown-linux-gnu.zip",
-      "allowed_hosts": [
-        "github.com"
-      ],
-      "verification": "official-or-download",
-      "install": {
-        "kind": "zip",
-        "members": {
-          "ast-grep": "bin/ast-grep"
-        }
-      },
-      "notices": [
-        "licenses/ast-grep/LICENSE",
-        "licenses/ast-grep/SOURCE"
-      ]
-    },
     "yq": {
       "provider": "github",
       "repository": "mikefarah/yq",
@@ -373,30 +349,6 @@
         "licenses/typos/SOURCE"
       ]
     },
-    "leaf": {
-      "provider": "github",
-      "repository": "RivoLink/leaf",
-      "normalization": "semver",
-      "architectures": {
-        "amd64": "x86_64",
-        "arm64": "arm64"
-      },
-      "asset": "leaf-linux-{arch}",
-      "allowed_hosts": [
-        "github.com"
-      ],
-      "verification": "official-or-download",
-      "install": {
-        "kind": "raw",
-        "members": {
-          "leaf": "bin/leaf"
-        }
-      },
-      "notices": [
-        "licenses/leaf/LICENSE",
-        "licenses/leaf/SOURCE"
-      ]
-    },
     "lychee": {
       "provider": "github",
       "repository": "lycheeverse/lychee",
@@ -588,33 +540,6 @@
       "sidecar": "hugo_{version}_checksums.txt",
       "notices": [
         "licenses/hugo/SOURCE"
-      ]
-    },
-    "helix": {
-      "provider": "github",
-      "repository": "helix-editor/helix",
-      "normalization": "helix-calendar",
-      "architectures": {
-        "amd64": "x86_64",
-        "arm64": "aarch64"
-      },
-      "asset": "helix-{version}-{arch}-linux.tar.xz",
-      "allowed_hosts": [
-        "github.com"
-      ],
-      "verification": "official-or-download",
-      "install": {
-        "kind": "tar.xz",
-        "profile": "helix-runtime",
-        "preserve": true,
-        "members": {
-          "hx": "lib/helix/hx"
-        }
-      },
-      "notices": [
-        "licenses/helix/SOURCE",
-        "licenses/helix/LICENSE",
-        "licenses/helix/GRAMMAR-NOTICES"
       ]
     },
     "fzf": {
@@ -817,38 +742,6 @@
         "licenses/ruff/crates--ruff_unicode_names2_generator--LICENSE-APACHE",
         "licenses/ruff/crates--ruff_unicode_names2_generator--LICENSE-MIT",
         "licenses/ruff/crates--ty_vendored--vendor--typeshed--LICENSE"
-      ]
-    },
-    "delta": {
-      "provider": "github",
-      "repository": "dandavison/delta",
-      "normalization": "semver",
-      "architectures": {
-        "amd64": "x86_64-unknown-linux-musl",
-        "arm64": "aarch64-unknown-linux-gnu"
-      },
-      "asset": "delta-{version}-{arch}.tar.gz",
-      "allowed_hosts": [
-        "github.com"
-      ],
-      "verification": "official-or-download",
-      "install": {
-        "kind": "tar.gz",
-        "members": {
-          "delta": "bin/delta"
-        },
-        "archive_notices": [
-          "LICENSE"
-        ]
-      },
-      "notices": [
-        "licenses/delta/SOURCE",
-        "licenses/delta/bat-LICENSE-APACHE",
-        "licenses/delta/bat-LICENSE-MIT",
-        "licenses/delta/bat-NOTICE",
-        "licenses/delta/bat-SYNTAX-THEME-INVENTORY",
-        "licenses/delta/bat-SYNTAX-THEME-NOTICES",
-        "licenses/delta/src--utils--bat--LICENSE"
       ]
     },
     "watchexec": {
@@ -1216,31 +1109,6 @@
         "licenses/pinact/SOURCE"
       ]
     },
-    "zizmor": {
-      "provider": "github",
-      "repository": "zizmorcore/zizmor",
-      "tag_prefix": "v",
-      "normalization": "semver",
-      "architectures": {
-        "amd64": "x86_64",
-        "arm64": "aarch64"
-      },
-      "asset": "zizmor-{arch}-unknown-linux-gnu.tar.gz",
-      "allowed_hosts": [
-        "github.com"
-      ],
-      "verification": "official-or-download",
-      "install": {
-        "kind": "tar.gz",
-        "members": {
-          "zizmor": "bin/zizmor"
-        }
-      },
-      "notices": [
-        "licenses/zizmor/LICENSE",
-        "licenses/zizmor/SOURCE"
-      ]
-    },
     "cosign": {
       "provider": "github",
       "repository": "sigstore/cosign",
@@ -1321,30 +1189,6 @@
       },
       "notices": [
         "licenses/zoxide/SOURCE"
-      ]
-    },
-    "difftastic": {
-      "provider": "github",
-      "repository": "Wilfred/difftastic",
-      "normalization": "semver",
-      "architectures": {
-        "amd64": "x86_64-unknown-linux-musl",
-        "arm64": "aarch64-unknown-linux-gnu"
-      },
-      "asset": "difft-{version}-{arch}.tar.gz",
-      "allowed_hosts": [
-        "github.com"
-      ],
-      "verification": "official-or-download",
-      "install": {
-        "kind": "tar.gz",
-        "members": {
-          "difft": "bin/difft"
-        }
-      },
-      "notices": [
-        "licenses/difftastic/LICENSE",
-        "licenses/difftastic/SOURCE"
       ]
     },
     "jsonschema-cli": {
@@ -1497,33 +1341,6 @@
         "licenses/sops/SOURCE"
       ],
       "sidecar": "sops-v{version}.checksums.txt"
-    },
-    "fastfetch": {
-      "provider": "github",
-      "repository": "fastfetch-cli/fastfetch",
-      "normalization": "semver",
-      "architectures": {
-        "amd64": "amd64",
-        "arm64": "aarch64"
-      },
-      "asset": "fastfetch-linux-{arch}.tar.gz",
-      "allowed_hosts": [
-        "github.com"
-      ],
-      "verification": "official-or-download",
-      "install": {
-        "kind": "tar.gz",
-        "members": {
-          "fastfetch": "bin/fastfetch"
-        }
-      },
-      "notices": [
-        "licenses/fastfetch/LICENSE",
-        "licenses/fastfetch/YYJSON-LICENSE",
-        "licenses/fastfetch/WIDECHAR-LICENSE",
-        "licenses/fastfetch/UNICODE-LICENSE",
-        "licenses/fastfetch/SOURCE"
-      ]
     },
     "scc": {
       "provider": "github",
@@ -1761,31 +1578,6 @@
       },
       "notices": [
         "licenses/stw/SOURCE"
-      ]
-    },
-    "zk": {
-      "provider": "github",
-      "repository": "zk-org/zk",
-      "tag_prefix": "v",
-      "normalization": "semver",
-      "architectures": {
-        "amd64": "amd64",
-        "arm64": "arm64"
-      },
-      "asset": "zk-v{version}-linux-{arch}.tar.gz",
-      "allowed_hosts": [
-        "github.com"
-      ],
-      "verification": "official-or-download",
-      "install": {
-        "kind": "tar.gz",
-        "members": {
-          "zk": "bin/zk"
-        }
-      },
-      "notices": [
-        "licenses/zk/LICENSE",
-        "licenses/zk/SOURCE"
       ]
     },
     "sqlite3": {

@@ -94,6 +94,21 @@ volume without changing paths.
 | glibc runner | glibc and libgcc, reached through `/nix/profile/lib/ld.so`. |
 | Shims | `fastfetch`, `ast-grep`, `delta`, `difft`, `leaf`, `zizmor`, `zk` and `hx`. |
 
+### Official release binaries
+
+<!-- BEGIN GENERATED TOOL INVENTORY -->
+| Tool | Pinned version | Homepage | Source |
+| --- | --- | --- | --- |
+| ast-grep (`ast-grep`) | 0.51.0 | [Homepage](https://ast-grep.github.io/) | [Source](https://github.com/ast-grep/ast-grep) |
+| delta (`delta`) | 0.20.1 | [Homepage](https://dandavison.github.io/delta/) | [Source](https://github.com/dandavison/delta) |
+| Difftastic (`difft`) | 0.72.0 | [Homepage](https://github.com/Wilfred/difftastic) | [Source](https://github.com/Wilfred/difftastic) |
+| Fastfetch (`fastfetch`) | 2.70.0 | [Homepage](https://github.com/fastfetch-cli/fastfetch) | [Source](https://github.com/fastfetch-cli/fastfetch) |
+| Helix (`hx`) | 25.07.1 | [Homepage](https://helix-editor.com) | [Source](https://github.com/helix-editor/helix) |
+| Leaf (`leaf`) | 1.29.2 | [Homepage](https://leaf.rivolink.mg) | [Source](https://github.com/RivoLink/leaf) |
+| zizmor (`zizmor`) | 1.31.1 | [Homepage](https://github.com/zizmorcore/zizmor) | [Source](https://github.com/zizmorcore/zizmor) |
+| zk (`zk`) | 0.15.7 | [Homepage](https://github.com/zk-org/zk) | [Source](https://github.com/zk-org/zk) |
+<!-- END GENERATED TOOL INVENTORY -->
+
 The shims keep the official binaries from the toolbox unmodified. A shim runs the
 toolbox binary directly on a glibc host, and otherwise (a musl host such as Alpine)
 through

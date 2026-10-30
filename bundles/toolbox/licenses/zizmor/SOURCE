@@ -1,7 +1,0 @@
-Upstream: https://github.com/zizmorcore/zizmor
-Initial reviewed release: v1.31.1
-License: MIT
-Source for corresponding release: https://github.com/zizmorcore/zizmor/releases/tag/v1.31.1
-Linux AMD64/ARM64 official GNU archives, unchanged executable; selected by tag prefix 'v'.
-Full upstream LICENSE retained from the tagged repository (the release archive does not carry it).
-Lock pins use the official release API SHA256 digests (checked 2026-10-17). No upstream binary was executed or modified; retained notices do not establish a complete transitive license audit.

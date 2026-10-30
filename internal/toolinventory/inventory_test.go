@@ -189,8 +189,13 @@ func TestInventoryUsesDisplayedLabelAlphabeticalOrder(t *testing.T) {
 			labels = append(labels, strings.TrimSpace(strings.Split(line, "|")[1]))
 		}
 	}
-	if len(labels) != 67 {
-		t.Fatalf("expected 65 catalog tools and two launchers, got %d rows", len(labels))
+	if len(labels) != 59 {
+		t.Fatalf("expected 57 catalog tools and two launchers, got %d rows", len(labels))
+	}
+	for _, moved := range []string{"| zk (`zk`) |", "| Helix (`hx`) |", "| ast-grep (`ast-grep`) |"} {
+		if strings.Contains(region, moved) {
+			t.Fatalf("toolbox inventory still lists %s, which nixbox ships", moved)
+		}
 	}
 	// The source build links the publisher's download page, not a GitHub repository.
 	sqlite := "| SQLite (`sqlite3`) | " + strings.TrimPrefix(pinnedVersion(t, root, "sqlite3"), "v") + " | [Homepage](https://www.sqlite.org/) | [Source](https://www.sqlite.org/download.html) |"
@@ -204,5 +209,83 @@ func TestInventoryUsesDisplayedLabelAlphabeticalOrder(t *testing.T) {
 	}
 	if !strings.Contains(region, "| Mike Farah yq (`yq`) |") || !strings.Contains(region, "| tmux (`tmux`) | "+strings.TrimPrefix(pinnedVersion(t, root, "tmux"), "v")+" (official static builds) |") {
 		t.Fatal("display labels or versions changed")
+	}
+}
+
+// nixboxFixture copies the nixbox tools inputs and its guide, the files the generator reads for --bundle nixbox.
+func nixboxFixture(t *testing.T) (string, string) {
+	t.Helper()
+	root, script := fixture(t)
+	repo, err := filepath.Abs("../..")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"bundles/nixbox/tools/packages.lock.json", "bundles/nixbox/tools/packages.catalog.json", "docs/nixbox.md"} {
+		destination := filepath.Join(root, name)
+		if err := os.MkdirAll(filepath.Dir(destination), 0755); err != nil {
+			t.Fatal(err)
+		}
+		save(t, destination, read(t, filepath.Join(repo, name)))
+	}
+	return root, script
+}
+
+func TestNixboxInventoryListsTheEightOfficialBinaries(t *testing.T) {
+	root, script := nixboxFixture(t)
+	if out, err := invoke(t, root, script, "--bundle", "nixbox", "--check"); err != nil {
+		t.Fatalf("check: %v %s", err, out)
+	}
+	source := read(t, filepath.Join(root, "docs/nixbox.md"))
+	region := strings.Split(strings.Split(source, "<!-- BEGIN GENERATED TOOL INVENTORY -->")[1], "<!-- END GENERATED TOOL INVENTORY -->")[0]
+	var labels []string
+	for _, line := range strings.Split(region, "\n") {
+		if strings.HasPrefix(line, "| ") && !strings.HasPrefix(line, "| Tool |") && !strings.HasPrefix(line, "| ---") {
+			labels = append(labels, strings.TrimSpace(strings.Split(line, "|")[1]))
+		}
+	}
+	want := "ast-grep (`ast-grep`),delta (`delta`),Difftastic (`difft`),Fastfetch (`fastfetch`),Helix (`hx`),Leaf (`leaf`),zizmor (`zizmor`),zk (`zk`)"
+	if strings.Join(labels, ",") != want {
+		t.Fatalf("rows = %q", labels)
+	}
+}
+
+func TestNixboxInventoryFollowsItsLockAndRefusesDrift(t *testing.T) {
+	root, script := nixboxFixture(t)
+	name := filepath.Join(root, "bundles/nixbox/tools/packages.lock.json")
+	var lock map[string]any
+	if err := json.Unmarshal([]byte(read(t, name)), &lock); err != nil {
+		t.Fatal(err)
+	}
+	for _, arch := range []string{"amd64", "arm64"} {
+		lock["platforms"].(map[string]any)[arch].(map[string]any)["zk"].(map[string]any)["version"] = "v9.8.7"
+	}
+	b, err := json.Marshal(lock)
+	if err != nil {
+		t.Fatal(err)
+	}
+	save(t, name, string(b))
+	if out, err := invoke(t, root, script, "--bundle", "nixbox", "--check"); err == nil || !strings.Contains(out, "inventory is stale") {
+		t.Fatalf("expected drift failure, err=%v output=%s", err, out)
+	}
+	if out, err := invoke(t, root, script, "--bundle", "nixbox"); err != nil {
+		t.Fatalf("generate: %v %s", err, out)
+	}
+	if !strings.Contains(read(t, filepath.Join(root, "docs/nixbox.md")), "| zk (`zk`) | 9.8.7 |") {
+		t.Fatal("version missing")
+	}
+	// The toolbox pins are not consulted for nixbox.
+	catalog := filepath.Join(root, "bundles/nixbox/tools/packages.catalog.json")
+	var c map[string]any
+	if err := json.Unmarshal([]byte(read(t, catalog)), &c); err != nil {
+		t.Fatal(err)
+	}
+	c["packages"].(map[string]any)["unexpected-tool"] = map[string]any{}
+	b, err = json.Marshal(c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	save(t, catalog, string(b))
+	if out, err := invoke(t, root, script, "--bundle", "nixbox"); err == nil || !strings.Contains(out, "catalog IDs") {
+		t.Fatalf("%v %s", err, out)
 	}
 }

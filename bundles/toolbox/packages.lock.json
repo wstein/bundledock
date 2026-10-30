@@ -1,7 +1,7 @@
 {
   "schema": 2,
-  "desired_digest": "6209d88618fcf90be116013c34031c7e909a1916baceae81725323276ac279b8",
-  "catalog_digest": "8521885f96a1a4c5ab156a3361650c01c863e4032752e34052efde97a5605475",
+  "desired_digest": "10161e4d5dd26ee9f356b00b187253bd80b86cf0fd82069949052ec783d6a3a7",
+  "catalog_digest": "6d36e1b469677a69cb6862a6063b64bd2d8a9bffeee1df5aad0946771d72792f",
   "toolchains": {
     "zig-cc": {
       "amd64": {
@@ -30,12 +30,6 @@
         "version": "v1.3.2",
         "url": "https://github.com/FiloSottile/age/releases/download/v1.3.2/age-v1.3.2-linux-amd64.tar.gz",
         "sha256": "cbe24006683f8eb669266162894b9a522a1af52f2665fbc63a4bb032ed26ac10",
-        "verification": "publisher-sha256"
-      },
-      "ast-grep": {
-        "version": "0.51.0",
-        "url": "https://github.com/ast-grep/ast-grep/releases/download/0.51.0/app-x86_64-unknown-linux-gnu.zip",
-        "sha256": "a7eead5552d3a8daad70f5d50d935da44bd0c138e946b5b0a96b1d38169fa639",
         "verification": "publisher-sha256"
       },
       "bat": {
@@ -68,18 +62,6 @@
         "sha256": "85cf6ee25a9b5dca29c766638f123fc733c38cc1f466c867a1f510e0e0b6eda8",
         "verification": "publisher-sha256"
       },
-      "delta": {
-        "version": "0.20.1",
-        "url": "https://github.com/dandavison/delta/releases/download/0.20.1/delta-0.20.1-x86_64-unknown-linux-musl.tar.gz",
-        "sha256": "69dcb4043f55c29118f408c6efd30115e0a4e0a6709253343b8c8fa814ab4a31",
-        "verification": "publisher-sha256"
-      },
-      "difftastic": {
-        "version": "0.72.0",
-        "url": "https://github.com/Wilfred/difftastic/releases/download/0.72.0/difft-0.72.0-x86_64-unknown-linux-musl.tar.gz",
-        "sha256": "27b9c1fe038a95682eed241265a3cacb781227730f106104b617e10067d38ff4",
-        "verification": "publisher-sha256"
-      },
       "direnv": {
         "version": "v2.38.2",
         "url": "https://github.com/direnv/direnv/releases/download/v2.38.2/direnv.linux-amd64",
@@ -90,12 +72,6 @@
         "version": "v1.2.6",
         "url": "https://github.com/bootandy/dust/releases/download/v1.2.6/dust-v1.2.6-x86_64-unknown-linux-musl.tar.gz",
         "sha256": "cbf2cb5c9d6227e46fc4b29c03dc43b8632020dfc5cf269d263d6e29c399e044",
-        "verification": "publisher-sha256"
-      },
-      "fastfetch": {
-        "version": "2.70.0",
-        "url": "https://github.com/fastfetch-cli/fastfetch/releases/download/2.70.0/fastfetch-linux-amd64.tar.gz",
-        "sha256": "945b941b2a85e8de88b4c89714ad18ee6a7a129bb3c544bb448e9e0e027c226a",
         "verification": "publisher-sha256"
       },
       "fd": {
@@ -152,12 +128,6 @@
         "sha256": "c7187db94eeeeca956519a6af171adc31453941a1e777961f6e680f697c8c507",
         "verification": "publisher-sha256"
       },
-      "helix": {
-        "version": "25.07.1",
-        "url": "https://github.com/helix-editor/helix/releases/download/25.07.1/helix-25.07.1-x86_64-linux.tar.xz",
-        "sha256": "3f08e63ecd388fff657ad39722f88bb03dcf326f1f2da2700d99e1dc40ab2e8b",
-        "verification": "publisher-sha256"
-      },
       "herdr": {
         "version": "v0.9.5",
         "url": "https://github.com/herdrdev/herdr/releases/download/v0.9.5/herdr-linux-x86_64",
@@ -204,12 +174,6 @@
         "version": "v0.66.2",
         "url": "https://github.com/jesseduffield/lazygit/releases/download/v0.66.2/lazygit_0.66.2_linux_x86_64.tar.gz",
         "sha256": "158efc9ddfa1241fab5fb3526bb442c8dc6c4b1904d73213b9e4e93e03c52034",
-        "verification": "publisher-sha256"
-      },
-      "leaf": {
-        "version": "1.29.2",
-        "url": "https://github.com/RivoLink/leaf/releases/download/1.29.2/leaf-linux-x86_64",
-        "sha256": "ee31e39a58c848053685f4302a94cf942f8fd36c8d2f5d7d77bdac54417c6da7",
         "verification": "publisher-sha256"
       },
       "lsd": {
@@ -394,18 +358,6 @@
         "sha256": "8e34fc298390875de416e6a4afcb8cabeceb25d9aa8506c1a2f9353cf702ea5f",
         "verification": "publisher-sha256"
       },
-      "zizmor": {
-        "version": "v1.31.1",
-        "url": "https://github.com/zizmorcore/zizmor/releases/download/v1.31.1/zizmor-x86_64-unknown-linux-gnu.tar.gz",
-        "sha256": "d185f726bdaf92df78273217dfdd24ebcd6b0ef48cf3ce776ff5762b6e138c99",
-        "verification": "publisher-sha256"
-      },
-      "zk": {
-        "version": "v0.15.7",
-        "url": "https://github.com/zk-org/zk/releases/download/v0.15.7/zk-v0.15.7-linux-amd64.tar.gz",
-        "sha256": "9339cf4643159cfc80ee6b9c232abf84076ea154a057bf8926eb71cab37d3abe",
-        "verification": "publisher-sha256"
-      },
       "zoxide": {
         "version": "v0.10.0",
         "url": "https://github.com/ajeetdsouza/zoxide/releases/download/v0.10.0/zoxide-0.10.0-x86_64-unknown-linux-musl.tar.gz",
@@ -424,12 +376,6 @@
         "version": "v1.3.2",
         "url": "https://github.com/FiloSottile/age/releases/download/v1.3.2/age-v1.3.2-linux-arm64.tar.gz",
         "sha256": "6b8dc4333c53a5a57c9e5834e3a48f92605d7154014cd07269ff3327db5d37f4",
-        "verification": "publisher-sha256"
-      },
-      "ast-grep": {
-        "version": "0.51.0",
-        "url": "https://github.com/ast-grep/ast-grep/releases/download/0.51.0/app-aarch64-unknown-linux-gnu.zip",
-        "sha256": "73af0ebe5958acee012754a5b2826a186580ef83333092408a7a01096fc30b8b",
         "verification": "publisher-sha256"
       },
       "bat": {
@@ -462,18 +408,6 @@
         "sha256": "f32a2d59b8ec3a172651ef347bdff02726e3bad1fe1fe5a6a4014523b9324914",
         "verification": "publisher-sha256"
       },
-      "delta": {
-        "version": "0.20.1",
-        "url": "https://github.com/dandavison/delta/releases/download/0.20.1/delta-0.20.1-aarch64-unknown-linux-gnu.tar.gz",
-        "sha256": "da7f4338f593572ff426ae153e0870e2fdc72729416eff551b40cdeb67940db8",
-        "verification": "publisher-sha256"
-      },
-      "difftastic": {
-        "version": "0.72.0",
-        "url": "https://github.com/Wilfred/difftastic/releases/download/0.72.0/difft-0.72.0-aarch64-unknown-linux-gnu.tar.gz",
-        "sha256": "0993a82a6708a24adc6c6b8de366924728ed08f537a5b488940082c8edc79353",
-        "verification": "publisher-sha256"
-      },
       "direnv": {
         "version": "v2.38.2",
         "url": "https://github.com/direnv/direnv/releases/download/v2.38.2/direnv.linux-arm64",
@@ -484,12 +418,6 @@
         "version": "v1.2.6",
         "url": "https://github.com/bootandy/dust/releases/download/v1.2.6/dust-v1.2.6-aarch64-unknown-linux-musl.tar.gz",
         "sha256": "a51cf42a4654864837cc116eaca914271d7a09a9c2a60de90ecc2187b8d855a7",
-        "verification": "publisher-sha256"
-      },
-      "fastfetch": {
-        "version": "2.70.0",
-        "url": "https://github.com/fastfetch-cli/fastfetch/releases/download/2.70.0/fastfetch-linux-aarch64.tar.gz",
-        "sha256": "fff4a127e4d76242e3bdac2a12430fc252fd6086d3eb30aee0382c3b0fece478",
         "verification": "publisher-sha256"
       },
       "fd": {
@@ -546,12 +474,6 @@
         "sha256": "f6198ef8090f404dbb771abfee086eb8c48ac177f30da7fd3510aca35b344b5d",
         "verification": "publisher-sha256"
       },
-      "helix": {
-        "version": "25.07.1",
-        "url": "https://github.com/helix-editor/helix/releases/download/25.07.1/helix-25.07.1-aarch64-linux.tar.xz",
-        "sha256": "ce23fa8d395e633e3e54c052012f11965d91d8d5c2bfa659685f50430b4f8175",
-        "verification": "publisher-sha256"
-      },
       "herdr": {
         "version": "v0.9.5",
         "url": "https://github.com/herdrdev/herdr/releases/download/v0.9.5/herdr-linux-aarch64",
@@ -598,12 +520,6 @@
         "version": "v0.66.2",
         "url": "https://github.com/jesseduffield/lazygit/releases/download/v0.66.2/lazygit_0.66.2_linux_arm64.tar.gz",
         "sha256": "79a3161eeb642f0473e23db6341f7baabd4a5933e921a9c1167c5d5c765c41a4",
-        "verification": "publisher-sha256"
-      },
-      "leaf": {
-        "version": "1.29.2",
-        "url": "https://github.com/RivoLink/leaf/releases/download/1.29.2/leaf-linux-arm64",
-        "sha256": "748b0e91889d429f3a9002fb3440f42d3324a2e7c645011f423aec07c7bc44d3",
         "verification": "publisher-sha256"
       },
       "lsd": {
@@ -786,18 +702,6 @@
         "version": "v4.54.1",
         "url": "https://github.com/mikefarah/yq/releases/download/v4.54.1/yq_linux_arm64",
         "sha256": "189088da0c6429ec5178dfaab1a114805f6cab0b61b165ab236efedf1d57a71b",
-        "verification": "publisher-sha256"
-      },
-      "zizmor": {
-        "version": "v1.31.1",
-        "url": "https://github.com/zizmorcore/zizmor/releases/download/v1.31.1/zizmor-aarch64-unknown-linux-gnu.tar.gz",
-        "sha256": "37eebbd5762a44f262d94875431b14a6d2402991e90a685113ea97b8b41be833",
-        "verification": "publisher-sha256"
-      },
-      "zk": {
-        "version": "v0.15.7",
-        "url": "https://github.com/zk-org/zk/releases/download/v0.15.7/zk-v0.15.7-linux-arm64.tar.gz",
-        "sha256": "8404716171c04e131759feebb551e5946162732f20c178cc38099af10d0ce800",
         "verification": "publisher-sha256"
       },
       "zoxide": {
