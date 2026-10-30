@@ -107,7 +107,7 @@ func TestNixboxBuildSmokesWithItsOwnScriptAndLabelsTheClosure(t *testing.T) {
 		t.Fatalf("%v", f.calls)
 	}
 	data, _ := os.ReadFile(nixboxLockPath)
-	digest, _ := LockDigest("nixbox", data)
+	digest, _ := LockDigestFile("nixbox", nixboxLockPath)
 	if f.labels[platformsLabel] != digest || f.labels["io.bundledock.bundle"] != "nixbox" || f.labels["org.opencontainers.image.title"] != "bundledock-nixbox" {
 		t.Fatalf("%v", f.labels)
 	}
@@ -119,7 +119,7 @@ func TestNixboxBuildSmokesWithItsOwnScriptAndLabelsTheClosure(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(roots) != len(lock.Platforms["amd64"].Roots) || !strings.HasSuffix(roots["git"], "-git-minimal-2.56.0") || strings.Contains(roots["git"], "/") {
+	if len(roots) != len(lock.Platforms["amd64"].Roots)+8 || !strings.HasSuffix(roots["git"], "-git-minimal-2.56.0") || strings.Contains(roots["git"], "/") {
 		t.Fatalf("%v", roots)
 	}
 	if _, err = f.adapter().Push(m, nixboxLockPath, r); err != nil {
@@ -156,5 +156,97 @@ func TestNixboxUsesTheDailyTagNamespace(t *testing.T) {
 	}
 	if _, err = SingletonVersion([]byte("{}"), "nixbox"); err == nil {
 		t.Fatal("nixbox is not a singleton bundle")
+	}
+}
+
+// The publication record of nixbox covers both of its locks: the Nix store paths and
+// the official release binaries in bundles/nixbox/tools.
+func nixboxCopy(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+	for _, name := range []string{"packages.lock.json", "tools/packages.lock.json"} {
+		data, err := os.ReadFile("../../bundles/nixbox/" + name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err = os.MkdirAll(dir+"/"+strings.TrimSuffix(name, "packages.lock.json"), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err = os.WriteFile(dir+"/"+name, data, 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	return dir + "/packages.lock.json"
+}
+
+func TestNixboxRecordCoversTheToolsLock(t *testing.T) {
+	lock := nixboxCopy(t)
+	tools := ToolsLockPath(lock)
+	digest, err := LockDigestFile("nixbox", lock)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sum, err := LockSHA256("nixbox", lock)
+	if err != nil {
+		t.Fatal(err)
+	}
+	nixOnly, _ := os.ReadFile(lock)
+	if single, _ := LockDigest("nixbox", nixOnly); single == digest {
+		t.Error("the nixbox digest ignores the tools lock")
+	}
+	if plain, _ := HashFile(lock); plain == sum {
+		t.Error("the nixbox lock hash ignores the tools lock")
+	}
+	data, _ := os.ReadFile(tools)
+	if err = os.WriteFile(tools, []byte(strings.Replace(string(data), `"version": "v`, `"version": "v9`, 1)), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	changedDigest, _ := LockDigestFile("nixbox", lock)
+	changedSum, _ := LockSHA256("nixbox", lock)
+	if changedDigest == digest || changedSum == sum {
+		t.Error("a tools lock change left the nixbox digest or lock hash unchanged")
+	}
+	if err = os.Remove(tools); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = LockDigestFile("nixbox", lock); err == nil {
+		t.Error("digest without a tools lock")
+	}
+}
+
+func TestOtherBundlesKeepTheirDigestAndHash(t *testing.T) {
+	lock := "../../bundles/toolbox/packages.lock.json"
+	data, _ := os.ReadFile(lock)
+	want, _ := ToolDigest(data)
+	if got, err := LockDigestFile("toolbox", lock); err != nil || got != want {
+		t.Fatalf("%s %v", got, err)
+	}
+	plain, _ := HashFile(lock)
+	if got, err := LockSHA256("toolbox", lock); err != nil || got != plain {
+		t.Fatalf("%s %v", got, err)
+	}
+}
+
+func TestNixboxVersionsLabelListsTheOfficialBinaries(t *testing.T) {
+	lock := nixboxCopy(t)
+	m := Metadata{Bundle: "nixbox", Source: "https://github.com/example/repo", Commit: strings.Repeat("a", 40), Created: "2026-10-10T03:17:00Z", Tag: "2026.10.10-b1", RunID: "1"}
+	got, err := labels(m, lock, "amd64")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var versions map[string]string
+	if err = json.Unmarshal([]byte(got["io.bundledock.tools.versions"]), &versions); err != nil {
+		t.Fatal(err)
+	}
+	for _, tool := range []string{"zk", "helix", "difftastic", "ast-grep", "git"} {
+		if versions[tool] == "" {
+			t.Errorf("no version for %s: %v", tool, versions)
+		}
+	}
+	if strings.Contains(versions["zk"], "/") || !strings.HasPrefix(versions["zk"], "v") {
+		t.Errorf("zk version %q", versions["zk"])
+	}
+	if want, _ := LockDigestFile("nixbox", lock); got[platformsLabel] != want {
+		t.Error("platforms label differs from the file digest")
 	}
 }

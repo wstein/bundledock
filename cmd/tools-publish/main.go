@@ -169,7 +169,7 @@ func resolveVersion(directory string, meta toolpublish.Metadata, frozen bool, at
 func resolveFrozen(directory string, meta toolpublish.Metadata) error {
 	bundle := toolpublish.BundleForMetadata(meta)
 	var err error
-	meta.LockSHA256, err = toolpublish.HashFile(bundle.Directory + "/packages.lock.json")
+	meta.LockSHA256, err = toolpublish.LockSHA256(bundle.Name, bundle.Directory+"/packages.lock.json")
 	if err != nil {
 		return err
 	}
@@ -178,6 +178,15 @@ func resolveFrozen(directory string, meta toolpublish.Metadata) error {
 	}
 	if err = copyFile(bundle.Directory+"/packages.lock.json", filepath.Join(directory, "packages.lock.json")); err != nil {
 		return err
+	}
+	if bundle.Name == "nixbox" {
+		// The lock of the official release binaries travels with the Nix lock.
+		if err = os.Mkdir(filepath.Join(directory, "tools"), 0700); err != nil {
+			return err
+		}
+		if err = copyFile(toolpublish.ToolsLockPath(bundle.Directory+"/packages.lock.json"), toolpublish.ToolsLockPath(filepath.Join(directory, "packages.lock.json"))); err != nil {
+			return err
+		}
 	}
 	return writeJSON(filepath.Join(directory, "provenance.json"), meta)
 }
@@ -230,7 +239,15 @@ func validateBundleSource(bundle toolpublish.Bundle) error {
 	if err != nil {
 		return err
 	}
-	return nixbox.CheckLock(c, catalog, l, c.Cache.PublicKey)
+	if err = nixbox.CheckLock(c, catalog, l, c.Cache.PublicKey); err != nil {
+		return err
+	}
+	// The official release binaries: strict toolbox-schema load, shims and recipes agree.
+	tools, err := toolconfig.Load(bundle.Directory + "/tools")
+	if err != nil {
+		return err
+	}
+	return nixbox.CheckOfficial(c, tools)
 }
 
 func publicationDecision(lock, event string, baseline func() (string, error)) (bool, error) {
@@ -241,11 +258,7 @@ func publicationDecisionDigest(lock, event, bundle string, baseline func() (stri
 	if event != "schedule" && event != "workflow_dispatch" && event != "workflow_run" {
 		return false, fmt.Errorf("publication requires schedule or workflow_dispatch")
 	}
-	b, err := os.ReadFile(lock)
-	if err != nil {
-		return false, err
-	}
-	fresh, err := toolpublish.LockDigest(bundle, b)
+	fresh, err := toolpublish.LockDigestFile(bundle, lock)
 	if err != nil {
 		return false, err
 	}

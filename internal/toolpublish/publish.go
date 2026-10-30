@@ -72,6 +72,22 @@ func HashFile(path string) (string, error) {
 	return hex.EncodeToString(sum[:]), nil
 }
 
+// LockSHA256 is the sha256 of the lock file. For nixbox it covers both locks:
+// the sha256 of the Nix lock bytes and of the tools lock bytes, each in hex,
+// separated by a newline.
+func LockSHA256(bundle, lock string) (string, error) {
+	sum, err := HashFile(lock)
+	if err != nil || bundle != "nixbox" {
+		return sum, err
+	}
+	tools, err := HashFile(ToolsLockPath(lock))
+	if err != nil {
+		return "", err
+	}
+	both := sha256.Sum256([]byte(sum + "\n" + tools))
+	return hex.EncodeToString(both[:]), nil
+}
+
 func NewMetadata(lock, image, tag, commit, source, created, runID string, attempt ...string) (Metadata, error) {
 	return newMetadata("", lock, image, tag, commit, source, created, runID, attempt...)
 }
@@ -124,7 +140,7 @@ func newMetadata(bundle, lock, image, tag, commit, source, created, runID string
 		return m, fmt.Errorf("HTTPS source provenance required")
 	}
 	var err error
-	m.LockSHA256, err = HashFile(lock)
+	m.LockSHA256, err = LockSHA256(b.Name, lock)
 	return m, err
 }
 
@@ -162,6 +178,22 @@ func labels(m Metadata, lock, arch string) (map[string]string, error) {
 		for name, path := range pins.Platforms[arch].Roots {
 			versions[name] = path[strings.LastIndex(path, "/")+1:]
 		}
+		// The official release binaries are pinned by version in their own lock.
+		tools, err := os.ReadFile(ToolsLockPath(lock))
+		if err != nil {
+			return nil, err
+		}
+		var official struct {
+			Platforms map[string]map[string]struct {
+				Version string `json:"version"`
+			} `json:"platforms"`
+		}
+		if err = json.Unmarshal(tools, &official); err != nil {
+			return nil, err
+		}
+		for name, pin := range official.Platforms[arch] {
+			versions[name] = pin.Version
+		}
 	} else {
 		var pins struct {
 			Platforms map[string]map[string]struct {
@@ -182,7 +214,7 @@ func labels(m Metadata, lock, arch string) (map[string]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	semantic, err := LockDigest(bundle.Name, b)
+	semantic, err := LockDigestFile(bundle.Name, lock)
 	if err != nil {
 		return nil, err
 	}
