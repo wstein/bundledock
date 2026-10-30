@@ -15,7 +15,24 @@ there is no image, no tag, and no consumer pins it. The record below is filled b
 the first publication.
 
 <!-- BEGIN PUBLISHED BUNDLE -->
-Not yet published.
+<!-- publication-record: {"attempt":"1","bundle":"nixbox","commit":"a4f4495ab6c03b887ef21c6368c5682fc51a6660","created":"2026-10-30T02:01:24Z","digest":"sha256:c20d3778c2843f66de3739a024c6bafa758afa252e54646321b0558639cdbc9f","image":"quay.io/bundledock/nixbox","lock_sha256":"d2ddff16742c269139281204d4674e0c520c46ca822624a197af0684e5cbefcf","reference":"quay.io/bundledock/nixbox@sha256:c20d3778c2843f66de3739a024c6bafa758afa252e54646321b0558639cdbc9f","run_attempt":"1","run_id":"40989024653","source":"https://github.com/wstein/bundledock","tag":"2026.10.30-b2"} -->
+## Published bundle
+
+Version: `2026.10.30-b2`
+
+Index digest: `sha256:c20d3778c2843f66de3739a024c6bafa758afa252e54646321b0558639cdbc9f`
+
+Source: [`a4f4495ab6c03b887ef21c6368c5682fc51a6660`](https://github.com/wstein/bundledock/commit/a4f4495ab6c03b887ef21c6368c5682fc51a6660)
+
+Publication: [run 40989024653, attempt 1](https://github.com/wstein/bundledock/actions/runs/40989024653/attempts/1)
+
+Pull this published carrier by its immutable index digest:
+
+```sh
+docker pull quay.io/bundledock/nixbox@sha256:c20d3778c2843f66de3739a024c6bafa758afa252e54646321b0558639cdbc9f
+```
+
+The source inventory below describes the current lock; this publication retains its exact source revision.
 <!-- END PUBLISHED BUNDLE -->
 
 ## What it is
