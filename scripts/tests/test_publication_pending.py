@@ -32,6 +32,9 @@ class FakeApi:
             '/commits?path=' + lock + '&sha=' + HEAD + '&per_page=1': [{'sha': NEW}],
             '/commits/' + NEW + '/pulls?per_page=100&page=1': [{'number': 165}],
         }
+        if bundle == 'nixbox':  # the lock of its official release binaries, same at every revision by default
+            for revision in (HEAD, OLD, TAGGED):
+                self.data['/contents/bundles/nixbox/tools/packages.lock.json?ref=' + revision] = {'encoding': 'base64', 'content': b64(b'tools')}
         self.reads = []
 
     def get(self, path):
@@ -40,6 +43,18 @@ class FakeApi:
 
 
 class PublicationPendingTests(unittest.TestCase):
+    def nixbox_api(self, head_tools, published_tools):
+        api = FakeApi('nixbox', head_lock=b'nix', published_lock=b'nix')
+        tools = 'bundles/nixbox/tools/packages.lock.json'
+        api.data['/contents/' + tools + '?ref=' + HEAD] = {'encoding': 'base64', 'content': b64(head_tools)}
+        api.data['/contents/' + tools + '?ref=' + OLD] = {'encoding': 'base64', 'content': b64(published_tools)}
+        return api
+
+    def test_nixbox_tools_lock_change_alone_is_unpublished(self):
+        self.assertEqual(pending.inspect('nixbox', self.nixbox_api(b'same', b'same'))['state'], 'published')
+        result = pending.inspect('nixbox', self.nixbox_api(b'new tools', b'old tools'))
+        self.assertEqual(result['state'], 'unpublished')
+
     def test_lock_matching_recorded_publication_is_published(self):
         api = FakeApi(head_lock=b'same', published_lock=b'same')
         self.assertEqual(pending.inspect('claude', api)['state'], 'published')
