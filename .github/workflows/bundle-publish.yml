@@ -374,8 +374,22 @@ jobs:
           ref: ${{ needs.preflight.outputs.sha }}
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: ${{ inputs.bundle }}-publication-${{ github.run_attempt }}
+          pattern: ${{ inputs.bundle }}-publication-*
           path: ${{ runner.temp }}/publication-docs-receipt
+      # "Re-run failed jobs" runs under a new attempt, but the receipt keeps the
+      # attempt that produced it. Take that attempt from this run's single
+      # receipt; publication-docs.py checks it against the receipt itself.
+      - name: Select this run's publication receipt
+        env:
+          BUNDLE: ${{ inputs.bundle }}
+        run: |
+          set -- "$RUNNER_TEMP/publication-docs-receipt/$BUNDLE-publication-"*
+          if [ "$#" -ne 1 ] || [ ! -f "$1/publication.json" ]; then
+            echo 'Expected exactly one publication receipt of this run' >&2
+            exit 1
+          fi
+          echo "PUBLICATION_ATTEMPT=${1##*-}" >> "$GITHUB_ENV"
+          echo "PUBLICATION_RECEIPT=$1/publication.json" >> "$GITHUB_ENV"
       - name: Propose verified publication Markdown source and run source CI
         env:
           GH_TOKEN: ${{ github.token }}
@@ -384,10 +398,10 @@ jobs:
           PUBLICATION_SHA: ${{ needs.preflight.outputs.sha }}
         run: |
           python3 -B scripts/publication-docs.py \
-            --receipt "$RUNNER_TEMP/publication-docs-receipt/publication.json" \
+            --receipt "$PUBLICATION_RECEIPT" \
             --bundle "$BUNDLE" --image "${REPOSITORY_URL%/}/$(python3 -B scripts/bundle-config.py --repository "$BUNDLE")" \
             --sha "$PUBLICATION_SHA" --run-id "$GITHUB_RUN_ID" \
-            --attempt "$GITHUB_RUN_ATTEMPT" --propose
+            --attempt "$PUBLICATION_ATTEMPT" --propose
 
   cleanup:
     if: >-

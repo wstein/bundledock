@@ -297,6 +297,20 @@ class PublicationDocsTest(unittest.TestCase):
         self.assertIn('cancel-in-progress: false', docs)
         self.assertIn('queue: max', docs)
 
+    def test_docs_job_finds_this_runs_receipt_after_a_failed_job_rerun(self):
+        workflow = (Path(__file__).resolve().parents[1] / '.github/workflows/bundle-publish.yml').read_text()
+        docs = workflow.split('\n  documentation:\n')[1].split('\n  cleanup:\n')[0]
+        # A rerun of failed jobs has a new attempt, but the receipt keeps the
+        # attempt that produced it: download this run's receipt by pattern and
+        # hand its own attempt to the script, which checks it against the receipt.
+        self.assertNotIn('-publication-${{ github.run_attempt }}', docs)
+        self.assertIn('pattern: ${{ inputs.bundle }}-publication-*', docs)
+        self.assertNotIn('run-id:', docs)
+        self.assertIn('Expected exactly one publication receipt of this run', docs)
+        self.assertIn('--attempt "$PUBLICATION_ATTEMPT"', docs)
+        self.assertNotIn('--attempt "$GITHUB_RUN_ATTEMPT"', docs)
+        self.assertIn('--run-id "$GITHUB_RUN_ID"', docs)
+
     def test_every_bundle_metadata_retains_canonical_evidence_without_enlarging_markdown(self):
         record = self.validate()
         evidence = {'receipt': self.receipt, 'attempt': {'id': 123, 'run_attempt': 1}}

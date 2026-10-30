@@ -571,7 +571,11 @@ accumulate in the same single pending PR.
 
 **Re-run failed jobs** does not repair the job after the workflow or this script
 changed: GitHub re-uses the original commit, so the old code runs again. Use the
-steps above from current `main` instead.
+steps above from current `main` instead. A re-run of only the `documentation` job
+works when the workflow already contains the receipt selection: it takes the
+attempt from the run's single `<bundle>-publication-<attempt>` receipt instead
+of the new attempt number. The `tag` and `cleanup` jobs stay bound to the
+current attempt; use **Re-run all jobs** for those.
 
 ## List unpublished updaters
 
