@@ -191,6 +191,10 @@ func CheckOfficial(c *Catalog, tools *toolconfig.Config) error {
 		for _, target := range p.Install.Members {
 			installed[target] = true
 		}
+		// An alias is a further installed copy of a member; a shim may run it, but it needs none.
+		for alias := range p.Install.Aliases {
+			installed[alias] = true
+		}
 	}
 	shimmed := map[string]bool{}
 	for _, name := range names {

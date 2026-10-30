@@ -60,6 +60,15 @@ func profileFixture(t *testing.T) (*Catalog, PlatformLock, string) {
 // before the profile is built: the tools bundle goes to <profile>/libexec/nixbox.
 func placeOfficial(t *testing.T, out string, binaries ...string) {
 	t.Helper()
+	placeBinaries(t, out, binaries...)
+	if err := os.MkdirAll(filepath.Join(out, "libexec", "nixbox", "lib", "helix", "runtime"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// placeBinaries installs the binaries only, without the Helix runtime directory.
+func placeBinaries(t *testing.T, out string, binaries ...string) {
+	t.Helper()
 	for _, rel := range binaries {
 		full := filepath.Join(out, "libexec", "nixbox", rel)
 		if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
@@ -178,7 +187,7 @@ func TestBuildProfileRefusesAShimNameThatAPackageAlreadyProvides(t *testing.T) {
 func TestBuildProfileRefusesAShimWithoutItsInstalledBinary(t *testing.T) {
 	for name, binaries := range map[string][]string{
 		"none":         nil,
-		"hx runtime":   {"bin/zk"},
+		"hx":           {"bin/zk"},
 		"zk":           {"lib/helix/hx"},
 		"not a binary": {"lib/helix/hx", "bin/zk/"},
 	} {
@@ -196,6 +205,15 @@ func TestBuildProfileRefusesAShimWithoutItsInstalledBinary(t *testing.T) {
 				t.Error("accepted a shim whose binary is not installed")
 			}
 		})
+	}
+}
+
+func TestBuildProfileRefusesAMissingEnvironmentTarget(t *testing.T) {
+	c, pl, store := profileFixture(t)
+	out := filepath.Join(t.TempDir(), "p")
+	placeBinaries(t, out, "lib/helix/hx", "bin/zk")
+	if err := BuildProfile(c, []byte(profileCatalog), nil, pl, "arm64", store, out, []byte("#!/bin/sh\n")); err == nil || !strings.Contains(err.Error(), "HELIX_RUNTIME") {
+		t.Errorf("accepted a missing HELIX_RUNTIME directory: %v", err)
 	}
 }
 
