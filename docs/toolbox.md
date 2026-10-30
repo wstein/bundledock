@@ -39,11 +39,11 @@ The source inventory below describes the current lock; this publication retains 
 | ast-grep (`ast-grep`) | 0.51.0 | [Homepage](https://ast-grep.github.io/) | [Source](https://github.com/ast-grep/ast-grep) |
 | bat (`bat`) | 0.26.1 | [Homepage](https://github.com/sharkdp/bat) | [Source](https://github.com/sharkdp/bat) |
 | bottom (`btm`) | 0.14.9 | [Homepage](https://bottom.pages.dev) | [Source](https://github.com/ClementTsang/bottom) |
-| btop (`btop`) | 1.4.7 | [Homepage](https://github.com/aristocratos/btop) | [Source](https://github.com/aristocratos/btop) |
+| btop (`btop`) | 1.4.8 | [Homepage](https://github.com/aristocratos/btop) | [Source](https://github.com/aristocratos/btop) |
 | ChartScribe (`cscribe`) | 0.2.0 | [Homepage](https://github.com/wstein/chartscribe) | [Source](https://github.com/wstein/chartscribe) |
 | Cosign (`cosign`) | 3.1.4 | [Homepage](https://github.com/sigstore/cosign) | [Source](https://github.com/sigstore/cosign) |
 | delta (`delta`) | 0.20.1 | [Homepage](https://dandavison.github.io/delta/) | [Source](https://github.com/dandavison/delta) |
-| Difftastic (`difft`) | 0.71.0 | [Homepage](https://github.com/Wilfred/difftastic) | [Source](https://github.com/Wilfred/difftastic) |
+| Difftastic (`difft`) | 0.72.0 | [Homepage](https://github.com/Wilfred/difftastic) | [Source](https://github.com/Wilfred/difftastic) |
 | direnv (`direnv`) | 2.38.2 | [Homepage](https://github.com/direnv/direnv) | [Source](https://github.com/direnv/direnv) |
 | dust (`dust`) | 1.2.6 | [Homepage](https://github.com/bootandy/dust) | [Source](https://github.com/bootandy/dust) |
 | Fastfetch (`fastfetch`) | 2.70.0 | [Homepage](https://github.com/fastfetch-cli/fastfetch) | [Source](https://github.com/fastfetch-cli/fastfetch) |
@@ -52,32 +52,32 @@ The source inventory below describes the current lock; this publication retains 
 | fzf (`fzf`) | 0.74.5 | [Homepage](https://junegunn.github.io/fzf/) | [Source](https://github.com/junegunn/fzf) |
 | Git LFS (`git-lfs`) | 3.8.1 | [Homepage](https://git-lfs.com) | [Source](https://github.com/git-lfs/git-lfs) |
 | git-cliff (`git-cliff`) | 2.14.2 | [Homepage](https://github.com/orhun/git-cliff) | [Source](https://github.com/orhun/git-cliff) |
-| GitHub CLI | 2.103.2 | [Homepage](https://cli.github.com) | [Source](https://github.com/cli/cli) |
-| GitHub CLI Stacked PRs (`gh stack`) | 0.2.1 | [Homepage](https://gh.io/stacks) | [Source](https://github.com/github/gh-stack) |
+| GitHub CLI | 2.103.3 | [Homepage](https://cli.github.com) | [Source](https://github.com/cli/cli) |
+| GitHub CLI Stacked PRs (`gh stack`) | 0.3.0 | [Homepage](https://gh.io/stacks) | [Source](https://github.com/github/gh-stack) |
 | Gitleaks (`gitleaks`) | 8.30.1 | [Homepage](https://gitleaks.io) | [Source](https://github.com/gitleaks/gitleaks) |
 | Hadolint (`hadolint`) | 2.15.1 | [Homepage](https://github.com/hadolint/hadolint) | [Source](https://github.com/hadolint/hadolint) |
 | Helix (`hx`) | 25.07.1 | [Homepage](https://helix-editor.com) | [Source](https://github.com/helix-editor/helix) |
 | Herdr (`herdr`) | 0.9.5 | [Homepage](https://herdr.dev) | [Source](https://github.com/herdrdev/herdr) |
-| Hugo (`hugo`, standard) | 0.168.0 | [Homepage](https://gohugo.io) | [Source](https://github.com/gohugoio/hugo) |
+| Hugo (`hugo`, standard) | 0.169.0 | [Homepage](https://gohugo.io) | [Source](https://github.com/gohugoio/hugo) |
 | hyperfine (`hyperfine`) | 2.0.0 | [Homepage](https://github.com/sharkdp/hyperfine) | [Source](https://github.com/sharkdp/hyperfine) |
 | jq | 1.8.2 | [Homepage](https://jqlang.org) | [Source](https://github.com/jqlang/jq) |
 | jsonschema-cli (`jsonschema-cli`) | 0.58.5 | [Homepage](https://github.com/Stranger6667/jsonschema) | [Source](https://github.com/Stranger6667/jsonschema) |
 | Jujutsu (`jj`) | 0.46.0 | [Homepage](https://jj-vcs.dev) | [Source](https://github.com/jj-vcs/jj) |
 | just (`just`) | 1.59.0 | [Homepage](https://just.systems) | [Source](https://github.com/casey/just) |
 | lazygit (`lazygit`) | 0.66.2 | [Homepage](https://github.com/jesseduffield/lazygit) | [Source](https://github.com/jesseduffield/lazygit) |
-| Leaf (`leaf`) | 1.29.1 | [Homepage](https://leaf.rivolink.mg) | [Source](https://github.com/RivoLink/leaf) |
+| Leaf (`leaf`) | 1.29.2 | [Homepage](https://leaf.rivolink.mg) | [Source](https://github.com/RivoLink/leaf) |
 | lsd (`lsd`) | 1.2.0 | [Homepage](https://github.com/lsd-rs/lsd) | [Source](https://github.com/lsd-rs/lsd) |
 | lychee (`lychee`) | 0.24.2 | [Homepage](https://lychee.cli.rs) | [Source](https://github.com/lycheeverse/lychee) |
 | Mike Farah yq (`yq`) | 4.54.1 | [Homepage](https://mikefarah.gitbook.io/yq/) | [Source](https://github.com/mikefarah/yq) |
-| mise (`mise`) | 2026.10.18 | [Homepage](https://mise.jdx.dev) | [Source](https://github.com/jdx/mise) |
+| mise (`mise`) | 2026.10.23 | [Homepage](https://mise.jdx.dev) | [Source](https://github.com/jdx/mise) |
 | misspell (`misspell`) | 0.8.0 | [Homepage](https://github.com/golangci/misspell) | [Source](https://github.com/golangci/misspell) |
 | navi (`navi`) | 2.24.0 | [Homepage](https://github.com/denisidoro/navi) | [Source](https://github.com/denisidoro/navi) |
 | Nushell (`nu`) | 0.116.1 | [Homepage](https://www.nushell.sh/) | [Source](https://github.com/nushell/nushell) |
 | OpenTofu (`tofu`) | 1.13.2 | [Homepage](https://opentofu.org) | [Source](https://github.com/opentofu/opentofu) |
-| pinact (`pinact`) | 5.0.1 | [Homepage](https://github.com/suzuki-shunsuke/pinact) | [Source](https://github.com/suzuki-shunsuke/pinact) |
+| pinact (`pinact`) | 5.0.2 | [Homepage](https://github.com/suzuki-shunsuke/pinact) | [Source](https://github.com/suzuki-shunsuke/pinact) |
 | regctl (`regctl`) | 0.11.7 | [Homepage](https://regclient.org) | [Source](https://github.com/regclient/regclient) |
 | ripgrep (`rg`) | 15.2.0 | [Homepage](https://github.com/BurntSushi/ripgrep) | [Source](https://github.com/BurntSushi/ripgrep) |
-| Ruff (`ruff`) | 0.17.2 | [Homepage](https://docs.astral.sh/ruff) | [Source](https://github.com/astral-sh/ruff) |
+| Ruff (`ruff`) | 0.17.3 | [Homepage](https://docs.astral.sh/ruff) | [Source](https://github.com/astral-sh/ruff) |
 | SCC (`scc`, wstein fork) | 4.1.1 | [Homepage](https://github.com/wstein/scc-fork) | [Source](https://github.com/wstein/scc-fork) |
 | SheetMill (`smill`) | 0.1.1 | [Homepage](https://github.com/wstein/sheetmill) | [Source](https://github.com/wstein/sheetmill) |
 | ShellCheck (`shellcheck`) | 0.11.0 | [Homepage](https://www.shellcheck.net) | [Source](https://github.com/koalaman/shellcheck) |
@@ -94,7 +94,7 @@ The source inventory below describes the current lock; this publication retains 
 | TruffleHog (`trufflehog`) | 3.99.7 | [Homepage](https://github.com/trufflesecurity/trufflehog) | [Source](https://github.com/trufflesecurity/trufflehog) |
 | typos (`typos`) | 1.51.1 | [Homepage](https://github.com/crate-ci/typos) | [Source](https://github.com/crate-ci/typos) |
 | Typst (`typst`) | 0.15.1 | [Homepage](https://typst.app) | [Source](https://github.com/typst/typst) |
-| uv (`uv`, `uvx`) | 0.13.5 | [Homepage](https://docs.astral.sh/uv) | [Source](https://github.com/astral-sh/uv) |
+| uv (`uv`, `uvx`) | 0.13.6 | [Homepage](https://docs.astral.sh/uv) | [Source](https://github.com/astral-sh/uv) |
 | watchexec (`watchexec`) | 2.8.0 | [Homepage](https://watchexec.github.io) | [Source](https://github.com/watchexec/watchexec) |
 | WorkHarbor (`whr`) | 0.1.0 | [Homepage](https://github.com/wstein/workharbor) | [Source](https://github.com/wstein/workharbor) |
 | xh (`xh`) | 0.26.3 | [Homepage](https://github.com/ducaale/xh) | [Source](https://github.com/ducaale/xh) |
