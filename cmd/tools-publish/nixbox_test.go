@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -14,11 +15,18 @@ func TestNixboxFrozenResolveKeepsTheExactLock(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	tools, err := os.ReadFile("../../bundles/nixbox/tools/packages.lock.json")
+	if err != nil {
+		t.Fatal(err)
+	}
 	t.Chdir(t.TempDir())
-	if err = os.MkdirAll("bundles/nixbox", 0700); err != nil {
+	if err = os.MkdirAll("bundles/nixbox/tools", 0700); err != nil {
 		t.Fatal(err)
 	}
 	if err = os.WriteFile("bundles/nixbox/packages.lock.json", original, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err = os.WriteFile("bundles/nixbox/tools/packages.lock.json", tools, 0600); err != nil {
 		t.Fatal(err)
 	}
 	meta, err := toolpublish.NewMetadataForBundle("nixbox", "bundles/nixbox/packages.lock.json", "quay.io/example/nixbox", "2026.10.10-b1", strings.Repeat("a", 40), "https://github.com/example/repo", "2026-10-10T03:17:00Z", "123", "1")
@@ -34,6 +42,19 @@ func TestNixboxFrozenResolveKeepsTheExactLock(t *testing.T) {
 	got, err := os.ReadFile("resolved/packages.lock.json")
 	if err != nil || string(got) != string(original) {
 		t.Fatal("frozen bytes changed", err)
+	}
+	// The lock of the official binaries travels with it, and the recorded hash covers both.
+	got, err = os.ReadFile("resolved/tools/packages.lock.json")
+	if err != nil || string(got) != string(tools) {
+		t.Fatal("frozen tools lock missing or changed", err)
+	}
+	var recorded toolpublish.Metadata
+	data, err := os.ReadFile("resolved/provenance.json")
+	if err != nil || json.Unmarshal(data, &recorded) != nil {
+		t.Fatal("provenance", err)
+	}
+	if want, err := toolpublish.LockSHA256("nixbox", "resolved/packages.lock.json"); err != nil || recorded.LockSHA256 != want {
+		t.Fatalf("recorded %s, want %s (%v)", recorded.LockSHA256, want, err)
 	}
 }
 
@@ -76,6 +97,41 @@ func TestNixboxIsValidatedAsAStoreLockNotAToolLock(t *testing.T) {
 	}
 	if err := validateBundleSource(toolpublish.Bundle{Name: "nixbox", Directory: bad}); err == nil {
 		t.Fatal("empty nixbox directory accepted")
+	}
+}
+
+func TestNixboxValidationCoversTheToolsLock(t *testing.T) {
+	repo, err := filepath.Abs("../../bundles/nixbox")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Chdir(t.TempDir())
+	for _, name := range []string{"packages.catalog.json", "packages.lock.json", "tools/packages.catalog.json", "tools/packages.lock.json", "tools/packages.txt"} {
+		data, err := os.ReadFile(filepath.Join(repo, name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err = os.MkdirAll(filepath.Join("bundles/nixbox", filepath.Dir(name)), 0700); err != nil {
+			t.Fatal(err)
+		}
+		if err = os.WriteFile(filepath.Join("bundles/nixbox", name), data, 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	bundle := toolpublish.Bundle{Name: "nixbox", Directory: "bundles/nixbox"}
+	if err := validateBundleSource(bundle); err != nil {
+		t.Fatal(err)
+	}
+	lock, err := os.ReadFile("bundles/nixbox/tools/packages.lock.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	changed := strings.Replace(string(lock), `"sha256": "`, `"sha256": "00`, 1)
+	if err = os.WriteFile("bundles/nixbox/tools/packages.lock.json", []byte(changed), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := validateBundleSource(bundle); err == nil {
+		t.Fatal("a corrupted tools lock passed nixbox validation")
 	}
 }
 

@@ -12,6 +12,8 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
 	"regexp"
 )
 
@@ -89,6 +91,35 @@ func LockDigest(bundle string, data []byte) (string, error) {
 		return "", err
 	}
 	return fmt.Sprintf("%x", sha256.Sum256(b)), nil
+}
+
+// ToolsLockPath is the lock of nixbox's official release binaries beside a nixbox
+// lock: bundles/nixbox/tools/packages.lock.json, or tools/packages.lock.json in a
+// resolved publication directory.
+func ToolsLockPath(lock string) string {
+	return filepath.Join(filepath.Dir(lock), "tools", "packages.lock.json")
+}
+
+// LockDigestFile is LockDigest of the lock file at path. For nixbox it also covers
+// the official binaries' lock beside it, so a change to either lock changes it.
+func LockDigestFile(bundle, path string) (string, error) {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+	digest, err := LockDigest(bundle, b)
+	if err != nil || bundle != "nixbox" {
+		return digest, err
+	}
+	tools, err := os.ReadFile(ToolsLockPath(path))
+	if err != nil {
+		return "", err
+	}
+	toolsDigest, err := ToolDigest(tools)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%x", sha256.Sum256([]byte(digest+"\n"+toolsDigest))), nil
 }
 
 func readBounded(body io.Reader) ([]byte, error) {
