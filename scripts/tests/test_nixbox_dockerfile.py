@@ -37,17 +37,31 @@ class NixboxDockerfileTests(unittest.TestCase):
         copy = self.text.index('nix --extra-experimental-features nix-command copy')
         links = self.text.index('rmdir /image-root/nix/store/.links')
         verify = self.text.index('nixbox verify-store')
+        official = self.text.index('cp -a /official /image-root/nix/profile/libexec/nixbox')
         profile = self.text.index('nixbox profile')
         self.assertLess(check, copy)
         self.assertLess(copy, links)
         self.assertLess(links, verify)
-        self.assertLess(verify, profile)
+        self.assertLess(verify, official)
+        self.assertLess(official, profile)
+
+    def test_official_binaries_come_from_the_pinned_tools_lock_with_the_toolbox_builder(self):
+        stage = self.text.split('AS official\n')[1].split('\n\n')[0]
+        self.assertIn('COPY bundles/nixbox/tools /build', stage)
+        self.assertIn('/out/tools-bundle -arch "${TARGETARCH}" -directory /build -destination /official', stage)
+        self.assertIn('COPY --from=official /official /official', self.text)
+        # The downloads run on the build platform; the builder verifies every sha256 against the lock.
+        self.assertIn('FROM compiler AS official', self.text)
+        for word in ('curl', 'wget', 'apk add', 'tar '):
+            self.assertNotIn(word, stage)
+        # The profile build rejects a shim without its installed binary, so no shim can dangle.
+        self.assertIn('/image-root/nix/profile/libexec/nixbox', self.text)
 
     def test_nothing_is_compiled_from_source(self):
         for word in ('nix build', 'nix-build', 'nix-shell', 'nix develop', 'cargo ', 'make ', 'gcc ', 'configure'):
             self.assertNotIn(word, self.text.replace('# ', ''), word)
-        # Go compiles only BundleDock's own tool.
-        self.assertEqual(re.findall(r'go build [^\n]*?(\./cmd/\S+)', self.text), ['./cmd/nixbox', './cmd/nixbox'])
+        # Go compiles only BundleDock's own tools.
+        self.assertEqual(re.findall(r'go build [^\n]*?(\./cmd/\S+)', self.text), ['./cmd/nixbox', './cmd/nixbox', './cmd/tools-bundle'])
 
     def test_final_image_is_a_carrier_that_initializes_the_volume(self):
         final = self.text.split('\nFROM scratch')[-1]
@@ -62,7 +76,8 @@ class NixboxDockerfileTests(unittest.TestCase):
         self.assertIn('**', self.ignore)
         for needed in ('!cmd/nixbox/**', '!internal/nixbox/**', '!go.mod', '!go.sum',
                        '!bundles/nixbox/packages.catalog.json', '!bundles/nixbox/packages.lock.json',
-                       '!bundles/nixbox/shims/**'):
+                       '!bundles/nixbox/shims/**', '!bundles/nixbox/tools/**', '!cmd/tools-bundle/**',
+                       '!internal/toolconfig/**', '!internal/toolbundle/**'):
             self.assertIn(needed, self.ignore)
         self.assertTrue(copied)
 

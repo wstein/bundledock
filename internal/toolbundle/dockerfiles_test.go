@@ -49,8 +49,7 @@ func internalDeps(t *testing.T, root string, commands ...string) []string {
 // up in an image build, which source CI does not run.
 func TestBundleDockerfilesCopyEveryInternalDependency(t *testing.T) {
 	root := filepath.Join("..", "..")
-	deps := internalDeps(t, root, "cmd/tools-bundle", "cmd/tools-init")
-	if len(deps) == 0 {
+	if len(internalDeps(t, root, "cmd/tools-bundle", "cmd/tools-init")) == 0 {
 		t.Fatal("no internal dependencies found; the import walk is broken")
 	}
 	dockerfiles, err := filepath.Glob(filepath.Join(root, "bundles", "*", "Dockerfile"))
@@ -75,7 +74,12 @@ func TestBundleDockerfilesCopyEveryInternalDependency(t *testing.T) {
 		for _, line := range strings.Split(string(ignore), "\n") {
 			allowed[strings.TrimSpace(line)] = true
 		}
-		for _, dep := range deps {
+		// A bundle that only runs the builder (nixbox) does not copy the initializer.
+		commands := []string{"cmd/tools-bundle"}
+		if strings.Contains(text, "COPY cmd/tools-init ./cmd/tools-init") {
+			commands = append(commands, "cmd/tools-init")
+		}
+		for _, dep := range internalDeps(t, root, commands...) {
 			if !strings.Contains(text, "COPY "+dep+" ./"+dep+"\n") {
 				t.Errorf("%s: Dockerfile does not copy %s, which the bundle builder imports", bundle, dep)
 			}

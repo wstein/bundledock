@@ -1,11 +1,11 @@
 #!/bin/sh
-# nixbox shim. Every official toolbox binary that needs glibc has a symlink
-# <profile>/bin/<name> to this script. It runs the toolbox binary directly when
-# the host is a glibc host and otherwise through the Nix glibc loader, so the
-# unmodified official bytes also start on musl images such as Alpine.
+# nixbox shim. Every official glibc-dynamic binary that nixbox ships has a
+# symlink <profile>/bin/<name> to this script. The unmodified official binary
+# sits in <profile>/libexec/nixbox. The shim runs it directly when the host is a
+# glibc host and otherwise through the Nix glibc loader, so the official bytes
+# also start on musl images such as Alpine.
 #
 # Environment:
-#   BDOCK_TOOLBOX    toolbox bundle directory (default /opt/bdock/toolbox)
 #   NIXBOX_LOADER    auto (default), always or never use the Nix loader
 #   NIXBOX_HOST_LOADERS  space separated host loader paths to probe in auto mode
 #                    (test hook; the default depends on the machine type)
@@ -24,7 +24,7 @@ profile=$(CDPATH='' cd -- "$(dirname -- "$self")/.." && pwd)
 if [ ! -r "$profile/share/nixbox/shims.tsv" ] && [ -r /nix/profile/share/nixbox/shims.tsv ]; then
     profile=/nix/profile
 fi
-toolbox=${BDOCK_TOOLBOX:-/opt/bdock/toolbox}
+tools=$profile/libexec/nixbox
 table=$profile/share/nixbox/shims.tsv
 tab=$(printf '\t')
 fail() {
@@ -56,13 +56,13 @@ while [ -z "$binary" ] && [ -L "$cur" ] && [ "$hops" -lt 10 ]; do
     hops=$((hops + 1))
 done
 [ -n "$binary" ] || fail "$name is not a nixbox shim"
-exe=$toolbox/$binary
+exe=$tools/$binary
 if [ ! -x "$exe" ]; then
-    fail "$name needs the toolbox bundle at $toolbox (mount the toolbox volume there or set BDOCK_TOOLBOX)"
+    fail "$name is not installed: $exe is missing"
 fi
 while IFS=$tab read -r kind a b c; do
     if [ "$kind" = env ] && [ "$a" = "$name" ]; then
-        export "$b=$toolbox/$c"
+        export "$b=$tools/$c"
     fi
 done < "$table"
 mode=${NIXBOX_LOADER:-auto}
