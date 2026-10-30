@@ -1,20 +1,20 @@
 {
   "bundle": "nixbox",
-  "commit": "a4f4495ab6c03b887ef21c6368c5682fc51a6660",
-  "digest": "sha256:c20d3778c2843f66de3739a024c6bafa758afa252e54646321b0558639cdbc9f",
+  "commit": "bfa4e64889d88e7e8586e2975335c644a7815fc9",
+  "digest": "sha256:9270cc46c9be1c65c58915daf7943b64127bcc4549d734a48ed7427065612d4b",
   "image": "quay.io/bundledock/nixbox",
   "publication_evidence": {
     "attempt": {
       "event": "workflow_dispatch",
-      "head_sha": "a4f4495ab6c03b887ef21c6368c5682fc51a6660",
-      "id": 40989024653,
+      "head_sha": "bfa4e64889d88e7e8586e2975335c644a7815fc9",
+      "id": 41132360696,
       "jobs": [
         {
           "conclusion": "success",
-          "head_sha": "a4f4495ab6c03b887ef21c6368c5682fc51a6660",
-          "id": 123847367014,
+          "head_sha": "bfa4e64889d88e7e8586e2975335c644a7815fc9",
+          "id": 124326996105,
           "name": "publication (nixbox) / native (amd64, ubuntu-24.04)",
-          "run_id": 40989024653,
+          "run_id": 41132360696,
           "status": "completed",
           "steps": [
             {
@@ -26,10 +26,10 @@
         },
         {
           "conclusion": "success",
-          "head_sha": "a4f4495ab6c03b887ef21c6368c5682fc51a6660",
-          "id": 123847366986,
+          "head_sha": "bfa4e64889d88e7e8586e2975335c644a7815fc9",
+          "id": 124326996012,
           "name": "publication (nixbox) / native (arm64, ubuntu-24.04-arm)",
-          "run_id": 40989024653,
+          "run_id": 41132360696,
           "status": "completed",
           "steps": [
             {
@@ -41,10 +41,10 @@
         },
         {
           "conclusion": "success",
-          "head_sha": "a4f4495ab6c03b887ef21c6368c5682fc51a6660",
-          "id": 123848358438,
+          "head_sha": "bfa4e64889d88e7e8586e2975335c644a7815fc9",
+          "id": 124328248352,
           "name": "publication (nixbox) / promote",
-          "run_id": 40989024653,
+          "run_id": 41132360696,
           "status": "completed",
           "steps": [
             {
@@ -57,55 +57,55 @@
       ],
       "path": ".github/workflows/publish-bundles.yml",
       "run_attempt": 1,
-      "run_number": 758
+      "run_number": 799
     },
     "receipt": {
       "bundle": "nixbox",
-      "commit": "a4f4495ab6c03b887ef21c6368c5682fc51a6660",
-      "created": "2026-10-30T02:01:24Z",
-      "digest": "sha256:c20d3778c2843f66de3739a024c6bafa758afa252e54646321b0558639cdbc9f",
+      "commit": "bfa4e64889d88e7e8586e2975335c644a7815fc9",
+      "created": "2026-10-30T21:38:47Z",
+      "digest": "sha256:9270cc46c9be1c65c58915daf7943b64127bcc4549d734a48ed7427065612d4b",
       "image": "quay.io/bundledock/nixbox",
-      "lock_sha256": "d2ddff16742c269139281204d4674e0c520c46ca822624a197af0684e5cbefcf",
+      "lock_sha256": "b23b04be1010347fae33a0c56f25f088ea6d16004e4b16169412ccc7b561cb5f",
       "platforms": [
         {
           "architecture": "amd64",
           "bundle": "nixbox",
-          "commit": "a4f4495ab6c03b887ef21c6368c5682fc51a6660",
-          "created": "2026-10-30T02:01:24Z",
-          "digest": "sha256:6479df9b2c16b39e6fa8cdc8abce5eadd9130afa6f2c21122771b85b3462a8e2",
+          "commit": "bfa4e64889d88e7e8586e2975335c644a7815fc9",
+          "created": "2026-10-30T21:38:47Z",
+          "digest": "sha256:185acb72fac383e774e307959cd2761feed5775e1820156de09cbf3b42840e7b",
           "image": "quay.io/bundledock/nixbox",
-          "image_id": "sha256:32b3553f51abbe36d2414cdf4c8489855e1f8e23260800ff8454b03db8ea4896",
-          "lock_sha256": "d2ddff16742c269139281204d4674e0c520c46ca822624a197af0684e5cbefcf",
+          "image_id": "sha256:79e705061e11d33439bc6c07dd10eac63edc180b1b376860f8b6c4b81235cf6c",
+          "lock_sha256": "b23b04be1010347fae33a0c56f25f088ea6d16004e4b16169412ccc7b561cb5f",
           "run_attempt": "1",
-          "run_id": "40989024653",
+          "run_id": "41132360696",
           "smoked": true,
           "source": "https://github.com/wstein/bundledock",
-          "tag": "2026.10.30-b2"
+          "tag": "2026.10.30-b3"
         },
         {
           "architecture": "arm64",
           "bundle": "nixbox",
-          "commit": "a4f4495ab6c03b887ef21c6368c5682fc51a6660",
-          "created": "2026-10-30T02:01:24Z",
-          "digest": "sha256:c13c09b9f126d3574f928cf0e99aa1d2471f902e33098dfa4fab3e599c21dbba",
+          "commit": "bfa4e64889d88e7e8586e2975335c644a7815fc9",
+          "created": "2026-10-30T21:38:47Z",
+          "digest": "sha256:b9edd4f4c444296fbcfec1f98942b7eb7eeee7bf282330351f52ed9d592e9f28",
           "image": "quay.io/bundledock/nixbox",
-          "image_id": "sha256:e9ac9b96c7055b1317d1b59b7908c8a6f9cf78ce95f2ce4a0616c07daaf289ef",
-          "lock_sha256": "d2ddff16742c269139281204d4674e0c520c46ca822624a197af0684e5cbefcf",
+          "image_id": "sha256:deedd3d085b23d92e843f601e70b812615995369ac67a4e33c62322177225083",
+          "lock_sha256": "b23b04be1010347fae33a0c56f25f088ea6d16004e4b16169412ccc7b561cb5f",
           "run_attempt": "1",
-          "run_id": "40989024653",
+          "run_id": "41132360696",
           "smoked": true,
           "source": "https://github.com/wstein/bundledock",
-          "tag": "2026.10.30-b2"
+          "tag": "2026.10.30-b3"
         }
       ],
-      "reference": "quay.io/bundledock/nixbox@sha256:c20d3778c2843f66de3739a024c6bafa758afa252e54646321b0558639cdbc9f",
+      "reference": "quay.io/bundledock/nixbox@sha256:9270cc46c9be1c65c58915daf7943b64127bcc4549d734a48ed7427065612d4b",
       "run_attempt": "1",
-      "run_id": "40989024653",
+      "run_id": "41132360696",
       "source": "https://github.com/wstein/bundledock",
-      "tag": "2026.10.30-b2"
+      "tag": "2026.10.30-b3"
     }
   },
-  "run_id": "40989024653",
-  "tag": "2026.10.30-b2",
+  "run_id": "41132360696",
+  "tag": "2026.10.30-b3",
   "upstream_version": "unknown"
 }
