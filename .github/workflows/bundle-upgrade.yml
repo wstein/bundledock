@@ -37,7 +37,7 @@ jobs:
         with:
           go-version-file: .go-version
           cache: false
-      - name: Resolve stable releases (nixbox refreshes its lock) and summarize the proposed lock diff
+      - name: Resolve stable releases (nixbox also refreshes its Nix lock) and summarize the proposed lock diff
         id: resolve
         env:
           BUNDLE: ${{ inputs.bundle }}

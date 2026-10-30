@@ -2,7 +2,8 @@
 """Dispatch source-only CI for one fresh, base-derived bot updater PR.
 
 The PR carries one commit for one or several bundles; only those bundles' own
-locks and generated inventories (nixbox: lock and catalog) may change.
+locks and generated inventories (nixbox: its Nix lock and catalog, the lock of its
+official release binaries in bundles/nixbox/tools, and its generated inventory) may change.
 """
 import argparse
 import json
@@ -63,12 +64,13 @@ def dispatch(args):
             pr['base']['ref'] == 'main' and pr['base']['sha'] == args.base and
             pr['head']['ref'] == args.branch and pr['head']['sha'] == args.head,
             'Proposal source/repository changed')
-    require(pr['commits'] == 1 and 1 <= pr['changed_files'] <= 2 * len(bundles), 'One bounded updater commit required')
-    files = api('/pulls/' + number + '/files?per_page=100&page=1')
-    # nixbox has no generated inventory: its lock and catalog (nixpkgs pin) are its own files.
+    # nixbox adds its catalog (nixpkgs pin) and the lock of its official binaries to its generated inventory.
     allowed = {path for name in bundles for path in
-               ('bundles/' + name + '/packages.lock.json',) +
-               (('bundles/' + name + '/packages.catalog.json',) if name in MANUAL_ONLY else ('docs/' + name + '.md',))}
+               ('bundles/' + name + '/packages.lock.json', 'docs/' + name + '.md') +
+               (('bundles/' + name + '/packages.catalog.json', 'bundles/' + name + '/tools/packages.lock.json')
+                if name in MANUAL_ONLY else ())}
+    require(pr['commits'] == 1 and 1 <= pr['changed_files'] <= len(allowed), 'One bounded updater commit required')
+    files = api('/pulls/' + number + '/files?per_page=100&page=1')
     require(isinstance(files, list) and len(files) == pr['changed_files'] and
             len({item['filename'] for item in files}) == len(files) and
             all(item['filename'] in allowed and item['status'] == 'modified' for item in files),

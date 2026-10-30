@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       bundle:
-        description: Bundle to resolve; all resolves every bundle independently and proposes the changed ones in one pull request (nixbox refreshes its lock and always gets its own pull request)
+        description: Bundle to resolve; all resolves every bundle independently and proposes the changed ones in one pull request (nixbox refreshes its lock and its glibc release binaries and always gets its own pull request)
         type: choice
         default: all
         required: true
@@ -114,8 +114,9 @@ jobs:
           trap 'git config --local --unset-all http.https://github.com/.extraheader' EXIT
           bash scripts/tool-upgrade.sh publish
 
-  # nixbox is not resolved from official releases: it moves nixpkgs to the head of
-  # nixpkgs-unstable and refreshes its lock. It always gets its own pull request.
+  # nixbox moves nixpkgs to the head of nixpkgs-unstable, refreshes its lock and
+  # resolves its glibc release binaries (bundles/nixbox/tools) to the newest stable
+  # releases. It always gets its own pull request.
   propose-nixbox:
     needs: [plan, proposal]
     if: ${{ !cancelled() && needs.plan.result == 'success' && contains(fromJSON(needs.plan.outputs.bundles), 'nixbox') && (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && !inputs.dry_run)) }}

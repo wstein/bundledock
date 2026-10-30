@@ -6,11 +6,16 @@ set -euo pipefail
 : "${GITHUB_STEP_SUMMARY:?set GITHUB_STEP_SUMMARY}"
 all_bundles=(toolbox code-server node node-current bun codex agy claude opentofu)
 is_bundle() { local name; for name in "${all_bundles[@]}"; do [[ $1 != "$name" ]] || return 0; done; return 1; }
-# nixbox is proposed by its own flow: a lock refresh in the pinned nixos/nix image,
-# never the official-release resolver. It is not a publishable bundle (all_bundles
-# drives publication) and always gets its own pull request.
+# nixbox is proposed by its own flow: a lock refresh in the pinned nixos/nix image
+# for its Nix store paths, and the official-release resolver for its glibc release
+# binaries (bundles/nixbox/tools, the toolbox schema). It is not a publishable
+# bundle (all_bundles drives publication) and always gets its own pull request.
 nixbox_lock=bundles/nixbox/packages.lock.json
 nixbox_catalog=bundles/nixbox/packages.catalog.json
+nixbox_tools=bundles/nixbox/tools
+nixbox_tools_lock=$nixbox_tools/packages.lock.json
+nixbox_inventory=docs/nixbox.md
+nixbox_paths=("$nixbox_lock" "$nixbox_catalog" "$nixbox_tools_lock" "$nixbox_inventory")
 is_upgrade_bundle() { [[ $1 == nixbox ]] || is_bundle "$1"; }
 # resolve handles the one BUNDLE of its matrix job. publish combines every
 # bundle whose resolved lock is in the result directory (canonical order).
@@ -31,8 +36,9 @@ locks=() inventories=() artifacts=()
 for bundle in "${bundles[@]}"; do
   locks+=("bundles/$bundle/packages.lock.json")
   if [[ $bundle == nixbox ]]; then
-    # The lock and the catalog (nixpkgs pin) are the own files; no generated inventory.
-    artifacts+=(nixbox.lock.json nixbox.catalog.json)
+    # The Nix lock, the catalog (nixpkgs pin), the lock of the official release binaries
+    # and the generated inventory of those binaries are the own files.
+    artifacts+=(nixbox.lock.json nixbox.catalog.json nixbox.tools.lock.json nixbox.md)
   elif [[ $bundle == toolbox ]]; then
     inventories+=(docs/toolbox.md)
     artifacts+=(toolbox.lock.json toolbox.md)
@@ -90,24 +96,30 @@ else:
 PYTHON
 }
 
-# Move the nixpkgs pin to the head of nixpkgs-unstable and refresh the lock in the
-# pinned nixos/nix image. `nixbox check` is the sanity check. Nothing is built.
+# Move the nixpkgs pin to the head of nixpkgs-unstable, refresh the lock in the
+# pinned nixos/nix image, and resolve the official release binaries to their newest
+# stable releases. `nixbox check` is the sanity check. Nothing is built.
 nixbox_resolve() {
   if [[ -n ${TOOL:-} ]]; then
     echo 'TOOL is not supported for nixbox: its lock is one closed list.' >&2; exit 1
   fi
   sh bundles/nixbox/scripts/bump-rev.sh
   sh bundles/nixbox/scripts/refresh-lock.sh
-  require_changes_only "$nixbox_lock" "$nixbox_catalog"
-  go run ./cmd/nixbox check -catalog "$nixbox_catalog" -lock "$nixbox_lock"
+  go run ./cmd/bdock tools upgrade --directory "$nixbox_tools"
+  require_changes_only "$nixbox_lock" "$nixbox_catalog" "$nixbox_tools_lock"
+  go run ./cmd/nixbox check -catalog "$nixbox_catalog" -lock "$nixbox_lock" -tools "$nixbox_tools"
+  python3 scripts/tool-inventory.py --bundle nixbox
+  require_changes_only "${nixbox_paths[@]}"
   mkdir -p "$UPGRADE_RESULT"
-  git diff -- "$nixbox_catalog" "$nixbox_lock" > "$UPGRADE_RESULT/lock.diff"
-  if git diff --quiet -- "$nixbox_catalog" "$nixbox_lock"; then
+  git diff -- "${nixbox_paths[@]}" > "$UPGRADE_RESULT/lock.diff"
+  if git diff --quiet -- "${nixbox_paths[@]}"; then
     echo 'changed=false' >> "$GITHUB_OUTPUT"
     echo 'No nixbox changes; no branch or pull request will be created.' >> "$GITHUB_STEP_SUMMARY"
   else
     cp "$nixbox_lock" "$UPGRADE_RESULT/nixbox.lock.json"
     cp "$nixbox_catalog" "$UPGRADE_RESULT/nixbox.catalog.json"
+    cp "$nixbox_tools_lock" "$UPGRADE_RESULT/nixbox.tools.lock.json"
+    cp "$nixbox_inventory" "$UPGRADE_RESULT/nixbox.md"
     git rev-parse HEAD > "$UPGRADE_RESULT/base.sha"
     echo 'changed=true' >> "$GITHUB_OUTPUT"
     {
@@ -139,22 +151,49 @@ nixbox_publish() {
   old_rev=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["nixpkgs"]["rev"])' "$nixbox_catalog")
   cp "$UPGRADE_RESULT/nixbox.lock.json" "$nixbox_lock"
   cp "$UPGRADE_RESULT/nixbox.catalog.json" "$nixbox_catalog"
+  cp "$UPGRADE_RESULT/nixbox.tools.lock.json" "$nixbox_tools_lock"
   new_rev=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["nixpkgs"]["rev"])' "$nixbox_catalog")
-  go run ./cmd/nixbox check -catalog "$nixbox_catalog" -lock "$nixbox_lock"
-  require_changes_only "$nixbox_lock" "$nixbox_catalog"
-  if git diff --quiet -- "$nixbox_catalog" "$nixbox_lock"; then
+  go run ./cmd/nixbox check -catalog "$nixbox_catalog" -lock "$nixbox_lock" -tools "$nixbox_tools"
+  # Generate from checked-out prose. Never accept unrelated artifact prose.
+  python3 scripts/tool-inventory.py --bundle nixbox
+  if ! cmp -s "$nixbox_inventory" "$UPGRADE_RESULT/nixbox.md"; then
+    echo 'Refusing PR: documentation artifact differs from the generated inventory.' >&2; exit 1
+  fi
+  require_changes_only "${nixbox_paths[@]}"
+  if git diff --quiet -- "${nixbox_paths[@]}"; then
     echo 'No nixbox changes; no branch or pull request will be created.' >> "$GITHUB_STEP_SUMMARY"; exit 0
   fi
+  local tool_lines
+  tool_lines=$(python3 - "$nixbox_tools_lock" <<'PYTHON'
+import json, subprocess, sys
+path = sys.argv[1]
+old = json.loads(subprocess.check_output(['git', 'show', 'HEAD:' + path], text=True))['platforms']['amd64']
+new = json.load(open(path))['platforms']['amd64']
+for tool in sorted(new):
+    before = old.get(tool, {}).get('version')
+    if before != new[tool]['version']:
+        print(f"- {tool}: {before} -> {new[tool]['version']}")
+PYTHON
+)
   local branch="automation/nixbox-upgrade-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
-  local body="$UPGRADE_RESULT/pr-body.md" title="chore(nixbox): bump nixpkgs to ${new_rev:0:12}"
+  local body="$UPGRADE_RESULT/pr-body.md" title
+  if [[ $old_rev != "$new_rev" && -n $tool_lines ]]; then title="chore(nixbox): bump nixpkgs to ${new_rev:0:12} and upgrade official tools"
+  elif [[ -n $tool_lines ]]; then title='chore(nixbox): upgrade official tools'
+  else title="chore(nixbox): bump nixpkgs to ${new_rev:0:12}"; fi
   git switch -c "$branch"
   git config user.name 'github-actions[bot]'
   git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-  git add -- "$nixbox_catalog" "$nixbox_lock"
+  git add -- "${nixbox_paths[@]}"
   git commit -m "$title"
-  cat > "$body" <<BODY
-Bumps nixpkgs from \`$old_rev\` to \`$new_rev\` (head of nixpkgs-unstable) and refreshes \`$nixbox_lock\`.
-
+  {
+    if [[ $old_rev != "$new_rev" ]]; then
+      printf 'Bumps nixpkgs from `%s` to `%s` (head of nixpkgs-unstable) and refreshes `%s`.\n\n' "$old_rev" "$new_rev" "$nixbox_lock"
+    fi
+    if [[ -n $tool_lines ]]; then
+      printf 'Upgrades the official release binaries in `%s`:\n\n%s\n\n' "$nixbox_tools_lock" "$tool_lines"
+    fi
+  } > "$body"
+  cat >> "$body" <<BODY
 The check is the dispatched source CI. The build and smoke (\`nixbox-build.yml\`) is an owner-dispatched run on main; nothing was built or published here.
 
 Run: https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID (attempt $GITHUB_RUN_ATTEMPT)
