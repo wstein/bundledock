@@ -170,6 +170,11 @@ func fakeRelease(t *testing.T, version, target string, mutate func(string)) (arc
 
 func fakeReleaseIn(t *testing.T, version, target string, mutate func(string), dirty func(repo string)) (archive, commitID, repo string) {
 	t.Helper()
+	// scripts/release.sh insists on GNU tar for repeatable archives (macOS and
+	// BSD tar are refused by design), so these tests need it on PATH.
+	if out, err := exec.Command("tar", "--version").Output(); err != nil || !strings.Contains(string(out), "GNU tar") {
+		t.Skip("GNU tar is not the tar on PATH; scripts/release.sh requires it")
+	}
 	repo = gitRepo(t)
 	if err := os.MkdirAll(filepath.Join(repo, "scripts"), 0o755); err != nil {
 		t.Fatal(err)
