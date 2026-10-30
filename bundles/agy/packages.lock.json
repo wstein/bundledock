@@ -5,17 +5,17 @@
   "platforms": {
     "amd64": {
       "agy": {
-        "version": "1.4.10",
-        "url": "https://storage.googleapis.com/antigravity-public/antigravity-cli/1.4.10-5501573669978112/linux-x64/cli_linux_x64.tar.gz",
-        "sha512": "3a14c21697e86349ce8402e0b1889cbd1d3a5f4e2cb4dc43aae1c48c404240c2ccff9f775eec277e1f759234a33ec026645c63ed22ab6f6ebede561eda7c38b6",
+        "version": "1.4.11",
+        "url": "https://storage.googleapis.com/antigravity-public/antigravity-cli/1.4.11-5180209989812224/linux-x64/cli_linux_x64.tar.gz",
+        "sha512": "2935601efa745ed6e314d32b415c71f44d9d455f0e6a2583372584be5a9074c28154cf81d5eec65b4416579453a3b3b05d3abe4d4f176754d5ef93a84af6cf28",
         "verification": "publisher-sha512"
       }
     },
     "arm64": {
       "agy": {
-        "version": "1.4.10",
-        "url": "https://storage.googleapis.com/antigravity-public/antigravity-cli/1.4.10-5501573669978112/linux-arm/cli_linux_arm64.tar.gz",
-        "sha512": "0182c23882b174c6f2968ad88de43262692ec363a938031319131551dab41cc6aca573d28d264095db357e49881a211114afe9f974386ed37208760f401ba98c",
+        "version": "1.4.11",
+        "url": "https://storage.googleapis.com/antigravity-public/antigravity-cli/1.4.11-5180209989812224/linux-arm/cli_linux_arm64.tar.gz",
+        "sha512": "a5f80d76ea95b3973f4daab6f7ffd88f1cfd9c7f7f70dda951ba74b2e7309a53f64d2224a0db39c949c4b74f7c56a16a3ab04fa4b8fed6a45d7486b2692a4e25",
         "verification": "publisher-sha512"
       }
     }
