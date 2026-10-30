@@ -16,13 +16,28 @@ def select(present, current='2', bundle='nixbox'):
         # A foreign bundle's receipt must never match.
         (pathlib.Path(directory) / 'node-current-publication-9').mkdir()
         result = subprocess.run([sys.executable, '-I', '-B', str(SCRIPT), directory, bundle, current], capture_output=True, text=True)
-        return result.returncode, result.stdout.strip()
+        return result.returncode, result.stdout.splitlines()[0] if result.stdout else ''
 
 
 class SelectReceiptTest(unittest.TestCase):
     def test_current_attempt_receipt_wins(self):
         self.assertEqual(select(['1', '2']), (0, '2'))
         self.assertEqual(select(['2']), (0, '2'))
+
+    def test_single_artifact_download_is_flat(self):
+        # download-artifact puts one matched artifact straight into the target.
+        with tempfile.TemporaryDirectory() as directory:
+            (pathlib.Path(directory) / 'publication.json').write_text('{"run_attempt": 1}')
+            result = subprocess.run([sys.executable, '-I', '-B', str(SCRIPT), directory, 'nixbox', '2'], capture_output=True, text=True)
+            self.assertEqual((result.returncode, result.stdout.splitlines()), (0, ['1', str(pathlib.Path(directory) / 'publication.json')]))
+
+    def test_flat_symlinked_receipt_is_refused(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target = pathlib.Path(directory) / 'elsewhere.json'
+            target.write_text('{}')
+            (pathlib.Path(directory) / 'publication.json').symlink_to(target)
+            result = subprocess.run([sys.executable, '-I', '-B', str(SCRIPT), directory, 'nixbox', '1'], capture_output=True, text=True)
+            self.assertEqual(result.returncode, 1)
 
     def test_failed_jobs_rerun_uses_the_single_older_receipt(self):
         self.assertEqual(select(['1']), (0, '1'))
