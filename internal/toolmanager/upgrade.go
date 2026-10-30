@@ -65,9 +65,9 @@ func Upgrade(ctx context.Context, client *http.Client, directory, tool string, o
 			if previous.Schema != 2 {
 				return fmt.Errorf("unsupported lock schema %d", previous.Schema)
 			}
-			// Toolchains, extra sources and the owner's approvals are recipe pins and decisions of the owner: the
+			// Toolchains and extra sources are recipe pins of the owner: the
 			// upgrade never resolves or edits them, it carries them over unchanged.
-			c.Lock = toolconfig.Lock{Platforms: map[string]map[string]toolconfig.Spec{"amd64": {}, "arm64": {}}, Toolchains: previous.Toolchains, ExtraSources: previous.ExtraSources, Approvals: previous.Approvals}
+			c.Lock = toolconfig.Lock{Platforms: map[string]map[string]toolconfig.Spec{"amd64": {}, "arm64": {}}, Toolchains: previous.Toolchains, ExtraSources: previous.ExtraSources}
 		}
 	}
 	if client == nil {

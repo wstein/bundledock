@@ -439,17 +439,3 @@ func (c Config) validateLockedExtraSources() error {
 	}
 	return nil
 }
-
-// validateApprovals checks the shape of lock.approvals: only source-build tools of the catalog, each a
-// lower-case SHA256. Whether the digest is current is the publish gate's check, not the loader's.
-func (c Config) validateApprovals() error {
-	for tool, digest := range c.Lock.Approvals {
-		if p, ok := c.Catalog.Packages[tool]; !ok || p.Provider != "source-build" {
-			return fmt.Errorf("approval for %q, which is not a source-build tool", tool)
-		}
-		if sum, err := hex.DecodeString(digest); err != nil || len(sum) != 32 || digest != strings.ToLower(digest) {
-			return fmt.Errorf("approval of %s is not a lower-case SHA256", tool)
-		}
-	}
-	return nil
-}
