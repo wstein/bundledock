@@ -4,7 +4,9 @@ import (
 	"bundledock/internal/quay"
 	"fmt"
 	"net/http"
+	"strings"
 	"text/tabwriter"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -32,7 +34,7 @@ func newQuayCommandWithClient(client *http.Client) *cobra.Command {
 	cmd.PersistentFlags().StringVar(&o.root, "root", ".", "repository root that holds docs/ and bundles/")
 	cmd.PersistentFlags().StringVar(&o.apiURL, "api-url", quay.DefaultBaseURL, "Quay endpoint (for testing)")
 	_ = cmd.PersistentFlags().MarkHidden("api-url")
-	cmd.AddCommand(newQuayListCommand(o), newQuayStatusCommand(o))
+	cmd.AddCommand(newQuayListCommand(o), newQuayStatusCommand(o), newQuayInfoCommand(o))
 	return cmd
 }
 
@@ -109,6 +111,35 @@ func newQuayStatusCommand(o *quayOptions) *cobra.Command {
 				return errDifference{fmt.Sprintf("%d bundle(s) differ from the publication records", differs)}
 			}
 			return nil
+		},
+	}
+}
+
+func newQuayInfoCommand(o *quayOptions) *cobra.Command {
+	return &cobra.Command{
+		Use: "info <bundle>", Short: "Show all tags of a bundle with digest, age, architectures and labels", Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			b, err := quay.FindBundle(args[0])
+			if err != nil {
+				return err
+			}
+			rows, err := quay.Info(cmd.Context(), o.api(), b, time.Now())
+			if err != nil {
+				return err
+			}
+			if o.json {
+				return quay.WriteJSON(cmd.OutOrStdout(), "bdock.quay.info/v1", map[string]any{"bundle": b.Name, "repository": b.Repository, "tags": rows})
+			}
+			w := tabwriter.NewWriter(cmd.OutOrStdout(), 0, 4, 2, ' ', 0)
+			fmt.Fprintln(w, "TAG\tDIGEST\tAGE\tARCH\tVERSION\tREVISION")
+			for _, r := range rows {
+				if r.Error != "" {
+					fmt.Fprintf(w, "%s\t%s\t%dd\t-\t(%s)\t-\n", r.Tag, r.Digest, r.AgeDays, r.Error)
+					continue
+				}
+				fmt.Fprintf(w, "%s\t%s\t%dd\t%s\t%s\t%s\n", r.Tag, r.Digest, r.AgeDays, strings.Join(r.Architectures, ","), r.Version, r.Revision)
+			}
+			return w.Flush()
 		},
 	}
 }
