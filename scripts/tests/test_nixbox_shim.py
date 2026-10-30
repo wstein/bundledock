@@ -14,7 +14,9 @@ TABLE = 'bin\thx\tlib/helix/hx\nenv\thx\tHELIX_RUNTIME\tlib/helix/runtime\nbin\t
 @unittest.skipUnless(shutil.which('sh'), 'requires POSIX sh')
 class ShimTests(unittest.TestCase):
     def setUp(self):
-        self.dir = Path(tempfile.mkdtemp())
+        # Resolve links: macOS temp roots sit under /var, a link to /private/var,
+        # and the shim reports physical paths.
+        self.dir = Path(tempfile.mkdtemp()).resolve()
         self.addCleanup(shutil.rmtree, self.dir, True)
         # A path with a space proves quoting.
         self.profile = self.dir / 'pro file'
