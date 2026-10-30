@@ -69,52 +69,11 @@ version, both architectures in agreement). The first publication of a
 explicit publication approval; see the generic tool builds design, "Publish-gate
 content check".
 
-**Owner approval of a source build (`lock.approvals`).** A lock that contains a
-`source-build` tool must also carry `approvals.<tool>`, the `approved_digest` that the
-owner commits after the approved real build and smoke of that exact revision. Both
-publication paths (the owner-merged updater and the exact-SHA manual dispatch) refuse
-a bundle whose source-build tool has no approval or a stale one. The digest covers the
-tool's catalog entry, its pins on both architectures (including the publisher SHA3-256),
-its toolchain and its extra sources, and this closed list of file inputs at the approved
-revision (`APPROVAL_INPUT_FILES` and `APPROVAL_INPUT_DIRECTORIES` in
-`scripts/bundle-publication.py`; print them with
-`python3 scripts/approval-digest.py --list-inputs`):
-
-<!-- BEGIN APPROVAL INPUTS -->
-- the Go module files `go.mod` and `go.sum` (the latter covers the XZ decoder that
-  unpacks the zig toolchain);
-- every non-test Go file of every module package in the dependency closure of the
-  two binaries the image builds (`go list -deps` of `./cmd/tools-bundle` and
-  `./cmd/tools-init`, checked by a test): `cmd/tools-bundle/*.go`,
-  `cmd/tools-init/*.go`, `internal/toolbundle/*.go`, `internal/toolconfig/*.go`,
-  `internal/toolvolume/*.go`;
-- per tool, from the bundle's `Dockerfile`: the `compiler` stage (the pinned golang
-  image digest and the `go build` flags), the `compile-<tool>` stage (with its base
-  image digest and `--network=none`) and the `fetch-sources` instruction of the tool
-  with its continuation lines;
-- per tool, the notice files named by its catalog `notices`.
-<!-- END APPROVAL INPUTS -->
-
-Excluded on purpose, because they do not change the artifact or are verified
-otherwise: smoke scripts, tests, documentation, the inventory, `.go-version` (only CI's
-Go setup reads it; the compiler stage pins the Go image), the downloads stage with its
-base image and `COPY` lines (every fetched source is hash-verified), the builder
-stage's `COPY` from the compile stage, the `# syntax` line, and files embedded into
-the driver for other tools. A recipe, toolchain, extra-source, version, checksum,
-driver, Go dependency, compiler image, compile-stage or notice change therefore
-invalidates the approval, and an
-unrelated updater PR (say a `gh` bump) cannot publish a source build for the first time.
-The updater bot never writes or changes `approvals`; the gate rejects a bot PR that
-does. Compute the value with `python3 scripts/approval-digest.py <tool>` on the approved
-revision and commit it in an owner-authored change.
-
-Costs, intended: a change to any listed driver file forces a new owner approval of every
-source-build tool; a source bump by the bot no longer publishes by itself; and because
-the check is per bundle, one missing or stale approval refuses the whole updater PR,
-including the other bundles of a combined updater PR, from the merge of the commit that
-adds a source-build tool (until the owner commits its approval) and after every bot
-bump of its source (until the owner re-approves). Rerun the approved build and smoke,
-then commit the new digest.
+**Approval of a source build.** The owner's merge of the updater or source PR is the
+approval; the lock carries no separate approval value (a lock with an `approvals` key is
+rejected as an unknown key). CI builds and smoke-tests the source-build tool before the
+merge. The first publication of a source-build tool and any recipe or toolchain change
+stay owner-authored, as above; an updater PR can only raise the source pins.
 
 An already merged ineligible updater cannot be repaired retroactively; use a
 separately approved exact-SHA manual publication of current `main`. Rerunning an
