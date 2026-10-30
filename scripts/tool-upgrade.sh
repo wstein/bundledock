@@ -33,7 +33,7 @@ else
   bundles=("${BUNDLE:-toolbox}")
 fi
 locks=() inventories=() artifacts=()
-for bundle in "${bundles[@]}"; do
+for bundle in ${bundles[@]+"${bundles[@]}"}; do
   locks+=("bundles/$bundle/packages.lock.json")
   if [[ $bundle == nixbox ]]; then
     # The Nix lock, the catalog (nixpkgs pin), the lock of the official release binaries
@@ -47,12 +47,12 @@ for bundle in "${bundles[@]}"; do
     artifacts+=("$bundle.lock.json" "$bundle.md")
   fi
 done
-paths=("${locks[@]}")
+paths=(${locks[@]+"${locks[@]}"})
 if [[ ${#inventories[@]} -gt 0 ]]; then paths+=("${inventories[@]}"); fi
 proposal_name=tool
 if [[ ${bundles[0]:-} == toolbox ]]; then proposal_name=toolbox; fi
 needs_base=false
-for bundle in "${bundles[@]}"; do [[ $bundle == toolbox ]] || needs_base=true; done
+for bundle in ${bundles[@]+"${bundles[@]}"}; do [[ $bundle == toolbox ]] || needs_base=true; done
 
 require_clean() {
   if [[ -n $(git status --porcelain --untracked-files=all) ]]; then
@@ -75,7 +75,7 @@ require_changes_only() {
 # Check the result directory and every existing parent without following links.
 # Resolve requires an empty directory; publish permits only the selected files.
 check_result() {
-  python3 - "$UPGRADE_RESULT" "$1" "${artifacts[@]}" <<'PYTHON'
+  python3 - "$UPGRADE_RESULT" "$1" ${artifacts[@]+"${artifacts[@]}"} <<'PYTHON'
 import os, stat, sys
 from pathlib import Path
 root=Path(os.path.abspath(sys.argv[1]))
@@ -217,7 +217,7 @@ case "${1:-}" in
     check_result resolve
     tool=${TOOL:-}
     if [[ ${bundles[0]} == nixbox ]]; then nixbox_resolve; exit 0; fi
-    for bundle in "${bundles[@]}"; do
+    for bundle in ${bundles[@]+"${bundles[@]}"}; do
       if [[ -n $tool ]]; then
         if [[ ! $tool =~ ^[a-z0-9][a-z0-9-]*$ ]] ||
            ! awk -F '[<>=!~[:space:]]' -v tool="$tool" '$1 == tool { found=1 } END { exit !found }' "bundles/$bundle/packages.txt"; then
@@ -226,16 +226,16 @@ case "${1:-}" in
       fi
       args=(); [[ -z $tool ]] || args+=("$tool")
       [[ $bundle == toolbox ]] || args+=(--directory "bundles/$bundle")
-      go run ./cmd/bdock tools upgrade "${args[@]}"
+      go run ./cmd/bdock tools upgrade ${args[@]+"${args[@]}"}
     done
-    require_changes_only "${locks[@]}"
-    for bundle in "${bundles[@]}"; do
+    require_changes_only ${locks[@]+"${locks[@]}"}
+    for bundle in ${bundles[@]+"${bundles[@]}"}; do
       python3 scripts/tool-inventory.py --bundle "$bundle"
     done
-    require_changes_only "${paths[@]}"
+    require_changes_only ${paths[@]+"${paths[@]}"}
     mkdir -p "$UPGRADE_RESULT"
-    git diff -- "${paths[@]}" > "$UPGRADE_RESULT/lock.diff"
-    if git diff --quiet -- "${paths[@]}"; then
+    git diff -- ${paths[@]+"${paths[@]}"} > "$UPGRADE_RESULT/lock.diff"
+    if git diff --quiet -- ${paths[@]+"${paths[@]}"}; then
       echo 'changed=false' >> "$GITHUB_OUTPUT"
       echo "No $proposal_name lock or inventory changes; no branch or pull request will be created." >> "$GITHUB_STEP_SUMMARY"
     else
@@ -275,7 +275,7 @@ case "${1:-}" in
       done
       for bundle in "${all_bundles[@]}"; do [[ ! -e $FAILED_BUNDLES/$bundle ]] || failed+=("$bundle"); done
     fi
-    failed_list=$(IFS=,; echo "${failed[*]}")
+    failed_list=$(IFS=,; echo "${failed[*]-}")
     if [[ ${#failed[@]} -gt 0 ]]; then
       echo "Resolution failed for: ${failed_list//,/, }. The other bundles are still proposed; a later run retries these." >> "$GITHUB_STEP_SUMMARY"
     fi
@@ -298,8 +298,8 @@ case "${1:-}" in
         echo 'Refusing PR: documentation artifact differs from the generated inventory.' >&2; exit 1
       fi
     done
-    require_changes_only "${paths[@]}"
-    if git diff --quiet -- "${paths[@]}"; then
+    require_changes_only ${paths[@]+"${paths[@]}"}
+    if git diff --quiet -- ${paths[@]+"${paths[@]}"}; then
       echo 'No lock or inventory changes; no branch or pull request will be created.' >> "$GITHUB_STEP_SUMMARY"; exit 0
     fi
     proposal_base=$(git rev-parse HEAD)
@@ -312,11 +312,11 @@ case "${1:-}" in
     git switch -c "$branch"
     git config user.name 'github-actions[bot]'
     git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-    git add -- "${paths[@]}"
+    git add -- ${paths[@]+"${paths[@]}"}
     body="$UPGRADE_RESULT/pr-body.md"
     commit_msg_file=$(mktemp)
     trap 'rm -f "$commit_msg_file"' EXIT
-    bundle_list=$(IFS=,; echo "${bundles[*]}")
+    bundle_list=$(IFS=,; echo "${bundles[*]-}")
     title=$(python3 - "$bundle_list" "$proposal_base" "$body" "$commit_msg_file" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$failed_list" <<'PYTHON'
 import json, subprocess, sys
 from pathlib import Path
