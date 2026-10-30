@@ -23,13 +23,13 @@
     "rsync": {"provider": "nix", "attr": "rsync"},
     "zstd": {"provider": "nix", "attr": "zstd.bin"},
 
-    "ast-grep": {"provider": "official", "bundle": "toolbox", "binary": "bin/ast-grep"},
-    "delta": {"provider": "official", "bundle": "toolbox", "binary": "bin/delta"},
-    "difft": {"provider": "official", "bundle": "toolbox", "binary": "bin/difft"},
-    "fastfetch": {"provider": "official", "bundle": "toolbox", "binary": "bin/fastfetch"},
-    "hx": {"provider": "official", "bundle": "toolbox", "binary": "lib/helix/hx", "env": {"HELIX_RUNTIME": "lib/helix/runtime"}},
-    "leaf": {"provider": "official", "bundle": "toolbox", "binary": "bin/leaf"},
-    "zizmor": {"provider": "official", "bundle": "toolbox", "binary": "bin/zizmor"},
-    "zk": {"provider": "official", "bundle": "toolbox", "binary": "bin/zk"}
+    "ast-grep": {"provider": "official", "binary": "bin/ast-grep"},
+    "delta": {"provider": "official", "binary": "bin/delta"},
+    "difft": {"provider": "official", "binary": "bin/difft"},
+    "fastfetch": {"provider": "official", "binary": "bin/fastfetch"},
+    "hx": {"provider": "official", "binary": "lib/helix/hx", "env": {"HELIX_RUNTIME": "lib/helix/runtime"}},
+    "leaf": {"provider": "official", "binary": "bin/leaf"},
+    "zizmor": {"provider": "official", "binary": "bin/zizmor"},
+    "zk": {"provider": "official", "binary": "bin/zk"}
   }
 }

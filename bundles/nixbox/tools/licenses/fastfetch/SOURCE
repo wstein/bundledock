@@ -1,0 +1,10 @@
+Upstream: https://github.com/fastfetch-cli/fastfetch
+License: MIT
+Historical license snapshot: 2.70.0
+License source: https://raw.githubusercontent.com/fastfetch-cli/fastfetch/2.70.0/LICENSE
+YYJSON-LICENSE: exact opening license comment from https://raw.githubusercontent.com/fastfetch-cli/fastfetch/2.70.0/src/3rdparty/yyjson/yyjson.h
+WIDECHAR-LICENSE: https://github.com/ridiculousfish/widecharwidth/blob/master/LICENSE (retained reviewed toolbox snapshot).
+UNICODE-LICENSE: https://www.unicode.org/license.txt (Unicode License V3; retained reviewed 2026-10-10 toolbox snapshot).
+The pinned src/3rdparty/widecharwidth/widechar_width_c.h identifies Unicode 17.0.0 and generator b35da43f176cc0d5880c67356ebb064048c5bac4.
+Official Linux release archives are downloaded without rebuilding or patching binaries.
+Archive SHA256 values verified against the publisher GitHub release asset API digest on 2026-10-18.

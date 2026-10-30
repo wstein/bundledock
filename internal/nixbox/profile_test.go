@@ -23,8 +23,8 @@ const profileCatalog = `{"schema":1,
  "openssh":{"provider":"nix","attr":"openssh"},
  "glibc":{"provider":"nix","attr":"glibc","role":"runner"},
  "gcc-lib":{"provider":"nix","attr":"stdenv.cc.cc.lib","role":"runner"},
- "hx":{"provider":"official","bundle":"toolbox","binary":"lib/helix/hx","env":{"HELIX_RUNTIME":"lib/helix/runtime"}},
- "zk":{"provider":"official","bundle":"toolbox","binary":"bin/zk"}}}`
+ "hx":{"provider":"official","binary":"lib/helix/hx","env":{"HELIX_RUNTIME":"lib/helix/runtime"}},
+ "zk":{"provider":"official","binary":"bin/zk"}}}`
 
 // profileFixture lays out a physical store and a lock-shaped PlatformLock for it.
 func profileFixture(t *testing.T) (*Catalog, PlatformLock, string) {
@@ -56,9 +56,25 @@ func profileFixture(t *testing.T) (*Catalog, PlatformLock, string) {
 	return c, pl, store
 }
 
+// placeOfficial installs the official binaries the way the image build does,
+// before the profile is built: the tools bundle goes to <profile>/libexec/nixbox.
+func placeOfficial(t *testing.T, out string, binaries ...string) {
+	t.Helper()
+	for _, rel := range binaries {
+		full := filepath.Join(out, "libexec", "nixbox", rel)
+		if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(full, []byte("elf"), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
 func TestBuildProfile(t *testing.T) {
 	c, pl, store := profileFixture(t)
 	out := filepath.Join(t.TempDir(), "profile")
+	placeOfficial(t, out, "lib/helix/hx", "bin/zk")
 	shim := []byte("#!/bin/sh\n# shim\n")
 	if err := BuildProfile(c, []byte(profileCatalog), []byte(`{"lock":1}`), pl, "arm64", store, out, shim); err != nil {
 		t.Fatal(err)
@@ -119,6 +135,7 @@ func TestBuildProfileSelectsTheLoaderByArchitecture(t *testing.T) {
 	c, pl, store := profileFixture(t)
 	pl.System = "x86_64-linux"
 	out := filepath.Join(t.TempDir(), "profile")
+	placeOfficial(t, out, "lib/helix/hx", "bin/zk")
 	if err := BuildProfile(c, []byte(profileCatalog), nil, pl, "amd64", store, out, []byte("#!/bin/sh\n")); err != nil {
 		t.Fatal(err)
 	}
@@ -132,12 +149,16 @@ func TestBuildProfileRefusesCommandConflictsAndMissingLoaders(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(store, filepath.Base(sshPath), "bin", "git"), []byte("x"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := BuildProfile(c, []byte(profileCatalog), nil, pl, "arm64", store, filepath.Join(t.TempDir(), "p"), []byte("#!/bin/sh\n")); err == nil {
+	out := filepath.Join(t.TempDir(), "p")
+	placeOfficial(t, out, "lib/helix/hx", "bin/zk")
+	if err := BuildProfile(c, []byte(profileCatalog), nil, pl, "arm64", store, out, []byte("#!/bin/sh\n")); err == nil {
 		t.Error("accepted two packages providing bin/git")
 	}
 	c, pl, store = profileFixture(t)
 	os.Remove(filepath.Join(store, filepath.Base(glibcPath), "lib", "ld-linux-aarch64.so.1"))
-	if err := BuildProfile(c, []byte(profileCatalog), nil, pl, "arm64", store, filepath.Join(t.TempDir(), "p"), []byte("#!/bin/sh\n")); err == nil {
+	out = filepath.Join(t.TempDir(), "p")
+	placeOfficial(t, out, "lib/helix/hx", "bin/zk")
+	if err := BuildProfile(c, []byte(profileCatalog), nil, pl, "arm64", store, out, []byte("#!/bin/sh\n")); err == nil {
 		t.Error("accepted a glibc without the loader")
 	}
 }
@@ -147,7 +168,45 @@ func TestBuildProfileRefusesAShimNameThatAPackageAlreadyProvides(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(store, filepath.Base(gitPath), "bin", "zk"), []byte("x"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := BuildProfile(c, []byte(profileCatalog), nil, pl, "arm64", store, filepath.Join(t.TempDir(), "p"), []byte("#!/bin/sh\n")); err == nil {
+	out := filepath.Join(t.TempDir(), "p")
+	placeOfficial(t, out, "lib/helix/hx", "bin/zk")
+	if err := BuildProfile(c, []byte(profileCatalog), nil, pl, "arm64", store, out, []byte("#!/bin/sh\n")); err == nil {
 		t.Error("accepted a shim shadowing a nix command")
+	}
+}
+
+func TestBuildProfileRefusesAShimWithoutItsInstalledBinary(t *testing.T) {
+	for name, binaries := range map[string][]string{
+		"none":         nil,
+		"hx runtime":   {"bin/zk"},
+		"zk":           {"lib/helix/hx"},
+		"not a binary": {"lib/helix/hx", "bin/zk/"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			c, pl, store := profileFixture(t)
+			out := filepath.Join(t.TempDir(), "p")
+			if name == "not a binary" {
+				if err := os.MkdirAll(filepath.Join(out, "libexec", "nixbox", "bin", "zk"), 0o755); err != nil {
+					t.Fatal(err)
+				}
+				binaries = []string{"lib/helix/hx"}
+			}
+			placeOfficial(t, out, binaries...)
+			if err := BuildProfile(c, []byte(profileCatalog), nil, pl, "arm64", store, out, []byte("#!/bin/sh\n")); err == nil {
+				t.Error("accepted a shim whose binary is not installed")
+			}
+		})
+	}
+}
+
+func TestBuildProfileRefusesANonExecutableBinary(t *testing.T) {
+	c, pl, store := profileFixture(t)
+	out := filepath.Join(t.TempDir(), "p")
+	placeOfficial(t, out, "lib/helix/hx", "bin/zk")
+	if err := os.Chmod(filepath.Join(out, "libexec", "nixbox", "bin", "zk"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := BuildProfile(c, []byte(profileCatalog), nil, pl, "arm64", store, out, []byte("#!/bin/sh\n")); err == nil {
+		t.Error("accepted a non-executable binary")
 	}
 }

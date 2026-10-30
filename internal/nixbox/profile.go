@@ -14,6 +14,10 @@ const LogicalStore = "/nix/store"
 
 var loaderNames = map[string]string{"amd64": "ld-linux-x86-64.so.2", "arm64": "ld-linux-aarch64.so.1"}
 
+// OfficialDirectory is where the official release binaries live in a profile: the
+// image build installs the bundles/nixbox/tools bundle (the toolbox recipes) there.
+const OfficialDirectory = "libexec/nixbox"
+
 // shimTarget is the profile command for an official binary: a relative link, so
 // the profile works wherever the volume is mounted.
 const shimTarget = "../libexec/nixbox-shim"
@@ -22,7 +26,9 @@ const shimTarget = "../libexec/nixbox-shim"
 // store (symlinks still name the logical /nix/store). The profile merges bin,
 // share and etc of every non-runner nix package as symlinks, links the glibc
 // loader and libraries of the runner packages, installs the shim and its table
-// (generated from the catalog), and records the catalog and lock.
+// (generated from the catalog), and records the catalog and lock. The official
+// binaries must already be installed below out/libexec/nixbox; a shim whose
+// binary is missing or not executable fails the build.
 func BuildProfile(c *Catalog, catalogData, lockData []byte, p PlatformLock, arch, storeDir, out string, shim []byte) error {
 	loader, ok := loaderNames[arch]
 	if !ok {
@@ -87,6 +93,13 @@ func BuildProfile(c *Catalog, catalogData, lockData []byte, p PlatformLock, arch
 			return err
 		}
 		pkg := c.Packages[name]
+		info, err := os.Stat(filepath.Join(out, filepath.FromSlash(OfficialDirectory), filepath.FromSlash(pkg.Binary)))
+		if err != nil {
+			return fmt.Errorf("shim %s: %w", name, err)
+		}
+		if !info.Mode().IsRegular() || info.Mode().Perm()&0o111 == 0 {
+			return fmt.Errorf("shim %s: %s is not an executable file", name, pkg.Binary)
+		}
 		fmt.Fprintf(&table, "bin\t%s\t%s\n", name, pkg.Binary)
 		var vars []string
 		for v := range pkg.Env {

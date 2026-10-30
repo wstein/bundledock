@@ -51,15 +51,17 @@ type Cache struct {
 	PublicKey string `json:"public_key"`
 }
 
-// Package is one catalog entry. A nix package is delivered as a store path; an
-// official package stays a toolbox binary that nixbox only makes runnable.
+// Package is one catalog entry. A nix package is delivered as a store path. An
+// official package is a release binary that nixbox ships unmodified: its pin and
+// notices are the toolbox-schema files in bundles/nixbox/tools, and the entry
+// here only names the installed binary the shim runs.
 type Package struct {
 	Provider string `json:"provider"`
 	// Nix packages.
 	Attr string `json:"attr,omitempty"`
 	Role string `json:"role,omitempty"`
-	// Official packages: the toolbox-relative binary and environment paths.
-	Bundle string            `json:"bundle,omitempty"`
+	// Official packages: the binary and environment paths, relative to the
+	// installed tools directory (libexec/nixbox in the profile).
 	Binary string            `json:"binary,omitempty"`
 	Env    map[string]string `json:"env,omitempty"`
 }
@@ -139,14 +141,11 @@ func (c *Catalog) validate() error {
 			if p.Role == RoleRunner {
 				runners++
 			}
-			if p.Bundle != "" || p.Binary != "" || len(p.Env) != 0 {
+			if p.Binary != "" || len(p.Env) != 0 {
 				return fmt.Errorf("package %s: nix packages take only attr and role", name)
 			}
 		case ProviderOfficial:
 			official++
-			if p.Bundle != "toolbox" {
-				return fmt.Errorf("package %s: official packages come from the toolbox bundle", name)
-			}
 			if !relativePath(p.Binary) {
 				return fmt.Errorf("package %s: invalid binary path %q", name, p.Binary)
 			}
@@ -197,7 +196,7 @@ func (c *Catalog) NixNames() []string {
 	return names
 }
 
-// OfficialNames lists the toolbox binaries nixbox shims, sorted.
+// OfficialNames lists the official binaries nixbox ships and shims, sorted.
 func (c *Catalog) OfficialNames() []string {
 	var names []string
 	for name, p := range c.Packages {
