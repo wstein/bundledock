@@ -28,9 +28,17 @@ by step; nothing is rewritten in one go.
 
 | Stage | Command | Mode | Credential |
 | --- | --- | --- | --- |
+| Read | `bdock quay list` | reads | none (the repositories are public) |
+| Read | `bdock quay status [<bundle>]` | reads, exit code 1 on a difference | none |
+| Read | `bdock quay info <bundle>` | reads | none |
 | 1. Metadata | `bdock quay describe <bundle>` (check) and `--apply` | check reads, apply writes | check: none. apply: OAuth token |
-| 2. Verify | `bdock quay verify [<bundle>]`, `bdock quay tags <bundle>` | read only | none (the repositories are public) |
-| 3. Clean up | `bdock quay clean` (plan) and `--apply` | plan reads, apply deletes | robot token (registry v2) |
+| 3. Clean up | `bdock quay prune` (plan) and `--apply` | plan reads, apply deletes | robot token (registry v2) |
+
+The three read commands take `--json` so CI can evaluate them. There is no
+`purge`, no deletion of version, alias or source tags, and no `search`: the
+namespace holds only our bundles, `list` covers it, and published digests are
+pinned by consumers, so removing one is a deliberate act in the Quay web UI with
+the owner's approval, never a tool command.
 
 ### Stage 1: metadata
 
@@ -48,23 +56,27 @@ read from `QUAY_TOKEN`, never from a file or flag, never printed. Whether this
 token lives as a CI secret or stays on the owner's machine is the owner's
 decision (open question 1). Check mode needs no credential.
 
-### Stage 2: verify
+### Read commands (stage 2)
 
 Read only, anonymous REST, bounded pagination, response size limit and no redirects
 (the limits of the existing client carry over).
 
-- `tags <bundle>` lists tags with digests, marks version, alias and staging tags.
-- `verify` compares Quay with the committed publication records
+- `list` shows each bundle with its newest version tag, digest and the number of
+  staging tags.
+- `info <bundle>` lists all tags with digest, age, architectures and the labels
+  `org.opencontainers.image.version` and `revision` (the labels come from the
+  manifest, not from the Quay REST API).
+- `status` compares Quay with the committed publication records
   (`docs/<bundle>-published.json`): the version tag and the aliases `latest` and
   `stable` must resolve to the recorded digest, and a staging tag for a published
   version is reported as residue. A bundle that is not yet published is skipped, as
   the cleanup script does.
 
-### Stage 3: cleanup
+### Cleanup (stage 3)
 
-The plan logic of `scripts/staging-cleanup.py` (seven-day fallback, failed-run
+`prune` is the former `clean`. The plan logic of `scripts/staging-cleanup.py` (seven-day fallback, failed-run
 proof, staging-tag pattern only) moves into the package unchanged in behavior; the
-script becomes a thin caller until the workflow runs `bdock quay clean`. Deletion
+script becomes a thin caller until the workflow runs `bdock quay prune`. Deletion
 stays limited to tags that match the staging pattern, uses the robot token over
 registry v2, and applies only a saved plan after a fresh recheck, as today.
 
@@ -80,17 +92,17 @@ registry v2, and applies only a saved plan after a fresh recheck, as today.
 
 Separate PRs, each independently useful:
 
-1. `internal/quay` client and `tags`/`verify` (read only), plus a `verify` step in
+1. `internal/quay` client and `list`/`info`/`status` (read only), plus a `status` step in
    the publication workflow after promotion (reports, does not block).
 2. `describe` and the `description.md` files for toolbox and nixbox (apply by the
    owner).
-3. Move the cleanup plan into the package; the workflow switches to `bdock quay clean`.
+3. Move the cleanup plan into the package as `prune`; the workflow switches to `bdock quay prune`.
 
 ## Decisions (owner, 2026-10-30)
 
 1. The Quay OAuth token stays on the owner's machine. `describe --apply` is an
    owner command; CI runs `describe` only as a check and holds no admin token.
-2. `verify` after promotion only reports (run summary); it does not fail the
+2. `status` after promotion only reports (run summary); it does not fail the
    publication run. It can be tightened once it has proved stable.
 3. The Python cleanup script is replaced in stage 3, after the Go plan passes the
    same test cases as `scripts/tests/test_staging_cleanup*`; both are never active
