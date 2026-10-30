@@ -49,7 +49,7 @@ def validate(receipt, bundle, image, sha, run_id, attempt):
     required_identity = bundle == 'node-current' or (bundle == 'node' and semantic)
     require(receipt.get('bundle', bundle) == bundle and (not required_identity or receipt.get('bundle') == bundle), 'Wrong source bundle identity')
     if explicit_attempt:
-        require((bundle == 'toolbox' if daily else bundle != 'toolbox') and receipt.get('run_attempt') == attempt, 'Wrong publication attempt')
+        require((bundle in _CONFIG.DATED if daily else bundle not in _CONFIG.DATED) and receipt.get('run_attempt') == attempt, 'Wrong publication attempt')
     else:
         require(str(version['attempt']) == attempt, 'Wrong publication attempt')
     try:

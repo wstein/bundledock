@@ -65,7 +65,7 @@ class ConsolidatedWorkflowsTests(unittest.TestCase):
     def test_selector_emits_all_or_one_and_rejects_unknown(self):
         import json
         import subprocess
-        for selection, expected in [('all', list(config.BUNDLES) + ['nixbox']), ('node-current', ['node-current']),
+        for selection, expected in [('all', list(config.BUNDLES)), ('node-current', ['node-current']),
                                     ('nixbox', ['nixbox'])]:
             result = subprocess.run(['python3', str(ROOT / 'scripts/bundle-config.py'), '--upgrade-selection', selection],
                                     text=True, capture_output=True, check=True)

@@ -62,8 +62,8 @@ class PublicationDocsTest(unittest.TestCase):
             self.assertFalse(self.module.update(root,'toolbox',record))
             path.unlink(); path.symlink_to(root/'elsewhere')
             with self.assertRaises(ValueError): self.module.update(root,'toolbox',record)
-    def test_all_nine_mappings_and_newer_guard(self):
-        self.assertEqual(set(self.module.BUNDLES), {'toolbox','code-server','node','node-current','bun','codex','agy','claude','opentofu'})
+    def test_all_ten_mappings_and_newer_guard(self):
+        self.assertEqual(set(self.module.BUNDLES), {'toolbox','code-server','node','node-current','bun','codex','agy','claude','opentofu','nixbox'})
         record=self.validate()
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory); (root/'docs').mkdir()
@@ -83,7 +83,7 @@ class PublicationDocsTest(unittest.TestCase):
                 path.write_bytes(source)
                 receipt = json.loads(json.dumps(self.receipt))
                 receipt.update(bundle=bundle, image='quay.io/bundledock/' + self.module._CONFIG.select_bundle(bundle)['repository'],
-                               tag='2099.01.01-b1.1' if bundle == 'toolbox' else '999.0.0-b1',
+                               tag='2099.01.01-b1.1' if bundle in ('toolbox', 'nixbox') else '999.0.0-b1',
                                run_attempt='1')
                 receipt['reference'] = receipt['image'] + '@' + receipt['digest']
                 for platform in receipt['platforms']:
@@ -96,7 +96,8 @@ class PublicationDocsTest(unittest.TestCase):
                 _, suffix = managed.split(self.module.END)
                 expected = prefix + self.module.BEGIN + self.module.render(record) + self.module.END + suffix
                 self.assertEqual(path.read_bytes(), expected.encode())
-                self.assertIn('<!-- BEGIN GENERATED TOOL INVENTORY -->', suffix)
+                if bundle != 'nixbox':  # nixbox has a hand-written guide, no generated tool inventory
+                    self.assertIn('<!-- BEGIN GENERATED TOOL INVENTORY -->', suffix)
                 self.assertFalse(self.module.update(root, bundle, record))
 
     def test_missing_duplicate_and_reversed_publication_markers_fail_without_write(self):

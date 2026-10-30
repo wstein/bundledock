@@ -8,18 +8,20 @@ BUNDLES = {
            'repository': 'node' if name == 'node-current' else name,
            'aliases': 'current' if name == 'node-current' else 'stable lts latest' if name == 'node' else 'stable latest',
            'proposal_lock': 'packages.lock.json' if name == 'toolbox' else name + '.lock.json'}
-    for name in ('toolbox', 'code-server', 'node', 'node-current', 'bun', 'codex', 'agy', 'claude', 'opentofu')
+    for name in ('toolbox', 'code-server', 'node', 'node-current', 'bun', 'codex', 'agy', 'claude', 'opentofu', 'nixbox')
 }
-# Bundles that join the build, upgrade-proposal and cleanup machinery but are not
-# published by it. nixbox needs explicit owner approval of its first publication
-# and of every change to its store path list (AGENTS.md), so it is never a member
-# of BUNDLES, which drives publication, tags and consumer pins.
-UPGRADE_ONLY = ('nixbox',)
+# nixbox is published only when the owner selects it in a manual dispatch of Publish
+# bundles. No updater pull request or CI completion ever publishes it: it has its own
+# upgrade proposal topic, which the automatic publication path does not recognize.
+MANUAL_ONLY = ('nixbox',)
+AUTOMATIC = tuple(name for name in BUNDLES if name not in MANUAL_ONLY)
+# Bundles tagged <date>-b<N>, with no upstream version in the tag.
+DATED = ('toolbox', 'nixbox')
 
 
 def select_bundle(name):
     if name not in BUNDLES:
-        raise ValueError('Bundle must be toolbox, code-server, node, node-current, bun, codex, agy, claude or opentofu')
+        raise ValueError('Bundle must be toolbox, code-server, node, node-current, bun, codex, agy, claude, opentofu or nixbox')
     return dict(BUNDLES[name])
 
 if __name__ == '__main__':
@@ -28,9 +30,9 @@ if __name__ == '__main__':
     import json
     selection = parser.add_mutually_exclusive_group(required=True)
     selection.add_argument('--repository', choices=BUNDLES)
-    selection.add_argument('--upgrade-selection', choices=('all', *BUNDLES, *UPGRADE_ONLY))
+    selection.add_argument('--upgrade-selection', choices=('all', *BUNDLES))
     args = parser.parse_args()
     if args.repository:
         print(select_bundle(args.repository)['repository'])
     else:
-        print(json.dumps([*BUNDLES, *UPGRADE_ONLY] if args.upgrade_selection == 'all' else [args.upgrade_selection]))
+        print(json.dumps(list(BUNDLES) if args.upgrade_selection == 'all' else [args.upgrade_selection]))
