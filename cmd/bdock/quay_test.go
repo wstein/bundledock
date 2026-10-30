@@ -2,7 +2,9 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -131,5 +133,48 @@ func TestQuayStatus(t *testing.T) {
 	}
 	if _, _, err := runQuayAt(t, root, srv, "status", "nope"); err == nil {
 		t.Fatal("unknown bundle accepted")
+	}
+}
+
+func TestQuayInfo(t *testing.T) {
+	config := []byte(`{"os":"linux","architecture":"amd64","config":{"Labels":{"org.opencontainers.image.version":"1.2.3-b1","org.opencontainers.image.revision":"deadbeef"}}}`)
+	configDigest := fmt.Sprintf("sha256:%x", sha256.Sum256(config))
+	manifest := []byte(`{"config":{"digest":"` + configDigest + `"}}`)
+	digest := fmt.Sprintf("sha256:%x", sha256.Sum256(manifest))
+	blobs := map[string][]byte{configDigest: config, digest: manifest}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.URL.Path == "/v2/auth":
+			w.Write([]byte(`{"token":"tok"}`))
+		case strings.HasPrefix(r.URL.Path, "/v2/bundledock/bun/"):
+			parts := strings.Split(r.URL.Path, "/")
+			if data, ok := blobs[parts[len(parts)-1]]; ok {
+				w.Write(data)
+				return
+			}
+			http.NotFound(w, r)
+		case r.URL.Path == "/api/v1/repository/bundledock/bun/tag/":
+			json.NewEncoder(w).Encode(map[string]any{"page": 1, "has_additional": false, "tags": []quayTag{{Name: "1.2.3-b1", ManifestDigest: digest, LastModified: "Fri, 30 Oct 2026 10:00:00 -0000"}}})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+	out, _, err := runQuay(t, srv, "info", "bun")
+	if err != nil || !strings.Contains(out, "linux/amd64") || !strings.Contains(out, "deadbeef") {
+		t.Fatalf("out = %q, err = %v", out, err)
+	}
+	out, _, err = runQuay(t, srv, "info", "bun", "--json")
+	var doc struct {
+		Schema string `json:"schema"`
+		Tags   []struct {
+			Tag, Version, Revision string
+		} `json:"tags"`
+	}
+	if err != nil || json.Unmarshal([]byte(out), &doc) != nil || doc.Schema != "bdock.quay.info/v1" || len(doc.Tags) != 1 || doc.Tags[0].Version != "1.2.3-b1" {
+		t.Fatalf("doc = %+v, err = %v", doc, err)
+	}
+	if _, _, err := runQuay(t, srv, "info"); err == nil {
+		t.Fatal("bundle argument not required")
 	}
 }
