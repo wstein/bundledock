@@ -39,7 +39,6 @@ elif '/nixbox-smoke.sh' in args:
         calls = directory / 'calls.jsonl'
         environment = dict(os.environ, PATH=str(directory) + os.pathsep + os.environ['PATH'], CALLS=str(calls))
         environment.pop('NIXBOX_PLATFORM', None)
-        environment.pop('NIXBOX_TOOLBOX_IMAGE', None)
         if fail_consumer:
             environment['FAIL_CONSUMER'] = fail_consumer
         environment.update(env)
@@ -47,11 +46,11 @@ elif '/nixbox-smoke.sh' in args:
         return result, [json.loads(line) for line in calls.read_text().splitlines()]
 
     def test_matrix_mounts_and_unprivileged_run(self):
-        result, calls = self.invoke(NIXBOX_TOOLBOX_IMAGE='example/toolbox@sha256:' + 'b' * 64)
+        result, calls = self.invoke()
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         runs = [c for c in calls if c[0] == 'run']
         inits = [c for c in runs if '/nixbox-smoke.sh' not in c and '/bin/cat' not in c]
-        self.assertEqual([c[-1] for c in inits], ['example/nixbox:fixture'] * 2 + ['example/toolbox@sha256:' + 'b' * 64])
+        self.assertEqual([c[-1] for c in inits], ['example/nixbox:fixture'] * 2)
         for call in inits:
             self.assertIn('none', call)
         consumers = [c for c in runs if '/nixbox-smoke.sh' in c]
@@ -64,24 +63,13 @@ elif '/nixbox-smoke.sh' in args:
         for call in consumers:
             self.assertIn('--read-only', call)
             self.assertTrue(any(re.fullmatch(r'type=volume,src=volume-\d+,dst=/nix,readonly,volume-nocopy', a) for a in call), call)
-            self.assertTrue(any(re.fullmatch(r'type=volume,src=volume-\d+,dst=/opt/bdock/toolbox,readonly,volume-nocopy', a) for a in call))
+            self.assertFalse(any('/opt/bdock/toolbox' in a for a in call), call)
         users = [c[c.index('--user') + 1] for c in consumers]
         self.assertEqual(users, ['0:0'] * 4 + ['1000:1000'])
         self.assertTrue(any('dst=/etc/passwd,readonly' in a for a in consumers[4]))
         self.assertIn('SMOKE native alpine-3.23 uid=0: 32 32', result.stdout)
         removed = [c for c in calls if c[:2] == ['volume', 'rm']]
-        self.assertEqual(len(removed), 2)
-
-    def test_toolbox_defaults_to_the_published_record_and_can_be_overridden_or_skipped(self):
-        record = json.loads((ROOT / 'docs/toolbox-published.json').read_text())
-        expected = record['image'] + '@' + record['digest']
-        result, calls = self.invoke()
-        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        inits = [c for c in calls if c[0] == 'run' and '/nixbox-smoke.sh' not in c and '/bin/cat' not in c]
-        self.assertEqual([c[-1] for c in inits][-1], expected)
-        result, calls = self.invoke(NIXBOX_TOOLBOX_IMAGE='')
-        inits = [c for c in calls if c[0] == 'run' and '/nixbox-smoke.sh' not in c and '/bin/cat' not in c]
-        self.assertEqual([c[-1] for c in inits], ['example/nixbox:fixture'] * 2)
+        self.assertEqual(len(removed), 1)
 
     def test_alpine_consumer_simulates_gcompat_glibc_loader_stubs(self):
         result, calls = self.invoke()
@@ -98,7 +86,8 @@ elif '/nixbox-smoke.sh' in args:
 
     def test_consumer_script_checks_the_auto_mode_path_per_libc(self):
         text = CONSUMER.read_text()
-        self.assertIn('auto mode runs the toolbox binary directly on a glibc host', text)
+        self.assertIn('auto mode runs the official binary directly on a glibc host', text)
+        self.assertNotIn('BDOCK_TOOLBOX', text)
         self.assertIn('auto mode uses the Nix loader on musl', text)
         self.assertIn('NIXBOX_GCOMPAT_SIM', text)
         self.assertIn('a user symlink to a shim finds the profile', text)
@@ -112,11 +101,6 @@ elif '/nixbox-smoke.sh' in args:
         self.assertEqual(consumer[consumer.index('--network') + 1], 'none')
         self.assertIn('NIXBOX_OFFLINE=1', consumer)
         self.assertIn('SMOKE linux/amd64 ', result.stdout)
-
-    def test_with_an_empty_toolbox_image_no_toolbox_mount_is_made(self):
-        result, calls = self.invoke(NIXBOX_TOOLBOX_IMAGE='')
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertFalse(any('dst=/opt/bdock/toolbox' in a for c in calls for a in c))
 
     def test_one_failing_consumer_fails_the_run_but_runs_the_rest(self):
         result, calls = self.invoke(fail_consumer='fedora')

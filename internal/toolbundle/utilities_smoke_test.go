@@ -13,7 +13,7 @@ func TestUtilitiesSmokeRejectsWrongOutput(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, broken := range []string{"", "fzf", "bat", "lsd", "regctl", "actionlint", "hadolint", "pinact", "zizmor", "cosign", "git-cliff", "zoxide", "difft", "jsonschema-cli", "gh-stack", "gh", "fail:gh-stack", "fail:gh", "missing:gh-stack", "no-gh", "dotted:gh-stack", "prefixed:gh-stack", "fail:actionlint", "fail:hadolint", "fail:pinact", "fail:zizmor", "fail:cosign", "fail:git-cliff", "fail:zoxide", "fail:difft", "fail:jsonschema-cli", "loose:zizmor", "dotted:actionlint", "dotted:hadolint", "dotted:pinact", "dotted:zizmor", "dotted:cosign", "dotted:git-cliff", "dotted:zoxide", "dotted:difft", "dotted:jsonschema-cli", "prefixed:actionlint", "prefixed:hadolint", "prefixed:pinact", "prefixed:zizmor", "prefixed:cosign", "prefixed:git-cliff", "prefixed:zoxide", "prefixed:difft", "prefixed:jsonschema-cli", "keyword:pinact"} {
+	for _, broken := range []string{"", "fzf", "bat", "lsd", "regctl", "actionlint", "hadolint", "pinact", "cosign", "git-cliff", "zoxide", "jsonschema-cli", "gh-stack", "gh", "fail:gh-stack", "fail:gh", "missing:gh-stack", "no-gh", "dotted:gh-stack", "prefixed:gh-stack", "fail:actionlint", "fail:hadolint", "fail:pinact", "fail:cosign", "fail:git-cliff", "fail:zoxide", "fail:jsonschema-cli", "dotted:actionlint", "dotted:hadolint", "dotted:pinact", "dotted:cosign", "dotted:git-cliff", "dotted:zoxide", "dotted:jsonschema-cli", "prefixed:actionlint", "prefixed:hadolint", "prefixed:pinact", "prefixed:cosign", "prefixed:git-cliff", "prefixed:zoxide", "prefixed:jsonschema-cli", "keyword:pinact"} {
 		t.Run("broken-"+broken, func(t *testing.T) {
 			home := t.TempDir()
 			root := t.TempDir()
@@ -23,8 +23,8 @@ func TestUtilitiesSmokeRejectsWrongOutput(t *testing.T) {
 			}
 			versionEcho := map[string]string{
 				"actionlint": "printf '1.7.12\\ninstalled by downloading from release page\\nbuilt with go1.25.0 compiler for linux/amd64\\n'", "hadolint": "echo 'Haskell Dockerfile Linter 2.15.1'", "pinact": "echo 'pinact version 5.0.0'",
-				"zizmor": "echo 'zizmor 1.31.1'", "cosign": "echo 'GitVersion:    v3.1.3'", "git-cliff": "echo 'git-cliff 2.14.2'",
-				"zoxide": "echo 'zoxide 0.10.0'", "difft": "echo 'Difftastic 0.71.0'", "jsonschema-cli": "echo 'Version: 0.58.5'", "gh-stack": "echo 'gh stack version 0.2.1'",
+				"cosign": "echo 'GitVersion:    v3.1.3'", "git-cliff": "echo 'git-cliff 2.14.2'",
+				"zoxide": "echo 'zoxide 0.10.0'", "jsonschema-cli": "echo 'Version: 0.58.5'", "gh-stack": "echo 'gh stack version 0.2.1'",
 			}
 			stubs := map[string]string{
 				"fzf":            "case \"$*\" in --version) echo 0.74.5;; '--filter beta') cat >/dev/null; echo beta;; *) exit 2;; esac",
@@ -33,11 +33,9 @@ func TestUtilitiesSmokeRejectsWrongOutput(t *testing.T) {
 				"actionlint":     "case \"$*\" in -version) printf '1.7.12\\ninstalled by downloading from release page\\nbuilt with go1.25.0 compiler for linux/amd64\\n';; *) exit 2;; esac",
 				"hadolint":       "case \"$*\" in --version) echo 'Haskell Dockerfile Linter 2.15.1';; *) exit 2;; esac",
 				"pinact":         "case \"$*\" in --version) echo 'pinact version 5.0.0';; *) exit 2;; esac",
-				"zizmor":         "case \"$*\" in --version) echo 'zizmor 1.31.1';; *) exit 2;; esac",
 				"cosign":         "case \"$*\" in version) echo 'GitVersion:    v3.1.3';; *) exit 2;; esac",
 				"git-cliff":      "case \"$*\" in --version) echo 'git-cliff 2.14.2';; *) exit 2;; esac",
 				"zoxide":         "case \"$*\" in --version) echo 'zoxide 0.10.0';; *) exit 2;; esac",
-				"difft":          "case \"$*\" in --version) echo 'Difftastic 0.71.0';; *) exit 2;; esac",
 				"jsonschema-cli": "case \"$*\" in --version) echo 'Version: 0.58.5';; *) exit 2;; esac",
 				"gh":             "test \"${GH_PROMPT_DISABLED:-}\" = 1 || exit 3; IFS= read -r _ && exit 4; case \"$*\" in 'stack --version') exec \"$XDG_DATA_HOME/gh/extensions/gh-stack/gh-stack\" --version;; *) exit 2;; esac",
 				"gh-stack":       "case \"$*\" in --version) echo 'gh stack version 0.2.1';; *) exit 2;; esac",

@@ -99,12 +99,14 @@ else:
                           "setup-go", "gh ", "curl ", "id-token"):
             self.assertNotIn(forbidden, workflow)
 
-    def test_workflows_hard_code_no_toolbox_digest(self):
-        # The smoke script reads the digest from docs/toolbox-published.json at run time.
+    def test_nixbox_needs_no_toolbox_image(self):
+        # The eight glibc binaries ship inside nixbox, so no workflow or smoke run mounts a toolbox.
         for name in ("nixbox-build.yml", "bundle-publish.yml"):
             text = (ROOT / ".github/workflows" / name).read_text()
             self.assertNotIn("NIXBOX_TOOLBOX_IMAGE", text, name)
             self.assertNotRegex(text, r"bundledock/toolbox@sha256", name)
+        smoke = (ROOT / "bundles/nixbox/scripts/smoke.sh").read_text()
+        self.assertNotIn("toolbox", smoke)
 
 
 if __name__ == "__main__":

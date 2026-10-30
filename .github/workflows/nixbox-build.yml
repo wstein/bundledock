@@ -42,7 +42,7 @@ jobs:
         run: sh scripts/approve-build.sh
       - name: Build nixbox locally
         run: make bundle-build BUNDLE=nixbox IMAGE=bundledock-nixbox:build-only
-      - name: Smoke the local nixbox on the pinned consumer matrix with the published toolbox
+      - name: Smoke the local nixbox on the pinned consumer matrix
         env:
           NIXBOX_PLATFORM: ${{ matrix.platform }}
         run: sh bundles/nixbox/scripts/smoke.sh bundledock-nixbox:build-only

@@ -32,16 +32,12 @@ check() {
         --mount "type=bind,src=$script_dir/whr-smoke.sh,dst=/whr-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/stw-smoke.sh,dst=/stw-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/tofu-smoke.sh,dst=/tofu-smoke.sh,readonly" \
-        --mount "type=bind,src=$script_dir/zk-smoke.sh,dst=/zk-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/misspell-smoke.sh,dst=/misspell-smoke.sh,readonly" \
-        --mount "type=bind,src=$script_dir/fastfetch-smoke.sh,dst=/fastfetch-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/navi-smoke.sh,dst=/navi-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/mise-smoke.sh,dst=/mise-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/sqlite3-smoke.sh,dst=/sqlite3-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/utilities-smoke.sh,dst=/utilities-smoke.sh,readonly" \
-        --mount "type=bind,src=$script_dir/helix-smoke.sh,dst=/helix-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/vcs-versions-smoke.sh,dst=/vcs-versions-smoke.sh,readonly" \
-        --mount "type=bind,src=$script_dir/leaf-smoke.sh,dst=/leaf-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/jujutsu-smoke.sh,dst=/jujutsu-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/hugo-smoke.sh,dst=/hugo-smoke.sh,readonly" \
         --mount "type=bind,src=$script_dir/http-disk-env-secrets-smoke.sh,dst=/http-disk-env-secrets-smoke.sh,readonly" \
@@ -114,10 +110,6 @@ check() {
             fdfind --version
             test "$(fd --type f --max-depth 1 "^tool-smoke[.]txt$" "$HOME")" = "$HOME/tool-smoke.txt"
             test "$(fdfind --type f --max-depth 1 "^tool-smoke[.]txt$" "$HOME")" = "$HOME/tool-smoke.txt"
-            stage "ast-grep syntax search"
-            ast-grep --version
-            printf "%s\n" "package main" "func main() {" "println(42)" "}" > "$HOME/tool-smoke.go"
-            test "$(ast-grep run --lang go --pattern "func main() { println(42) }" --files-with-matches "$HOME/tool-smoke.go")" = "$HOME/tool-smoke.go"
             stage "yq YAML"
             yq --version
             printf "%s\n" "answer: 42" | yq -e ".answer == 42"
@@ -143,12 +135,8 @@ check() {
             sh /stw-smoke.sh
             stage "OpenTofu version"
             sh /tofu-smoke.sh
-            stage "zk version"
-            sh /zk-smoke.sh
             stage "misspell version"
             sh /misspell-smoke.sh
-            stage "Fastfetch version"
-            sh /fastfetch-smoke.sh
             stage "Navi version"
             sh /navi-smoke.sh
             stage "mise version"
@@ -159,14 +147,10 @@ check() {
             sh /utilities-smoke.sh
             stage "shell formatting recipes Python diffs watching benchmarks and encryption"
             sh /quality-utilities-smoke.sh
-            stage "Helix editor"
-            sh /helix-smoke.sh
             stage "noninteractive VCS versions"
             sh /vcs-versions-smoke.sh
             stage "Jujutsu isolated Git-backed workspace"
             sh /jujutsu-smoke.sh
-            stage "Leaf Markdown preview"
-            sh /leaf-smoke.sh
             stage "Hugo"
             sh /hugo-smoke.sh
             stage "quality and security tools"
