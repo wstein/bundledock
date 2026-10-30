@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -32,4 +33,23 @@ func repoRoot(t *testing.T) string {
 		t.Fatal(err)
 	}
 	return root
+}
+
+type rewriteTransport struct{ target *url.URL }
+
+func (r rewriteTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	req = req.Clone(req.Context())
+	req.URL.Scheme, req.URL.Host, req.Host = r.target.Scheme, r.target.Host, r.target.Host
+	return http.DefaultTransport.RoundTrip(req)
+}
+
+// clientFor returns a client for the default quay.io URL whose requests go to
+// srv, so code that sends credentials (only allowed to quay.io) can be tested.
+func clientFor(t *testing.T, srv *httptest.Server) *Client {
+	t.Helper()
+	target, err := url.Parse(srv.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return New(&http.Client{Transport: rewriteTransport{target}}, "")
 }

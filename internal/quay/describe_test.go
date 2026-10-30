@@ -64,7 +64,7 @@ func TestDescribeCheckAndApply(t *testing.T) {
 	root := t.TempDir()
 	writeDescription(t, root, "toolbox", "new")
 	writeDescription(t, root, "nixbox", "same")
-	c := New(srv.Client(), srv.URL)
+	c := clientFor(t, srv)
 	rows, err := Describe(context.Background(), c, root, Bundles(), false, "")
 	if err != nil || len(puts) != 0 {
 		t.Fatalf("check wrote or failed: %v %v", err, puts)
@@ -96,7 +96,7 @@ func TestSetDescriptionErrorHidesToken(t *testing.T) {
 		w.Write([]byte("bad token secret-token"))
 	}))
 	defer srv.Close()
-	err := New(srv.Client(), srv.URL).SetDescription(context.Background(), "toolbox", "secret-token", "x")
+	err := clientFor(t, srv).SetDescription(context.Background(), "toolbox", "secret-token", "x")
 	if err == nil || strings.Contains(err.Error(), "secret-token") {
 		t.Fatalf("err = %v", err)
 	}
@@ -113,5 +113,43 @@ func TestDescribeNonPublicDiffers(t *testing.T) {
 	rows, err := Describe(context.Background(), New(srv.Client(), srv.URL), root, []Bundle{b}, false, "")
 	if err != nil || rows[0].State != "differs" {
 		t.Fatalf("rows = %v err = %v", rows, err)
+	}
+}
+
+func TestCredentialsNeverLeaveForAnotherHost(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Errorf("request reached a non-default host: %s %s", r.Method, r.URL.Path)
+	}))
+	defer srv.Close()
+	c := New(srv.Client(), srv.URL)
+	ctx := context.Background()
+	if err := c.SetDescription(ctx, "toolbox", "secret-token", "x"); err == nil {
+		t.Error("OAuth token sent to a non-default host")
+	}
+	if err := c.DeleteTag(ctx, "toolbox", "staging-2026.10.01-b4.1-amd64", "robot", "pw"); err == nil {
+		t.Error("robot credentials sent to a non-default host")
+	}
+	if _, err := c.RegistryAs(ctx, "toolbox", "robot", "pw"); err == nil {
+		t.Error("robot credentials sent to a non-default host for pull")
+	}
+}
+
+func TestRegistryAsUsesRobotWhenSet(t *testing.T) {
+	var basic []bool
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _, ok := r.BasicAuth()
+		basic = append(basic, ok)
+		w.Write([]byte(`{"token":"tok"}`))
+	}))
+	defer srv.Close()
+	c := clientFor(t, srv)
+	if _, err := c.RegistryAs(context.Background(), "toolbox", "robot", "pw"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := c.RegistryAs(context.Background(), "toolbox", "", ""); err != nil {
+		t.Fatal(err)
+	}
+	if len(basic) != 2 || !basic[0] || basic[1] {
+		t.Fatalf("basic auth per request = %v", basic)
 	}
 }

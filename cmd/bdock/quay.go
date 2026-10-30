@@ -20,11 +20,10 @@ import (
 type quayOptions struct {
 	json   bool
 	root   string
-	apiURL string
 	client *http.Client
 }
 
-func (o *quayOptions) api() *quay.Client { return quay.New(o.client, o.apiURL) }
+func (o *quayOptions) api() *quay.Client { return quay.New(o.client, quay.DefaultBaseURL) }
 
 // errDifference makes a command exit with status 1 without extra output.
 type errDifference struct{ message string }
@@ -37,8 +36,6 @@ func newQuayCommandWithClient(client *http.Client) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error { return cmd.Help() }}
 	cmd.PersistentFlags().BoolVar(&o.json, "json", false, "write one JSON document to stdout")
 	cmd.PersistentFlags().StringVar(&o.root, "root", ".", "repository root that holds docs/ and bundles/")
-	cmd.PersistentFlags().StringVar(&o.apiURL, "api-url", quay.DefaultBaseURL, "Quay endpoint (for testing)")
-	_ = cmd.PersistentFlags().MarkHidden("api-url")
 	cmd.AddCommand(newQuayListCommand(o), newQuayStatusCommand(o), newQuayInfoCommand(o), newQuayDescribeCommand(o), newQuayPruneCommand(o))
 	return cmd
 }

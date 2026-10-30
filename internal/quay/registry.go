@@ -32,10 +32,22 @@ func (c *Client) Registry(ctx context.Context, repository string) (*Registry, er
 	return c.registryToken(ctx, repository, "pull", "", "")
 }
 
+// RegistryAs opens a pull-only session with a robot account when both
+// credentials are set, else anonymously. The robot is only used on quay.io.
+func (c *Client) RegistryAs(ctx context.Context, repository, username, password string) (*Registry, error) {
+	if username == "" || password == "" {
+		return c.Registry(ctx, repository)
+	}
+	return c.registryToken(ctx, repository, "pull", username, password)
+}
+
 func (c *Client) registryToken(ctx context.Context, repository, actions, username, password string) (*Registry, error) {
 	query := url.Values{"service": {"quay.io"}, "scope": {"repository:" + Namespace + "/" + repository + ":" + actions}}
 	header := http.Header{}
 	if username != "" {
+		if err := c.requireDefaultHost(); err != nil {
+			return nil, err
+		}
 		header.Set("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(username+":"+password)))
 	}
 	raw, err := c.Do(ctx, http.MethodGet, "/v2/auth?"+query.Encode(), header, nil, http.StatusOK)

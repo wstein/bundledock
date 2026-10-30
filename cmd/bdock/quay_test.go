@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -50,10 +51,12 @@ func runQuay(t *testing.T, srv *httptest.Server, args ...string) (stdout, stderr
 func runQuayAt(t *testing.T, root string, srv *httptest.Server, args ...string) (stdout, stderr string, err error) {
 	t.Helper()
 	var out, errOut bytes.Buffer
-	cmd := newRootCommandWithClient(srv.Client())
+	target, _ := url.Parse(srv.URL)
+	// The command talks to quay.io only; the test transport sends it to the fake.
+	cmd := newRootCommandWithClient(&http.Client{Transport: rewriteTransport{target}})
 	cmd.SetOut(&out)
 	cmd.SetErr(&errOut)
-	cmd.SetArgs(append([]string{"quay"}, append(args, "--api-url", srv.URL, "--root", root)...))
+	cmd.SetArgs(append([]string{"quay"}, append(args, "--root", root)...))
 	err = cmd.Execute()
 	return out.String(), errOut.String(), err
 }
@@ -387,5 +390,20 @@ func TestQuayDescribeInit(t *testing.T) {
 	}
 	if _, _, err = runQuayAt(t, root, srv, "describe", "--init", "--apply", "bun"); err == nil {
 		t.Fatal("--init with --apply accepted")
+	}
+}
+
+type rewriteTransport struct{ target *url.URL }
+
+func (r rewriteTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	req = req.Clone(req.Context())
+	req.URL.Scheme, req.URL.Host, req.Host = r.target.Scheme, r.target.Host, r.target.Host
+	return http.DefaultTransport.RoundTrip(req)
+}
+
+func TestQuayHasNoEndpointFlag(t *testing.T) {
+	srv := fakeQuayAPI(t, nil)
+	if _, _, err := runQuayAt(t, "../..", srv, "list", "--api-url", srv.URL); err == nil {
+		t.Fatal("--api-url exists; credentials could be sent to any host")
 	}
 }
