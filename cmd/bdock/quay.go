@@ -32,7 +32,7 @@ func newQuayCommandWithClient(client *http.Client) *cobra.Command {
 	cmd.PersistentFlags().StringVar(&o.root, "root", ".", "repository root that holds docs/ and bundles/")
 	cmd.PersistentFlags().StringVar(&o.apiURL, "api-url", quay.DefaultBaseURL, "Quay endpoint (for testing)")
 	_ = cmd.PersistentFlags().MarkHidden("api-url")
-	cmd.AddCommand(newQuayListCommand(o))
+	cmd.AddCommand(newQuayListCommand(o), newQuayStatusCommand(o))
 	return cmd
 }
 
@@ -59,6 +59,56 @@ func newQuayListCommand(o *quayOptions) *cobra.Command {
 				fmt.Fprintf(w, "%s\t%s\t%s\t%d\n", r.Bundle, version, digest, r.Staging)
 			}
 			return w.Flush()
+		},
+	}
+}
+
+func newQuayStatusCommand(o *quayOptions) *cobra.Command {
+	return &cobra.Command{
+		Use: "status [bundle]", Short: "Compare Quay with the publication records; exit 1 on any difference", Args: cobra.MaximumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			bundles := quay.Bundles()
+			if len(args) == 1 {
+				b, err := quay.FindBundle(args[0])
+				if err != nil {
+					return err
+				}
+				bundles = []quay.Bundle{b}
+			}
+			rows, err := quay.Status(cmd.Context(), &quay.Inventory{Client: o.api()}, o.root, bundles)
+			if err != nil {
+				return err
+			}
+			differs := 0
+			for _, r := range rows {
+				if r.State == "differs" {
+					differs++
+				}
+			}
+			if o.json {
+				if err := quay.WriteJSON(cmd.OutOrStdout(), "bdock.quay.status/v1", map[string]any{"bundles": rows}); err != nil {
+					return err
+				}
+			} else {
+				out := cmd.OutOrStdout()
+				for _, r := range rows {
+					fmt.Fprintf(out, "%s: %s\n", r.Bundle, r.State)
+					for _, c := range r.Checks {
+						switch {
+						case c.Kind == "residue":
+							fmt.Fprintf(out, "  residue: staging tag %s of the published version\n", c.Tag)
+						case !c.OK && c.Actual == "":
+							fmt.Fprintf(out, "  %s %s: missing (expected %s)\n", c.Kind, c.Tag, c.Expected)
+						case !c.OK:
+							fmt.Fprintf(out, "  %s %s: %s (expected %s)\n", c.Kind, c.Tag, c.Actual, c.Expected)
+						}
+					}
+				}
+			}
+			if differs > 0 {
+				return errDifference{fmt.Sprintf("%d bundle(s) differ from the publication records", differs)}
+			}
+			return nil
 		},
 	}
 }
