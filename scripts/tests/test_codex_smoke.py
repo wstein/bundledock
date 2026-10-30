@@ -2,6 +2,7 @@
 import json
 import os
 import shlex
+import shutil
 from pathlib import Path
 import subprocess
 import tempfile
@@ -47,6 +48,7 @@ if sys.argv[1:3]==['volume','create']:print('fixture-volume')
                     self.assertTrue(source.is_file())
                     self.assertIn('type=bind,src='+str(source)+',dst=/'+name+'-smoke.sh,readonly', call)
 
+    @unittest.skipUnless(shutil.which("timeout"), "consumer-smoke.sh needs GNU coreutils timeout, absent on this host")
     def test_consumer_prepares_codex_home_before_invocation(self):
         for existing_config in (False, True):
             for has_zsh in (False, True):
