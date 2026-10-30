@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"bundledock/internal/testdir"
 )
 
 func TestNodeWorkflowSourcesSeparateApprovalAndArtifacts(t *testing.T) {
@@ -19,7 +21,7 @@ func TestNodeSmokeAdapterUsesOwnReadOnlyVolume(t *testing.T) {
 		t.Skip(err)
 	}
 	for _, bundle := range []string{"node", "node-current"} {
-		dir := t.TempDir()
+		dir := testdir.New(t)
 		log := filepath.Join(dir, "calls")
 		docker := `#!/bin/sh
 printf '%s\n' "$*" >> "$SMOKE_CALLS"

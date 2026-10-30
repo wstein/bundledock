@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"bundledock/internal/testdir"
 )
 
 func TestBuildStagesUseMinimalAlpineBases(t *testing.T) {
@@ -124,7 +126,7 @@ func TestScratchCarrierContract(t *testing.T) {
 }
 
 func TestSharedVolumeSmokeWithShellFreeCarrier(t *testing.T) {
-	dir := t.TempDir()
+	dir := testdir.New(t)
 	docker := `#!/bin/sh
 case "$1" in
 image) printf '%s\n' sha256:carrier ;;

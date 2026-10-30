@@ -6,12 +6,14 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"bundledock/internal/testdir"
 )
 
 func TestCISmokeBuildsLockedImageOnce(t *testing.T) {
 	for _, failure := range []string{"", "build", "pull", "smoke"} {
 		t.Run(failure, func(t *testing.T) {
-			dir := t.TempDir()
+			dir := testdir.New(t)
 			source, err := os.ReadFile("../../bundles/toolbox/scripts/ci-smoke.sh")
 			if err != nil {
 				t.Fatal(err)

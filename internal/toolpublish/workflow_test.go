@@ -7,6 +7,8 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+
+	"bundledock/internal/testdir"
 )
 
 func TestPublicationWorkflowRepositoryConfiguration(t *testing.T) {
@@ -41,7 +43,7 @@ func TestPublicationWorkflowRepositoryConfiguration(t *testing.T) {
 			continue
 		}
 		logins++
-		dir := t.TempDir()
+		dir := testdir.New(t)
 		// Capture dummy credentials from the workflow's actual shell command.
 		stub := "#!/bin/sh\nprintf '%s\\n' \"$*\" > \"$LOGIN_ARGS\"\ncat > \"$LOGIN_INPUT\"\n"
 		if err := os.WriteFile(filepath.Join(dir, "docker"), []byte(stub), 0700); err != nil {
@@ -305,7 +307,7 @@ func TestPublicationResolutionFreezesManualAndMergedLocks(t *testing.T) {
 	body = strings.TrimPrefix(body, "|\n")
 	for _, event := range []string{"workflow_dispatch", "workflow_run"} {
 		t.Run(event, func(t *testing.T) {
-			dir := t.TempDir()
+			dir := testdir.New(t)
 			adapter := filepath.Join(dir, "tools-publish")
 			if err := os.WriteFile(adapter, []byte("#!/bin/sh\nprintf '%s\\n' \"$@\"\n"), 0700); err != nil {
 				t.Fatal(err)
