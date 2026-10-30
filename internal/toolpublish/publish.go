@@ -2,6 +2,7 @@
 package toolpublish
 
 import (
+	"bundledock/internal/nixbox"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -46,7 +47,7 @@ type Adapter struct {
 	TagAbsent    func(image, tag string) error
 }
 
-var imagePattern = regexp.MustCompile(`^quay\.io/[a-z0-9]+(?:[._-][a-z0-9]+)*/(toolbox|code-server|node|bun|codex|agy|claude|opentofu)$`)
+var imagePattern = regexp.MustCompile(`^quay\.io/[a-z0-9]+(?:[._-][a-z0-9]+)*/(toolbox|code-server|node|bun|codex|agy|claude|opentofu|nixbox)$`)
 var tagPattern = regexp.MustCompile(`^(?:\d{4}\.\d{2}\.\d{2}-b[1-9]\d*(?:\.[1-9]\d*)?|(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)-b[1-9]\d*)$`)
 var runIDPattern = regexp.MustCompile(`^[1-9]\d*$`)
 var commitPattern = regexp.MustCompile(`^[a-f0-9]{40}$`)
@@ -85,25 +86,25 @@ func newMetadata(bundle, lock, image, tag, commit, source, created, runID string
 		return m, err
 	}
 	if !imagePattern.MatchString(image) {
-		return m, fmt.Errorf("publication image must be quay.io/<namespace>/{toolbox,code-server,node,bun,codex,agy,claude,opentofu}")
+		return m, fmt.Errorf("publication image must be quay.io/<namespace>/{toolbox,code-server,node,bun,codex,agy,claude,opentofu,nixbox}")
 	}
 	if !tagPattern.MatchString(tag) || !commitPattern.MatchString(commit) || !runIDPattern.MatchString(runID) {
 		return m, fmt.Errorf("invalid date/run/attempt tag, source commit or run ID")
 	}
-	if b.Name == "toolbox" && toolboxDatePattern.MatchString(tag) {
+	if b.DateTagged() && toolboxDatePattern.MatchString(tag) {
 		if len(attempt) != 1 || !runIDPattern.MatchString(attempt[0]) {
-			return m, fmt.Errorf("daily toolbox tag requires workflow attempt")
+			return m, fmt.Errorf("daily tag requires workflow attempt")
 		}
 		date := strings.Split(tag, "-b")[0]
 		if _, err := time.Parse("2006.01.02", date); err != nil || strings.ReplaceAll(date, ".", "-") != strings.Split(created, "T")[0] {
-			return m, fmt.Errorf("toolbox tag date differs from creation date")
+			return m, fmt.Errorf("tag date differs from creation date")
 		}
 		m.RunAttempt = attempt[0]
 	} else if singletonTagPattern.MatchString(tag) {
 		if b.Repository == "node" && bundle == "" {
 			return m, fmt.Errorf("Node channel source identity required for new semantic publications")
 		}
-		if b.Name == "toolbox" || len(attempt) != 1 || !runIDPattern.MatchString(attempt[0]) {
+		if b.DateTagged() || len(attempt) != 1 || !runIDPattern.MatchString(attempt[0]) {
 			return m, fmt.Errorf("singleton tag requires workflow attempt")
 		}
 		m.RunAttempt = attempt[0]
@@ -146,21 +147,33 @@ func validate(m Metadata, lock string) error {
 }
 
 func labels(m Metadata, lock, arch string) (map[string]string, error) {
-	var pins struct {
-		Platforms map[string]map[string]struct {
-			Version string `json:"version"`
-		} `json:"platforms"`
-	}
 	b, err := os.ReadFile(lock)
 	if err != nil {
 		return nil, err
 	}
-	if err = json.Unmarshal(b, &pins); err != nil {
-		return nil, err
-	}
+	bundle := BundleForMetadata(m)
 	versions := map[string]string{}
-	for name, pin := range pins.Platforms[arch] {
-		versions[name] = pin.Version
+	if bundle.Name == "nixbox" {
+		// nixbox pins store paths: each root's store path name stands for its version.
+		pins, err := nixbox.ParseLock(b)
+		if err != nil {
+			return nil, err
+		}
+		for name, path := range pins.Platforms[arch].Roots {
+			versions[name] = path[strings.LastIndex(path, "/")+1:]
+		}
+	} else {
+		var pins struct {
+			Platforms map[string]map[string]struct {
+				Version string `json:"version"`
+			} `json:"platforms"`
+		}
+		if err = json.Unmarshal(b, &pins); err != nil {
+			return nil, err
+		}
+		for name, pin := range pins.Platforms[arch] {
+			versions[name] = pin.Version
+		}
 	}
 	if len(versions) == 0 {
 		return nil, fmt.Errorf("lock has no tools for %s", arch)
@@ -169,17 +182,17 @@ func labels(m Metadata, lock, arch string) (map[string]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	semantic, err := ToolDigest(b)
+	semantic, err := LockDigest(bundle.Name, b)
 	if err != nil {
 		return nil, err
 	}
 	return map[string]string{
-		"org.opencontainers.image.title": "bundledock-" + BundleForMetadata(m).Name, "org.opencontainers.image.source": m.Source,
+		"org.opencontainers.image.title": "bundledock-" + bundle.Name, "org.opencontainers.image.source": m.Source,
 		"org.opencontainers.image.revision": m.Commit, "org.opencontainers.image.created": m.Created,
 		"org.opencontainers.image.version": m.Tag, "io.bundledock.tools.lock-sha256": m.LockSHA256,
 		"io.bundledock.tools.versions": string(encoded), "io.bundledock.github.run-id": m.RunID,
 		"io.bundledock.github.run-attempt": m.RunAttempt,
-		"io.bundledock.bundle":             BundleForMetadata(m).Name,
+		"io.bundledock.bundle":             bundle.Name,
 		platformsLabel:                     semantic,
 	}, nil
 }
