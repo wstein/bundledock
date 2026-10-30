@@ -1,4 +1,4 @@
-"""Run the real nixbox shim against a fake profile, toolbox and loader."""
+"""Run the real nixbox shim against a fake profile (with its tools) and loader."""
 import os
 from pathlib import Path
 import shutil
@@ -31,7 +31,8 @@ class ShimTests(unittest.TestCase):
         loader = self.profile / 'lib/ld.so'
         loader.write_text('#!/bin/sh\nprintf "LOADER"; for a in "$@"; do printf " [%s]" "$a"; done; printf "\\n"\n')
         loader.chmod(0o755)
-        self.toolbox = self.dir / 'tool box'
+        # The official binaries live inside the profile, below libexec/nixbox.
+        self.toolbox = self.profile / 'libexec/nixbox'
         for rel in ('bin/zk', 'lib/helix/hx'):
             path = self.toolbox / rel
             path.parent.mkdir(parents=True, exist_ok=True)
@@ -42,7 +43,7 @@ class ShimTests(unittest.TestCase):
 
     def run_shim(self, name, *args, **env):
         environment = {k: v for k, v in os.environ.items() if not k.startswith(('NIXBOX_', 'BDOCK_', 'HELIX_'))}
-        environment.update(BDOCK_TOOLBOX=str(self.toolbox), NIXBOX_HOST_LOADERS=str(self.dir / 'absent'),
+        environment.update(NIXBOX_HOST_LOADERS=str(self.dir / 'absent'),
                            NIXBOX_MUSL_LOADERS=str(self.dir / 'absent'))
         environment.update(env)
         return subprocess.run([str(self.profile / 'bin' / name), *args], env=environment, capture_output=True, text=True)
@@ -80,7 +81,7 @@ class ShimTests(unittest.TestCase):
         link_dir = self.dir / 'ub'
         link_dir.mkdir()
         (link_dir / 'zk').symlink_to(self.profile / 'bin/zk')
-        environment = dict(os.environ, BDOCK_TOOLBOX=str(self.toolbox), NIXBOX_LOADER='never')
+        environment = dict(os.environ, NIXBOX_LOADER='never')
         result = subprocess.run([str(link_dir / 'zk'), 'x'], env=environment, capture_output=True, text=True)
         self.assertEqual((result.returncode, result.stdout), (0, 'DIRECT [x] HELIX_RUNTIME=unset\n'), result.stderr)
 
@@ -89,7 +90,7 @@ class ShimTests(unittest.TestCase):
         link_dir.mkdir()
         (link_dir / 'helix').symlink_to(self.profile / 'bin/hx')
         (link_dir / 'again').symlink_to('helix')
-        environment = dict(os.environ, BDOCK_TOOLBOX=str(self.toolbox), NIXBOX_LOADER='never')
+        environment = dict(os.environ, NIXBOX_LOADER='never')
         environment.pop('HELIX_RUNTIME', None)
         for name in ('helix', 'again'):
             result = subprocess.run([str(link_dir / name), 'x'], env=environment, capture_output=True, text=True)
@@ -111,12 +112,21 @@ class ShimTests(unittest.TestCase):
     def test_runtime_is_not_set_for_other_tools(self):
         self.assertIn('HELIX_RUNTIME=unset', self.run_shim('zk', NIXBOX_LOADER='never').stdout)
 
-    def test_missing_toolbox_fails_with_a_clear_message(self):
-        result = self.run_shim('zk', BDOCK_TOOLBOX=str(self.dir / 'nothing'))
+    def test_a_missing_binary_fails_with_a_clear_message(self):
+        (self.toolbox / 'bin/zk').unlink()
+        result = self.run_shim('zk')
         self.assertEqual(result.returncode, 127)
-        self.assertIn('needs the toolbox bundle at %s' % (self.dir / 'nothing'), result.stderr)
-        self.assertIn('BDOCK_TOOLBOX', result.stderr)
+        self.assertIn('zk is not installed: %s is missing' % (self.toolbox / 'bin/zk'), result.stderr)
         self.assertEqual(result.stdout, '')
+
+    def test_the_toolbox_is_not_used(self):
+        # A toolbox copy on the old path is ignored: only the binary inside the profile runs.
+        other = self.dir / 'tool box/bin'
+        other.mkdir(parents=True)
+        (other / 'zk').write_text('#!/bin/sh\necho TOOLBOX\n')
+        (other / 'zk').chmod(0o755)
+        result = self.run_shim('zk', NIXBOX_LOADER='never', BDOCK_TOOLBOX=str(self.dir / 'tool box'))
+        self.assertTrue(result.stdout.startswith('DIRECT'), result.stdout + result.stderr)
 
     def test_unlisted_name_and_missing_table_fail(self):
         result = self.run_shim('unlisted')
@@ -133,7 +143,7 @@ class ShimTests(unittest.TestCase):
     def test_exit_status_and_stdin_pass_through(self):
         (self.toolbox / 'bin/zk').write_text('#!/bin/sh\ncat\nexit 3\n')
         result = subprocess.run([str(self.profile / 'bin/zk')], input='piped', capture_output=True, text=True,
-                                env=dict(os.environ, BDOCK_TOOLBOX=str(self.toolbox), NIXBOX_LOADER='never'))
+                                env=dict(os.environ, NIXBOX_LOADER='never'))
         self.assertEqual((result.returncode, result.stdout), (3, 'piped'))
 
     def test_shim_is_posix_sh_and_passes_shellcheck_when_available(self):
