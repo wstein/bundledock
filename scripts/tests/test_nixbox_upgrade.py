@@ -81,8 +81,14 @@ class NixboxUpgradeTests(unittest.TestCase):
         origin = tmp / 'origin.git'
         subprocess.run(['git', 'init', '-q', '--bare', str(origin)], check=True)
         (self.repo / 'scripts').mkdir(parents=True)
-        for name in ('tool-upgrade.sh', 'bundle-config.py', 'updater-source-ci.py'):
+        for name in ('tool-upgrade.sh', 'bundle-config.py', 'updater-source-ci.py', 'tool-inventory.py'):
             shutil.copy(ROOT / 'scripts' / name, self.repo / 'scripts' / name)
+        # The official release binaries (toolbox schema) and their generated inventory are the real ones.
+        (self.repo / 'bundles/nixbox/tools').mkdir(parents=True)
+        for name in ('packages.catalog.json', 'packages.lock.json'):
+            shutil.copy(ROOT / 'bundles/nixbox/tools' / name, self.repo / 'bundles/nixbox/tools' / name)
+        (self.repo / 'docs').mkdir()
+        shutil.copy(ROOT / 'docs/nixbox.md', self.repo / 'docs/nixbox.md')
         box = self.repo / 'bundles/nixbox'
         (box / 'scripts').mkdir(parents=True)
         (box / 'packages.catalog.json').write_text(catalog(OLD_REV))
@@ -102,7 +108,9 @@ class NixboxUpgradeTests(unittest.TestCase):
         self.bin = tmp / 'bin'
         self.bin.mkdir()
         self.calls = tmp / 'calls'
-        write_exec(self.bin / 'go', '#!/bin/sh\necho "go $*" >> "$CALLS"\n')
+        # `go run ./cmd/bdock tools upgrade --directory bundles/nixbox/tools` rewrites the tools lock like the real resolver.
+        write_exec(self.bin / 'go', '#!/bin/sh\necho "go $*" >> "$CALLS"\n'
+                   'case "$*" in *"tools upgrade"*) [ ! -f "$NEW_TOOLS_LOCK" ] || cp "$NEW_TOOLS_LOCK" bundles/nixbox/tools/packages.lock.json;; esac\n')
         write_exec(self.bin / 'gh', GH)
         write_exec(self.bin / 'docker', '#!/bin/sh\necho "docker $*" >> "$CALLS"\nexit 99\n')
         self.result = tmp / 'result'
@@ -110,6 +118,7 @@ class NixboxUpgradeTests(unittest.TestCase):
         self.summary = tmp / 'summary'
         self.new_lock = tmp / 'new.lock.json'
         self.new_catalog = tmp / 'new.catalog.json'
+        self.new_tools_lock = tmp / 'new.tools.lock.json'
 
     def git(self, *args):
         return subprocess.run(['git', *args], cwd=self.repo, check=True, capture_output=True, text=True).stdout.strip()
@@ -120,7 +129,7 @@ class NixboxUpgradeTests(unittest.TestCase):
             self.new_lock.write_text(json.dumps(new, indent=2) + '\n')
         full = dict(os.environ, PATH=str(self.bin) + os.pathsep + os.environ['PATH'], CALLS=str(self.calls),
                     UPGRADE_RESULT=str(self.result), GITHUB_OUTPUT=str(self.output), GITHUB_STEP_SUMMARY=str(self.summary),
-                    NEW_LOCK=str(self.new_lock), NEW_CATALOG=str(self.new_catalog), GITHUB_REPOSITORY='wstein/bundledock', GITHUB_RUN_ID='7',
+                    NEW_LOCK=str(self.new_lock), NEW_CATALOG=str(self.new_catalog), NEW_TOOLS_LOCK=str(self.new_tools_lock), GITHUB_REPOSITORY='wstein/bundledock', GITHUB_RUN_ID='7',
                     GITHUB_RUN_ATTEMPT='1', DEFAULT_BRANCH='main', GITHUB_REF='refs/heads/main',
                     GITHUB_SHA=self.git('rev-parse', 'HEAD'))
         full.update(env)
@@ -138,19 +147,36 @@ class NixboxUpgradeTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn('changed=true', self.output.read_text())
         self.assertEqual({p.name for p in self.result.iterdir()},
-                         {'nixbox.lock.json', 'nixbox.catalog.json', 'base.sha', 'lock.diff'})
+                         {'nixbox.lock.json', 'nixbox.catalog.json', 'nixbox.tools.lock.json', 'nixbox.md', 'base.sha', 'lock.diff'})
         self.assertIn(NEW_REV, (self.result / 'nixbox.catalog.json').read_text())
         self.assertIn('Proposed nixbox', self.summary.read_text())
         calls = self.call_log()
         self.assertLess(calls.index('bump'), calls.index('refresh'))
         self.assertTrue(any(c.startswith('go run ./cmd/nixbox check') for c in calls))
-        self.assertFalse(any('tools upgrade' in c or c.startswith('docker') for c in calls), calls)
+        # The official release binaries resolve in the same proposal, from the stable releases, never in Docker.
+        self.assertIn('go run ./cmd/bdock tools upgrade --directory bundles/nixbox/tools', calls)
+        self.assertFalse(any(c.startswith('docker') for c in calls), calls)
 
     def test_resolve_without_change_creates_nothing(self):
         result = self.resolve(lock('a'))
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn('changed=false', self.output.read_text())
         self.assertFalse((self.result / 'nixbox.lock.json').exists())
+
+    def tools_lock(self, version='v9.8.7'):
+        lock = json.loads((ROOT / 'bundles/nixbox/tools/packages.lock.json').read_text())
+        for arch in ('amd64', 'arm64'):
+            lock['platforms'][arch]['zk']['version'] = version
+        return json.dumps(lock, indent=2) + '\n'
+
+    def test_resolve_proposes_a_new_official_binary_with_its_inventory_row(self):
+        self.new_tools_lock.write_text(self.tools_lock())
+        result = self.resolve(lock('a'))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('changed=true', self.output.read_text())
+        self.assertIn('9.8.7', (self.result / 'nixbox.tools.lock.json').read_text())
+        self.assertIn('| zk (`zk`) | 9.8.7 |', (self.result / 'nixbox.md').read_text())
+        self.assertIn('9.8.7', (self.result / 'lock.diff').read_text())
 
     def test_resolve_refuses_edits_outside_the_lock_and_catalog_and_a_tool_argument(self):
         write_exec(self.repo / 'bundles/nixbox/scripts/refresh-lock.sh',
@@ -188,6 +214,46 @@ class NixboxUpgradeTests(unittest.TestCase):
         self.assertTrue(any(c.startswith('gh api') and c.endswith('--method POST --input -') and 'workflows/ci.yml/dispatches' in c
                             for c in calls), calls)
         self.assertFalse(any('workflow' in c and 'run' in c.split() for c in calls if c.startswith('gh')), calls)
+
+    def test_publish_opens_one_pull_request_for_an_official_binary_bump(self):
+        self.new_tools_lock.write_text(self.tools_lock())
+        self.publish_inputs(lock('a'), rev=OLD_REV)
+        self.calls.write_text('')
+        result = self.run_script('publish', PROPOSAL_GROUP='nixbox')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(set(self.git('diff', '--name-only', 'main', 'HEAD').split()),
+                         {'bundles/nixbox/tools/packages.lock.json', 'docs/nixbox.md'})
+        self.assertEqual(self.git('log', '-1', '--format=%s'), 'chore(nixbox): upgrade official tools')
+        body = (self.result / 'pr-body.md').read_text()
+        self.assertIn('zk:', body)
+        self.assertIn('v9.8.7', body)
+        self.assertTrue(any(c.startswith('gh pr create') for c in self.call_log()))
+
+    def test_publish_names_both_changes_when_the_pin_and_a_tool_move(self):
+        self.new_tools_lock.write_text(self.tools_lock())
+        self.publish_inputs(lock('b'))
+        result = self.run_script('publish', PROPOSAL_GROUP='nixbox')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.git('log', '-1', '--format=%s'), 'chore(nixbox): bump nixpkgs to bbbbbbbbbbbb and upgrade official tools')
+
+    def test_publish_refuses_an_inventory_that_differs_from_the_generated_one(self):
+        self.new_tools_lock.write_text(self.tools_lock())
+        self.publish_inputs(lock('b'))
+        guide = self.result / 'nixbox.md'
+        guide.write_text(guide.read_text().replace('9.8.7', '1.2.3'))
+        result = self.run_script('publish', PROPOSAL_GROUP='nixbox')
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('documentation artifact differs', result.stderr)
+        self.assertEqual(self.git('branch', '--show-current'), 'main')
+
+    def test_publish_refuses_a_tools_lock_that_fails_the_check(self):
+        self.new_tools_lock.write_text(self.tools_lock())
+        self.publish_inputs(lock('b'))
+        write_exec(self.bin / 'go', '#!/bin/sh\necho "go $*" >> "$CALLS"\ncase "$*" in *"cmd/nixbox check"*"-tools bundles/nixbox/tools"*) exit 7;; esac\n')
+        result = self.run_script('publish', PROPOSAL_GROUP='nixbox')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(self.git('branch', '--show-current'), 'main')
+        self.assertTrue(any('-tools bundles/nixbox/tools' in c for c in self.call_log()))
 
     def test_publish_without_artifact_changes_opens_nothing_and_ignores_the_default_group(self):
         self.publish_inputs(lock('b'))
