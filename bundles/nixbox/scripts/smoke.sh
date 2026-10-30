@@ -8,12 +8,26 @@
 #   NIXBOX_PLATFORM       docker platform for every container (default: native)
 #   NIXBOX_TOOLBOX_IMAGE  toolbox carrier image whose volume is mounted at
 #                         /opt/bdock/toolbox for the eight shimmed binaries
+#                         (default: the image and digest recorded in
+#                         docs/toolbox-published.json; set it empty to skip)
 #   NIXBOX_OFFLINE=1      skip the one check that needs the network
 set -eu
 script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 image=${1:-bundledock-nixbox:poc}
 platform=${NIXBOX_PLATFORM:-}
-toolbox_image=${NIXBOX_TOOLBOX_IMAGE:-}
+# The publication flow keeps this record current, so nothing is pinned by hand.
+record=$script_dir/../../../docs/toolbox-published.json
+if [ -z "${NIXBOX_TOOLBOX_IMAGE+x}" ]; then
+    record_image=$(sed -n 's/^  "image": "\([^"]*\)",$/\1/p' "$record")
+    record_digest=$(sed -n 's/^  "digest": "\(sha256:[0-9a-f]*\)",$/\1/p' "$record")
+    if [ -z "$record_image" ] || [ -z "$record_digest" ]; then
+        echo "no toolbox image and digest in $record" >&2
+        exit 1
+    fi
+    toolbox_image=$record_image@$record_digest
+else
+    toolbox_image=$NIXBOX_TOOLBOX_IMAGE
+fi
 offline=${NIXBOX_OFFLINE:-0}
 # Pinned consumers (multi-architecture index digests): Debian slim, Fedora,
 # openSUSE Leap, Alpine.

@@ -241,7 +241,8 @@ The lock closure is 52 store paths and 197.3 MiB on arm64, and 51 paths and
 180.1 MiB on amd64. The initialized volume is 221 MB on arm64 and 203 MB on amd64.
 The local image is 308 MB on arm64 and 291 MB on amd64. The image is not
 byte-reproducible because the Nix database holds registration times. The smoke
-test reads `NIXBOX_PLATFORM`, `NIXBOX_TOOLBOX_IMAGE` and `NIXBOX_OFFLINE`.
+test reads `NIXBOX_PLATFORM`, `NIXBOX_TOOLBOX_IMAGE` (default: the image and digest in
+`docs/toolbox-published.json`) and `NIXBOX_OFFLINE`.
 
 ## Combining with a native Nix store
 
