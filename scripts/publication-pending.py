@@ -56,10 +56,20 @@ def tag_commits(api, bundle):
     return commits
 
 
+def locks(api, selection, revision):
+    """The pinned state of a bundle at a revision: its lock, and for nixbox also the
+    lock of its official release binaries, so a tools-only change is unpublished."""
+    state = approval.lock_bytes(api.get, selection, revision)
+    if selection['name'] == 'nixbox':
+        tools = approval.file_bytes(api.get, selection['directory'] + '/tools/packages.lock.json', revision)
+        state += b'\n' + tools
+    return state
+
+
 def inspect(bundle, api):
     selection = approval.config.select_bundle(bundle)
     head = approval.sha(api.get('/git/ref/heads/main')['object']['sha'])
-    current = approval.lock_bytes(api.get, selection, head)
+    current = locks(api, selection, head)
     candidates = []
     recorded = metadata_commit(api, bundle)
     if recorded:
@@ -70,7 +80,7 @@ def inspect(bundle, api):
         return dict(result, state='no-baseline')
     for commit in candidates:
         try:
-            published = approval.lock_bytes(api.get, selection, commit)
+            published = locks(api, selection, commit)
         except Pending:
             # Historical tag commits may predate this lock path. The current
             # lock and main were read above, so an outage would already be pending.
