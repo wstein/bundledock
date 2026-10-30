@@ -495,19 +495,24 @@ func TestGitHubJobsPagination(t *testing.T) {
 
 func TestAssessChecksIdentity(t *testing.T) {
 	f := newPruneFixture(t)
-	for name, tag := range map[string]string{
-		"alias":           "latest",
-		"not staging":     "2026.10.01-b4.1",
-		"unknown version": "staging-bad-amd64",
-		"unknown arch":    "staging-2026.10.01-b4.1-s390x",
-		"traversal":       "staging-../x-amd64",
+	// Each reason is the exact text of the identity check, so only that check can produce it.
+	const notStaging, unknownVersion = "Not an architecture staging tag", "Unknown staging version"
+	for name, c := range map[string]struct{ tag, reason string }{
+		"alias":           {"latest", notStaging},
+		"not staging":     {"2026.10.01-b4.1", notStaging},
+		"unknown version": {"staging-bad-amd64", unknownVersion},
+		"unknown arch":    {"staging-2026.10.01-b4.1-s390x", notStaging},
+		"traversal":       {"staging-../x-amd64", unknownVersion},
 	} {
 		row := f.row
-		row.Name = tag
+		row.Name = c.tag
 		got := f.pruner.Assess(context.Background(), "toolbox", row, false)
-		if got.Eligible || got.Reason == "" || got.Reason == "Required provenance evidence unavailable" {
+		if got.Eligible || got.Reason != c.reason {
 			t.Errorf("%s: %+v", name, got)
 		}
+	}
+	if got := f.pruner.Assess(context.Background(), "foreign", f.row, false); got.Eligible || got.Reason != "Unknown repository" {
+		t.Errorf("foreign repository: %+v", got)
 	}
 	if _, _, err := Identity("toolbox", "staging-2026.10.01-b4.1-amd64"); err != nil {
 		t.Errorf("valid staging tag rejected: %v", err)
