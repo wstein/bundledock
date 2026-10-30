@@ -83,6 +83,7 @@ read-only at `/nix`:
 | `/nix/store/<hash>-<name>` | Store paths and their closures. |
 | `/nix/var/nix` | Nix database registrations. |
 | `/nix/profile/bin`, `/nix/profile/share` | Symlinks to the tools, and the shims. |
+| `/nix/profile/libexec/nixbox` | The unmodified official release binaries (`bin/<tool>`, `lib/helix/hx` and `lib/helix/runtime`), the toolbox builder's output with its `manifest.json`, `licenses.tar.gz`, `licenses.index.json` and `SHA256SUMS`. |
 | `/nix/profile/lib/ld.so` | Symlink to the glibc loader (`ld-linux-aarch64.so.1` on arm64, `ld-linux-x86-64.so.2` on amd64). |
 
 The initializer runs as root when it fills a volume. The Nix database files
@@ -122,7 +123,7 @@ The official binaries are the toolbox builder's output for the pins in
 `licenses/`). The image build downloads each release archive, compares its sha256
 with that lock (a mismatch fails the build), unpacks it and installs the result
 unmodified in `/nix/profile/libexec/nixbox` (`bin/<tool>`, `lib/helix/hx` with its
-runtime and `licenses/`). Helix keeps its calendar tag spelling in the lock.
+runtime, plus `manifest.json` and the notices in `licenses.tar.gz` with `licenses.index.json`). Helix keeps its calendar tag spelling in the lock.
 
 A shim runs its binary directly on a glibc host, and otherwise (a musl host such as
 Alpine) through `/nix/profile/lib/ld.so --library-path ...`. The `hx` shim also sets
@@ -152,7 +153,13 @@ The catalog records the nixpkgs revision, the cache URL and public key, and one
 attribute per tool. The lock holds, per architecture, the top-level store paths
 and the closure with `narHash` and size from `nix path-info --json`.
 
-The build runs in a Dockerfile stage from a digest-pinned `nixos/nix` image:
+The lock of the official release binaries is `bundles/nixbox/tools/packages.lock.json`:
+a pinned URL and sha256 per tool and architecture. The `official` stage downloads
+each archive and compares its sha256 with that lock; a mismatch fails the build.
+The publication record (lock hash, platforms digest, versions label) covers both
+the Nix lock and this tools lock.
+
+The Nix store paths are fetched in a Dockerfile stage from a digest-pinned `nixos/nix` image:
 
 1. `nix copy --from https://cache.nixos.org --to <image root>` with the pinned
    public key and signature checking on.
