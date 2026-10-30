@@ -178,3 +178,58 @@ func TestQuayInfo(t *testing.T) {
 		t.Fatal("bundle argument not required")
 	}
 }
+
+func TestQuayDescribe(t *testing.T) {
+	live := "old"
+	token := ""
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v1/repository/bundledock/toolbox" {
+			http.NotFound(w, r)
+			return
+		}
+		if r.Method == http.MethodPut {
+			token = r.Header.Get("Authorization")
+			var body map[string]string
+			json.NewDecoder(r.Body).Decode(&body)
+			live = body["description"]
+			w.Write([]byte("{}"))
+			return
+		}
+		json.NewEncoder(w).Encode(map[string]any{"description": live, "is_public": true})
+	}))
+	defer srv.Close()
+	root := t.TempDir()
+	os.MkdirAll(filepath.Join(root, "bundles", "toolbox"), 0o755)
+	os.WriteFile(filepath.Join(root, "bundles", "toolbox", "description.md"), []byte("new\n"), 0o644)
+	out, _, err := runQuayAt(t, root, srv, "describe", "--json")
+	if err == nil || !strings.Contains(out, `"differs"`) || !strings.Contains(out, "bdock.quay.describe/v1") {
+		t.Fatalf("out = %q, err = %v", out, err)
+	}
+	t.Setenv("QUAY_TOKEN", "")
+	if _, _, err = runQuayAt(t, root, srv, "describe", "--apply"); err == nil {
+		t.Fatal("apply without QUAY_TOKEN succeeded")
+	}
+	t.Setenv("QUAY_TOKEN", "secret-token")
+	out, errOut, err := runQuayAt(t, root, srv, "describe", "--apply")
+	if err != nil || live != "new" || token != "Bearer secret-token" || strings.Contains(out+errOut, "secret-token") {
+		t.Fatalf("apply: err = %v live = %q token set = %v", err, live, token != "")
+	}
+	if _, _, err = runQuayAt(t, root, srv, "describe"); err != nil {
+		t.Fatalf("second check: %v", err)
+	}
+	if _, _, err = runQuayAt(t, root, srv, "describe", "bun"); err == nil {
+		t.Fatal("bundle without description file accepted")
+	}
+	if _, _, err = runQuayAt(t, root, srv, "describe", "--token", "x"); err == nil {
+		t.Fatal("token flag exists")
+	}
+}
+
+func TestCommittedDescriptions(t *testing.T) {
+	for _, name := range []string{"toolbox", "nixbox"} {
+		raw, err := os.ReadFile("../../bundles/" + name + "/description.md")
+		if err != nil || len([]rune(string(raw))) > 5000 || !strings.Contains(string(raw), "https://wstein.github.io/bundledock/") || !strings.Contains(string(raw), "https://github.com/wstein/bundledock") {
+			t.Fatalf("%s description: err = %v", name, err)
+		}
+	}
+}
