@@ -79,5 +79,6 @@ packaging revision, while toolbox versions use the documented date/run scheme.
 See [publication and versioning](publication.md),
 [lock upgrades](toolbox.md#upgrade-the-lock) and
 [development verification](development.md) for the canonical procedures.
+Inspect and maintain the Quay repositories with [`bdock quay`](quay.md).
 Builds, publication, tagging and consumer activation each retain their explicit
 approval requirements described in those guides.

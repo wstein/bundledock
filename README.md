@@ -165,6 +165,7 @@ Markdown sources in this repository:
 - [Architecture](https://wstein.github.io/bundledock/guides/architecture/) ([source](docs/architecture.md)): shared volumes, rollback, and consumer requirements.
 - [Development and verification](https://wstein.github.io/bundledock/guides/development/) ([source](docs/development.md)): CLI commands, checks, and recorded coverage.
 - [Publication](https://wstein.github.io/bundledock/guides/publication/) ([source](docs/publication.md)): Quay setup, updater approval and manual exact-SHA publication.
+- [Quay maintenance](https://wstein.github.io/bundledock/guides/quay/) ([source](docs/quay.md)): list, status, info, describe and prune for the Quay repositories.
 
 The [CI workflow](.github/workflows/ci.yml) runs formatting, source tests and vet.
 Maintainers can find build approval, publication and verification details in the
