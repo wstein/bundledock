@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"bundledock/internal/testdir"
 )
 
 const amalgamation = "sqlite-amalgamation-3540100/"
@@ -26,7 +28,7 @@ func buildSourceArchive(t *testing.T, extra ...member) []byte {
 
 func extractSources(t *testing.T, data []byte, sources, extraNames []string) (string, error) {
 	t.Helper()
-	dst := t.TempDir()
+	dst := testdir.New(t)
 	root, err := os.OpenRoot(dst)
 	if err != nil {
 		t.Fatal(err)

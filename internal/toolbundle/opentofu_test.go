@@ -2,6 +2,7 @@ package toolbundle
 
 import (
 	"archive/tar"
+	"bundledock/internal/testdir"
 	"bundledock/internal/toolconfig"
 	"bytes"
 	"context"
@@ -27,7 +28,7 @@ func TestOpenTofuArchivesKeepCLIAndNotices(t *testing.T) {
 			for _, name := range []string{"LICENSE", "README.md", "CHANGELOG.md"} {
 				files = append(files, member{name, "unchanged " + name, 0644, 0})
 			}
-			dir := t.TempDir()
+			dir := testdir.New(t)
 			root, err := os.OpenRoot(dir)
 			if err != nil {
 				t.Fatal(err)
@@ -54,7 +55,7 @@ func TestOpenTofuArchivesKeepCLIAndNotices(t *testing.T) {
 		})
 	}
 	for _, bad := range []member{{"../tofu", "", 0755, 0}, {"tofu", "", 0755, tar.TypeSymlink}, {"tofu", "", 0644, 0}, {"tofu", "", 0755, tar.TypeFifo}} {
-		dir := t.TempDir()
+		dir := testdir.New(t)
 		root, err := os.OpenRoot(dir)
 		if err != nil {
 			t.Fatal(err)
@@ -90,7 +91,7 @@ func TestOpenTofuInstallRetainsArchiveAndSupplementalNotices(t *testing.T) {
 			spec := c.Lock.Platforms[arch]["opentofu"]
 			spec.URL = server.URL
 			spec.SHA256 = fmt.Sprintf("%x", sha256.Sum256(payload))
-			dir := t.TempDir()
+			dir := testdir.New(t)
 			if err := Build(context.Background(), server.Client(), map[string]Spec{"opentofu": spec}, c.Catalog.Packages, os.DirFS("../../bundles/opentofu"), arch, dir, io.Discard); err != nil {
 				t.Fatal(err)
 			}
@@ -120,7 +121,7 @@ func TestOpenTofuInstallRejectsDuplicateSupplementalLicense(t *testing.T) {
 	spec := c.Lock.Platforms["amd64"]["opentofu"]
 	spec.URL = server.URL
 	spec.SHA256 = fmt.Sprintf("%x", sha256.Sum256(payload))
-	dir := t.TempDir()
+	dir := testdir.New(t)
 	err = Build(context.Background(), server.Client(), map[string]Spec{"opentofu": spec}, map[string]toolconfig.Package{"opentofu": p}, os.DirFS("../../bundles/opentofu"), "amd64", dir, io.Discard)
 	if !os.IsExist(err) {
 		t.Fatalf("expected exclusive-create rejection, got %v", err)

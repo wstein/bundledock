@@ -1,6 +1,7 @@
 package toolbundle
 
 import (
+	"bundledock/internal/testdir"
 	"bundledock/internal/toolconfig"
 	"bytes"
 	"context"
@@ -88,9 +89,9 @@ func TestCompileRunsTheCompilerInTheSourceDirectoryWithAScrubbedEnvironment(t *t
 	t.Setenv("SECRET_TOKEN", "must-not-leak")
 	t.Setenv("HTTPS_PROXY", "http://proxy.invalid")
 	f := newSourceBuildFixture(t)
-	work := t.TempDir()
+	work := testdir.New(t)
 	fakeZig(t, work)
-	out := filepath.Join(t.TempDir(), "out")
+	out := filepath.Join(testdir.New(t), "out")
 	if err := Compile(context.Background(), f.config, "sqlite3", "amd64", work, out, &bytes.Buffer{}); err != nil {
 		t.Fatal(err)
 	}
@@ -119,17 +120,17 @@ func TestCompileFailsWithoutAnOutputOrWithAFailingCompiler(t *testing.T) {
 		"output is a directory": "#!/bin/sh\nwhile [ $# -gt 0 ]; do [ \"$1\" = -o ] && mkdir \"$2\"; shift; done\n",
 	} {
 		t.Run(name, func(t *testing.T) {
-			work := t.TempDir()
+			work := testdir.New(t)
 			zig := fakeZig(t, work)
 			if err := os.WriteFile(zig, []byte(script), 0o755); err != nil {
 				t.Fatal(err)
 			}
-			if err := Compile(context.Background(), f.config, "sqlite3", "amd64", work, filepath.Join(t.TempDir(), "out"), &bytes.Buffer{}); err == nil {
+			if err := Compile(context.Background(), f.config, "sqlite3", "amd64", work, filepath.Join(testdir.New(t), "out"), &bytes.Buffer{}); err == nil {
 				t.Fatal("accepted")
 			}
 		})
 	}
-	if err := Compile(context.Background(), f.config, "nope", "amd64", t.TempDir(), t.TempDir(), &bytes.Buffer{}); err == nil {
+	if err := Compile(context.Background(), f.config, "nope", "amd64", testdir.New(t), testdir.New(t), &bytes.Buffer{}); err == nil {
 		t.Fatal("accepted an unknown tool")
 	}
 }

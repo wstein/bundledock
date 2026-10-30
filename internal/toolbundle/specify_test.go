@@ -7,14 +7,33 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"bundledock/internal/testdir"
 )
 
 // These fixtures execute only stdlib Python and synthetic pip/venv commands.
 func specifyFixture(t *testing.T) (string, string, string) { return pythonToolFixture(t, "specify") }
 
+// runnableFixture is pythonToolFixture for tests that execute the launcher.
+// The launcher itself refuses a Python older than the tool's minimum, so on a
+// host whose python3 is older these tests could only observe that refusal.
+func runnableFixture(t *testing.T, tool string) (string, string, string) {
+	t.Helper()
+	python, err := exec.LookPath("python3")
+	if err != nil {
+		t.Skip("python3 is not on PATH")
+	}
+	minimum := map[string]int{"specify": 11, "tldr": 10}[tool]
+	probe := "import sys; sys.exit(0 if sys.version_info >= (3, " + strconv.Itoa(minimum) + ") else 1)"
+	if exec.Command(python, "-I", "-c", probe).Run() != nil {
+		t.Skipf("host python3 is older than the 3.%d+ the %s launcher requires", minimum, tool)
+	}
+	return pythonToolFixture(t, tool)
+}
+
 func pythonToolFixture(t *testing.T, tool string) (string, string, string) {
 	t.Helper()
-	dst, home, bin := t.TempDir(), t.TempDir(), t.TempDir()
+	dst, home, bin := testdir.New(t), testdir.New(t), testdir.New(t)
 	root, err := os.OpenRoot(dst)
 	if err != nil {
 		t.Fatal(err)
@@ -86,7 +105,7 @@ func pythonToolCommand(dst, home, bin, tool string, args ...string) *exec.Cmd {
 }
 
 func TestSpecifyLauncher(t *testing.T) {
-	dst, home, bin := specifyFixture(t)
+	dst, home, bin := runnableFixture(t, "specify")
 	for i := 0; i < 2; i++ {
 		got, err := specifyCommand(dst, home, bin, "init", "project with spaces", "--here").CombinedOutput()
 		if exit, ok := err.(*exec.ExitError); !ok || exit.ExitCode() != 23 || string(got) != "init\nproject with spaces\n--here\n" {
@@ -109,7 +128,7 @@ func TestSpecifyLauncher(t *testing.T) {
 }
 
 func TestSpecifyFailedInstallCanRetry(t *testing.T) {
-	dst, home, bin := specifyFixture(t)
+	dst, home, bin := runnableFixture(t, "specify")
 	failure := filepath.Join(home, "fail-install")
 	if err := os.WriteFile(failure, nil, 0600); err != nil {
 		t.Fatal(err)
@@ -141,7 +160,7 @@ func TestSpecifyPreflight(t *testing.T) {
 		{"managed Python", "sys.executable='/home/user/.local/share/uv/python/cpython/bin/python3'", "Python 3.11+ from the language image"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			dst, home, bin := specifyFixture(t)
+			dst, home, bin := runnableFixture(t, "specify")
 			if err := os.WriteFile(filepath.Join(home, "preflight"), []byte(tc.code), 0600); err != nil {
 				t.Fatal(err)
 			}
@@ -187,7 +206,7 @@ func TestSpecifyMetadata(t *testing.T) {
 }
 
 func TestSpecifyConcurrentFirstUse(t *testing.T) {
-	dst, home, bin := specifyFixture(t)
+	dst, home, bin := runnableFixture(t, "specify")
 	commands := make([]*exec.Cmd, 4)
 	for i := range commands {
 		commands[i] = specifyCommand(dst, home, bin, "--help")
@@ -212,7 +231,7 @@ func TestSpecifyConcurrentFirstUse(t *testing.T) {
 func TestSpecifyChangedVenvRecreatesOwnedEnvironment(t *testing.T) {
 	for _, change := range []string{"configuration", "interpreter", "entrypoint"} {
 		t.Run(change, func(t *testing.T) {
-			dst, home, bin := specifyFixture(t)
+			dst, home, bin := runnableFixture(t, "specify")
 			got, err := specifyCommand(dst, home, bin, "--help").CombinedOutput()
 			if exit, ok := err.(*exec.ExitError); !ok || exit.ExitCode() != 23 {
 				t.Fatalf("err %v got %s", err, got)
@@ -253,7 +272,7 @@ func TestSpecifyChangedVenvRecreatesOwnedEnvironment(t *testing.T) {
 func TestSpecifyStateOutsideToolbox(t *testing.T) {
 	for _, variable := range []string{"HOME", "XDG_DATA_HOME", "XDG_CACHE_HOME"} {
 		t.Run(variable, func(t *testing.T) {
-			dst, home, bin := specifyFixture(t)
+			dst, home, bin := runnableFixture(t, "specify")
 			cmd := specifyCommand(dst, home, bin, "--help")
 			// Replace rather than duplicate HOME; getenv duplicate behavior differs by OS.
 			for i, value := range cmd.Env {
@@ -277,7 +296,7 @@ func TestSpecifyStateOutsideToolbox(t *testing.T) {
 func TestSpecifyPreservesUnrecognizedState(t *testing.T) {
 	for _, state := range []string{"unowned directory", "symlink"} {
 		t.Run(state, func(t *testing.T) {
-			dst, home, bin := specifyFixture(t)
+			dst, home, bin := runnableFixture(t, "specify")
 			got, err := specifyCommand(dst, home, bin, "--help").CombinedOutput()
 			if exit, ok := err.(*exec.ExitError); !ok || exit.ExitCode() != 23 {
 				t.Fatalf("err %v got %s", err, got)
@@ -288,7 +307,7 @@ func TestSpecifyPreservesUnrecognizedState(t *testing.T) {
 			}
 			preserved := dirs[0]
 			if state == "symlink" {
-				preserved = t.TempDir()
+				preserved = testdir.New(t)
 				if err := os.Rename(dirs[0], dirs[0]+".saved"); err != nil {
 					t.Fatal(err)
 				}
@@ -329,7 +348,7 @@ func TestSpecifyRejectsUnsafeOwnedDirectories(t *testing.T) {
 	for _, location := range []string{"state", "venv"} {
 		for _, unsafe := range []string{"writable by others", "foreign owner"} {
 			t.Run(location+" "+unsafe, func(t *testing.T) {
-				dst, home, bin := specifyFixture(t)
+				dst, home, bin := runnableFixture(t, "specify")
 				got, err := specifyCommand(dst, home, bin, "--help").CombinedOutput()
 				if exit, ok := err.(*exec.ExitError); !ok || exit.ExitCode() != 23 {
 					t.Fatalf("err %v got %s", err, got)

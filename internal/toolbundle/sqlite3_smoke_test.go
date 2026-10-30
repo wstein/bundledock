@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"bundledock/internal/testdir"
 )
 
 // The stub answers the exact statements of sqlite3-smoke.sh from canned data, so the
@@ -39,12 +41,15 @@ func (s sqliteStub) script(log string) string {
 ` + marker + `
 version='` + s.version + `'
 options='` + s.options + `'
+# Read TERM from the exported environment: macOS /bin/sh sets an unexported
+# TERM=dumb when none was passed, which would hide the unset case.
+term=$(env | sed -n 's/^TERM=//p'); term=${term:-unset}
 if [ "$1" = --version ]; then printf '%s\n' "$version"; exit 0; fi
 case "$#" in
-2) db=$1; sql=$2; printf 'arg TERM=%s: %s\n' "${TERM-unset}" "$sql" >> '` + log + `' ;;
-1) db=$1; sql=$(cat); printf 'stdin TERM=%s: %s\n' "${TERM-unset}" "$sql" >> '` + log + `'
-   if [ "${TERM-unset}" = dumb ] && [ ` + b(s.failDumb) + ` = 1 ]; then echo "unsupported terminal" >&2; exit 1; fi
-   if [ "${TERM-unset}" = unset ] && [ ` + b(s.failNoTerm) + ` = 1 ]; then echo "no terminal" >&2; exit 1; fi ;;
+2) db=$1; sql=$2; printf 'arg TERM=%s: %s\n' "$term" "$sql" >> '` + log + `' ;;
+1) db=$1; sql=$(cat); printf 'stdin TERM=%s: %s\n' "$term" "$sql" >> '` + log + `'
+   if [ "$term" = dumb ] && [ ` + b(s.failDumb) + ` = 1 ]; then echo "unsupported terminal" >&2; exit 1; fi
+   if [ "$term" = unset ] && [ ` + b(s.failNoTerm) + ` = 1 ]; then echo "no terminal" >&2; exit 1; fi ;;
 *) exit 64 ;;
 esac
 test "$db" = :memory:
@@ -71,7 +76,7 @@ func runSQLiteSmoke(t *testing.T, s sqliteStub, args ...string) (string, error, 
 	if err != nil {
 		t.Fatal(err)
 	}
-	bin, logDir := t.TempDir(), t.TempDir()
+	bin, logDir := testdir.New(t), testdir.New(t)
 	log := filepath.Join(logDir, "log")
 	if s.version == "" {
 		s.version = "3.54.1 2026-10-16 abcdef (64-bit)"

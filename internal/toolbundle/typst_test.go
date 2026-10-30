@@ -1,6 +1,7 @@
 package toolbundle
 
 import (
+	"bundledock/internal/testdir"
 	"bundledock/internal/toolconfig"
 	"context"
 	"crypto/sha256"
@@ -34,7 +35,7 @@ func TestTypstArchiveInstallsBinaryAndCompleteNotices(t *testing.T) {
 				}
 				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.Write(payload) }))
 				defer server.Close()
-				dst := t.TempDir()
+				dst := testdir.New(t)
 				spec := c.Lock.Platforms[arch]["typst"]
 				spec.URL = server.URL
 				spec.SHA256 = sum

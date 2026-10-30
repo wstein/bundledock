@@ -1,6 +1,7 @@
 package toolbundle
 
 import (
+	"bundledock/internal/testdir"
 	"bundledock/internal/toolconfig"
 	"context"
 	"io"
@@ -40,7 +41,7 @@ func TestProcessMonitorsOfficialArchives(t *testing.T) {
 				spec.URL = server.URL + "/" + path.Base(u.Path)
 				specs[name] = spec
 			}
-			dst := t.TempDir()
+			dst := testdir.New(t)
 			if err := Build(context.Background(), server.Client(), specs, packages, os.DirFS("../../bundles/toolbox"), arch, dst, io.Discard); err != nil {
 				t.Fatal(err)
 			}

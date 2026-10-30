@@ -6,11 +6,12 @@ import (
 	"testing"
 	"testing/fstest"
 
+	"bundledock/internal/testdir"
 	"bundledock/internal/toolconfig"
 )
 
 func TestToolboxBuildRequiresShellLayer(t *testing.T) {
-	root, err := os.OpenRoot(t.TempDir())
+	root, err := os.OpenRoot(testdir.New(t))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -22,7 +23,7 @@ func TestToolboxBuildRequiresShellLayer(t *testing.T) {
 }
 
 func TestShellLayerSourceMustBeComplete(t *testing.T) {
-	root, err := os.OpenRoot(t.TempDir())
+	root, err := os.OpenRoot(testdir.New(t))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"archive/zip"
 	"bundledock/internal/shelllayer"
+	"bundledock/internal/testdir"
 	"bundledock/internal/toolconfig"
 	"bytes"
 	"compress/gzip"
@@ -65,7 +66,7 @@ func archive(t *testing.T, members ...member) []byte {
 }
 func openRoot(t *testing.T) (*os.Root, string) {
 	t.Helper()
-	name := t.TempDir()
+	name := testdir.New(t)
 	r, err := os.OpenRoot(name)
 	if err != nil {
 		t.Fatal(err)
@@ -161,8 +162,8 @@ func TestVendorBuildBothArchitectures(t *testing.T) {
 	for _, arch := range []string{"amd64", "arm64"} {
 		t.Run(arch, func(t *testing.T) {
 			specs := tools
-			first := t.TempDir()
-			second := t.TempDir()
+			first := testdir.New(t)
+			second := testdir.New(t)
 			for _, dst := range []string{first, second} {
 				root, err := os.OpenRoot(dst)
 				if err != nil {
@@ -387,7 +388,7 @@ func TestDestinationLinksCannotEscape(t *testing.T) {
 	for _, leaf := range []bool{false, true} {
 		t.Run(fmt.Sprint(leaf), func(t *testing.T) {
 			root, dir := openRoot(t)
-			outside := t.TempDir()
+			outside := testdir.New(t)
 			target := filepath.Join(dir, "bin")
 			if leaf {
 				if err := os.Mkdir(target, 0755); err != nil {

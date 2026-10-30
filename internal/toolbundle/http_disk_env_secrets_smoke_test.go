@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"bundledock/internal/testdir"
 )
 
 // Synthetic commands verify the smoke script's argument and failure handling;
@@ -23,7 +25,7 @@ func TestHTTPDiskEnvSecretsSmoke(t *testing.T) {
 				continue
 			}
 			t.Run(broken+"/"+mode, func(t *testing.T) {
-				bin, home := t.TempDir(), t.TempDir()
+				bin, home := testdir.New(t), testdir.New(t)
 				for tool, version := range tools {
 					args := "--version"
 					if tool == "direnv" {

@@ -2,6 +2,7 @@ package toolbundle
 
 import (
 	"archive/tar"
+	"bundledock/internal/testdir"
 	"bundledock/internal/toolconfig"
 	"bytes"
 	"context"
@@ -104,7 +105,7 @@ func (f *sourceBuildFixture) set(url string, body []byte) { f.served[url] = body
 
 func fetchTo(t *testing.T, f *sourceBuildFixture) (string, error) {
 	t.Helper()
-	dst := filepath.Join(t.TempDir(), "work")
+	dst := filepath.Join(testdir.New(t), "work")
 	var out bytes.Buffer
 	err := FetchSourceBuild(context.Background(), f.client, f.config, "sqlite3", "amd64", dst, &out)
 	return dst, err
@@ -257,7 +258,7 @@ func TestFetchSourceBuildFailsClosed(t *testing.T) {
 
 func TestFetchSourceBuildNeedsAFreshDestination(t *testing.T) {
 	f := newSourceBuildFixture(t)
-	dst := t.TempDir()
+	dst := testdir.New(t)
 	if err := os.WriteFile(filepath.Join(dst, "old"), nil, 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -288,18 +289,18 @@ func TestToolchainExtractionBounds(t *testing.T) {
 
 func buildWith(t *testing.T, f *sourceBuildFixture, outputs string, opts ...BuildOption) (string, error) {
 	t.Helper()
-	dst := filepath.Join(t.TempDir(), "bundle")
+	dst := filepath.Join(testdir.New(t), "bundle")
 	if outputs != "" {
 		opts = append(opts, WithBuildOutputs(outputs))
 	}
 	tools := f.config.Lock.Platforms["amd64"]
-	err := Build(context.Background(), f.client, tools, f.config.Catalog.Packages, os.DirFS(t.TempDir()), "amd64", dst, &bytes.Buffer{}, opts...)
+	err := Build(context.Background(), f.client, tools, f.config.Catalog.Packages, os.DirFS(testdir.New(t)), "amd64", dst, &bytes.Buffer{}, opts...)
 	return dst, err
 }
 
 func writeOutput(t *testing.T, data []byte) string {
 	t.Helper()
-	dir := t.TempDir()
+	dir := testdir.New(t)
 	if err := os.MkdirAll(filepath.Join(dir, "sqlite3"), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -343,7 +344,7 @@ func TestBuildRejectsUnverifiableCompiledOutput(t *testing.T) {
 		"wrong machine":    {func(t *testing.T) string { return writeOutput(t, staticExec(0xb7).bytes()) }, "machine"},
 		"not an ELF":       {func(t *testing.T) string { return writeOutput(t, []byte("#!/bin/sh\n")) }, "not an ELF"},
 		"no outputs given": {func(t *testing.T) string { return "" }, "compiled"},
-		"missing output":   {func(t *testing.T) string { return t.TempDir() }, "sqlite3"},
+		"missing output":   {func(t *testing.T) string { return testdir.New(t) }, "sqlite3"},
 		"output is a link": {func(t *testing.T) string {
 			dir := writeOutput(t, staticExec(0x3e).bytes())
 			if err := os.Rename(filepath.Join(dir, "sqlite3", "sqlite3"), filepath.Join(dir, "real")); err != nil {

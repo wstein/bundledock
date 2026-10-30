@@ -5,6 +5,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"testing"
+
+	"bundledock/internal/testdir"
 )
 
 func TestNaviSmokeVersionOnlyAndIsolated(t *testing.T) {
@@ -14,7 +16,7 @@ func TestNaviSmokeVersionOnlyAndIsolated(t *testing.T) {
 	}
 	for _, version := range []string{"navi 2.24.0", "wrong"} {
 		t.Run(version, func(t *testing.T) {
-			bin := t.TempDir()
+			bin := testdir.New(t)
 			stub := `#!/bin/sh
 set -eu
 test "$#" = 1 && test "$1" = --version
@@ -30,7 +32,7 @@ printf '%s\n' '` + version + `'
 				t.Fatal(err)
 			}
 			cmd := exec.Command("sh", script)
-			cmd.Env = append(os.Environ(), "PATH="+bin+":"+os.Getenv("PATH"), "CALLER_HOME="+os.Getenv("HOME"), "NAVI_PATH=/host/cheatsheets")
+			cmd.Env = append(os.Environ(), "PATH="+bin+":"+os.Getenv("PATH"), "CALLER_HOME="+os.Getenv("HOME"), "TMPDIR="+bin, "NAVI_PATH=/host/cheatsheets")
 			out, err := cmd.CombinedOutput()
 			if version != "wrong" && err != nil {
 				t.Fatalf("isolated version failed: %v\n%s", err, out)

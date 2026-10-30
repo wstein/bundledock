@@ -1,6 +1,7 @@
 package toolbundle
 
 import (
+	"bundledock/internal/testdir"
 	"bundledock/internal/toolconfig"
 	"bytes"
 	"os"
@@ -23,7 +24,7 @@ func TestFastfetchArchiveInstallsOnlyExecutable(t *testing.T) {
 	if len(p.Notices) < 2 {
 		t.Fatalf("missing source and full upstream license: %v", p.Notices)
 	}
-	dst := t.TempDir()
+	dst := testdir.New(t)
 	root, err := os.OpenRoot(dst)
 	if err != nil {
 		t.Fatal(err)
@@ -55,7 +56,7 @@ func TestFastfetchArchiveRejectsUnexecutableOnly(t *testing.T) {
 		t.Fatal(err)
 	}
 	p := c.Catalog.Packages["fastfetch"]
-	dst := t.TempDir()
+	dst := testdir.New(t)
 	root, err := os.OpenRoot(dst)
 	if err != nil {
 		t.Fatal(err)
@@ -77,7 +78,7 @@ func TestFastfetchArchiveRejectsDuplicateExecutable(t *testing.T) {
 		t.Fatal(err)
 	}
 	p := c.Catalog.Packages["fastfetch"]
-	dst := t.TempDir()
+	dst := testdir.New(t)
 	root, err := os.OpenRoot(dst)
 	if err != nil {
 		t.Fatal(err)

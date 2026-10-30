@@ -5,6 +5,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"testing"
+
+	"bundledock/internal/testdir"
 )
 
 func TestTypstSmokeVersionOnlyAndIsolated(t *testing.T) {
@@ -14,7 +16,7 @@ func TestTypstSmokeVersionOnlyAndIsolated(t *testing.T) {
 	}
 	for _, version := range []string{"typst 0.15.1", "wrong"} {
 		t.Run(version, func(t *testing.T) {
-			bin := t.TempDir()
+			bin := testdir.New(t)
 			stub := `#!/bin/sh
 set -eu
 test "$#" = 1 && test "$1" = --version
@@ -30,7 +32,7 @@ printf '%s\n' '` + version + `'
 				t.Fatal(err)
 			}
 			cmd := exec.Command("sh", script)
-			cmd.Env = append(os.Environ(), "PATH="+bin+":"+os.Getenv("PATH"), "CALLER_HOME="+os.Getenv("HOME"), "TYPST_FONT_PATHS=/host/cheatsheets")
+			cmd.Env = append(os.Environ(), "PATH="+bin+":"+os.Getenv("PATH"), "CALLER_HOME="+os.Getenv("HOME"), "TMPDIR="+bin, "TYPST_FONT_PATHS=/host/cheatsheets")
 			out, err := cmd.CombinedOutput()
 			if version != "wrong" && err != nil {
 				t.Fatalf("isolated version failed: %v\n%s", err, out)
