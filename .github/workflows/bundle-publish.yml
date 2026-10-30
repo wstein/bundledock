@@ -376,20 +376,17 @@ jobs:
         with:
           pattern: ${{ inputs.bundle }}-publication-*
           path: ${{ runner.temp }}/publication-docs-receipt
-      # "Re-run failed jobs" runs under a new attempt, but the receipt keeps the
-      # attempt that produced it. Take that attempt from this run's single
-      # receipt; publication-docs.py checks it against the receipt itself.
+      # "Re-run failed jobs" runs under a new attempt but keeps the earlier
+      # receipt; prefer this attempt's, else the run's only one.
+      # publication-docs.py checks the attempt against the receipt itself.
       - name: Select this run's publication receipt
         env:
           BUNDLE: ${{ inputs.bundle }}
         run: |
-          set -- "$RUNNER_TEMP/publication-docs-receipt/$BUNDLE-publication-"*
-          if [ "$#" -ne 1 ] || [ ! -f "$1/publication.json" ]; then
-            echo 'Expected exactly one publication receipt of this run' >&2
-            exit 1
-          fi
-          echo "PUBLICATION_ATTEMPT=${1##*-}" >> "$GITHUB_ENV"
-          echo "PUBLICATION_RECEIPT=$1/publication.json" >> "$GITHUB_ENV"
+          dir="$RUNNER_TEMP/publication-docs-receipt"
+          attempt=$(python3 -B scripts/select-receipt.py "$dir" "$BUNDLE" "$GITHUB_RUN_ATTEMPT")
+          echo "PUBLICATION_ATTEMPT=$attempt" >> "$GITHUB_ENV"
+          echo "PUBLICATION_RECEIPT=$dir/$BUNDLE-publication-$attempt/publication.json" >> "$GITHUB_ENV"
       - name: Propose verified publication Markdown source and run source CI
         env:
           GH_TOKEN: ${{ github.token }}
