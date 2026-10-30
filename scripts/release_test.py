@@ -8,9 +8,24 @@ import shutil
 import subprocess
 import tarfile
 import tempfile
-import tomllib
 import unittest
 from unittest import mock
+
+try:
+    import tomllib
+except ModuleNotFoundError:  # Python < 3.11
+    tomllib = None
+
+def _has_gnu_tar():
+    try:
+        out = subprocess.run(['tar', '--version'], capture_output=True, text=True).stdout
+    except OSError:
+        return False
+    return 'GNU tar' in out
+
+
+# scripts/release.sh refuses any tar that is not GNU tar, by design.
+requires_gnu_tar = unittest.skipUnless(_has_gnu_tar(), 'scripts/release.sh requires GNU tar, which is not the tar on PATH')
 
 ROOT = Path(__file__).resolve().parents[1]
 # Sorted by archive name; darwin/amd64 (end of life) and Windows are not built.
@@ -18,6 +33,7 @@ TARGETS = (('darwin', 'arm64'), ('linux', 'amd64'), ('linux', 'arm64'))
 
 
 class ReleasePackagingTest(unittest.TestCase):
+    @requires_gnu_tar
     def test_versioned_archives_and_compiler_contract(self):
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory)
@@ -89,6 +105,7 @@ else:
         env.update(extra)
         return subprocess.run(['sh', 'scripts/release.sh'], cwd=ROOT, env=env, capture_output=True, text=True)
 
+    @requires_gnu_tar
     def test_targets_select_one_archive(self):
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory)
@@ -166,6 +183,7 @@ else:
         return subprocess.run(['sh', 'scripts/release-stw.sh', os_name, arch, version, output],
                               cwd=root, env=env, capture_output=True, text=True)
 
+    @unittest.skipIf(tomllib is None, 'tomllib needs Python 3.11+; host python3 is older')
     def test_contract_preserves_targets_and_binds_offline_child_environment(self):
         contract = tomllib.loads((ROOT / '.stw/release.toml').read_text())
         self.assertEqual(contract['version'], dict(scheme='semver', tag_prefix='bdock/', source='input'))
@@ -220,6 +238,7 @@ else:
             self.assertEqual(target['smoke_argv'], ['sh', '.github/scripts/release-smoke.sh',
                              '{version_number}', '{commit}', '{os}', '{arch}', '{artifact}'])
 
+    @requires_gnu_tar
     def test_three_targets_use_fresh_staging_and_preserve_archive_contract(self):
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory)
@@ -300,6 +319,7 @@ else:
                 if existing == 'symlink':
                     self.assertEqual((base / 'outside').read_text(), 'preserve')
 
+    @requires_gnu_tar
     def test_compiler_failure_cleans_staging_without_publishing_output(self):
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory)
