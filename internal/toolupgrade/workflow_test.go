@@ -9,17 +9,18 @@ import (
 	"testing"
 
 	"bundledock/internal/gittest"
+	"bundledock/internal/testdir"
 )
 
 func run(t *testing.T, dir string, env []string, name string, args ...string) (string, error) {
 	t.Helper()
 	c := exec.Command(name, args...)
 	c.Dir = dir
-	config := filepath.Join(t.TempDir(), "gitconfig")
+	config := filepath.Join(testdir.New(t), "gitconfig")
 	if err := os.WriteFile(config, []byte(gittest.NoMaintenanceConfig), 0600); err != nil {
 		t.Fatal(err)
 	}
-	c.Env = append(os.Environ(), "HOME="+t.TempDir(), "XDG_CONFIG_HOME="+t.TempDir(), "GIT_CONFIG_NOSYSTEM=1", "GIT_CONFIG_GLOBAL="+config)
+	c.Env = append(os.Environ(), "HOME="+testdir.New(t), "XDG_CONFIG_HOME="+testdir.New(t), "GIT_CONFIG_NOSYSTEM=1", "GIT_CONFIG_GLOBAL="+config)
 	c.Env = append(c.Env, env...)
 	// Git may detach maintenance after commits and receives, outliving the
 	// command and racing TempDir cleanup. Apply this to descendant Git commands
@@ -59,7 +60,7 @@ func fixture(t *testing.T) (string, []string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	dir := t.TempDir()
+	dir := testdir.New(t)
 	must(t, dir, nil, "git", "init", "-b", "main")
 	must(t, dir, nil, "git", "config", "user.name", "Test")
 	must(t, dir, nil, "git", "config", "user.email", "test@example.invalid")
@@ -81,7 +82,7 @@ func fixture(t *testing.T) (string, []string) {
 	write(t, filepath.Join(dir, "bundles/toolbox/packages.txt"), "gh>=2.0.0,<3.0.0\n")
 	must(t, dir, nil, "git", "add", ".")
 	must(t, dir, nil, "git", "commit", "-m", "fixture")
-	fake := t.TempDir()
+	fake := testdir.New(t)
 	write(t, filepath.Join(fake, "go"), `#!/bin/sh
 set -eu
 printf '%s\n' "$*" >> "$CALLS"
@@ -140,7 +141,7 @@ elif endpoint.startswith('/actions/workflows/ci.yml/runs?'): value={'total_count
 else: sys.exit('Unexpected forge request: '+endpoint)
 print(json.dumps(value))
 `)
-	env := []string{"PATH=" + fake + ":" + os.Getenv("PATH"), "CALLS=" + filepath.Join(t.TempDir(), "calls"), "BUNDLE=toolbox", "TOOL=gh", "UPGRADE_RESULT=" + t.TempDir(), "GITHUB_OUTPUT=" + filepath.Join(t.TempDir(), "outputs"), "GITHUB_STEP_SUMMARY=" + filepath.Join(t.TempDir(), "summary"), "UPGRADE_SCRIPT=" + filepath.Join(root, "scripts/tool-upgrade.sh"), "GITHUB_REPOSITORY=wstein/bundledock", "GITHUB_RUN_ID=123", "GITHUB_RUN_ATTEMPT=1", "DEFAULT_BRANCH=main", "GITHUB_REF=refs/heads/main"}
+	env := []string{"PATH=" + fake + ":" + os.Getenv("PATH"), "CALLS=" + filepath.Join(testdir.New(t), "calls"), "BUNDLE=toolbox", "TOOL=gh", "UPGRADE_RESULT=" + testdir.New(t), "GITHUB_OUTPUT=" + filepath.Join(testdir.New(t), "outputs"), "GITHUB_STEP_SUMMARY=" + filepath.Join(testdir.New(t), "summary"), "UPGRADE_SCRIPT=" + filepath.Join(root, "scripts/tool-upgrade.sh"), "GITHUB_REPOSITORY=wstein/bundledock", "GITHUB_RUN_ID=123", "GITHUB_RUN_ATTEMPT=1", "DEFAULT_BRANCH=main", "GITHUB_REF=refs/heads/main"}
 	return dir, env
 }
 func value(env []string, key string) string {
@@ -209,7 +210,7 @@ p.write_text(json.dumps(lock,indent=2)+'\n')`, bundle, tool, version)
 }
 
 func TestFixtureDisablesAutomaticGitMaintenance(t *testing.T) {
-	trace := filepath.Join(t.TempDir(), "git-trace.json")
+	trace := filepath.Join(testdir.New(t), "git-trace.json")
 	t.Setenv("GIT_TRACE2_EVENT", trace)
 	// Parent settings must not enable background work in disposable repositories.
 	t.Setenv("GIT_CONFIG_COUNT", "2")
@@ -222,7 +223,7 @@ func TestFixtureDisablesAutomaticGitMaintenance(t *testing.T) {
 		t.Fatalf("resolve: %v\n%s", err, out)
 	}
 	must(t, dir, nil, "git", "restore", "bundles/toolbox/packages.lock.json", "docs/toolbox.md")
-	remote := filepath.Join(t.TempDir(), "remote.git")
+	remote := filepath.Join(testdir.New(t), "remote.git")
 	must(t, dir, nil, "git", "init", "--bare", remote)
 	must(t, dir, nil, "git", "remote", "add", "origin", remote)
 	if out, err := adapter(t, dir, env, "publish"); err != nil {
@@ -342,7 +343,7 @@ func TestResolveAndPublish(t *testing.T) {
 	}
 	after := assertFixtureProposal(t, env, "toolbox", "gh", "GitHub CLI", before)
 	must(t, dir, nil, "git", "restore", "bundles/toolbox/packages.lock.json", "docs/toolbox.md")
-	remote := filepath.Join(t.TempDir(), "remote.git")
+	remote := filepath.Join(testdir.New(t), "remote.git")
 	must(t, dir, nil, "git", "init", "--bare", remote)
 	must(t, dir, nil, "git", "remote", "add", "origin", remote)
 	out, err = adapter(t, dir, env, "publish")
@@ -428,7 +429,7 @@ p.write_text(json.dumps(lock, indent=2) + '\n')`)
 	truffleAfter := strings.TrimPrefix(fixtureBaseline(t, dir, "toolbox", "trufflehog"), "v")
 	uvAfter := fixtureBaseline(t, dir, "toolbox", "uv")
 	must(t, dir, nil, "git", "restore", "bundles/toolbox/packages.lock.json", "docs/toolbox.md")
-	remote := filepath.Join(t.TempDir(), "remote.git")
+	remote := filepath.Join(testdir.New(t), "remote.git")
 	must(t, dir, nil, "git", "init", "--bare", remote)
 	must(t, dir, nil, "git", "remote", "add", "origin", remote)
 	if out, err := adapter(t, dir, env, "publish"); err != nil {
@@ -495,7 +496,7 @@ func TestDeniedPRExplainsPrerequisite(t *testing.T) {
 		t.Fatalf("%v %s", err, out)
 	}
 	must(t, dir, nil, "git", "restore", "bundles/toolbox/packages.lock.json", "docs/toolbox.md")
-	remote := filepath.Join(t.TempDir(), "remote.git")
+	remote := filepath.Join(testdir.New(t), "remote.git")
 	must(t, dir, nil, "git", "init", "--bare", remote)
 	must(t, dir, nil, "git", "remote", "add", "origin", remote)
 	out, err = adapter(t, dir, append(env, "DENY_PR=true"), "publish")
@@ -563,7 +564,7 @@ func TestDocsOnlyDriftRepair(t *testing.T) {
 		t.Fatalf("docs drift ignored: %s", outputs)
 	}
 	must(t, dir, nil, "git", "restore", "docs/toolbox.md")
-	remote := filepath.Join(t.TempDir(), "remote.git")
+	remote := filepath.Join(testdir.New(t), "remote.git")
 	must(t, dir, nil, "git", "init", "--bare", remote)
 	must(t, dir, nil, "git", "remote", "add", "origin", remote)
 	out, err = adapter(t, dir, env, "publish")

@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"bundledock/internal/testdir"
 )
 
 // resolveInto resolves one bundle into its own result directory, as one matrix
@@ -39,7 +41,7 @@ func gather(t *testing.T, target string, sources ...string) {
 
 func withRemote(t *testing.T, dir string) {
 	t.Helper()
-	remote := filepath.Join(t.TempDir(), "remote.git")
+	remote := filepath.Join(testdir.New(t), "remote.git")
 	must(t, dir, nil, "git", "init", "--bare", remote)
 	must(t, dir, nil, "git", "remote", "add", "origin", remote)
 }
@@ -48,7 +50,7 @@ func TestSeveralBundlesShareOneCommitAndPullRequest(t *testing.T) {
 	dir, env := fixture(t)
 	var parts []string
 	for _, bundle := range []string{"agy", "node", "toolbox"} {
-		part := t.TempDir()
+		part := testdir.New(t)
 		tool := bundle
 		if bundle == "toolbox" {
 			tool = "gh"
@@ -56,9 +58,9 @@ func TestSeveralBundlesShareOneCommitAndPullRequest(t *testing.T) {
 		resolveInto(t, dir, env, bundle, tool, part)
 		parts = append(parts, part)
 	}
-	result := t.TempDir()
+	result := testdir.New(t)
 	gather(t, result, parts...)
-	failed := t.TempDir()
+	failed := testdir.New(t)
 	write(t, filepath.Join(failed, "claude"), "claude\n")
 	withRemote(t, dir)
 	publish := append(env, "UPGRADE_RESULT="+result, "FAILED_BUNDLES="+failed)
@@ -111,7 +113,7 @@ func TestSeveralBundlesShareOneCommitAndPullRequest(t *testing.T) {
 
 func TestOneChangedBundleKeepsItsOwnTopicName(t *testing.T) {
 	dir, env := fixture(t)
-	part := t.TempDir()
+	part := testdir.New(t)
 	resolveInto(t, dir, env, "agy", "agy", part)
 	withRemote(t, dir)
 	if out, err := adapter(t, dir, append(env, "UPGRADE_RESULT="+part), "publish"); err != nil {
@@ -124,7 +126,7 @@ func TestOneChangedBundleKeepsItsOwnTopicName(t *testing.T) {
 
 func TestNothingChangedOpensNothingAndReportsFailures(t *testing.T) {
 	dir, env := fixture(t)
-	empty, failed := t.TempDir(), t.TempDir()
+	empty, failed := testdir.New(t), testdir.New(t)
 	write(t, filepath.Join(failed, "bun"), "bun\n")
 	if out, err := adapter(t, dir, append(env, "UPGRADE_RESULT="+empty, "FAILED_BUNDLES="+failed), "publish"); err != nil {
 		t.Fatalf("publish: %v\n%s", err, out)
@@ -149,9 +151,9 @@ func TestCombinedProposalRefusesUnknownOrIncompleteArtifacts(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			dir, env := fixture(t)
-			part := t.TempDir()
+			part := testdir.New(t)
 			resolveInto(t, dir, env, "agy", "agy", part)
-			failed := t.TempDir()
+			failed := testdir.New(t)
 			if strings.HasPrefix(tc.file, "FAILED:") {
 				write(t, filepath.Join(failed, strings.TrimPrefix(tc.file, "FAILED:")), tc.content)
 			} else {
