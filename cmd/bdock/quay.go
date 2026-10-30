@@ -246,8 +246,10 @@ func newQuayPruneCommand(o *quayOptions) *cobra.Command {
 			}
 			client := o.api()
 			p := &quay.Pruner{
-				Store:     quay.Store{Client: client, Username: username, Password: password, Unpublished: func(r string) bool { return unpublished(o.root, r) }},
-				Registry:  func(ctx context.Context, repo string) (quay.Evidence, error) { return client.Registry(ctx, repo) },
+				Store: quay.Store{Client: client, Username: username, Password: password, Unpublished: func(r string) bool { return quay.NotYetPublished(o.root, r) }},
+				Registry: func(ctx context.Context, repo string) (quay.Evidence, error) {
+					return client.RegistryAs(ctx, repo, username, password)
+				},
 				GitHub:    newGitHub(),
 				Now:       time.Now,
 				Repos:     repos,
@@ -270,7 +272,7 @@ func newQuayPruneCommand(o *quayOptions) *cobra.Command {
 				}
 				var plan quay.Plan
 				if err := json.Unmarshal(raw, &plan); err != nil {
-					return fmt.Errorf("invalid cleanup plan")
+					return fmt.Errorf("invalid cleanup plan: use the file saved with --output, not the --json output")
 				}
 				result := struct {
 					Schema      int             `json:"schema"`
@@ -282,7 +284,7 @@ func newQuayPruneCommand(o *quayOptions) *cobra.Command {
 				if err := save(result); err != nil {
 					return err
 				}
-				actions, err := p.Apply(cmd.Context(), plan, func(a []quay.Action) { result.Actions = a; _ = save(result) })
+				actions, err := p.Apply(cmd.Context(), plan, func(a []quay.Action) error { result.Actions = a; return save(result) })
 				result.Actions = actions
 				if actions == nil {
 					result.Actions = []quay.Action{}
@@ -346,19 +348,6 @@ func contains(list []string, s string) bool {
 		}
 	}
 	return false
-}
-
-// unpublished reports whether no bundle of the repository has a publication record yet.
-func unpublished(root, repository string) bool {
-	for _, b := range quay.Bundles() {
-		if b.Repository != repository {
-			continue
-		}
-		if record, err := quay.LoadRecord(root, b.Name); err != nil || record != nil {
-			return false
-		}
-	}
-	return true
 }
 
 // initDescription writes a draft description file. It needs neither network nor token.

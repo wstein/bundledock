@@ -21,14 +21,20 @@ type Bundle struct {
 	Aliases    []string
 	// Baseline is the alias that marks the current release ("stable", or "current" for node-current).
 	Baseline string
+	// ManualOnly bundles are published only by an owner dispatch, so their
+	// repository may not exist before the first publication.
+	ManualOnly bool
 }
+
+// manualOnly mirrors MANUAL_ONLY in scripts/bundle-config.py.
+var manualOnly = map[string]bool{"nixbox": true}
 
 // Bundles lists every known bundle, in the order of the publication command, nixbox last.
 func Bundles() []Bundle {
 	var result []Bundle
 	for _, name := range append(append([]string{}, toolpublish.CanonicalBundles...), "nixbox") {
 		b, _ := toolpublish.SelectBundle(name)
-		result = append(result, Bundle{b.Name, b.Repository, b.PublicationAliases(), b.BaselineAlias()})
+		result = append(result, Bundle{b.Name, b.Repository, b.PublicationAliases(), b.BaselineAlias(), manualOnly[b.Name]})
 	}
 	return result
 }
@@ -69,4 +75,20 @@ func LoadRecord(root, bundle string) (*Record, error) {
 		return nil, fmt.Errorf("invalid publication record for %s", bundle)
 	}
 	return &record, nil
+}
+
+// NotYetPublished reports whether a repository may be absent on Quay: every
+// bundle that uses it is manual-only and has no publication record yet.
+func NotYetPublished(root, repository string) bool {
+	found := false
+	for _, b := range Bundles() {
+		if b.Repository != repository {
+			continue
+		}
+		found = true
+		if record, err := LoadRecord(root, b.Name); !b.ManualOnly || err != nil || record != nil {
+			return false
+		}
+	}
+	return found
 }

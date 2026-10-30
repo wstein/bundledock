@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -247,7 +249,7 @@ func TestApplyDeletesOnlyExactTagAndIsIdempotent(t *testing.T) {
 	f := newPruneFixture(t)
 	approved := plan(f)
 	var reports [][]Action
-	actions, err := f.pruner.Apply(context.Background(), approved, func(a []Action) { reports = append(reports, append([]Action{}, a...)) })
+	actions, err := f.pruner.Apply(context.Background(), approved, func(a []Action) error { reports = append(reports, append([]Action{}, a...)); return nil })
 	if err != nil || len(actions) != 1 || actions[0].Action != "deleted" || reports[0][0].Action != "deleted" {
 		t.Fatalf("actions = %v, err = %v", actions, err)
 	}
@@ -488,5 +490,104 @@ func TestGitHubJobsPagination(t *testing.T) {
 	}
 	if _, err := gh.Run(context.Background(), "../x", false); err == nil {
 		t.Fatal("invalid run ID accepted")
+	}
+}
+
+func TestAssessChecksIdentity(t *testing.T) {
+	f := newPruneFixture(t)
+	for name, tag := range map[string]string{
+		"alias":           "latest",
+		"not staging":     "2026.10.01-b4.1",
+		"unknown version": "staging-bad-amd64",
+		"unknown arch":    "staging-2026.10.01-b4.1-s390x",
+		"traversal":       "staging-../x-amd64",
+	} {
+		row := f.row
+		row.Name = tag
+		got := f.pruner.Assess(context.Background(), "toolbox", row, false)
+		if got.Eligible || got.Reason == "" || got.Reason == "Required provenance evidence unavailable" {
+			t.Errorf("%s: %+v", name, got)
+		}
+	}
+	if _, _, err := Identity("toolbox", "staging-2026.10.01-b4.1-amd64"); err != nil {
+		t.Errorf("valid staging tag rejected: %v", err)
+	}
+	if _, _, err := Identity("foreign", "staging-2026.10.01-b4.1-amd64"); err == nil {
+		t.Error("foreign repository accepted")
+	}
+}
+
+func TestApplyRejectsPublicationModePlansNamingTheScript(t *testing.T) {
+	f := newPruneFixture(t)
+	_, err := f.pruner.Apply(context.Background(), Plan{Schema: 1, Mode: "publication", Rows: []PlanRow{f.assess()}}, nil)
+	if err == nil || !strings.Contains(err.Error(), "scripts/staging-cleanup.py") || len(f.store.deleted) != 0 {
+		t.Fatalf("err = %v deleted = %v", err, f.store.deleted)
+	}
+	for _, mode := range []string{"", "unknown"} {
+		if _, err := f.pruner.Apply(context.Background(), Plan{Schema: 1, Mode: mode}, nil); err == nil {
+			t.Errorf("mode %q accepted", mode)
+		}
+	}
+	if _, err := f.pruner.Apply(context.Background(), Plan{Schema: 1, Mode: ModeFailedRun, Target: &FailedRun{RunID: "123", Attempt: 1}}, nil); err == nil {
+		t.Error("a failed-run plan was accepted for a fallback request")
+	}
+}
+
+func TestApplyReturnsProgressWriteErrors(t *testing.T) {
+	f := newPruneFixture(t)
+	_, err := f.pruner.Apply(context.Background(), plan(f), func([]Action) error { return fmt.Errorf("disk full") })
+	if err == nil || !strings.Contains(err.Error(), "disk full") {
+		t.Fatalf("err = %v", err)
+	}
+}
+
+func TestStoreTagsSendsNoCredentials(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "" {
+			t.Errorf("REST read sent credentials: %s", r.URL.Path)
+		}
+		json.NewEncoder(w).Encode(map[string]any{"page": 1, "tags": []Tag{}, "has_additional": false})
+	}))
+	defer srv.Close()
+	store := Store{Client: clientFor(t, srv), Username: "robot", Password: "pw"}
+	if _, err := store.Tags(context.Background(), "toolbox", ""); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.Tags(context.Background(), "toolbox", "staging-2026.10.01-b4.1-amd64"); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestFallbackNeedsAConclusionNotAnEmptyOne(t *testing.T) {
+	f := newPruneFixture(t)
+	f.gh.run.Conclusion = "" // a completed run with an empty (not null) conclusion, as the script allows
+	if !f.assess().Eligible {
+		t.Fatal("empty but non-null conclusion rejected")
+	}
+	f.gh.run.ConclusionNull = true
+	if f.assess().Eligible {
+		t.Fatal("null conclusion accepted")
+	}
+	var run Run
+	if err := json.Unmarshal([]byte(`{"status":"completed","conclusion":null}`), &run); err != nil || !run.ConclusionNull {
+		t.Fatalf("null not detected: %+v %v", run, err)
+	}
+	if err := json.Unmarshal([]byte(`{"status":"completed","conclusion":"success"}`), &run); err != nil || run.ConclusionNull || run.Conclusion != "success" {
+		t.Fatalf("conclusion not read: %+v %v", run, err)
+	}
+}
+
+func TestOnlyManualOnlyBundlesMayBeAbsent(t *testing.T) {
+	root := t.TempDir()
+	if !NotYetPublished(root, "nixbox") {
+		t.Error("nixbox without a record must be tolerated")
+	}
+	if NotYetPublished(root, "toolbox") || NotYetPublished(root, "node") {
+		t.Error("an unpublished automatic bundle must not be tolerated")
+	}
+	os.MkdirAll(filepath.Join(root, "docs"), 0o755)
+	os.WriteFile(filepath.Join(root, "docs", "nixbox-published.json"), []byte(`{"bundle":"nixbox","tag":"t","digest":"sha256:`+strings.Repeat("a", 64)+`"}`), 0o644)
+	if NotYetPublished(root, "nixbox") {
+		t.Error("nixbox with a record must not be tolerated")
 	}
 }
