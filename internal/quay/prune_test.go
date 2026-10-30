@@ -348,41 +348,42 @@ func TestFailedRunPlanScopeIsChecked(t *testing.T) {
 	}
 }
 
-func TestFailedRunPlanResamplesLatestRun(t *testing.T) {
+// A rerun that starts after the jobs were read must invalidate the proof: only
+// the final fresh read of the run can see it.
+func TestFailedRunProofResamplesRunAfterJobs(t *testing.T) {
 	f := failedFixture(t)
-	calls := 0
-	g := &resamplingGitHub{fakeGitHub: f.gh, onRun: func() { calls++ }}
-	f.pruner.GitHub = g
-	if _, err := f.pruner.Plan(context.Background()); err != nil || calls < 2 {
-		t.Fatalf("calls = %d err = %v", calls, err)
+	g := &rerunAfterJobs{fakeGitHub: f.gh}
+	if _, err := ProveFailedRun(context.Background(), g, "123", 1, true, nil); err == nil || !strings.Contains(err.Error(), "changed while checking") {
+		t.Fatalf("a run that changed after the jobs read was accepted: %v", err)
 	}
-	g.afterJobs = true
-	g.changed = Run{}
-	if _, err := ProveFailedRun(context.Background(), g, "123", 1, false, nil); err == nil {
-		t.Fatal("a run that changed after the jobs read was accepted")
+	if g.runs != 2 {
+		t.Fatalf("run reads = %d, want the initial read and the resample", g.runs)
+	}
+	// Unchanged evidence passes with the same two reads.
+	g = &rerunAfterJobs{fakeGitHub: f.gh, quiet: true}
+	if _, err := ProveFailedRun(context.Background(), g, "123", 1, true, nil); err != nil || g.runs != 2 {
+		t.Fatalf("err = %v, run reads = %d", err, g.runs)
 	}
 }
 
-type resamplingGitHub struct {
+type rerunAfterJobs struct {
 	*fakeGitHub
-	onRun     func()
-	afterJobs bool
-	changed   Run
-	jobsSeen  bool
+	quiet    bool
+	jobsSeen bool
+	runs     int
 }
 
-func (g *resamplingGitHub) Jobs(ctx context.Context, id string, a int, fresh bool) ([]Job, error) {
+func (g *rerunAfterJobs) Jobs(ctx context.Context, id string, a int, fresh bool) ([]Job, error) {
 	g.jobsSeen = true
 	return g.fakeGitHub.Jobs(ctx, id, a, fresh)
 }
-func (g *resamplingGitHub) Run(ctx context.Context, id string, fresh bool) (Run, error) {
-	g.onRun()
-	if g.afterJobs && g.jobsSeen {
-		run := g.fakeGitHub.run
-		run.RunAttempt = 2
-		return run, nil
+func (g *rerunAfterJobs) Run(ctx context.Context, id string, fresh bool) (Run, error) {
+	g.runs++
+	run, err := g.fakeGitHub.Run(ctx, id, fresh)
+	if g.jobsSeen && !g.quiet {
+		run.RunAttempt++
 	}
-	return g.fakeGitHub.Run(ctx, id, fresh)
+	return run, err
 }
 
 func TestNodeCurrentLabelsRequireBundle(t *testing.T) {
