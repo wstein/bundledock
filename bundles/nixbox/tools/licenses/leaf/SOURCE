@@ -1,0 +1,10 @@
+Upstream: https://github.com/RivoLink/leaf
+License: MIT
+License snapshot release: 1.29.0
+Reviewed release: https://github.com/RivoLink/leaf/releases/tag/1.29.0
+License snapshot source: https://raw.githubusercontent.com/RivoLink/leaf/1.29.0/LICENSE
+LICENSE SHA256: 98c9cd0ac4bcc0b30d8cbb7c09a311196dea27b158c65d6caadfb073c090af71
+The snapshot release's official Linux AMD64/ARM64 raw binaries were verified against release API SHA256 digests and checksums.txt on 2026-10-12 by read-only inspection. No upstream binaries were executed or modified.
+The inspected snapshot release's ELF binaries require libgcc_s.so.1, libm.so.6 and libc.so.6, plus their architecture's glibc loader. Native consumer compatibility remains unverified pending an explicitly approved image build and smoke run.
+
+This SOURCE records the reviewed license snapshot, not the current installed binary version. The bundle manifest and packages.lock.json record each installed release, official artifact URL and checksum. Keep this historical evidence and the full LICENSE bytes intact when binary pins advance; inspect any upstream license changes separately.

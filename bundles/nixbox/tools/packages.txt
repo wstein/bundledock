@@ -1,0 +1,11 @@
+# Official glibc-dynamic release binaries nixbox carries beside its Nix store paths.
+# Same grammar as the toolbox packages.txt; the catalog and lock use the toolbox schema.
+# package list should be sorted alphabetically for easier maintenance.
+ast-grep>=0.45.3
+delta>=0.20.1
+difftastic>=0.71.0
+fastfetch>=2.70.0
+helix>=25.7.1
+leaf>=1.29.0
+zizmor>=1.31.1
+zk>=0.15.7

@@ -1,6 +1,7 @@
 package nixbox
 
 import (
+	"bundledock/internal/toolconfig"
 	"os"
 	"strings"
 	"testing"
@@ -36,6 +37,30 @@ func TestProductionCatalogShape(t *testing.T) {
 	}
 }
 
+// The official binaries are installed from bundles/nixbox/tools with the toolbox
+// recipes, so every shim must name a file that the tools catalog installs.
+func TestProductionOfficialBinariesAreInstalledByTheToolsCatalog(t *testing.T) {
+	_, c := productionCatalog(t)
+	tools, err := toolconfig.Load("../../bundles/nixbox/tools")
+	if err != nil {
+		t.Fatal(err)
+	}
+	installed := map[string]bool{}
+	for _, p := range tools.Catalog.Packages {
+		for _, target := range p.Install.Members {
+			installed[target] = true
+		}
+	}
+	for _, name := range c.OfficialNames() {
+		if !installed[c.Packages[name].Binary] {
+			t.Errorf("shim %s runs %s, which no tools recipe installs", name, c.Packages[name].Binary)
+		}
+	}
+	if len(tools.Catalog.Packages) != len(c.OfficialNames()) {
+		t.Errorf("%d tools recipes for %d shims", len(tools.Catalog.Packages), len(c.OfficialNames()))
+	}
+}
+
 const validCatalog = `{"schema":1,
 "nixpkgs":{"rev":"e62746b0b472753ef019baceab6f1e2e52014980","url":"https://releases.nixos.org/nixpkgs/nixpkgs-26.11pre1104102.e62746b0b472/nixexprs.tar.zst","narHash":"sha256-GYpArmwi/iMuX2ov31oCBhAXRMJdNX9kOl2LZHCuR6M="},
 "cache":{"url":"https://cache.nixos.org","public_key":"cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="},
@@ -66,7 +91,8 @@ func TestCatalogRejects(t *testing.T) {
 		"bad name":           {`"git":{`, `"Git ":{`},
 		"unknown role":       {`"attr":"gitMinimal"`, `"attr":"gitMinimal","role":"boss"`},
 		"empty packages":     {`"packages":{"git":{"provider":"nix","attr":"gitMinimal"}}`, `"packages":{}`},
-		"official no runner": {`"git":{"provider":"nix","attr":"gitMinimal"}`, `"hx":{"provider":"official","bundle":"toolbox","binary":"bin/hx"}`},
+		"official no runner": {`"git":{"provider":"nix","attr":"gitMinimal"}`, `"hx":{"provider":"official","binary":"bin/hx"}`},
+		"official bundle":    {`"git":{"provider":"nix","attr":"gitMinimal"}`, `"hx":{"provider":"official","bundle":"toolbox","binary":"bin/hx"},"glibc":{"provider":"nix","attr":"glibc","role":"runner"},"gcc-lib":{"provider":"nix","attr":"stdenv.cc.cc.lib","role":"runner"}`},
 	}
 	for name, c := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -84,16 +110,16 @@ func TestCatalogRejects(t *testing.T) {
 	}
 }
 
-func TestCatalogOfficialPathsStayInsideTheToolbox(t *testing.T) {
+func TestCatalogOfficialPathsStayInsideTheToolsDirectory(t *testing.T) {
 	runners := `"glibc":{"provider":"nix","attr":"glibc","role":"runner"},"gcc-lib":{"provider":"nix","attr":"stdenv.cc.cc.lib","role":"runner"},`
 	base := strings.Replace(validCatalog, `"packages":{`, `"packages":{`+runners, 1)
 	for _, binary := range []string{"/bin/hx", "../hx", "bin/../../hx", "bin//hx", ""} {
-		text := strings.Replace(base, `"git":`, `"hx":{"provider":"official","bundle":"toolbox","binary":"`+binary+`"},"git":`, 1)
+		text := strings.Replace(base, `"git":`, `"hx":{"provider":"official","binary":"`+binary+`"},"git":`, 1)
 		if _, err := ParseCatalog([]byte(text)); err == nil {
 			t.Errorf("accepted binary %q", binary)
 		}
 	}
-	text := strings.Replace(base, `"git":`, `"hx":{"provider":"official","bundle":"toolbox","binary":"bin/hx"},"git":`, 1)
+	text := strings.Replace(base, `"git":`, `"hx":{"provider":"official","binary":"bin/hx"},"git":`, 1)
 	if _, err := ParseCatalog([]byte(text)); err != nil {
 		t.Errorf("rejected a valid official package: %v", err)
 	}
