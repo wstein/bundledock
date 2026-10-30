@@ -50,7 +50,10 @@ func TestProductionOfficialBinariesAreInstalledByTheToolsCatalog(t *testing.T) {
 	}
 }
 
-func TestCheckOfficialAcceptsAShimOnAnAlias(t *testing.T) {
+// One recipe installs bin/zk and an alias copy bin/zk-alias. A shim may run either,
+// and the alias needs no shim of its own; without counting aliases as installed the
+// shim on the alias would be refused.
+func TestCheckOfficialAcceptsOneShimOnTheAliasAndOneOnTheMember(t *testing.T) {
 	_, c := productionCatalog(t)
 	tools, err := toolconfig.Load("../../bundles/nixbox/tools")
 	if err != nil {
@@ -59,20 +62,19 @@ func TestCheckOfficialAcceptsAShimOnAnAlias(t *testing.T) {
 	zk := tools.Catalog.Packages["zk"]
 	zk.Install.Aliases = map[string]string{"bin/zk-alias": "bin/zk"}
 	tools.Catalog.Packages["zk"] = zk
-	alias := *c
-	alias.Packages = map[string]Package{}
+	both := *c
+	both.Packages = map[string]Package{}
 	for name, p := range c.Packages {
-		alias.Packages[name] = p
+		both.Packages[name] = p
 	}
-	p := alias.Packages["zk"]
-	p.Binary = "bin/zk-alias"
-	alias.Packages["zk"] = p
-	// The alias is installed, but bin/zk then has no shim.
-	if err := CheckOfficial(&alias, tools); err == nil {
+	both.Packages["zk-alias"] = Package{Provider: ProviderOfficial, Binary: "bin/zk-alias"}
+	if err := CheckOfficial(&both, tools); err != nil {
+		t.Fatalf("a shim on an alias beside a shim on its member: %v", err)
+	}
+	// The alias alone is not enough: its member bin/zk still needs a shim.
+	delete(both.Packages, "zk")
+	if err := CheckOfficial(&both, tools); err == nil {
 		t.Fatal("accepted a recipe member without a shim")
-	}
-	if err := CheckOfficial(c, tools); err != nil {
-		t.Fatalf("an alias must not need a shim: %v", err)
 	}
 }
 
