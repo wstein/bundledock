@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"bundledock/internal/testdir"
 )
 
 func singletonVersionFixture(name, upstream string) []byte {
@@ -144,7 +146,7 @@ func TestSingletonAllocationTracksRollingLocks(t *testing.T) {
 }
 
 func TestSemanticMetadataBindsAttemptAndLock(t *testing.T) {
-	lock := filepath.Join(t.TempDir(), "codex.lock.json")
+	lock := filepath.Join(testdir.New(t), "codex.lock.json")
 	if err := os.WriteFile(lock, singletonVersionFixture("codex", "0.162.1"), 0600); err != nil {
 		t.Fatal(err)
 	}
@@ -266,7 +268,7 @@ func TestToolboxDateRevisionAllocation(t *testing.T) {
 }
 
 func TestToolboxDailyMetadataRequiresExplicitAttempt(t *testing.T) {
-	lock := filepath.Join(t.TempDir(), "lock.json")
+	lock := filepath.Join(testdir.New(t), "lock.json")
 	if err := os.WriteFile(lock, []byte("{}"), 0600); err != nil {
 		t.Fatal(err)
 	}

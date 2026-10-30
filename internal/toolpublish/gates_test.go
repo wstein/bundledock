@@ -7,9 +7,23 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
+
+	"bundledock/internal/testdir"
 )
+
+// requireNativeLinuxBuild skips tests that drive Adapter.Build through its
+// fake Docker: Build refuses to run unless the host is Linux, by design, so
+// on other hosts these tests would fail on the guard rather than on their
+// subject.
+func requireNativeLinuxBuild(t *testing.T) {
+	t.Helper()
+	if runtime.GOOS != "linux" {
+		t.Skipf("Adapter.Build requires a native Linux host (GOOS=%s)", runtime.GOOS)
+	}
+}
 
 type fakeDocker struct {
 	arch, id, digest, indexDigest     string
@@ -111,7 +125,7 @@ func (f *fakeDocker) run(args ...string) ([]byte, error) {
 
 func fixture(t *testing.T) (Metadata, string) {
 	t.Helper()
-	lock := filepath.Join(t.TempDir(), "packages.lock.json")
+	lock := filepath.Join(testdir.New(t), "packages.lock.json")
 	if err := os.WriteFile(lock, []byte(`{"schema":2,"platforms":{"amd64":{"gh":{"version":"v1.2.3","url":"https://github.com/example/amd64","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","verification":"tls-download-sha256"}},"arm64":{"gh":{"version":"v1.2.3","url":"https://github.com/example/arm64","sha256":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","verification":"tls-download-sha256"}}}}`), 0600); err != nil {
 		t.Fatal(err)
 	}
@@ -124,6 +138,7 @@ func fixture(t *testing.T) (Metadata, string) {
 
 func buildFixture(t *testing.T, m Metadata, lock, arch string) (*fakeDocker, Receipt) {
 	t.Helper()
+	requireNativeLinuxBuild(t)
 	f := fake(arch)
 	r, err := (Adapter{Run: f.run, Architecture: arch}).Build(m, lock, arch, "consumer:test")
 	if err != nil {
@@ -191,6 +206,11 @@ func TestBuildSmokeThenPushExactImage(t *testing.T) {
 func TestBuildFailureGates(t *testing.T) {
 	for _, scenario := range []string{"smoke", "pull", "native", "lock"} {
 		t.Run(scenario, func(t *testing.T) {
+			if scenario == "smoke" || scenario == "pull" {
+				// These must fail inside Build after the platform guard; on a
+				// non-Linux host they would pass vacuously on the guard.
+				requireNativeLinuxBuild(t)
+			}
 			m, lock := fixture(t)
 			f := fake("amd64")
 			a := Adapter{Run: f.run, Architecture: "amd64"}
@@ -350,7 +370,7 @@ func TestBundleDockDestinationAccepted(t *testing.T) {
 }
 
 func TestShortVersionTags(t *testing.T) {
-	lock := filepath.Join(t.TempDir(), "lock.json")
+	lock := filepath.Join(testdir.New(t), "lock.json")
 	if err := os.WriteFile(lock, []byte("{}"), 0600); err != nil {
 		t.Fatal(err)
 	}
@@ -493,6 +513,7 @@ func TestAliasFailureDoesNotReportSuccessfulPublication(t *testing.T) {
 }
 
 func TestCodeServerBuildUsesDedicatedCarrierAndSmoke(t *testing.T) {
+	requireNativeLinuxBuild(t)
 	lock := "../../bundles/code-server/packages.lock.json"
 	m, err := NewMetadata(lock, "quay.io/example/code-server", "2026.10.10-b12.1", strings.Repeat("a", 40), "https://github.com/example/repo", "2026-10-10T03:17:00Z", "123")
 	if err != nil {

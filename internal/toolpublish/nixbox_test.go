@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"bundledock/internal/nixbox"
+	"bundledock/internal/testdir"
 )
 
 const nixboxLockPath = "../../bundles/nixbox/packages.lock.json"
@@ -163,7 +164,7 @@ func TestNixboxUsesTheDailyTagNamespace(t *testing.T) {
 // the official release binaries in bundles/nixbox/tools.
 func nixboxCopy(t *testing.T) string {
 	t.Helper()
-	dir := t.TempDir()
+	dir := testdir.New(t)
 	for _, name := range []string{"packages.lock.json", "tools/packages.lock.json"} {
 		data, err := os.ReadFile("../../bundles/nixbox/" + name)
 		if err != nil {
