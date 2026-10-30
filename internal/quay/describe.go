@@ -22,6 +22,9 @@ func (c *Client) SetDescription(ctx context.Context, repository, token, descript
 	if token == "" {
 		return fmt.Errorf("QUAY_TOKEN is required")
 	}
+	if err := c.requireDefaultHost(); err != nil {
+		return err
+	}
 	body, err := json.Marshal(map[string]string{"description": description})
 	if err != nil {
 		return err

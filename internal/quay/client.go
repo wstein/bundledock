@@ -26,6 +26,16 @@ const (
 	timeout  = 30 * time.Second
 )
 
+// ErrCredentialHost is returned when a secret would leave for another host.
+var ErrCredentialHost = fmt.Errorf("credentials are only sent to %s", DefaultBaseURL)
+
+func (c *Client) requireDefaultHost() error {
+	if c.base != DefaultBaseURL {
+		return ErrCredentialHost
+	}
+	return nil
+}
+
 // StatusError reports an unexpected HTTP status. It never carries a body.
 type StatusError struct{ Code int }
 

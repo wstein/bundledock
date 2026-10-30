@@ -435,7 +435,7 @@ func TestDeleteTagUsesRobotOnlyForRegistryAndOnlyStagingTags(t *testing.T) {
 		}
 	}))
 	defer srv.Close()
-	c := New(srv.Client(), srv.URL)
+	c := clientFor(t, srv)
 	ctx := context.Background()
 	if err := c.DeleteTag(ctx, "toolbox", "staging-2026.10.01-b4.1-amd64", "robot", "pw"); err != nil {
 		t.Fatal(err)
