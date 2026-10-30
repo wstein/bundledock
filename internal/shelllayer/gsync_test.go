@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"bundledock/internal/gittest"
+	"bundledock/internal/testdir"
 )
 
 // gsyncEnv is a hermetic environment: no user or system Git configuration, a
@@ -39,7 +40,7 @@ type gsyncFixture struct {
 // argv and then runs the real git, so a test can prove which verbs ran.
 func newGsyncFixture(t *testing.T) *gsyncFixture {
 	t.Helper()
-	root := t.TempDir()
+	root := testdir.New(t)
 	f := &gsyncFixture{t: t, root: root, home: filepath.Join(root, "home"), bin: filepath.Join(root, "bin"), log: filepath.Join(root, "git.log")}
 	for _, d := range []string{f.home, f.bin} {
 		if err := os.MkdirAll(d, 0o755); err != nil {
