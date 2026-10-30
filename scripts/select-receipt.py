@@ -9,7 +9,7 @@ def main(directory, bundle, current):
     found = {}
     for path in Path(directory).iterdir():
         match = re.fullmatch(re.escape(bundle) + r'-publication-([1-9][0-9]*)', path.name)
-        if match and (path / 'publication.json').is_file() and not path.is_symlink():
+        if match and (path / 'publication.json').is_file() and not path.is_symlink() and not (path / 'publication.json').is_symlink():
             found[match[1]] = path
     # A re-run of failed jobs has a new attempt but keeps the earlier receipt.
     attempt = current if current in found else next(iter(found)) if len(found) == 1 else None
