@@ -25,6 +25,7 @@ The design and the owner decisions are in
 | `bdock quay info <bundle>` | All tags with digest, age, architectures and the `org.opencontainers.image.version` and `revision` labels. | none |
 | `bdock quay describe [bundle]` | Compares `bundles/<name>/description.md` with the live description. Exit code 1 on a difference. | none |
 | `bdock quay describe [bundle] --apply` | Writes the descriptions that differ. | `QUAY_TOKEN` (OAuth token) |
+| `bdock quay describe --init <bundle>` | Writes a draft `bundles/<name>/description.md` from the bundle name, the purpose in `docs/<bundle>.md` and the two standard links. Never overwrites a file. | none, no network |
 | `bdock quay prune` | Plans the removal of staging tags; changes nothing. | none for the plan |
 | `bdock quay prune --apply --approved-plan <file>` | Deletes the eligible tags of a saved plan after a fresh recheck. | `REPOSITORY_USERNAME`, `REPOSITORY_TOKEN` (robot) |
 
@@ -45,6 +46,11 @@ The description is a reviewed Markdown file of at most 5000 characters. Without 
 bundle, `describe` checks every bundle that has a description file and skips the
 others. A repository that is not public is reported as a difference; visibility is
 never changed.
+
+`describe --init <bundle>` starts a new description: it takes the `description` from
+the front matter of `docs/<bundle>.md` (or its first paragraph), adds the links to
+the documentation site and the source, and fails when the file already exists.
+Review and edit the draft before you commit it.
 
 ### prune
 

@@ -150,13 +150,16 @@ func newQuayInfoCommand(o *quayOptions) *cobra.Command {
 }
 
 func newQuayDescribeCommand(o *quayOptions) *cobra.Command {
-	apply := false
+	apply, initDraft := false, false
 	cmd := &cobra.Command{
 		Use: "describe [bundle]", Short: "Compare bundles/<name>/description.md with the live Quay description; --apply writes it", Args: cobra.MaximumNArgs(1),
 		Long: "Compare bundles/<name>/description.md with the description on Quay. Without a bundle, every bundle that has a\n" +
 			"description file is checked. Exit status 1 means a difference. --apply writes only the descriptions that differ,\n" +
 			"using the OAuth token in the QUAY_TOKEN environment variable (never a flag or file).",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if initDraft {
+				return initDescription(cmd, o, args, apply)
+			}
 			bundles := quay.Bundles()
 			if len(args) == 1 {
 				b, err := quay.FindBundle(args[0])
@@ -200,6 +203,7 @@ func newQuayDescribeCommand(o *quayOptions) *cobra.Command {
 		},
 	}
 	cmd.Flags().BoolVar(&apply, "apply", false, "write differing descriptions (needs QUAY_TOKEN)")
+	cmd.Flags().BoolVar(&initDraft, "init", false, "write a draft bundles/<name>/description.md for a bundle; never overwrites; needs no network")
 	return cmd
 }
 
@@ -358,4 +362,27 @@ func unpublished(root, repository string) bool {
 		}
 	}
 	return true
+}
+
+// initDescription writes a draft description file. It needs neither network nor token.
+func initDescription(cmd *cobra.Command, o *quayOptions, args []string, apply bool) error {
+	if len(args) != 1 {
+		return fmt.Errorf("--init requires a bundle")
+	}
+	if apply {
+		return fmt.Errorf("--init and --apply cannot be combined")
+	}
+	b, err := quay.FindBundle(args[0])
+	if err != nil {
+		return err
+	}
+	path, chars, err := quay.InitDescription(o.root, b)
+	if err != nil {
+		return err
+	}
+	if o.json {
+		return quay.WriteJSON(cmd.OutOrStdout(), "bdock.quay.describe-init/v1", map[string]any{"bundle": b.Name, "path": path, "written": true, "characters": chars})
+	}
+	fmt.Fprintf(cmd.OutOrStdout(), "wrote %s (%d characters); review and edit it\n", path, chars)
+	return nil
 }
