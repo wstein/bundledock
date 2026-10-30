@@ -64,16 +64,19 @@ of its single parent (not the PR base). It rejects a changed `toolchains` or
 `extra_sources` section, an added or removed package or platform, and for every
 `source-build` tool anything beyond a rise of the source `version`, `url` and
 checksums (new version within the `packages.txt` constraint, URL derived from the
-version, both architectures in agreement). The first publication of a
-`source-build` tool and any recipe or toolchain change are owner-authored and need
-explicit publication approval; see the generic tool builds design, "Publish-gate
-content check".
+version, both architectures in agreement). An updater PR therefore cannot add a
+`source-build` tool or change its recipe or toolchain; those changes are owner-authored
+PRs. See the generic tool builds design, "Publish-gate content check".
 
 **Approval of a source build.** The owner's merge of the updater or source PR is the
 approval; the lock carries no separate approval value (a lock with an `approvals` key is
-rejected as an unknown key). CI builds and smoke-tests the source-build tool before the
-merge. The first publication of a source-build tool and any recipe or toolchain change
-stay owner-authored, as above; an updater PR can only raise the source pins.
+rejected as an unknown key). The owner's merge of the PR that added the tool, or that
+changed its recipe, compiler stage or the builder, is its approval, and a source-build
+tool already in the lock on `main` is built and published by the next merged toolbox
+updater. `ci.yml` runs only `make check`; the real compile (`--network=none`) and the
+native smoke run after the merge, in `bundle-publish.yml` (and in the manually
+dispatched `toolbox-build.yml`), before the staging push and before the promotion.
+Nothing is promoted when they fail.
 
 An already merged ineligible updater cannot be repaired retroactively; use a
 separately approved exact-SHA manual publication of current `main`. Rerunning an

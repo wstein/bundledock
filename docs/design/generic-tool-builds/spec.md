@@ -107,8 +107,8 @@ Recorded from the owner on 2026-10-24, with the reasoning kept.
   express SQLite and the owner wants a generic mechanism rather than an exception.
 - **D2 Updater scope (was OQ-2).** The bot-updater exception covers a source-build lock **only when
   just the source version and checksum rise**, with the recipe and the toolchain unchanged. Any recipe
-  or toolchain change and the **first publication** of a source-build tool need explicit owner
-  approval. See [Update flow](#update-flow) for the consequence of `AGENTS.md` and what the PR shows.
+  or toolchain change, and adding a source-build tool, are owner-authored PRs, not updater PRs; the
+  owner's merge of such a PR is its approval. See [Update flow](#update-flow) for the consequence of `AGENTS.md` and what the PR shows.
 - **D3 SQLite options (was OQ-3).** "Practical" build: `SQLITE_OMIT_LOAD_EXTENSION`, FTS5, RTREE,
   DBSTAT_VTAB and MATH_FUNCTIONS enabled, no `sqldiff`, no `sqlite3_analyzer`. Line editing: see D8
   (the amalgamation does not contain linenoise).
@@ -505,17 +505,19 @@ source-build tool must therefore show, in its body and generated inventory: the 
 version, the new source URL and both hashes, and explicit lines "recipe digest: unchanged",
 "toolchain: zig 0.17.0 unchanged (sha256 ...)" and "this merge compiles <tool> from source for amd64 and
 arm64". The publish gate must stop automatic publication when anything but the source pins changed, by the
-content check below. Those other changes are owner-authored PRs and need an explicit publication approval. The **first** `sqlite3`
-publication likewise needs explicit approval of the exact source revision, like a first carrier
-publication, and cannot ride an updater PR.
+content check below. Those other changes, and adding a source-build tool, are owner-authored PRs, which an updater PR cannot be.
+The owner's merge of the PR that added `sqlite3` (or changed its recipe, compiler stage or the builder) is its
+approval; once `sqlite3` is in the lock on `main`, the next merged toolbox updater builds and publishes it.
 
 ### Owner approval (WP5c, superseded)
 
 An earlier design bound a per-tool `approved_digest` (`lock.approvals`) to the recipe, pins and driver
 files and refused publication without it. The owner removed it: BundleDock is treated like a package
-manager, the flow is "updater proposes, CI runs, owner merges", and the owner's merge is the approval. CI
-builds and smoke-tests the source-build tool before the merge. The first publication of a source-build tool
-and any recipe or toolchain change stay owner-authored; the content check below (G1-G4, T1-T4) is unchanged.
+manager, the flow is "updater proposes, CI runs, owner merges", and the owner's merge is the approval.
+`ci.yml` runs only `make check`; the real compile (`--network=none`) and the native smoke run after the merge,
+in `bundle-publish.yml` before the staging push and before the promotion (and in the manually dispatched
+`toolbox-build.yml`), and nothing is promoted when they fail. Adding a source-build tool and any recipe or
+toolchain change stay owner-authored PRs; the content check below (G1-G4, T1-T4) is unchanged.
 The lock has no `approvals` map; a lock that carries one is rejected as an unknown key by Go and by the gate.
 
 ### Publish-gate content check (N2)
@@ -543,9 +545,9 @@ SQLite, both hashes. Any failure stops automatic publication with a named reason
 accept it under a **rebase merge** and under a **refresh merge** (the parent differs from
 `pull.base.sha`; the check uses the parent); reject a changed `toolchains` entry, a changed
 `extra_sources` hash or commit, a changed `verification`, a downgrade, a URL not derived from the
-version, a version outside the constraint, an architecture disagreement and an added package; reject the
-**first publication** of a source-build tool (B has no entry for T, so T2/G2 fail and explicit owner
-approval is required). This check lands in its own work package (WP4b) **before the first source-build publication**.
+version, a version outside the constraint, an architecture disagreement and an added package; reject an
+updater PR that adds a source-build tool (B has no entry for T, so G2 fails; the PR that adds it is
+owner-authored and its merge is the approval). This check lands in its own work package (WP4b) **before the first source-build publication**.
 
 ## Later: acquisition providers
 
