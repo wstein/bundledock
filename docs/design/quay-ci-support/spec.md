@@ -34,7 +34,11 @@ by step; nothing is rewritten in one go.
 | 1. Metadata | `bdock quay describe <bundle>` (check) and `--apply` | check reads, apply writes | check: none. apply: OAuth token |
 | 3. Clean up | `bdock quay prune` (plan) and `--apply` | plan reads, apply deletes | robot token (registry v2) |
 
-The three read commands take `--json` so CI can evaluate them. There is no
+Every command takes `--json` so CI can evaluate it: one JSON document with a
+`schema` field on stdout, messages on stderr, the exit code independent of the flag
+(1 on a difference), and no secret in any output or error. `describe --json` shows
+the wanted and the live description; `prune --json` prints the plan, or with
+`--apply` the result per tag, and without `--apply` it changes nothing. There is no
 `purge`, no deletion of version, alias or source tags, and no `search`: the
 namespace holds only our bundles, `list` covers it, and published digests are
 pinned by consumers, so removing one is a deliberate act in the Quay web UI with
