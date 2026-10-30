@@ -384,9 +384,9 @@ jobs:
           BUNDLE: ${{ inputs.bundle }}
         run: |
           dir="$RUNNER_TEMP/publication-docs-receipt"
-          attempt=$(python3 -B scripts/select-receipt.py "$dir" "$BUNDLE" "$GITHUB_RUN_ATTEMPT")
-          echo "PUBLICATION_ATTEMPT=$attempt" >> "$GITHUB_ENV"
-          echo "PUBLICATION_RECEIPT=$dir/$BUNDLE-publication-$attempt/publication.json" >> "$GITHUB_ENV"
+          selected=$(python3 -B scripts/select-receipt.py "$dir" "$BUNDLE" "$GITHUB_RUN_ATTEMPT")
+          echo "PUBLICATION_ATTEMPT=$(sed -n 1p <<<"$selected")" >> "$GITHUB_ENV"
+          echo "PUBLICATION_RECEIPT=$(sed -n 2p <<<"$selected")" >> "$GITHUB_ENV"
       - name: Propose verified publication Markdown source and run source CI
         env:
           GH_TOKEN: ${{ github.token }}
