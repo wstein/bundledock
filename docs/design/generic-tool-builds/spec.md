@@ -509,33 +509,14 @@ content check below. Those other changes are owner-authored PRs and need an expl
 publication likewise needs explicit approval of the exact source revision, like a first carrier
 publication, and cannot ride an updater PR.
 
-### Owner approval bound to the recipe digest (WP5c)
+### Owner approval (WP5c, superseded)
 
-The review of WP5 found that the first-publication rule above looks only at the updater PR: once the lock
-contains `sqlite3`, an unrelated updater PR (a `gh` bump) is a valid owner-merged updater and would compile and
-publish `sqlite3` for the first time without approval of the exact revision. The approval is therefore bound to
-content. The lock has an optional `approvals` map (`<tool>` to a lower-case SHA256, `approved_digest`), set only
-by the owner's own commit after the approved real build and smoke. `approval_digest` (in
-`scripts/bundle-publication.py`) is the SHA256 of the canonical JSON (sorted keys, compact) of the tool name, its
-catalog package entry, its lock entries on both architectures, its locked toolchain, its locked extra sources and the
-SHA256 of a closed list of file inputs (`APPROVAL_INPUT_FILES` and `APPROVAL_INPUT_DIRECTORIES` in the gate script, listed in
-`docs/publication.md`, printed by `scripts/approval-digest.py --list-inputs`): `go.mod`, `go.sum`, every non-test Go file of the
-module packages in the dependency closure of `./cmd/tools-bundle` and `./cmd/tools-init` (a test recomputes it with `go list -deps`),
-the `compiler` and `compile-<tool>` stages and the `fetch-sources` instruction of the bundle Dockerfile (golang image digest, build
-flags, base image digest) and the tool's notice files. Excluded, because they do not change the artifact or are verified otherwise:
-smoke scripts, tests, documentation, the inventory, `.go-version` (CI's Go setup only), the downloads stage and its base image (sources
-are hash-verified), the builder stage's `COPY` and the `# syntax` line. Cost, intended:
-a change to a listed driver file forces a new owner approval of every source-build tool, and one missing or stale approval refuses
-a whole updater PR, including the other bundles of a combined one.
-Both publication paths (updater merge, at the merged commit; manual dispatch, at the approved SHA) call
-`require_approvals`, which rejects a bundle in which a catalog `source-build` tool has no approval, a different
-digest (any recipe, toolchain, extra-source, version or checksum change), or in which `approvals` names another
-tool. The updater scope check adds `approvals` to G1 (unchanged between parent and merged lock). Consequences:
-the lock that adds `sqlite3` ships without an approval and cannot publish; a later SQLite bump by the bot is
-accepted by T1-T4 but cannot publish until the owner commits a new approval (this narrows D2: the source bump
-is no longer published automatically). Go validates only the shape (`Lock.Approvals`; the upgrade carries it
-over unchanged); `scripts/approval-digest.py <tool>` prints the value for the owner. Notice files are not part of
-the digest.
+An earlier design bound a per-tool `approved_digest` (`lock.approvals`) to the recipe, pins and driver
+files and refused publication without it. The owner removed it: BundleDock is treated like a package
+manager, the flow is "updater proposes, CI runs, owner merges", and the owner's merge is the approval. CI
+builds and smoke-tests the source-build tool before the merge. The first publication of a source-build tool
+and any recipe or toolchain change stay owner-authored; the content check below (G1-G4, T1-T4) is unchanged.
+The lock has no `approvals` map; a lock that carries one is rejected as an unknown key by Go and by the gate.
 
 ### Publish-gate content check (N2)
 
