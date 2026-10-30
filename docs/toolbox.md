@@ -238,14 +238,16 @@ Stock language images provide Python, `venv` and pip; BundleDock does not instal
 an interpreter. See the source-only [package installation policy](package-tools.md)
 for dependency pins, npm defaults and the existing-tool inventory.
 
-## glibc-dynamic tools and nixbox
+## glibc-dynamic tools moved to nixbox
 
-Eight toolbox binaries are glibc-dynamic and do not start on musl images such as
-Alpine: `ast-grep`, `delta`, `difft`, `fastfetch`, `leaf`, `zizmor`, `zk` and the
-`hx` launcher's `lib/helix/hx`. The other binaries are static. The toolbox itself
-is unchanged. The [nixbox](nixbox.md) bundle adds a glibc runner and shims with
-the same names that run these official binaries on such images; mount both
-bundles.
+`ast-grep`, `delta`, `difft`, `fastfetch`, `leaf`, `zizmor`, `zk` and `hx`
+(Helix) are glibc-dynamic official binaries that do not start on musl images such
+as Alpine. They are no longer part of the toolbox: the source toolbox ships only
+static binaries. The [nixbox](nixbox.md) bundle ships these eight unmodified,
+with shims that start them on glibc and musl hosts. The pins, notices and
+inventory of the eight are in nixbox (`bundles/nixbox/tools`). This change is in
+source only: the new toolbox version is not published yet, and the published
+toolbox still contains the eight tools.
 
 ## Retained notices
 
@@ -458,28 +460,6 @@ no git. The linux/amd64 v0.1.0 binary was executed once that way for this additi
 Native consumer smoke, image build/publication and consumer activation remain
 pending separate owner authorization.
 
-### zk release
-
-The source lock includes [zk-org/zk v0.15.7](https://github.com/zk-org/zk/releases/tag/v0.15.7)
-(`zk>=0.15.7`), the `zk` Zettelkasten command-line tool. It is placed in the
-toolbox because it is a small, self-contained prebuilt CLI with no runtime,
-state volume or independent release cadence. A future updater run resolves new
-stable releases through the normal toolbox path (tag prefix `v`, asset
-`zk-v{version}-linux-{arch}.tar.gz`). The release publishes no checksum file, so the
-lock records the release API digests, which equal the hashes of the downloaded
-Linux AMD64 and ARM64 archives (checked on 2026-10-21). The glibc `linux-*`
-archives are used, not the `alpine-*` ones; the binaries need glibc 2.34 or newer,
-so Alpine and other musl-based images are unsupported. The archives carry only
-the executable, so the upstream GPL-3.0 `LICENSE` is retained separately under
-`licenses/zk/`, next to a `SOURCE` record. The unmodified binary is shipped and
-only executed as a separate program.
-
-The isolated consumer smoke runs only `zk --version` (expected `zk X.Y.Z`) with
-an empty home. The linux/arm64 v0.15.7 binary was executed once that way for this
-addition; the linux/amd64 binary was not executed. Native consumer smoke, image
-build/publication and consumer activation remain pending separate owner
-authorization.
-
 ### misspell release
 
 The source lock includes [golangci/misspell v0.8.0](https://github.com/golangci/misspell/releases/tag/v0.8.0)
@@ -531,37 +511,6 @@ pins are not generated. These commands edit or check Markdown source; they do
 not invoke Hugo or render a documentation site. The existing CI workflow calls
 `make check`, so a lock-only change with a stale table fails source verification.
 
-## Helix terminal editor
-
-The toolbox includes official stable [Helix 25.07.1](https://github.com/helix-editor/helix/releases/tag/25.07.1)
-Linux AMD64 and ARM64 prebuilts. `hx` launches the untouched binary with
-`HELIX_RUNTIME` pointing to the same mounted bundle's `lib/helix/runtime`.
-The whole runtime, compiled tree-sitter grammars, queries, themes and upstream
-notices are retained. User configuration belongs in writable
-`$XDG_CONFIG_HOME/helix` (normally `$HOME/.config/helix`); no user configuration
-is created by bundle initialization. Language servers, formatters and clipboard
-helpers are supplied by the consumer or installed in writable home locations.
-No grammar download, compilation or plugin installation is needed for the shipped
-runtime. Helix's official GNU/Linux prebuilts require compatible glibc; the
-stock Debian consumer remains the integration target.
-
-`tools init` copies and validates volume content; it cannot change the invoking
-shell's environment. Anchorage owns its consumer shell seeds, which default
-`EDITOR` to `hx` only when `hx` is available and `EDITOR` is unset, preserving
-user overrides and `VISUAL`. Existing custom seeds remain user-owned. Other
-consumers can opt in with `export EDITOR="${EDITOR-hx}"` after placing toolbox
-`bin` on PATH. The existing older pinned consumer image does not gain Helix
-until a separately approved build, publication and activation.
-
-Helix uses calendar release tags such as `25.07.1`. Its official-repository-only
-`helix-calendar` normalization compares this as `25.7.1`; a two-part release
-such as `25.07` compares as `25.7.0`. Desired requirements use canonical numeric
-versions (`helix>=25.7.1`); the lock and download asset retain the original tag
-spelling. Generic SemVer parsing remains strict and prereleases are excluded.
-The `helix-runtime` extraction recipe accepts only a single stable Helix Linux
-release root, regular files and directories. Production extraction binds that
-root to the verified release pin. It does not permit archive links.
-
 ## Upgrade the lock
 
 Run upgrades from the repository root:
@@ -573,17 +522,15 @@ make run ARGS="tools upgrade --directory bundles/toolbox" # explicit bundle dire
 ```
 
 `packages.txt` contains one desired requirement per line: `gh>=2.102.0`
-or `helix>=25.7.1` for a minimum, `node>=24.0.0,<25.0.0` for a bounded range, or
+or `ruff>=0.17.0` for a minimum, `node>=24.0.0,<25.0.0` for a bounded range, or
 `gh==2.102.0` for an exact pin. Commas mean AND; lower bounds are inclusive
 and upper bounds are exclusive. Versions must be complete stable
 `major.minor.patch` values; prereleases and build metadata are excluded.
-Comments start with `#`. Generic CLI requirements, including Helix, use minimum
+Comments start with `#`. Generic CLI requirements, use minimum
 bounds so future stable releases remain eligible. The minimum records the
 existing accepted baseline; it does not upgrade an installed tool. Node retains its selected LTS
 major, Bun its runtime major, and code-server its standalone carrier major.
-These major bounds need separate compatibility review before changing. Helix
-retains its original calendar tag spelling in the lock and requires a matching
-complete runtime and compiled grammars from the same official stable archive.
+These major bounds need separate compatibility review before changing.
 Provider tag normalization, archive recipes and both-architecture checks still apply to every
 candidate; a minimum does not permit unsupported release formats.
 Editing this file changes the desired range, not the installed tools.
@@ -689,15 +636,11 @@ and consumer activation remain unverified pending separate approval.
 
 `pinact` pins GitHub Actions and reusable workflows to commit SHAs. `pinact run` rewrites workflow files and, unless offline, queries the GitHub API (set `GITHUB_TOKEN` in the environment); `pinact run --check` reports without writing. The release archive's `third_party_licenses/` tree (Apache-2.0 cobra and afero, MPL-2.0 go-version, BSD-licensed Go packages and other dependency notices) is retained with its relative paths under `licenses/pinact/third_party_licenses/` via the catalog's `archive_notice_trees`.
 
-`zizmor` statically audits GitHub Actions workflows for security issues: `zizmor --offline .github/workflows`. Online audits query the GitHub API with an optional `GH_TOKEN` or `GITHUB_TOKEN` from the environment. The official Linux archives are GNU/glibc builds, and `zizmor` needs glibc 2.34 or newer on both architectures; Alpine and other musl-based images are unsupported. The archive carries only the executable, so the upstream MIT `LICENSE` is retained separately.
-
 `cosign` signs and verifies container images and other artifacts. Verification contacts registries and Sigstore services and signing can open a browser; neither runs at image build or shell startup. Keys, tokens and the TUF cache belong in writable HOME (`~/.sigstore`), outside the read-only toolbox.
 
 `git-cliff` generates changelogs from Git history and Conventional Commits: `git-cliff --config cliff.toml`. Keep the configuration in the repository. Release archives also carry completions, man pages and `git-cliff-completions`/`git-cliff-mangen` generators; only the `git-cliff` executable, both licenses and README are installed.
 
 `zoxide` is a directory jumper. The shared shell layer initializes it interactively with the official `zoxide init <shell> --cmd cd`, providing `cd` and `cdi` in Bash, Zsh, Fish and Nushell. Set `BDOCK_ZOXIDE=0` before startup to keep your own navigation commands. Its database lives in `$_ZO_DATA_DIR` or the XDG data directory under writable HOME, outside the read-only toolbox. The nested completion `README.md` is not extracted, to avoid a name clash with the top-level README.
-
-`difft` (Difftastic) compares files by syntax structure: `difft old.go new.go`. Use `--color never` for predictable output. As an optional Git external diff, set `GIT_EXTERNAL_DIFF=difft` in your own environment; BundleDock sets no Git configuration. The ARM64 release is the official GNU/Linux build (no musl asset exists); the archive carries only the executable, so the upstream MIT `LICENSE` is retained separately.
 
 `jsonschema-cli` validates JSON instances against JSON Schema: `jsonschema-cli validate schema.json -i instance.json` (the older flat form without `validate` is deprecated and warns). It is selected from the repository's `cli-v` releases, which are separate from the library's `rust-v`, `python-v` and `ruby-v` releases (the repository's latest-release marker points at a non-CLI release). Remote `$ref` resolution may use the network when a schema asks for it.
 
@@ -803,33 +746,27 @@ the pinned consumer image does not acquire Jujutsu from this source change.
 
 ## Shell, recipe, Python and file utilities
 
-The source catalog also includes ShellCheck, shfmt, just, Ruff, delta,
+The source catalog also includes ShellCheck, shfmt, just, Ruff,
 watchexec, hyperfine and age. ShellCheck checks shell scripts; shfmt formats
 shell source; just runs explicitly selected project recipes; Ruff lints and
-formats Python. Delta renders diffs, watchexec runs commands when files change,
+formats Python. Watchexec runs commands when files change,
 hyperfine benchmarks commands, and age encrypts files. Age includes the official
 `age-keygen`, `age-inspect` and bundled `age-plugin-*` companions. These additions
 are source pins and do not change the previously published toolbox receipt.
 
 No shell hooks, Git pager, project recipes, editor settings or user configuration
-are enabled automatically. Use delta with `--paging=never` for noninteractive
-output. Ruff caches, watchexec state, hyperfine exports and age keys belong in a
+are enabled automatically. Ruff caches, watchexec state, hyperfine exports and age keys belong in a
 writable project directory or HOME, outside the read-only toolbox. Never store
 private encryption keys in the bundle.
 
-All sixteen Linux AMD64/ARM64 assets were SHA256 checked against official stable
+All fourteen Linux AMD64/ARM64 assets were SHA256 checked against official stable
 release API digests and inspected without executing them on 2026-10-12. Shfmt
-uses raw executables; other additions use official tar archives. Delta uses a
-musl AMD64 asset and a GNU libc ARM64 asset because upstream supplies no ARM64
-musl archive. ARM64 consumers therefore require compatible GNU libc and its
-runtime libraries; Alpine/musl ARM64 support is not established. This limitation
-must be rechecked against upstream assets before changing the recipe or claiming
-broader consumer support. Full upstream license texts, Ruff's bundled notices,
-delta's bat 0.26.1 syntax/theme notices and age's distributed license are retained.
+uses raw executables; other additions use official tar archives. Full upstream license texts, Ruff's bundled notices,
+and age's distributed license are retained.
 
 Source tests exercise synthetic archives and reject incorrect smoke outputs.
 The offline smoke script checks shell formatting, an explicit temporary just
-recipe, isolated Ruff formatting, a fixed diff, one watchexec command, a hyperfine
+recipe, isolated Ruff formatting, one watchexec command, a hyperfine
 JSON export and age encryption/decryption with a temporary key. Native AMD64 and
 ARM64 execution, OCI builds/smoke and vulnerability scans remain unverified and
 require separately approved builds before release or consumer activation.
@@ -937,7 +874,7 @@ shell: they resolve the branch first and stop with `bdock: not on a branch
 (detached HEAD)` before running Git, which matters in jj-colocated repositories.
 The default branch is `origin/HEAD`, else `main`, else `master`. All files load
 only in interactive shells. The layer runs `fastfetch` once per interactive shell
-when the executable is present; repeated sourcing does not repeat the greeting.
+when the executable is present (`fastfetch` ships in the nixbox bundle); repeated sourcing does not repeat the greeting.
 It leaves user Fastfetch configuration in control and tolerates a missing or
 failing executable. Set `BDOCK_FASTFETCH=0` to skip the greeting.
 
@@ -1025,7 +962,7 @@ above.
 The layer also sets safe interactive session defaults before shortcuts or greetings:
 - **Umask widening**: If `umask` is overly permissive (`0000` or `000` as created by some container engines or runtimes), the layer tightens it to standard `022` (`rwxr-xr-x` in Nushell). More restrictive umasks (such as `0027` or `0077`) are preserved untouched. Set `BDOCK_UMASK=0` to opt out.
 - **History deduplication**: In Bash and Zsh, duplicate history entries are suppressed (`HISTCONTROL=ignoreboth:erasedups` in Bash; `setopt HIST_IGNORE_ALL_DUPS HIST_SAVE_NO_DUPS HIST_IGNORE_SPACE` in Zsh). Set `BDOCK_HISTORY=0` to opt out.
-- **Default editor**: If `EDITOR` is not set and the shell is running outside an IDE terminal (`TERM_PROGRAM != vscode`, `TERMINAL_EMULATOR != JetBrains-JediTerm`, etc.), and `hx` (Helix) is available on `PATH`, the layer sets `EDITOR=hx`. Existing `EDITOR` settings and IDE environments are preserved. Set `BDOCK_EDITOR=0` to opt out.
+- **Default editor**: If `EDITOR` is not set and the shell is running outside an IDE terminal (`TERM_PROGRAM != vscode`, `TERMINAL_EMULATOR != JetBrains-JediTerm`, etc.), and `hx` (Helix, shipped by the nixbox bundle) is available on `PATH`, the layer sets `EDITOR=hx`. Existing `EDITOR` settings and IDE environments are preserved. Set `BDOCK_EDITOR=0` to opt out.
 
 The generator renders the four files from the table and they are committed.
 The layer belongs to the toolbox alone: only the toolbox Dockerfile copies
@@ -1056,26 +993,6 @@ The [code-server bundle](code-server.md) provides a separate optional OCI
 carrier with its own lock and read-only volume. It does not change the toolbox
 or start a service automatically.
 
-
-## Leaf Markdown preview
-
-The source toolbox includes [Leaf 1.29.0](https://github.com/RivoLink/leaf/releases/tag/1.29.0)
-from the official Linux AMD64 and ARM64 raw binaries, installed as `bin/leaf`
-with the full MIT license from the same upstream tag. Run `leaf README.md` for
-an interactive terminal preview or `leaf --inline plain README.md` for plain
-rendered output. Keep HOME and XDG configuration/cache directories writable
-outside the read-only toolbox mount. Upgrade through BundleDock's lock;
-`leaf --update` writes its executable and is unsuitable for the mounted toolbox.
-
-Both downloaded binary hashes matched the official release API and
-`checksums.txt` on 2026-10-12. Read-only ELF inspection confirmed x86-64 and
-AArch64; both binaries require glibc, libgcc_s and libm with their native loaders.
-No upstream binary was executed. Source fixtures cover resolution and raw
-installation on both architectures and the isolated noninteractive smoke's
-`--version` and `--inline plain` rendering. Native runtime compatibility and
-image smoke on both architectures remain unverified until an explicitly
-approved build and smoke run. The smoke clears caller configuration overrides
-and confines Leaf's HOME, XDG paths and Markdown fixture to a temporary directory.
 
 ## Optional mise version manager
 

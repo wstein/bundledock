@@ -489,7 +489,7 @@ and respectively 212,082,486 / 212,500,574 regular-file bytes. Both fit the exis
 XZ limits. Archive graph inspection does not demonstrate native runtime behavior.
 The checksum-verified official source archive supplies retained compiled grammar
 license notices; its sources are not built. MPL-2.0, grammar notices and provenance
-are in `bundles/toolbox/licenses/helix`, and all runtime notices remain in the payload.
+are in `bundles/nixbox/tools/licenses/helix` (Helix moved from the toolbox to nixbox), and all runtime notices remain in the payload.
 
 Source tests exercise synthetic dual-architecture release layouts, relocated
 launcher runtime selection, writable HOME and quoted arguments, full grammar/query/

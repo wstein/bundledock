@@ -102,22 +102,24 @@ func TestPinactCatalogRetainsThirdPartyLicenses(t *testing.T) {
 	}
 }
 
-func TestToolboxDocsStateRuntimeRequirementsAndInvocation(t *testing.T) {
-	b, err := os.ReadFile("../../docs/toolbox.md")
-	if err != nil {
-		t.Fatal(err)
-	}
-	doc := string(b)
-	for _, want := range []string{
-		"zizmor` needs glibc 2.34 or newer on both architectures; Alpine and other musl-based images are unsupported",
-		"jsonschema-cli validate schema.json -i instance.json",
-	} {
-		if !strings.Contains(doc, want) {
-			t.Errorf("docs/toolbox.md lacks %q", want)
+func TestDocsStateRuntimeRequirementsAndInvocation(t *testing.T) {
+	read := func(name string) string {
+		b, err := os.ReadFile(name)
+		if err != nil {
+			t.Fatal(err)
 		}
+		return string(b)
 	}
-	if strings.Contains(doc, "jsonschema-cli schema.json") {
+	toolbox, nixbox := read("../../docs/toolbox.md"), read("../../docs/nixbox.md")
+	if !strings.Contains(toolbox, "jsonschema-cli validate schema.json -i instance.json") {
+		t.Error("docs/toolbox.md lacks the jsonschema-cli invocation")
+	}
+	if strings.Contains(toolbox, "jsonschema-cli schema.json") {
 		t.Error("docs still show the deprecated flat jsonschema-cli invocation")
+	}
+	// zizmor moved to nixbox, whose shim supplies glibc on musl images.
+	if want := "`zizmor` needs glibc 2.34 or newer on both architectures; on Alpine and other musl-based images the nixbox shim runs it through the Nix glibc loader"; !strings.Contains(nixbox, want) {
+		t.Errorf("docs/nixbox.md lacks %q", want)
 	}
 }
 

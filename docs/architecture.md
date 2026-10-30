@@ -120,10 +120,9 @@ arbitrary consumer images is not established.
 Fish uses the official standalone archive with embedded functions and completions;
 its [tagged source](https://github.com/fish-shell/fish-shell/blob/4.9.3/src/autoload.rs)
 embeds `share`, so no external runtime data directory is required. External manual
-pages and local HTML documentation from a full Fish installation are omitted. ast-grep uses
-the compatible Debian consumer libraries. `fd` and `fdfind` are identical regular
-files so the volume needs no symlinks. ast-grep's `sg` alias is excluded to preserve
-consumer commands. Upstream notices retain their `licenses/<package>/...` member paths inside
+pages and local HTML documentation from a full Fish installation are omitted.
+`fd` and `fdfind` are identical regular
+files so the volume needs no symlinks. Upstream notices retain their `licenses/<package>/...` member paths inside
 `/opt/bdock/toolbox/licenses.tar.gz`, with a plain `licenses.index.json`
 for discovery and an [offline carrier reader](toolbox.md#retained-notices).
 Previously published images retain their original loose notice layout.
