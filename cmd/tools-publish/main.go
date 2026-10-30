@@ -2,6 +2,7 @@
 package main
 
 import (
+	"bundledock/internal/nixbox"
 	"bundledock/internal/toolconfig"
 	"bundledock/internal/toolpublish"
 	"context"
@@ -206,7 +207,37 @@ func artifactIdentity(meta toolpublish.Metadata, id, number, attempt, commit str
 	return nil
 }
 
+// validateBundleSource checks a bundle's committed source: the tool catalog and
+// lock, or for nixbox the Nix store catalog and lock including every signature.
+func validateBundleSource(bundle toolpublish.Bundle) error {
+	if bundle.Name != "nixbox" {
+		_, err := toolconfig.Load(bundle.Directory)
+		return err
+	}
+	catalog, err := os.ReadFile(bundle.Directory + "/packages.catalog.json")
+	if err != nil {
+		return err
+	}
+	c, err := nixbox.ParseCatalog(catalog)
+	if err != nil {
+		return err
+	}
+	data, err := os.ReadFile(bundle.Directory + "/packages.lock.json")
+	if err != nil {
+		return err
+	}
+	l, err := nixbox.ParseLock(data)
+	if err != nil {
+		return err
+	}
+	return nixbox.CheckLock(c, catalog, l, c.Cache.PublicKey)
+}
+
 func publicationDecision(lock, event string, baseline func() (string, error)) (bool, error) {
+	return publicationDecisionDigest(lock, event, "toolbox", baseline)
+}
+
+func publicationDecisionDigest(lock, event, bundle string, baseline func() (string, error)) (bool, error) {
 	if event != "schedule" && event != "workflow_dispatch" && event != "workflow_run" {
 		return false, fmt.Errorf("publication requires schedule or workflow_dispatch")
 	}
@@ -214,7 +245,7 @@ func publicationDecision(lock, event string, baseline func() (string, error)) (b
 	if err != nil {
 		return false, err
 	}
-	fresh, err := toolpublish.ToolDigest(b)
+	fresh, err := toolpublish.LockDigest(bundle, b)
 	if err != nil {
 		return false, err
 	}
@@ -229,7 +260,11 @@ func publicationDecisionForBundle(lock, event, bundle string, baseline func() (s
 	if _, err := toolpublish.SelectBundle(bundle); err != nil {
 		return false, err
 	}
-	publish, err := publicationDecision(lock, event, baseline)
+	// nixbox is published only when the owner selects it in a manual dispatch.
+	if bundle == "nixbox" && event != "workflow_dispatch" {
+		return false, fmt.Errorf("nixbox publishes only by manual dispatch")
+	}
+	publish, err := publicationDecisionDigest(lock, event, bundle, baseline)
 	if bundle != "toolbox" && event == "workflow_dispatch" && errors.Is(err, toolpublish.ErrBaselineAbsent) {
 		return true, nil
 	}
@@ -243,7 +278,7 @@ func executeWithAllocator(args []string, allocator func(toolpublish.Bundle, stri
 		return fmt.Errorf("expected resolve, plan, build, push, newest or promote")
 	}
 	flags := flag.NewFlagSet("tools-publish "+args[0], flag.ContinueOnError)
-	bundleName := flags.String("bundle", "toolbox", "publication bundle (toolbox, code-server, node, node-current, bun, codex, agy, claude or opentofu)")
+	bundleName := flags.String("bundle", "toolbox", "publication bundle (toolbox, code-server, node, node-current, bun, codex, agy, claude, opentofu or nixbox)")
 	directory := flags.String("directory", "resolved", "resolved artifact directory")
 	frozen := flags.Bool("frozen-lock", false, "use the exact committed bundle lock without upstream resolution")
 	arch := flags.String("architecture", "", "native target architecture")
@@ -263,8 +298,7 @@ func executeWithAllocator(args []string, allocator func(toolpublish.Bundle, stri
 		return fmt.Errorf("frozen lock is only supported for publication resolution")
 	}
 	if args[0] == "validate" {
-		_, err := toolconfig.Load(bundle.Directory)
-		return err
+		return validateBundleSource(bundle)
 	}
 	lock := filepath.Join(*directory, "packages.lock.json")
 	provenance := filepath.Join(*directory, "provenance.json")
@@ -287,6 +321,9 @@ func executeWithAllocator(args []string, allocator func(toolpublish.Bundle, stri
 	if args[0] == "resolve" {
 		if os.Getenv("GITHUB_EVENT_NAME") == "workflow_run" && !*frozen {
 			return fmt.Errorf("merged publication must use the frozen lock")
+		}
+		if bundle.Name == "nixbox" && !*frozen {
+			return fmt.Errorf("nixbox has no upstream resolution; publish its committed lock with --frozen-lock")
 		}
 		image, err := toolpublish.RepositoryImageForBundle(os.Getenv("REPOSITORY_URL"), bundle.Name)
 		if err != nil {
@@ -321,7 +358,7 @@ func executeWithAllocator(args []string, allocator func(toolpublish.Bundle, stri
 
 			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 			defer cancel()
-			if bundle.Name == "toolbox" {
+			if bundle.DateTagged() {
 				return toolpublish.AllocateToolboxTag(ctx, nil, image, now.Format("2006.01.02"), os.Getenv("REPOSITORY_USERNAME"), os.Getenv("REPOSITORY_TOKEN"), reserved...)
 			}
 			return toolpublish.AllocateSingletonTag(ctx, nil, image, data, os.Getenv("REPOSITORY_USERNAME"), os.Getenv("REPOSITORY_TOKEN"), reserved...)
@@ -386,7 +423,7 @@ func executeWithAllocator(args []string, allocator func(toolpublish.Bundle, stri
 		if err := copyFile(lock, bundle.Directory+"/packages.lock.json"); err != nil {
 			return err
 		}
-		if _, err := toolconfig.Load(bundle.Directory); err != nil {
+		if err := validateBundleSource(bundle); err != nil {
 			return err
 		}
 		result, err := adapter.Build(meta, lock, *arch, *consumer)

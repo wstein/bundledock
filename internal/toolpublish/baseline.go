@@ -1,6 +1,7 @@
 package toolpublish
 
 import (
+	"bundledock/internal/nixbox"
 	"bundledock/internal/toolconfig"
 	"bytes"
 	"context"
@@ -63,6 +64,27 @@ func ToolDigest(data []byte) (string, error) {
 		}{lock.Platforms, lock.Toolchains, lock.ExtraSources}
 	}
 	b, err := json.Marshal(pinned)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%x", sha256.Sum256(b)), nil
+}
+
+// LockDigest is the published-baseline digest of a bundle's lock: ToolDigest for
+// tool bundles, and for nixbox the sha256 of its pinned closures (every store path
+// with its narHash, and the roots), without the catalog digest.
+func LockDigest(bundle string, data []byte) (string, error) {
+	if bundle != "nixbox" {
+		return ToolDigest(data)
+	}
+	lock, err := nixbox.ParseLock(data)
+	if err != nil {
+		return "", err
+	}
+	if lock.Schema != 1 || len(lock.Platforms) != 2 || len(lock.Platforms["amd64"].Paths) == 0 || len(lock.Platforms["arm64"].Paths) == 0 {
+		return "", fmt.Errorf("complete schema-1 nixbox lock required")
+	}
+	b, err := json.Marshal(lock.Platforms)
 	if err != nil {
 		return "", err
 	}
@@ -210,7 +232,7 @@ func PublishedToolDigestForBundle(ctx context.Context, client *http.Client, name
 		if !runIDPattern.MatchString(m.RunID) || (!tagPattern.MatchString(m.Tag) && old == nil) || !commitPattern.MatchString(m.Commit) || !hashPattern.MatchString(m.LockSHA256) {
 			return "", fmt.Errorf("published baseline lacks valid provenance")
 		}
-		if (singletonTagPattern.MatchString(m.Tag) || toolboxDatePattern.MatchString(m.Tag)) && (!runIDPattern.MatchString(m.RunAttempt) || (bundleForImage(image).Name == "toolbox" && !toolboxDatePattern.MatchString(m.Tag))) {
+		if (singletonTagPattern.MatchString(m.Tag) || toolboxDatePattern.MatchString(m.Tag)) && (!runIDPattern.MatchString(m.RunAttempt) || (bundleForImage(image).DateTagged() && !toolboxDatePattern.MatchString(m.Tag))) {
 			return "", fmt.Errorf("published packaging tag or workflow attempt invalid")
 		}
 		digest := l[platformsLabel]

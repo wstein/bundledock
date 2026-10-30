@@ -8,7 +8,9 @@ import (
 // Bundle is the bounded publication source selection; toolbox remains default.
 type Bundle struct{ Name, Directory, Workflow, Artifact, Repository, Aliases string }
 
-// CanonicalBundles lists all official bundle names in fixed order.
+// CanonicalBundles lists the bundles `tools publish --all` and `tools upgrade --all`
+// walk, in fixed order. nixbox is publishable and selectable by name, but it is not
+// a tool bundle and joins no "all" selection.
 var CanonicalBundles = []string{"toolbox", "code-server", "node", "node-current", "bun", "codex", "agy", "claude", "opentofu"}
 
 func SelectBundle(name string) (Bundle, error) {
@@ -16,7 +18,7 @@ func SelectBundle(name string) (Bundle, error) {
 		name = "toolbox"
 	}
 	switch name {
-	case "toolbox", "code-server", "node", "node-current", "bun", "codex", "agy", "claude", "opentofu":
+	case "toolbox", "code-server", "node", "node-current", "bun", "codex", "agy", "claude", "opentofu", "nixbox":
 		repository, aliases, artifact := name, "stable latest", "resolved-"+name
 		if name == "toolbox" {
 			artifact = "resolved-tools"
@@ -66,6 +68,9 @@ func (b Bundle) SourceTagNamespaces() []string {
 	}
 	return []string{b.Name}
 }
+
+// DateTagged bundles carry no upstream version: they are tagged <date>-b<N>.
+func (b Bundle) DateTagged() bool             { return b.Name == "toolbox" || b.Name == "nixbox" }
 func (b Bundle) PublicationAliases() []string { return strings.Fields(b.Aliases) }
 func (b Bundle) BaselineAlias() string {
 	if b.Name == "node-current" {

@@ -23,7 +23,7 @@ var singletonTagPattern = regexp.MustCompile(`^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1
 // lock, rather than the desired constraint or the workflow's run counters.
 func SingletonVersion(data []byte, bundle string) (string, error) {
 	b, err := SelectBundle(bundle)
-	if err != nil || b.Name == "toolbox" {
+	if err != nil || b.DateTagged() {
 		return "", fmt.Errorf("singleton bundle required")
 	}
 	var lock toolconfig.Lock
@@ -127,9 +127,10 @@ func NextToolboxTag(date string, tags []string) (string, error) {
 	return fmt.Sprintf("%s-b%d", date, revision+1), nil
 }
 
+// AllocateToolboxTag allocates the daily tag of a date-tagged bundle (toolbox or nixbox).
 func AllocateToolboxTag(ctx context.Context, client *http.Client, image, date, username, password string, reserved ...string) (string, error) {
-	if !strings.HasSuffix(image, "/toolbox") {
-		return "", fmt.Errorf("toolbox repository required")
+	if !strings.HasSuffix(image, "/toolbox") && !strings.HasSuffix(image, "/nixbox") {
+		return "", fmt.Errorf("toolbox or nixbox repository required")
 	}
 	if _, err := NextToolboxTag(date, nil); err != nil {
 		return "", err
