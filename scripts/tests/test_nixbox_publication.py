@@ -101,13 +101,12 @@ class NixboxPublicationTests(unittest.TestCase):
             self.assertIn('docker pull quay.io/bundledock/nixbox@sha256:' + 'b' * 64, guide)
             self.assertEqual(json.loads((root / 'docs/nixbox-published.json').read_text())['bundle'], 'nixbox')
 
-    def test_publication_workflows_smoke_nixbox_with_the_pinned_toolbox(self):
-        build = (workflows / 'nixbox-build.yml').read_text()
-        pin = re.search(r'NIXBOX_TOOLBOX_IMAGE: (\S+)', build).group(1)
+    def test_publication_workflows_smoke_nixbox_with_the_published_toolbox_record(self):
         shared = (workflows / 'bundle-publish.yml').read_text()
         step = shared.split('- name: Build once and smoke on the native architecture')[1].split('- name:')[0]
-        self.assertIn('NIXBOX_TOOLBOX_IMAGE: ' + pin, step)
         self.assertIn('NIXBOX_PLATFORM: linux/${{ matrix.architecture }}', step)
+        self.assertNotIn('NIXBOX_TOOLBOX_IMAGE', step)
+        self.assertIn('docs/toolbox-published.json', (ROOT / 'bundles/nixbox/scripts/smoke.sh').read_text())
 
     def test_consumer_pins_wait_for_a_published_digest(self):
         # published-consumers pins digests of published images; nixbox has none until its first publication.

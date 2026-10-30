@@ -39,6 +39,7 @@ elif '/nixbox-smoke.sh' in args:
         calls = directory / 'calls.jsonl'
         environment = dict(os.environ, PATH=str(directory) + os.pathsep + os.environ['PATH'], CALLS=str(calls))
         environment.pop('NIXBOX_PLATFORM', None)
+        environment.pop('NIXBOX_TOOLBOX_IMAGE', None)
         if fail_consumer:
             environment['FAIL_CONSUMER'] = fail_consumer
         environment.update(env)
@@ -71,6 +72,17 @@ elif '/nixbox-smoke.sh' in args:
         removed = [c for c in calls if c[:2] == ['volume', 'rm']]
         self.assertEqual(len(removed), 2)
 
+    def test_toolbox_defaults_to_the_published_record_and_can_be_overridden_or_skipped(self):
+        record = json.loads((ROOT / 'docs/toolbox-published.json').read_text())
+        expected = record['image'] + '@' + record['digest']
+        result, calls = self.invoke()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        inits = [c for c in calls if c[0] == 'run' and '/nixbox-smoke.sh' not in c and '/bin/cat' not in c]
+        self.assertEqual([c[-1] for c in inits][-1], expected)
+        result, calls = self.invoke(NIXBOX_TOOLBOX_IMAGE='')
+        inits = [c for c in calls if c[0] == 'run' and '/nixbox-smoke.sh' not in c and '/bin/cat' not in c]
+        self.assertEqual([c[-1] for c in inits], ['example/nixbox:fixture'] * 2)
+
     def test_alpine_consumer_simulates_gcompat_glibc_loader_stubs(self):
         result, calls = self.invoke()
         self.assertEqual(result.returncode, 0, result.stderr)
@@ -101,8 +113,8 @@ elif '/nixbox-smoke.sh' in args:
         self.assertIn('NIXBOX_OFFLINE=1', consumer)
         self.assertIn('SMOKE linux/amd64 ', result.stdout)
 
-    def test_without_a_toolbox_image_no_toolbox_mount_is_made(self):
-        result, calls = self.invoke()
+    def test_with_an_empty_toolbox_image_no_toolbox_mount_is_made(self):
+        result, calls = self.invoke(NIXBOX_TOOLBOX_IMAGE='')
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertFalse(any('dst=/opt/bdock/toolbox' in a for c in calls for a in c))
 

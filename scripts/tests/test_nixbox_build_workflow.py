@@ -10,7 +10,6 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 SHA = "a" * 40
 OTHER = "b" * 40
-TOOLBOX = "quay.io/bundledock/toolbox@sha256:d3a83465d5223e7d7e2e870b48bbd996dba37cbe92d7230bdcf3ef22f46f5f75"
 
 
 class NixboxBuildWorkflowTests(unittest.TestCase):
@@ -90,8 +89,7 @@ else:
                         "DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}",
                         "SENDER_TYPE: ${{ github.event.sender.type }}",
                         "TRIGGERING_ACTOR: ${{ github.triggering_actor }}",
-                        "NIXBOX_PLATFORM: ${{ matrix.platform }}",
-                        "NIXBOX_TOOLBOX_IMAGE: " + TOOLBOX):
+                        "NIXBOX_PLATFORM: ${{ matrix.platform }}"):
             self.assertIn(setting, workflow)
         for action in re.findall(r"uses: ([^\n]+)", workflow):
             self.assertRegex(action, r"@(?:[0-9a-f]{40})(?: |$)")
@@ -101,9 +99,12 @@ else:
                           "setup-go", "gh ", "curl ", "id-token"):
             self.assertNotIn(forbidden, workflow)
 
-    def test_toolbox_pin_matches_the_published_record(self):
-        record = json.loads((ROOT / "docs/toolbox-published.json").read_text())
-        self.assertEqual(TOOLBOX, "quay.io/bundledock/toolbox@" + record["digest"])
+    def test_workflows_hard_code_no_toolbox_digest(self):
+        # The smoke script reads the digest from docs/toolbox-published.json at run time.
+        for name in ("nixbox-build.yml", "bundle-publish.yml"):
+            text = (ROOT / ".github/workflows" / name).read_text()
+            self.assertNotIn("NIXBOX_TOOLBOX_IMAGE", text, name)
+            self.assertNotRegex(text, r"bundledock/toolbox@sha256", name)
 
 
 if __name__ == "__main__":

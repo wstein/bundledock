@@ -206,9 +206,8 @@ jobs:
       - name: Build once and smoke on the native architecture
         env:
           ARCHITECTURE: ${{ matrix.architecture }}
-          # Read only by the nixbox smoke test, which mounts the pinned toolbox beside it.
+          # Read only by the nixbox smoke test, which mounts the toolbox recorded in docs/toolbox-published.json beside it.
           NIXBOX_PLATFORM: linux/${{ matrix.architecture }}
-          NIXBOX_TOOLBOX_IMAGE: quay.io/bundledock/toolbox@sha256:d3a83465d5223e7d7e2e870b48bbd996dba37cbe92d7230bdcf3ef22f46f5f75
         run: '"$RUNNER_TEMP/tools-publish" build --bundle "$BUNDLE" --architecture "$ARCHITECTURE"'
       - name: Log in to Quay after native smoke passes
         env:

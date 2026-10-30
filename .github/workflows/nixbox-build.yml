@@ -45,5 +45,4 @@ jobs:
       - name: Smoke the local nixbox on the pinned consumer matrix with the published toolbox
         env:
           NIXBOX_PLATFORM: ${{ matrix.platform }}
-          NIXBOX_TOOLBOX_IMAGE: quay.io/bundledock/toolbox@sha256:d3a83465d5223e7d7e2e870b48bbd996dba37cbe92d7230bdcf3ef22f46f5f75
         run: sh bundles/nixbox/scripts/smoke.sh bundledock-nixbox:build-only
