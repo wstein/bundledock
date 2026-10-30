@@ -9,10 +9,6 @@ import (
 // Developer tools added after the first utilities set. Each is an official
 // prebuilt release; bin differs from the catalog ID for difftastic.
 func TestDeveloperToolRecipes(t *testing.T) {
-	c, err := Load("../../bundles/toolbox")
-	if err != nil {
-		t.Fatal(err)
-	}
 	for _, tc := range []struct{ name, repo, kind, bin, prefix string }{
 		{"actionlint", "rhysd/actionlint", "tar.gz", "actionlint", "v"},
 		{"hadolint", "hadolint/hadolint", "raw", "hadolint", "v"},
@@ -25,6 +21,7 @@ func TestDeveloperToolRecipes(t *testing.T) {
 		{"jsonschema-cli", "Stranger6667/jsonschema", "tar.gz", "jsonschema-cli", "cli-v"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			c := recipeConfig(t, tc.name)
 			p, ok := c.Catalog.Packages[tc.name]
 			if !ok {
 				t.Fatal("requested developer tool missing")
@@ -70,10 +67,6 @@ func TestDeveloperToolRecipes(t *testing.T) {
 
 // Literal architecture tokens guard the catalog mapping itself.
 func TestDeveloperToolArchitectureTokens(t *testing.T) {
-	c, err := Load("../../bundles/toolbox")
-	if err != nil {
-		t.Fatal(err)
-	}
 	for name, want := range map[string][2]string{
 		"hadolint":       {"x86_64", "arm64"},
 		"zizmor":         {"x86_64", "aarch64"},
@@ -82,7 +75,7 @@ func TestDeveloperToolArchitectureTokens(t *testing.T) {
 		"zoxide":         {"x86_64", "aarch64"},
 		"git-cliff":      {"x86_64", "aarch64"},
 	} {
-		a := c.Catalog.Packages[name].Architectures
+		a := recipeConfig(t, name).Catalog.Packages[name].Architectures
 		if a["amd64"] != want[0] || a["arm64"] != want[1] {
 			t.Errorf("%s architecture tokens: %v", name, a)
 		}

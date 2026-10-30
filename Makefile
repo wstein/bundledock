@@ -70,6 +70,7 @@ check:
 	python3 -B -m unittest discover -s scripts/tests
 	python3 -B -m unittest discover -s scripts -p '*_test.py'
 	python3 scripts/tool-inventory.py --check
+	python3 scripts/tool-inventory.py --bundle nixbox --check
 	python3 scripts/tool-inventory.py --bundle code-server --check
 	python3 scripts/tool-inventory.py --bundle node --check
 	python3 scripts/tool-inventory.py --bundle node-current --check

@@ -11,13 +11,27 @@ import (
 	"testing"
 )
 
-func TestUtilitiesResolveOfficialStableBothArchitectures(t *testing.T) {
-	c, err := toolconfig.Load("../../bundles/toolbox")
-	if err != nil {
-		t.Fatal(err)
+// recipeConfig loads the toolbox, or the nixbox tools directory when that is
+// where the named tool is pinned (the glibc-dynamic release binaries left the toolbox).
+func recipeConfig(t *testing.T, name string) *toolconfig.Config {
+	t.Helper()
+	for _, directory := range []string{"../../bundles/toolbox", "../../bundles/nixbox/tools"} {
+		c, err := toolconfig.Load(directory)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, ok := c.Catalog.Packages[name]; ok {
+			return c
+		}
 	}
+	t.Fatalf("%s is pinned in neither the toolbox nor the nixbox tools", name)
+	return nil
+}
+
+func TestUtilitiesResolveOfficialStableBothArchitectures(t *testing.T) {
 	for _, name := range []string{"fzf", "bat", "lsd", "regctl", "mise", "trufflehog", "actionlint", "hadolint", "pinact", "zizmor", "cosign", "git-cliff", "zoxide", "difftastic"} {
 		t.Run(name, func(t *testing.T) {
+			c := recipeConfig(t, name)
 			p := c.Catalog.Packages[name]
 			payload := []byte("synthetic official artifact")
 			sum := fmt.Sprintf("sha256:%x", sha256.Sum256(payload))

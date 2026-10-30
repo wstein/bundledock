@@ -8,6 +8,28 @@ import (
 	"testing"
 )
 
+// nixboxTools is where the glibc-dynamic release binaries (ast-grep, delta,
+// difftastic, fastfetch, helix, leaf, zizmor, zk) are pinned; they left the
+// toolbox for nixbox. The recipes keep the toolbox schema.
+const nixboxTools = "../../bundles/nixbox/tools"
+
+// recipeConfig loads the toolbox, or the nixbox tools directory when that is
+// where the named tool is pinned.
+func recipeConfig(t *testing.T, name string) *Config {
+	t.Helper()
+	for _, directory := range []string{"../../bundles/toolbox", nixboxTools} {
+		c, err := Load(directory)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, ok := c.Catalog.Packages[name]; ok {
+			return c
+		}
+	}
+	t.Fatalf("%s is pinned in neither the toolbox nor the nixbox tools", name)
+	return nil
+}
+
 func TestDesiredBoundedStableVersions(t *testing.T) {
 	desired, err := ParseDesired(strings.NewReader("# tools\ncodex >=0.162.1,<0.163.0 # compatible\ngh==2.102.0\n"))
 	if err != nil {
@@ -36,7 +58,7 @@ func TestRepositoryIdentityAndBothArchitectures(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(c.Catalog.Packages) != 65 {
+	if len(c.Catalog.Packages) != 57 {
 		t.Fatal("catalog incomplete")
 	}
 	// A tool is an official prebuilt release unless it is a reviewed static

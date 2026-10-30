@@ -6,7 +6,7 @@ import (
 )
 
 func TestZkOfficialStableRecipe(t *testing.T) {
-	c, err := Load("../../bundles/toolbox")
+	c, err := Load("../../bundles/nixbox/tools")
 	if err != nil {
 		t.Fatal(err)
 	}

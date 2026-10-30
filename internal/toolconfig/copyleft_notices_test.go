@@ -140,7 +140,11 @@ func TestRetainedFullLicensesAreCanonical(t *testing.T) {
 		"zizmor":         {[]string{"The MIT License (MIT)", "Permission is hereby granted, free of charge", "WITHOUT WARRANTY OF ANY KIND"}, 900},
 	} {
 		t.Run(name, func(t *testing.T) {
-			b, err := os.ReadFile("../../bundles/toolbox/licenses/" + name + "/LICENSE")
+			home := "../../bundles/toolbox"
+			if name == "difftastic" || name == "zizmor" {
+				home = nixboxTools
+			}
+			b, err := os.ReadFile(home + "/licenses/" + name + "/LICENSE")
 			if err != nil {
 				t.Fatal(err)
 			}

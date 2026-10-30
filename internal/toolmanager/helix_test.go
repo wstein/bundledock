@@ -12,7 +12,7 @@ import (
 )
 
 func TestHelixMinimumUpdateRetainsCalendarAssetSpelling(t *testing.T) {
-	c, err := toolconfig.Load("../../bundles/toolbox")
+	c, err := toolconfig.Load("../../bundles/nixbox/tools")
 	if err != nil {
 		t.Fatal(err)
 	}

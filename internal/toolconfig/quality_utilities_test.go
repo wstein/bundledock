@@ -3,12 +3,9 @@ package toolconfig
 import "testing"
 
 func TestQualityUtilitiesOfficialRecipes(t *testing.T) {
-	c, err := Load("../../bundles/toolbox")
-	if err != nil {
-		t.Fatal(err)
-	}
 	for name, repo := range map[string]string{"shellcheck": "koalaman/shellcheck", "shfmt": "mvdan/sh", "just": "casey/just", "ruff": "astral-sh/ruff", "delta": "dandavison/delta", "watchexec": "watchexec/watchexec", "hyperfine": "sharkdp/hyperfine", "age": "FiloSottile/age", "lazygit": "jesseduffield/lazygit", "git-lfs": "git-lfs/git-lfs"} {
 		t.Run(name, func(t *testing.T) {
+			c := recipeConfig(t, name)
 			p, ok := c.Catalog.Packages[name]
 			if !ok {
 				t.Fatal("requested utility missing")

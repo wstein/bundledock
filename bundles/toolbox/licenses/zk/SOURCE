@@ -1,9 +1,0 @@
-Upstream: https://github.com/zk-org/zk
-License: GPL-3.0 (GNU General Public License version 3; the full text of the v0.15.7 LICENSE is retained as LICENSE, SHA256 3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986, fetched from https://raw.githubusercontent.com/zk-org/zk/v0.15.7/LICENSE; the release archives carry only the executable)
-Initial reviewed release: v0.15.7 (stable, not a draft or pre-release), published 2026-10-15T12:42:35Z
-Source for corresponding release: https://github.com/zk-org/zk/releases/tag/v0.15.7
-Tag v0.15.7 resolves to commit 955cb76e086900a01f6f1a0772f7c1b416180413 (annotated tag object 178e83a97793e8937a2b5b07fee1d7e44c4536cb).
-Source archive: https://github.com/zk-org/zk/archive/refs/tags/v0.15.7.tar.gz
-Linux AMD64/ARM64: official stable prebuilt archives zk-v0.15.7-linux-{amd64,arm64}.tar.gz (glibc builds, not the alpine/musl ones), unchanged executable. The release also ships alpine, i386, macOS and Windows archives, which BundleDock does not use. The release publishes no checksum file; the archive SHA256 values are the release API digests and equal the hashes of the downloaded archives (checked 2026-10-21).
-The archives are flat and contain only the `zk` executable. `zk --version` prints "zk 0.15.7". The linux/arm64 binary was executed once in an isolated empty home on 2026-10-21 for that check; the linux/amd64 binary was not executed (arm64 host). Native consumer smoke remains part of an approved build.
-GPL-3.0 is a copyleft licence. BundleDock ships the unmodified binary, which is only executed as a separate program, and gives any recipient of the toolbox the corresponding source of zk on request, by pointing to the tagged release above. This is not legal advice.

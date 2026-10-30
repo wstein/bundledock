@@ -15,7 +15,20 @@ import (
 
 // Exercise the real installer with synthetic payloads, never upstream binaries.
 func TestQualityUtilitiesInstallExecutablesAndFullNotices(t *testing.T) {
-	c, err := toolconfig.Load("../../bundles/toolbox")
+	// The glibc-dynamic release binaries are pinned and noticed in the nixbox tools directory.
+	for _, set := range []struct {
+		directory string
+		names     []string
+	}{
+		{"../../bundles/toolbox", []string{"shellcheck", "shfmt", "just", "ruff", "watchexec", "hyperfine", "age", "jj", "lazygit", "git-lfs", "navi", "typst", "trufflehog", "lsd", "actionlint", "hadolint", "pinact", "cosign", "git-cliff", "zoxide", "jsonschema-cli", "gh-stack"}},
+		{"../../bundles/nixbox/tools", []string{"delta", "leaf", "zizmor", "difftastic"}},
+	} {
+		t.Run(filepath.Base(set.directory), func(t *testing.T) { installAndCheckNotices(t, set.directory, set.names) })
+	}
+}
+
+func installAndCheckNotices(t *testing.T, directory string, names []string) {
+	c, err := toolconfig.Load(directory)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -24,7 +37,7 @@ func TestQualityUtilitiesInstallExecutablesAndFullNotices(t *testing.T) {
 			payloads := map[string][]byte{}
 			packages := map[string]toolconfig.Package{}
 			specs := map[string]Spec{}
-			for _, name := range []string{"shellcheck", "shfmt", "just", "ruff", "delta", "watchexec", "hyperfine", "age", "leaf", "jj", "lazygit", "git-lfs", "navi", "typst", "trufflehog", "lsd", "actionlint", "hadolint", "pinact", "zizmor", "cosign", "git-cliff", "zoxide", "difftastic", "jsonschema-cli", "gh-stack"} {
+			for _, name := range names {
 				p := c.Catalog.Packages[name]
 				packages[name] = p
 				var files []member
@@ -52,7 +65,7 @@ func TestQualityUtilitiesInstallExecutablesAndFullNotices(t *testing.T) {
 				specs[name] = Spec{Version: c.Lock.Platforms[arch][name].Version, URL: server.URL + "/" + name, SHA256: fmt.Sprintf("%x", sha256.Sum256(payload))}
 			}
 			dst := t.TempDir()
-			if err := Build(context.Background(), server.Client(), specs, packages, os.DirFS("../../bundles/toolbox"), arch, dst, io.Discard); err != nil {
+			if err := Build(context.Background(), server.Client(), specs, packages, os.DirFS(directory), arch, dst, io.Discard); err != nil {
 				t.Fatal(err)
 			}
 			for name, p := range packages {

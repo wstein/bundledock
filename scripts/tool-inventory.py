@@ -18,13 +18,11 @@ LABELS = (
     ("sops", "SOPS (`sops`)"),
     ("git-lfs", "Git LFS (`git-lfs`)"),
     ("lazygit", "lazygit (`lazygit`)"),
-    ("leaf", "Leaf (`leaf`)"),
     ("jj", "Jujutsu (`jj`)"),
     ("shellcheck", "ShellCheck (`shellcheck`)"),
     ("shfmt", "shfmt (`shfmt`)"),
     ("just", "just (`just`)"),
     ("ruff", "Ruff (`ruff`)"),
-    ("delta", "delta (`delta`)"),
     ("watchexec", "watchexec (`watchexec`)"),
     ("hyperfine", "hyperfine (`hyperfine`)"),
     ("age", "age (`age`, `age-keygen`, `age-inspect`, plugins)"),
@@ -37,7 +35,6 @@ LABELS = (
     ("lsd", "lsd (`lsd`)"),
     ("regctl", "regctl (`regctl`)"),
     ("fd", "fd (`fd`, `fdfind`)"),
-    ("ast-grep", "ast-grep (`ast-grep`)"),
     ("yq", "Mike Farah yq (`yq`)"),
     ("uv", "uv (`uv`, `uvx`)"),
     ("mise", "mise (`mise`)"),
@@ -61,22 +58,28 @@ LABELS = (
     ("opentofu", "OpenTofu (`tofu`)"),
     ("whr", "WorkHarbor (`whr`)"),
     ("stw", "SourceSteward (`stw`)"),
-    ("zk", "zk (`zk`)"),
-    ("fastfetch", "Fastfetch (`fastfetch`)"),
     ("bottom", "bottom (`btm`)"),
     ("btop", "btop (`btop`)"),
-    ("helix", "Helix (`hx`)"),
     ("hugo", "Hugo (`hugo`, standard)"),
     ("jsonschema-cli", "jsonschema-cli (`jsonschema-cli`)"),
-    ("difftastic", "Difftastic (`difft`)"),
     ("zoxide", "zoxide (`zoxide`)"),
     ("git-cliff", "git-cliff (`git-cliff`)"),
     ("cosign", "Cosign (`cosign`)"),
-    ("zizmor", "zizmor (`zizmor`)"),
     ("pinact", "pinact (`pinact`)"),
     ("hadolint", "Hadolint (`hadolint`)"),
     ("actionlint", "actionlint (`actionlint`)"),
     ("sqlite3", "SQLite (`sqlite3`)"),
+)
+# The glibc-dynamic release binaries nixbox ships (bundles/nixbox/tools, toolbox schema).
+NIXBOX_LABELS = (
+    ("ast-grep", "ast-grep (`ast-grep`)"),
+    ("delta", "delta (`delta`)"),
+    ("difftastic", "Difftastic (`difft`)"),
+    ("fastfetch", "Fastfetch (`fastfetch`)"),
+    ("helix", "Helix (`hx`)"),
+    ("leaf", "Leaf (`leaf`)"),
+    ("zizmor", "zizmor (`zizmor`)"),
+    ("zk", "zk (`zk`)"),
 )
 DISPLAY_SUFFIX = {"tmux": " (official static builds)"}
 
@@ -154,8 +157,10 @@ def runtime_rows(root):
 
 
 def generated(root, bundle_name="toolbox"):
-    bundle = root / "bundles" / bundle_name
-    labels = LABELS if bundle_name == "toolbox" else (("node", "node"),) if bundle_name == "node-current" else ((bundle_name, bundle_name),)
+    # nixbox lists only its official release binaries; its Nix store paths have their own lock.
+    bundle = root / "bundles" / bundle_name / ("tools" if bundle_name == "nixbox" else "")
+    labels = NIXBOX_LABELS if bundle_name == "nixbox" else LABELS if bundle_name == "toolbox" else (("node", "node"),) if bundle_name == "node-current" else ((bundle_name, bundle_name),)
+    detailed = bundle_name in ("toolbox", "nixbox")
     lock = json.loads((bundle / "packages.lock.json").read_text())
     catalog = json.loads((bundle / "packages.catalog.json").read_text())
     ids = {tool for tool, _ in labels}
@@ -177,10 +182,11 @@ def generated(root, bundle_name="toolbox"):
         version = version.removeprefix(catalog["packages"][tool].get("tag_prefix", ""))
         if not re.fullmatch(r"[0-9]+\.[0-9]+(?:\.[0-9]+|[a-z])?", version):
             raise ValueError(f"{tool}: unsafe inventory version")
-        source = source_url(catalog["packages"][tool]) if bundle_name == "toolbox" else ""
+        source = source_url(catalog["packages"][tool]) if detailed else ""
         entries.append((label, version + DISPLAY_SUFFIX.get(tool, ""), HOMEPAGES.get(tool, source), source))
-    if bundle_name == "toolbox":
-        entries.extend(runtime_rows(root))
+    if detailed:
+        if bundle_name == "toolbox":
+            entries.extend(runtime_rows(root))
         rows = ["| Tool | Pinned version | Homepage | Source |", "| --- | --- | --- | --- |"]
         rows.extend(f"| {label} | {version} | [Homepage]({homepage}) | [Source]({source}) |"
                     for label, version, homepage, source in sorted(entries, key=lambda item: item[0].casefold()))
@@ -201,7 +207,7 @@ def generated(root, bundle_name="toolbox"):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=Path("."))
-    parser.add_argument("--bundle", choices=("toolbox", "code-server", "node", "node-current", "bun", "codex", "agy", "claude", "opentofu"), default="toolbox")
+    parser.add_argument("--bundle", choices=("toolbox", "nixbox", "code-server", "node", "node-current", "bun", "codex", "agy", "claude", "opentofu"), default="toolbox")
     parser.add_argument("--check", action="store_true", help="fail on drift without writing")
     args = parser.parse_args()
     try:

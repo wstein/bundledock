@@ -9,7 +9,7 @@ import (
 )
 
 func TestFastfetchArchiveInstallsOnlyExecutable(t *testing.T) {
-	c, err := toolconfig.Load("../../bundles/toolbox")
+	c, err := toolconfig.Load("../../bundles/nixbox/tools")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -50,7 +50,7 @@ func TestFastfetchArchiveInstallsOnlyExecutable(t *testing.T) {
 }
 
 func TestFastfetchArchiveRejectsUnexecutableOnly(t *testing.T) {
-	c, err := toolconfig.Load("../../bundles/toolbox")
+	c, err := toolconfig.Load("../../bundles/nixbox/tools")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -72,7 +72,7 @@ func TestFastfetchArchiveRejectsUnexecutableOnly(t *testing.T) {
 }
 
 func TestFastfetchArchiveRejectsDuplicateExecutable(t *testing.T) {
-	c, err := toolconfig.Load("../../bundles/toolbox")
+	c, err := toolconfig.Load("../../bundles/nixbox/tools")
 	if err != nil {
 		t.Fatal(err)
 	}
