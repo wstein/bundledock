@@ -45,19 +45,43 @@ func TestProductionOfficialBinariesAreInstalledByTheToolsCatalog(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	installed := map[string]bool{}
-	for _, p := range tools.Catalog.Packages {
-		for _, target := range p.Install.Members {
-			installed[target] = true
+	if err := CheckOfficial(c, tools); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestCheckOfficialRefusesAShimWithoutARecipe(t *testing.T) {
+	_, c := productionCatalog(t)
+	tools, err := toolconfig.Load("../../bundles/nixbox/tools")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// A shim naming a file no recipe installs.
+	wrong := *c
+	wrong.Packages = map[string]Package{}
+	for name, p := range c.Packages {
+		wrong.Packages[name] = p
+	}
+	zk := wrong.Packages["zk"]
+	zk.Binary = "bin/not-installed"
+	wrong.Packages["zk"] = zk
+	if err := CheckOfficial(&wrong, tools); err == nil {
+		t.Error("accepted a shim whose binary no recipe installs")
+	}
+	// A recipe without a shim.
+	extra := *c
+	extra.Packages = map[string]Package{}
+	for name, p := range c.Packages {
+		if name != "zk" {
+			extra.Packages[name] = p
 		}
 	}
-	for _, name := range c.OfficialNames() {
-		if !installed[c.Packages[name].Binary] {
-			t.Errorf("shim %s runs %s, which no tools recipe installs", name, c.Packages[name].Binary)
-		}
+	if err := CheckOfficial(&extra, tools); err == nil {
+		t.Error("accepted a tools recipe that has no shim")
 	}
-	if len(tools.Catalog.Packages) != len(c.OfficialNames()) {
-		t.Errorf("%d tools recipes for %d shims", len(tools.Catalog.Packages), len(c.OfficialNames()))
+	// No tools directory while shims exist.
+	if err := CheckOfficial(c, nil); err == nil {
+		t.Error("accepted shims without tools recipes")
 	}
 }
 

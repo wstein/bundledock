@@ -3,6 +3,7 @@
 package nixbox
 
 import (
+	"bundledock/internal/toolconfig"
 	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
@@ -170,6 +171,41 @@ func (c *Catalog) validate() error {
 	}
 	if runners != 0 && runners != 2 {
 		return fmt.Errorf("runner packages must be exactly glibc and gcc-lib")
+	}
+	return nil
+}
+
+// CheckOfficial verifies that the official shims and the tools recipes in
+// bundles/nixbox/tools agree: every shim runs a file a recipe installs, and every
+// recipe has a shim, so no shim can dangle and no pinned binary goes unused.
+func CheckOfficial(c *Catalog, tools *toolconfig.Config) error {
+	names := c.OfficialNames()
+	if tools == nil {
+		if len(names) != 0 {
+			return fmt.Errorf("official packages need the tools recipes in bundles/nixbox/tools")
+		}
+		return nil
+	}
+	installed := map[string]bool{}
+	for _, p := range tools.Catalog.Packages {
+		for _, target := range p.Install.Members {
+			installed[target] = true
+		}
+	}
+	shimmed := map[string]bool{}
+	for _, name := range names {
+		binary := c.Packages[name].Binary
+		if !installed[binary] {
+			return fmt.Errorf("shim %s runs %s, which no tools recipe installs", name, binary)
+		}
+		shimmed[binary] = true
+	}
+	for tool, p := range tools.Catalog.Packages {
+		for _, target := range p.Install.Members {
+			if !shimmed[target] {
+				return fmt.Errorf("tools recipe %s installs %s, which has no shim", tool, target)
+			}
+		}
 	}
 	return nil
 }

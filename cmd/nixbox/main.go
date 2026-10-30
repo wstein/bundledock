@@ -4,6 +4,7 @@ package main
 
 import (
 	"bundledock/internal/nixbox"
+	"bundledock/internal/toolconfig"
 	"flag"
 	"fmt"
 	"io"
@@ -86,12 +87,23 @@ func check(args []string, stdout io.Writer) error {
 	fs := newFlags("check")
 	catalog := fs.String("catalog", "", "catalog file")
 	lockPath := fs.String("lock", "", "lock file")
+	tools := fs.String("tools", "", "directory of the official release binaries (toolbox schema); checks it and its agreement with the shims")
 	if err := fs.Parse(args); err != nil || fs.NArg() != 0 || *catalog == "" || *lockPath == "" {
-		return usageError("usage: nixbox check -catalog FILE -lock FILE")
+		return usageError("usage: nixbox check -catalog FILE -lock FILE [-tools DIR]")
 	}
 	c, cdata, l, err := load(*catalog, *lockPath)
 	if err != nil {
 		return err
+	}
+	if *tools != "" {
+		config, err := toolconfig.Load(*tools)
+		if err != nil {
+			return err
+		}
+		if err := nixbox.CheckOfficial(c, config); err != nil {
+			return err
+		}
+		fmt.Fprintf(stdout, "%d official release binaries pinned for both architectures\n", len(config.Catalog.Packages))
 	}
 	if err := nixbox.CheckLock(c, cdata, l, c.Cache.PublicKey); err != nil {
 		return err
