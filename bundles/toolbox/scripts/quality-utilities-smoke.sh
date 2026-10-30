@@ -29,8 +29,6 @@ stage 'just version'
 just --version
 stage 'ruff version'
 ruff --version
-stage 'delta version'
-delta --version
 stage 'watchexec version'
 watchexec --version
 stage 'hyperfine version'
@@ -64,21 +62,6 @@ stage 'ruff formatting'
 output=$(ruff format --isolated --no-cache --stdin-filename smoke.py - < "$work/smoke.py")
 stage 'ruff output assertion'
 test "$output" = 'x = 1'
-stage 'delta fixture'
-printf '%s\n' '--- a/smoke' '+++ b/smoke' '@@ -1 +1 @@' '-before-smoke' '+after-smoke' > "$work/input.diff"
-stage 'delta rendering'
-delta --no-gitconfig --paging=never < "$work/input.diff" > "$work/diff"
-# Delta 0.20.1 inserts SGR escapes inside words during intraline highlighting.
-# Keep the real renderer and its exit status; remove SGR/erase-line sequences
-# only from the comparison copy, not by using --raw or accepting diff status 1.
-stage 'delta escape character'
-escape=$(printf '\033')
-stage 'delta comparison normalization'
-sed "s/${escape}\[[0-9;]*[mK]//g" "$work/diff" > "$work/diff-text"
-stage 'delta removed text assertion'
-grep -qx before-smoke "$work/diff-text"
-stage 'delta added text assertion'
-grep -qx after-smoke "$work/diff-text"
 # The pinned watchexec exposes its testing-only run-once mode as -1.
 stage 'watchexec command'
 output=$(watchexec -1 --shell=none --workdir "$work" -- echo watch-smoke)

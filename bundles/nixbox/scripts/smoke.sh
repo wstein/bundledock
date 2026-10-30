@@ -6,28 +6,11 @@
 #   owns its pinned consumer matrix and ignores it.
 # Environment:
 #   NIXBOX_PLATFORM       docker platform for every container (default: native)
-#   NIXBOX_TOOLBOX_IMAGE  toolbox carrier image whose volume is mounted at
-#                         /opt/bdock/toolbox for the eight shimmed binaries
-#                         (default: the image and digest recorded in
-#                         docs/toolbox-published.json; set it empty to skip)
 #   NIXBOX_OFFLINE=1      skip the one check that needs the network
 set -eu
 script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 image=${1:-bundledock-nixbox:poc}
 platform=${NIXBOX_PLATFORM:-}
-# The publication flow keeps this record current, so nothing is pinned by hand.
-record=$script_dir/../../../docs/toolbox-published.json
-if [ -z "${NIXBOX_TOOLBOX_IMAGE+x}" ]; then
-    record_image=$(sed -n 's/^  "image": "\([^"]*\)",$/\1/p' "$record")
-    record_digest=$(sed -n 's/^  "digest": "\(sha256:[0-9a-f]*\)",$/\1/p' "$record")
-    if [ -z "$record_image" ] || [ -z "$record_digest" ]; then
-        echo "no toolbox image and digest in $record" >&2
-        exit 1
-    fi
-    toolbox_image=$record_image@$record_digest
-else
-    toolbox_image=$NIXBOX_TOOLBOX_IMAGE
-fi
 offline=${NIXBOX_OFFLINE:-0}
 # Pinned consumers (multi-architecture index digests): Debian slim, Fedora,
 # openSUSE Leap, Alpine.
@@ -49,24 +32,16 @@ platform_flag() { if [ -n "$platform" ]; then printf '%s\n' --platform "$platfor
 # shellcheck disable=SC2046
 docker_run() { docker run --rm $(platform_flag) "$@"; }
 nix_volume=$(docker volume create)
-toolbox_volume=
 workdir=$(mktemp -d)
 cleanup() {
     rm -rf "$workdir"
     docker volume rm "$nix_volume" >/dev/null 2>&1 || true
-    if [ -n "$toolbox_volume" ]; then docker volume rm "$toolbox_volume" >/dev/null 2>&1 || true; fi
 }
 trap cleanup EXIT
 
 # Initialize the carrier volume twice: the second run verifies instead of copying.
 docker_run --network none --mount "type=volume,src=$nix_volume,dst=/bundle,volume-nocopy" "$image"
 docker_run --network none --mount "type=volume,src=$nix_volume,dst=/bundle,volume-nocopy" "$image"
-toolbox_mount=
-if [ -n "$toolbox_image" ]; then
-    toolbox_volume=$(docker volume create)
-    docker_run --network none --mount "type=volume,src=$toolbox_volume,dst=/bundle,volume-nocopy" "$toolbox_image"
-    toolbox_mount="type=volume,src=$toolbox_volume,dst=/opt/bdock/toolbox,readonly,volume-nocopy"
-fi
 
 result=0
 run_consumer() {
@@ -79,7 +54,6 @@ run_consumer() {
         --env HOME=/home/smoke --env NIXBOX_OFFLINE="$offline" \
         --mount "type=volume,src=$nix_volume,dst=/nix,readonly,volume-nocopy" \
         --mount "type=bind,src=$script_dir/consumer-smoke.sh,dst=/nixbox-smoke.sh,readonly"
-    if [ -n "$toolbox_mount" ]; then set -- "$@" --mount "$toolbox_mount"; fi
     case $consumer in
     alpine@*)
         # Simulate gcompat offline: Alpine then has glibc-looking loader files

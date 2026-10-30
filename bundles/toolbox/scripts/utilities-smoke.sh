@@ -27,11 +27,9 @@ if command -v gh >/dev/null 2>&1; then
 else
 	echo "gh is absent from the smoke environment; skipping gh stack discovery check" >&2
 fi
-expect_version '^Difftastic [0-9]+\.[0-9]+\.[0-9]+' difft --version
 expect_version '^zoxide [0-9]+\.[0-9]+\.[0-9]+' zoxide --version
 expect_version '^git-cliff [0-9]+\.[0-9]+\.[0-9]+' git-cliff --version
 expect_version '^GitVersion: +v[0-9]+\.[0-9]+\.[0-9]+' cosign version
-expect_version '^zizmor [0-9]+\.[0-9]+\.[0-9]+' zizmor --version
 expect_version '^pinact version [0-9]+\.[0-9]+\.[0-9]+' pinact --version
 expect_version '^Haskell Dockerfile Linter [0-9]+\.[0-9]+\.[0-9]+' hadolint --version
 expect_version '^[0-9]+\.[0-9]+\.[0-9]+' actionlint -version

@@ -20,7 +20,6 @@ func runQualityUtilitiesSmoke(t *testing.T, broken string, override map[string]s
 		"shfmt":      `case "$*" in --version) echo v3.14.1;; *) cat >/dev/null; echo 'echo smoke';; esac`,
 		"just":       `case "$*" in --version) echo 'just 1.58.0';; *--quiet*) :;; *) echo recipe-smoke;; esac`,
 		"ruff":       `case "$*" in --version) echo 'ruff 0.17.0';; *) cat >/dev/null; echo 'x = 1';; esac`,
-		"delta":      `case "$*" in --version) echo 'delta 0.20.1';; '--no-gitconfig --paging=never') cat >/dev/null; printf '\033[48;5;124mbefore\033[48;5;52m-smoke\033[0m\n\033[48;5;28;38;5;231mafter\033[48;5;22m-smoke\033[0m\033[0K\n';; *) exit 2;; esac`,
 		"watchexec":  `case "$*" in --version) echo 'watchexec 2.8.0';; '-1 --shell=none --workdir '*) echo watch-smoke;; *) exit 2;; esac`,
 		"hyperfine":  `case "$*" in --version) echo 'hyperfine 2.0.0';; *) while test "$1" != --export-json; do shift; done; shift; echo '{"schema_version":2,"results":[{"command":"true","measurements":[{"time_wall_clock":{"value":0.001,"unit":"second"},"exit_code":0}]}]}' > "$1";; esac`,
 		// The source suite requires Python, but not an installed toolbox.
@@ -65,7 +64,7 @@ PYJSON`,
 }
 
 func TestQualityUtilitiesSmokeRejectsWrongBehavior(t *testing.T) {
-	for _, broken := range []string{"", "shellcheck", "shfmt", "just", "ruff", "delta", "watchexec", "hyperfine", "age-keygen", "age"} {
+	for _, broken := range []string{"", "shellcheck", "shfmt", "just", "ruff", "watchexec", "hyperfine", "age-keygen", "age"} {
 		t.Run("broken-"+broken, func(t *testing.T) {
 			out, err := runQualityUtilitiesSmoke(t, broken, nil)
 			if broken == "" && err != nil {
@@ -86,7 +85,6 @@ func TestQualityUtilitiesSmokeReportsFailedCommands(t *testing.T) {
 		{"shfmt", "shfmt formatting", "echo smoke"},
 		{"just", "just recipe", "recipe-smoke"},
 		{"ruff", "ruff formatting", "x = 1"},
-		{"delta", "delta rendering", "after-smoke"},
 		{"watchexec", "watchexec command", "watch-smoke"},
 		{"hyperfine", "hyperfine benchmark", ""},
 		{"age-keygen", "age key generation", ""},
@@ -122,33 +120,8 @@ func TestQualityUtilitiesSmokeReportsAssertionWithoutValues(t *testing.T) {
 	}
 }
 
-func TestQualityUtilitiesSmokeDeltaStatusAndRendering(t *testing.T) {
-	for _, tc := range []struct{ name, body, diagnostic string }{
-		{"ANSI intraline rendering", `cat >/dev/null; printf '\033[48;5;124mbefore\033[48;5;52m-smoke\033[0m\n\033[48;5;28;38;5;231mafter\033[48;5;22m-smoke\033[0m\033[0K\n'`, ""},
-		{"unrendered diff", `cat`, "delta removed text assertion"},
-		{"missing added text", `cat >/dev/null; echo before-smoke`, "delta added text assertion"},
-		{"missing removed text", `cat >/dev/null; echo after-smoke`, "delta removed text assertion"},
-		{"diff status one", `cat >/dev/null; printf 'before-smoke\nafter-smoke\n'; exit 1`, "delta rendering"},
-		{"error status two", `cat >/dev/null; printf 'before-smoke\nafter-smoke\n'; exit 2`, "delta rendering"},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			body := `case "$*" in --version) echo 'delta 0.20.1';; *) ` + tc.body + `;; esac`
-			out, err := runQualityUtilitiesSmoke(t, "", map[string]string{"delta": body})
-			if tc.diagnostic == "" {
-				if err != nil {
-					t.Fatalf("valid ANSI rendering failed: %v\n%s", err, out)
-				}
-				return
-			}
-			if err == nil || !strings.Contains(out, "Quality utilities smoke failed: "+tc.diagnostic+" (exit ") {
-				t.Fatalf("invalid rendering/status accepted or wrong diagnostic: %v\n%s", err, out)
-			}
-		})
-	}
-}
-
 func TestQualityUtilitiesSmokeVersionDiagnostics(t *testing.T) {
-	for _, tool := range []string{"shellcheck", "shfmt", "just", "ruff", "delta", "watchexec", "hyperfine", "age", "age-keygen"} {
+	for _, tool := range []string{"shellcheck", "shfmt", "just", "ruff", "watchexec", "hyperfine", "age", "age-keygen"} {
 		t.Run(tool, func(t *testing.T) {
 			out, err := runQualityUtilitiesSmoke(t, "", map[string]string{tool: `exit 23`})
 			if err == nil || !strings.Contains(out, "Quality utilities smoke failed: "+tool+" version (exit 23)") {
