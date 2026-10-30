@@ -354,3 +354,38 @@ func TestQuayPrune(t *testing.T) {
 		t.Fatal("failed-run without attempt accepted")
 	}
 }
+
+func TestQuayDescribeInit(t *testing.T) {
+	// No network: a server that fails every request proves none is made.
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Errorf("unexpected request %s", r.URL)
+		http.Error(w, "no", 500)
+	}))
+	defer srv.Close()
+	root := t.TempDir()
+	os.MkdirAll(filepath.Join(root, "docs"), 0o755)
+	os.MkdirAll(filepath.Join(root, "bundles", "bun"), 0o755)
+	os.WriteFile(filepath.Join(root, "docs", "bun.md"), []byte("---\ndescription: Bun runtime and bunx.\n---\n"), 0o644)
+	out, _, err := runQuayAt(t, root, srv, "describe", "--init", "bun", "--json")
+	var doc struct {
+		Schema  string `json:"schema"`
+		Path    string `json:"path"`
+		Written bool   `json:"written"`
+	}
+	if err != nil || json.Unmarshal([]byte(out), &doc) != nil || !doc.Written || doc.Schema != "bdock.quay.describe-init/v1" {
+		t.Fatalf("out = %q err = %v", out, err)
+	}
+	raw, _ := os.ReadFile(filepath.Join(root, "bundles", "bun", "description.md"))
+	if !strings.Contains(string(raw), "Bun runtime and bunx.") {
+		t.Fatalf("draft = %s", raw)
+	}
+	if _, _, err = runQuayAt(t, root, srv, "describe", "--init", "bun"); err == nil {
+		t.Fatal("overwrote an existing description")
+	}
+	if _, _, err = runQuayAt(t, root, srv, "describe", "--init"); err == nil {
+		t.Fatal("--init without a bundle accepted")
+	}
+	if _, _, err = runQuayAt(t, root, srv, "describe", "--init", "--apply", "bun"); err == nil {
+		t.Fatal("--init with --apply accepted")
+	}
+}
