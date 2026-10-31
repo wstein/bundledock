@@ -330,6 +330,14 @@ manual dispatch does not offer it and the planner refuses it. Its Quay images an
 existing `opentofu/<version>` tags stay; only the staging cleanup still lists its
 repository, to remove stale staging tags.
 
+An old `automation/opentofu-upgrade-*` pull request that still merges is ignored:
+the planner reports no eligible updater and the run stays green. A combined updater
+pull request that changes the OpenTofu lock is rejected as a whole with
+`combined updater changes retired bundle opentofu`. Recovery: the updater drops
+opentofu from the pull request (rebase on current main, restoring `bundles/opentofu`
+and `docs/opentofu.md`); if it was already merged, publish the other bundles it
+changed by manual dispatch of the exact main SHA.
+
 After successful image promotion, the shared workflow for toolbox, code-server,
 node, node-current, bun, codex, agy and claude creates an annotated Git tag `<bundle>/<immutable-version>` at the
 image's exact source commit, for example `node/24.21.0-b1`. Approval of that

@@ -238,6 +238,8 @@ def updater_members(pr, name, get):
     files = get('/pulls/' + str(pr['number']) + '/files?per_page=100&page=1')
     require(isinstance(files, list) and len(files) == pr['changed_files'], 'Missing or truncated files')
     changed = {item['filename'] for item in files}
+    for name in config.RETIRED:
+        require(config.select_bundle(name)['lock'] not in changed, 'combined updater changes retired bundle ' + name + '; the updater must drop it, and the other bundles are published by manual dispatch')
     members = [member for member in config.AUTOMATIC if config.select_bundle(member)['lock'] in changed]
     require(members, 'Combined updater changes no bundle lock')
     return members
@@ -303,6 +305,11 @@ def bundle_for_branch(branch):
     if re.fullmatch(r'automation/upgrades-[1-9][0-9]*-[1-9][0-9]*', branch):
         return COMBINED
     require(not re.match(r'automation/upgrades', branch), 'Malformed combined updater branch')
+    for name in config.RETIRED:
+        # An updater PR opened before the retirement may still merge. It is not an
+        # error and publishes nothing: ineligible, so the run stays green.
+        if re.fullmatch('automation/' + re.escape(name) + r'-upgrade-[1-9][0-9]*-[1-9][0-9]*', branch):
+            return None
     for name in config.AUTOMATIC:
         prefix = '(?:toolbox|tool)' if name == 'toolbox' else re.escape(name)
         if re.fullmatch('automation/' + prefix + r'-upgrade-[1-9][0-9]*-[1-9][0-9]*', branch):

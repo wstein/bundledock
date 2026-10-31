@@ -95,8 +95,7 @@ class NixboxPublicationTests(unittest.TestCase):
             self.run_publication('opentofu', 'plan', 'workflow_dispatch', APPROVED_SHA='a' * 40)
         with self.assertRaisesRegex(SystemExit, 'retired'):
             self.run_publication('opentofu', 'preflight', 'workflow_run')
-        with self.assertRaises(ValueError):
-            publication.bundle_for_branch('automation/opentofu-upgrade-123-1')
+        self.assertIsNone(publication.bundle_for_branch('automation/opentofu-upgrade-123-1'))
         files = [{'filename': config.select_bundle(name)['lock']} for name in ('agy', 'opentofu')]
         pr = {'number': 7, 'changed_files': 2}
         self.assertEqual(publication.updater_members(pr, publication.COMBINED, lambda path: files), ['agy'])
