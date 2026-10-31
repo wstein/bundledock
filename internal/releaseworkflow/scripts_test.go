@@ -194,28 +194,37 @@ func TestReleaseNotesCountDocsAndOtherCommitsInsteadOfListingThem(t *testing.T) 
 }
 
 func TestReleaseNotesListEachCommitOnceWhenTheDescriptionHasParentheses(t *testing.T) {
-	subjects := []string{"fix(a)!: x (y): z", "docs(b)!: rename (c): z", "perf(x)!: y (z): w", "fix(q): plain (r): s", "docs(d): plain (e): f", "chore: other"}
+	subjects := []string{"fix(a)!: x (y): z", "docs(b)!: rename (c): z", "perf(x)!: y (z): w", "fix(q): plain (r): s", "docs(d): plain (e): f", "chore: other",
+		"fix(a): x (b)!: z", "docs(a): x (b)!: z", "feat(a): x (b): z", "feat(a) x (b): z"}
 	out := releaseNotesIn(t, subjects...)
 	for _, s := range subjects[:3] {
 		if n := strings.Count(out, "- "+s+" ("); n != 1 {
 			t.Errorf("%q must be listed once, got %d:\n%s", s, n, out)
 		}
 	}
-	if !strings.Contains(out, "### Breaking changes (3)") || !strings.Contains(out, "Fixes (1)") ||
-		!strings.Contains(out, "Not listed here: 1 documentation and 1 other commits") {
-		t.Errorf("counts must add up to the six commits:\n%s", out)
+	// feat(a) x (b): z is not a Conventional Commit: counted as other, not a feature.
+	for _, s := range subjects[3:9] {
+		if n := strings.Count(out, s+" ("); n > 1 {
+			t.Errorf("%q must not be listed twice, got %d:\n%s", s, n, out)
+		}
+	}
+	// fix(a): x (b)!: z is a fix and docs(a): x (b)!: z is documentation, neither is breaking.
+	if !strings.Contains(out, "### Breaking changes (3)") || !strings.Contains(out, "### Features (1)\n\n- feat(a): x (b): z (") ||
+		!strings.Contains(out, "Fixes (2)") || !strings.Contains(out, "- fix(a): x (b)!: z (") ||
+		!strings.Contains(out, "Not listed here: 2 documentation and 2 other commits") || strings.Contains(out, "docs(a): x (b)!: z") || strings.Contains(out, "feat(a) x (b)") {
+		t.Errorf("counts must add up to the ten commits:\n%s", out)
 	}
 }
 
 func TestReleaseNotesListBreakingChangesOfAnyType(t *testing.T) {
-	subjects := []string{"deps!: bump api", "security!: x", "Feat!: capitalized", "Fix(a)!: capitalized"}
+	subjects := []string{"deps!: bump api", "security!: x", "build-deps!: x", "ci2!: y", "Feat!: capitalized", "Fix(a)!: capitalized"}
 	out := releaseNotesIn(t, append(subjects, "feat!: lower")...)
 	for _, s := range subjects {
 		if n := strings.Count(out, "- "+s+" ("); n != 1 {
 			t.Errorf("%q must be listed once, got %d:\n%s", s, n, out)
 		}
 	}
-	if !strings.Contains(out, "### Breaking changes (4)") || !strings.Contains(out, "### Features (1)\n\n- feat!: lower (") || strings.Count(out, "feat!: lower") != 1 {
+	if !strings.Contains(out, "### Breaking changes (6)") || !strings.Contains(out, "### Features (1)\n\n- feat!: lower (") || strings.Count(out, "feat!: lower") != 1 {
 		t.Errorf("feat! stays under Features only:\n%s", out)
 	}
 }
