@@ -126,7 +126,7 @@ else:
                              {'bdock_0.1.0_darwin_arm64.tar.gz', 'LICENSE', 'PROVENANCE', 'SHA256SUMS'})
 
     def stub_tars(self, base, gtar):
-        """A PATH-first directory whose `tar` mimics bsdtar; `gtar` is bsdtar-like (None) or wraps `gnu`."""
+        """A PATH-first directory whose `tar` mimics bsdtar; `gtar` is bsdtar-like (None) or the path of a GNU tar that it wraps."""
         stubs = base / 'stubs'
         stubs.mkdir()
         bsd = '#!/bin/sh\nif [ "$1" = --version ]; then echo "bsdtar 3.5.3 - libarchive 3.5.3"; exit 0; fi\n' \

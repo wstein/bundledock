@@ -209,6 +209,9 @@ Linux AMD64, Linux ARM64 and macOS ARM64 (`TARGETS` selects a subset, for exampl
 platform and install `bdock` on your PATH. An existing destination
 is refused. Verify the outputs with `cd dist/cli && sha256sum -c SHA256SUMS`.
 The target does not create a Git tag or publish a release. GNU tar is required.
+On macOS, `tar` is bsdtar, so install GNU tar first with `brew install gnu-tar`; `scripts/release.sh` then
+uses the `gtar` it provides. This is a precondition for local releases only; it is not needed to run the tests
+or the other `make` targets.
 
 The same script, `scripts/release.sh`, is the single archive builder of the tag-driven CI
 release (`.github/workflows/release.yml`; owner procedure in `docs/releasing.md`, design in

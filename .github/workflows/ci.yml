@@ -61,6 +61,17 @@ jobs:
         with:
           go-version-file: .go-version
           cache: false
+      # scripts/release.sh accepts Homebrew's `gtar` when `tar` is bsdtar, so no gnubin on PATH is needed for it.
+      # consumer-smoke.sh calls a bare `timeout`, which macOS lacks (coreutils installs it as `gtimeout`):
+      # expose only that one tool through a private shim directory instead of putting coreutils' gnubin
+      # (which would shadow BSD cp, ls, sort, ...) on PATH for the whole job.
+      - name: Install GNU tar and GNU timeout
+        run: |
+          brew install gnu-tar coreutils
+          command -v gtar gtimeout
+          mkdir -p "$RUNNER_TEMP/gnu-shims"
+          ln -s "$(command -v gtimeout)" "$RUNNER_TEMP/gnu-shims/timeout"
+          echo "$RUNNER_TEMP/gnu-shims" >> "$GITHUB_PATH"
       - name: Show the host
         run: |
           sw_vers
