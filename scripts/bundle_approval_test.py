@@ -621,6 +621,17 @@ class CombinedUpdaterTests(unittest.TestCase):
     if kind=='renamed':self.files[0]['status']='renamed'
     for name in (None,'agy'):
      with self.assertRaises(ValueError):gate.validate(self.event,self.get,name)
+ def test_combined_updater_touching_a_retired_bundle_fails_closed_with_a_clear_message(self):
+  self.combine(('agy','opentofu'))
+  for name in (None,'agy'):
+   with self.assertRaisesRegex(ValueError,'combined updater changes retired bundle opentofu'):gate.validate(self.event,self.get,name)
+  with self.assertRaisesRegex(ValueError,'retired bundle opentofu'):gate.validate(self.event,self.get,None,allow_ineligible=True)
+ def test_old_retired_bundle_topic_is_ineligible_not_a_red_rejection(self):
+  self.combine(('opentofu',))
+  self.pr['head']['ref']='automation/opentofu-upgrade-123-1'
+  self.assertIsNone(gate.validate(self.event,self.get,None,allow_ineligible=True))
+  self.assertIsNone(gate.bundle_for_branch('automation/opentofu-upgrade-123-1'))
+  with self.assertRaises(ValueError):gate.bundle_for_branch('automation/opentofu-upgrade-tampered')
  def test_malformed_combined_topic_is_rejected_not_ignored(self):
   self.combine()
   for branch in ('automation/upgrades-tampered','automation/upgrades-1-1-1','automation/upgrades-0-1'):
