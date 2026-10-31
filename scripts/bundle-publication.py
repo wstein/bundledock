@@ -238,8 +238,8 @@ def updater_members(pr, name, get):
     files = get('/pulls/' + str(pr['number']) + '/files?per_page=100&page=1')
     require(isinstance(files, list) and len(files) == pr['changed_files'], 'Missing or truncated files')
     changed = {item['filename'] for item in files}
-    for name in config.RETIRED:
-        require(config.select_bundle(name)['lock'] not in changed, 'combined updater changes retired bundle ' + name + '; the updater must drop it, and the other bundles are published by manual dispatch')
+    for retired in config.RETIRED:
+        require(config.select_bundle(retired)['lock'] not in changed, 'combined updater changes retired bundle ' + retired + '; close the PR and rerun the updater, and the other bundles are published by manual dispatch')
     members = [member for member in config.AUTOMATIC if config.select_bundle(member)['lock'] in changed]
     require(members, 'Combined updater changes no bundle lock')
     return members
