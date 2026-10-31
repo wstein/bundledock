@@ -154,6 +154,15 @@ else:
         self.assertEqual(len(writes), 1)
         self.assertEqual(json.loads(writes[0]['payload']), {'ref': branch, 'inputs': {'expected_head_sha': HEAD}})
 
+    def test_a_retired_bundle_is_never_proposed(self):
+        for bundles, branch in (('opentofu', 'automation/opentofu-upgrade-123-1'), ('agy,opentofu', 'automation/upgrades-123-1')):
+            with self.subTest(bundles=bundles):
+                data = evidence(tuple(bundles.split(',')), branch)
+                result, calls = self.run_dispatch(data, bundles=bundles, branch=branch)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn('retired', result.stderr)
+                self.assertFalse([call for call in calls if '--method' in call['args']])
+
     def nixbox_evidence(self, extra=None):
         branch = 'automation/nixbox-upgrade-123-1'
         data = evidence(('nixbox',), branch)
