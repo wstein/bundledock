@@ -11,9 +11,10 @@ import (
 // the saved plan holds every row.
 const maxSummaryRows = 100
 
+// cell makes untrusted text inert in a Markdown table cell: no table breaks,
+// code spans, escapes, links through HTML or raw HTML.
 func cell(s string) string {
-	s = strings.NewReplacer("\r", " ", "\n", " ", "|", "\\|").Replace(s)
-	return s
+	return strings.NewReplacer("\r", " ", "\n", " ", "\\", "\\\\", "|", "\\|", "`", "'", "<", "&lt;", ">", "&gt;").Replace(s)
 }
 
 func rowsTable(header string, lines []string) string {

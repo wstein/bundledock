@@ -79,3 +79,19 @@ func TestAppendStepSummaryIsAppendOnlyAndOptional(t *testing.T) {
 		t.Fatal("unwritable summary reported success")
 	}
 }
+
+func TestSummaryNeutralizesMarkdownAndHTMLInCells(t *testing.T) {
+	hostile := "staging-`x`<img src=x onerror=1>\\|[l](http://e)-amd64"
+	plan := Plan{Schema: 1, Mode: ModeFallback, Rows: []PlanRow{{Repository: "to<b>", Name: hostile, Reason: "<script>`a`\\"}}}
+	for _, got := range []string{PlanSummary(plan), ApplySummary(ModeFallback, nil, []Action{{Repository: "to<b>", Name: hostile, Action: "<i>"}}, nil)} {
+		for _, bad := range []string{"<", ">", "`x`", "`a`"} {
+			if strings.Contains(got, bad) {
+				t.Errorf("summary contains %q:\n%s", bad, got)
+			}
+		}
+		// Exactly the delimiting backticks of the tag code span remain.
+		if n := strings.Count(got, "`"); n != 2 {
+			t.Errorf("backticks = %d:\n%s", n, got)
+		}
+	}
+}
