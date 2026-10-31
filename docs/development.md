@@ -131,7 +131,7 @@ that a historical fixture is the currently installed release. The separate docum
 
 `scripts/tests/test_rolling_locks.py` copies only source-test inputs into a temporary
 workspace, advances every rolling prebuilt lock on both architectures, and runs
-the complete configuration test package. It covers all nine tool bundles, the retired opentofu bundle included, without
+the complete configuration test package. It covers all ten bundle catalogs (the nine tool bundles, the retired opentofu included, and the tools catalog of nixbox) without
 changing checked-in locks, recipes, desired inputs or notices. Checksums and URLs
 in this simulation are synthetic; it performs no tool downloads, executions,
 image builds or upstream verification. It also confirms that corrupt checksums,

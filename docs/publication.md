@@ -334,9 +334,9 @@ repository, to remove stale staging tags.
 An old `automation/opentofu-upgrade-*` pull request that still merges is ignored:
 the planner reports no eligible updater and the run stays green. A combined updater
 pull request that changes the OpenTofu lock is rejected as a whole with
-`combined updater changes retired bundle opentofu`. Recovery: the updater drops
-opentofu from the pull request (rebase on current main, restoring `bundles/opentofu`
-and `docs/opentofu.md`); if it was already merged, publish the other bundles it
+`combined updater changes retired bundle opentofu`. Recovery: the bot never rewrites
+an existing pull request, so close it and rerun **Propose upgrades**, or rebase it by
+hand to a single commit that restores `bundles/opentofu` and `docs/opentofu.md`; if it was already merged, publish the other bundles it
 changed by manual dispatch of the exact main SHA.
 
 After successful image promotion, the shared workflow for toolbox, code-server,
@@ -649,7 +649,7 @@ cleanup applies automatically when the existing robot credentials are configured
 The daily `Clean stale staging tags` workflow handles abandoned staging tags.
 Both the tag and its completed workflow run (including the latest rerun) must be
 at least seven days old. Active, recently rerun, immutable, malformed, unrecognized
-or unverifiable tags remain. Only the eight official repositories are in scope;
+or unverifiable tags remain. Only the nine official repositories in the cleanup matrix are in scope (including nixbox and the retired opentofu, which keeps its stale-tag cleanup);
 both Node channels share one repository lock. Publisher and fallback concurrency
 use `queue: max` so cleanup does not replace pending publication work. See
 [GitHub concurrency queue semantics](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency).
