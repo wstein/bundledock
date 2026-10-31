@@ -41,6 +41,8 @@ jobs:
       fail-fast: false
       max-parallel: 2
       matrix:
+        # opentofu is retired and creates no staging tags any more; it stays listed so
+        # stale staging tags left in its repository are still cleaned up.
         repository: [agy, bun, claude, code-server, codex, nixbox, node, opentofu, toolbox]
     # Same lock as publication; both Node channels share the node repository. Before the
     # owner's first nixbox dispatch its repository does not exist, so that run is an empty dry run.

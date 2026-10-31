@@ -59,16 +59,19 @@ func newPublishCommandWithClient(client *http.Client) *cobra.Command {
 				return fmt.Errorf("cannot combine bundle argument and --all")
 			}
 			if !all && len(args) == 0 {
-				return fmt.Errorf("requires a bundle name or --all (available: %s)", strings.Join(toolpublish.CanonicalBundles, ", "))
+				return fmt.Errorf("requires a bundle name or --all (available: %s)", strings.Join(toolpublish.ActiveBundles(), ", "))
 			}
 
 			var bundles []string
 			if all {
-				bundles = toolpublish.CanonicalBundles
+				bundles = toolpublish.ActiveBundles()
 			} else {
 				b, err := toolpublish.SelectBundle(args[0])
 				if err != nil {
 					return err
+				}
+				if toolpublish.IsRetired(b.Name) {
+					return fmt.Errorf("bundle %s is retired and is no longer published; its images stay available on Quay", b.Name)
 				}
 				bundles = []string{b.Name}
 			}

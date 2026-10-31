@@ -905,8 +905,16 @@ func upgradeWorkflowSource() ([]byte, error) {
 	return append(wrapper, body...), nil
 }
 
+func TestRetiredBundleIsNeverResolvedByTheUpdater(t *testing.T) {
+	dir, env := fixture(t)
+	env = append(env, "BUNDLE=opentofu", "TOOL=opentofu")
+	if out, err := adapter(t, dir, env, "resolve"); err == nil || !strings.Contains(out+err.Error(), "BUNDLE must be") {
+		t.Fatalf("the updater must refuse the retired opentofu bundle: %v %s", err, out)
+	}
+}
+
 func TestAgentUpdatersScopeAndRejectCrossBundleArtifacts(t *testing.T) {
-	for _, name := range []string{"codex", "agy", "claude", "opentofu"} {
+	for _, name := range []string{"codex", "agy", "claude"} {
 		t.Run(name, func(t *testing.T) {
 			dir, env := fixture(t)
 			env = append(env, "BUNDLE="+name, "TOOL="+name)

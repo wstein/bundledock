@@ -20,7 +20,6 @@ on:
           - codex
           - agy
           - claude
-          - opentofu
           - nixbox
       dry_run:
         description: Show lock changes without creating branches or pull requests

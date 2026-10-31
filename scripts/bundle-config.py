@@ -14,7 +14,13 @@ BUNDLES = {
 # bundles. No updater pull request or CI completion ever publishes it: it has its own
 # upgrade proposal topic, which the automatic publication path does not recognize.
 MANUAL_ONLY = ('nixbox',)
-AUTOMATIC = tuple(name for name in BUNDLES if name not in MANUAL_ONLY)
+# Retired bundles stay known (source, docs, publication record and the Quay images stay,
+# so `bdock quay` keeps describing them) but take part in no automatic path: the
+# updater never proposes them and no manual or automatic publication builds them.
+# opentofu was retired on 2026-10-31; the toolbox ships the same tofu recipe and pin.
+RETIRED = ('opentofu',)
+AUTOMATIC = tuple(name for name in BUNDLES if name not in MANUAL_ONLY and name not in RETIRED)
+UPGRADEABLE = tuple(name for name in BUNDLES if name not in RETIRED)
 # Bundles tagged <date>-b<N>, with no upstream version in the tag.
 DATED = ('toolbox', 'nixbox')
 
@@ -30,9 +36,9 @@ if __name__ == '__main__':
     import json
     selection = parser.add_mutually_exclusive_group(required=True)
     selection.add_argument('--repository', choices=BUNDLES)
-    selection.add_argument('--upgrade-selection', choices=('all', *BUNDLES))
+    selection.add_argument('--upgrade-selection', choices=('all', *UPGRADEABLE))
     args = parser.parse_args()
     if args.repository:
         print(select_bundle(args.repository)['repository'])
     else:
-        print(json.dumps(list(BUNDLES) if args.upgrade_selection == 'all' else [args.upgrade_selection]))
+        print(json.dumps(list(UPGRADEABLE) if args.upgrade_selection == 'all' else [args.upgrade_selection]))

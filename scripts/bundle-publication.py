@@ -465,6 +465,7 @@ def main():
     elif args.mode == 'plan' and os.environ.get('GITHUB_EVENT_NAME') == 'workflow_dispatch':
         name = os.environ.get('BUNDLE', '')
         bundle = config.select_bundle(name)
+        require(name not in config.RETIRED, name + ' is retired and is no longer published; its images stay available on Quay')
         validate_caller(api.request, bundle, 'workflow_dispatch')
         subprocess.run(['sh', str(Path(__file__).with_name('approve-publication.sh'))], check=True)
         revision = sha(os.environ['APPROVED_SHA'])
@@ -473,6 +474,7 @@ def main():
         output = dict(bundle, bundle=name, bundles=json.dumps([name]), sha=revision, eligible='true', status='eligible', reason='Exact full-SHA human manual dispatch verified')
     else:
         require(os.environ['GITHUB_EVENT_NAME'] == 'workflow_run', 'Only CI completion is automatic publication authority')
+        require(args.bundle not in config.RETIRED, args.bundle + ' is retired and is no longer published; its images stay available on Quay')
         require(args.bundle not in config.MANUAL_ONLY, args.bundle + ' publishes only by manual dispatch')
         validate_caller(api.request, config.select_bundle(args.bundle))
         planning = args.mode == 'plan'
