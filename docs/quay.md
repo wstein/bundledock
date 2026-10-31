@@ -68,7 +68,13 @@ GitHub evidence comes from the `gh` CLI. `--repository <name>` limits the scan t
 one Quay repository. `--apply` reads the plan file saved with `--output`; the
 `--json` output on stdout is a report, not a plan file. Registry evidence is read
 with the robot account when `REPOSITORY_USERNAME` and `REPOSITORY_TOKEN` are set,
-else anonymously. `prune` does not write `GITHUB_STEP_SUMMARY`.
+else anonymously.
+
+When `GITHUB_STEP_SUMMARY` is set, `prune` appends one section to that file: the
+plan (counts and one row per staging tag with its decision and reason) or, with
+`--apply`, the actions and, if it stopped, the reason. It only appends, shows no
+credential, and lists at most 100 rows (the saved plan has all of them). A
+failure to write it is a warning, not a failed cleanup.
 
 #### Publication mode
 
