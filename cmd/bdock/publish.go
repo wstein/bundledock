@@ -139,7 +139,7 @@ func newPublishCommandWithClient(client *http.Client) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().BoolVar(&all, "all", false, "publish all canonical bundles sequentially")
+	cmd.Flags().BoolVar(&all, "all", false, "publish all active canonical bundles sequentially (retired bundles are skipped)")
 	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "skip interactive confirmation prompt")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "run preflights and print verification without dispatching")
 	cmd.Flags().StringVar(&repo, "repo", repo, "target GitHub repository (owner/repo)")
