@@ -39,6 +39,22 @@ for candidate in tar gtar; do
     if "$candidate" --version 2>/dev/null | grep -q 'GNU tar'; then tar_cmd=$candidate; break; fi
 done
 test -n "$tar_cmd" || { echo 'GNU tar is required for repeatable archives (on macOS: brew install gnu-tar, which provides gtar)' >&2; exit 1; }
+# SHA256SUMS needs a SHA-256 tool: sha256sum (GNU coreutils) or macOS's stock `shasum -a 256`.
+# Both print "<hash>  <name>" for the files named here, so the file bytes do not depend on the tool.
+if command -v sha256sum >/dev/null 2>&1; then
+    sha256_tool=sha256sum
+elif command -v shasum >/dev/null 2>&1; then
+    sha256_tool=shasum
+else
+    echo 'sha256sum or shasum is required to write SHA256SUMS (macOS ships shasum; Linux: coreutils)' >&2
+    exit 1
+fi
+sha256_files() {
+    case "$sha256_tool" in
+        sha256sum) sha256sum "$@" ;;
+        *) shasum -a 256 "$@" ;;
+    esac
+}
 # Capture source state before creating output, including untracked files.
 revision=$(git rev-parse HEAD)
 modified=false
@@ -87,6 +103,6 @@ for target in $list; do
 done
 rm -rf -- "$destination/.stage" "$destination/.stage.tar"
 # shellcheck disable=SC2086 # archive names contain no whitespace
-(cd "$destination" && sha256sum $archives PROVENANCE LICENSE > SHA256SUMS)
+(cd "$destination" && sha256_files $archives PROVENANCE LICENSE > SHA256SUMS)
 trap - EXIT HUP INT TERM
 printf 'CLI artifacts written to %s\n' "$destination"

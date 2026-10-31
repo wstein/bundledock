@@ -207,11 +207,13 @@ Linux AMD64, Linux ARM64 and macOS ARM64 (`TARGETS` selects a subset, for exampl
 `PROVENANCE`, and `SHA256SUMS`; each archive contains the executable `bdock`,
 `LICENSE` and platform-specific `PROVENANCE`. Extract the archive for your
 platform and install `bdock` on your PATH. An existing destination
-is refused. Verify the outputs with `cd dist/cli && sha256sum -c SHA256SUMS`.
+is refused. Verify the outputs with `cd dist/cli && sha256sum -c SHA256SUMS` (macOS: `shasum -a 256 -c SHA256SUMS`).
 The target does not create a Git tag or publish a release. GNU tar is required.
 On macOS, `tar` is bsdtar, so install GNU tar first with `brew install gnu-tar`; `scripts/release.sh` then
 uses the `gtar` it provides. This is a precondition for local releases only; it is not needed to run the tests
 or the other `make` targets.
+`scripts/release.sh` writes `SHA256SUMS` with `sha256sum` when present and otherwise `shasum -a 256`
+(stock macOS); it fails before building if neither exists. The file is byte-identical either way.
 
 The same script, `scripts/release.sh`, is the single archive builder of the tag-driven CI
 release (`.github/workflows/release.yml`; owner procedure in `docs/releasing.md`, design in

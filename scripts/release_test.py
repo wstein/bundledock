@@ -162,6 +162,54 @@ else:
                 for member in archive.getmembers():
                     self.assertEqual((member.uid, member.gid, member.mtime), (0, 0, 0))
 
+    def restricted_path(self, base, shasum_shim):
+        """A PATH directory of the tools release.sh needs, without sha256sum; optionally a `shasum` shim.
+
+        The shim insists on the `-a 256` arguments and delegates to a real SHA-256 tool by absolute path."""
+        tools = base / 'tools'
+        tools.mkdir()
+        for name in ('sh', 'git', 'tar', 'gtar', 'gzip', 'grep', 'sort', 'cp', 'chmod', 'mkdir', 'rm', 'dirname',
+                     'cat', 'touch', 'sed', 'tr', 'uname', 'env', 'head', 'mktemp'):
+            path = shutil.which(name)
+            if path is not None:
+                (tools / name).symlink_to(path)
+        if shasum_shim:
+            real = shutil.which('sha256sum') or shutil.which('shasum')
+            real_args = '' if shutil.which('sha256sum') else '-a 256 '
+            shim = tools / 'shasum'
+            shim.write_text('#!/bin/sh\n[ "$1 $2" = "-a 256" ] || { echo "shasum shim: want -a 256" >&2; exit 2; }\n'
+                            'shift 2\ntouch "$SHASUM_USED"\nexec %s %s"$@"\n' % (real, real_args))
+            shim.chmod(0o755)
+        return tools
+
+    @requires_gnu_tar
+    @unittest.skipUnless(shutil.which('sha256sum') or shutil.which('shasum'), 'needs a SHA-256 tool to delegate to')
+    def test_shasum_fallback_writes_identical_checksums(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            reference = self.run_release(base)
+            self.assertEqual(reference.returncode, 0, reference.stderr)
+            tools = self.restricted_path(base, True)
+            used = base / 'shasum-used'
+            result = self.run_release(base, PATH=str(tools), SHASUM_USED=str(used), RELEASE_DIR=str(base / 'fallback'))
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertTrue(used.exists())
+            sums = (base / 'fallback' / 'SHA256SUMS').read_bytes()
+            self.assertEqual(sums, (base / 'out' / 'SHA256SUMS').read_bytes())
+            names = ['bdock_0.1.0_%s_%s.tar.gz' % t for t in TARGETS] + ['PROVENANCE', 'LICENSE']
+            expected = ''.join('%s  %s\n' % (hashlib.sha256((base / 'fallback' / n).read_bytes()).hexdigest(), n)
+                               for n in names)
+            self.assertEqual(sums.decode(), expected)
+
+    @requires_gnu_tar
+    def test_missing_sha256_tools_fail_clearly_before_building(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            result = self.run_release(base, PATH=str(self.restricted_path(base, False)))
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn('sha256sum or shasum is required', result.stderr)
+            self.assertFalse((base / 'out').exists())
+
     def test_unsupported_targets_are_refused_before_building(self):
         for target in ('darwin/amd64', 'windows/amd64', 'linux/386', 'linux/amd64 ../x', 'linux/amd64\nlinux/arm64', ''):
             with tempfile.TemporaryDirectory() as directory:
