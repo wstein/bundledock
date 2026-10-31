@@ -35,6 +35,7 @@ func TestPublishValidation(t *testing.T) {
 	}{
 		{"no args without all", []string{"publish"}, "requires a bundle name or --all"},
 		{"bundle with all", []string{"publish", "agy", "--all"}, "cannot combine bundle argument and --all"},
+		{"retired bundle", []string{"publish", "opentofu"}, "retired"},
 		{"unknown bundle", []string{"publish", "unknown-bundle"}, "unknown canonical publication bundle"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

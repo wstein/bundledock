@@ -65,7 +65,7 @@ class ConsolidatedWorkflowsTests(unittest.TestCase):
     def test_selector_emits_all_or_one_and_rejects_unknown(self):
         import json
         import subprocess
-        for selection, expected in [('all', list(config.BUNDLES)), ('node-current', ['node-current']),
+        for selection, expected in [('all', [n for n in config.BUNDLES if n not in config.RETIRED]), ('node-current', ['node-current']),
                                     ('nixbox', ['nixbox'])]:
             result = subprocess.run(['python3', str(ROOT / 'scripts/bundle-config.py'), '--upgrade-selection', selection],
                                     text=True, capture_output=True, check=True)
@@ -73,6 +73,16 @@ class ConsolidatedWorkflowsTests(unittest.TestCase):
         result = subprocess.run(['python3', str(ROOT / 'scripts/bundle-config.py'), '--upgrade-selection', 'unknown'],
                                 capture_output=True)
         self.assertNotEqual(result.returncode, 0)
+
+    def test_the_updater_never_proposes_a_retired_bundle(self):
+        import subprocess
+        self.assertEqual(config.RETIRED, ('opentofu',))
+        self.assertIn('opentofu', config.BUNDLES)
+        result = subprocess.run(['python3', str(ROOT / 'scripts/bundle-config.py'), '--upgrade-selection', 'opentofu'],
+                                capture_output=True)
+        self.assertNotEqual(result.returncode, 0)
+        shell = (ROOT / 'scripts/tool-upgrade.sh').read_text()
+        self.assertNotRegex(shell.split('all_bundles=(')[1].split(')')[0], 'opentofu')
 
     def test_publication_outcomes_keep_rejection_noop_and_failure_distinct(self):
         import json

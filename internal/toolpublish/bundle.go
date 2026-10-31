@@ -8,10 +8,29 @@ import (
 // Bundle is the bounded publication source selection; toolbox remains default.
 type Bundle struct{ Name, Directory, Workflow, Artifact, Repository, Aliases string }
 
-// CanonicalBundles lists the bundles `tools publish --all` and `tools upgrade --all`
-// walk, in fixed order. nixbox is publishable and selectable by name, but it is not
-// a tool bundle and joins no "all" selection.
+// CanonicalBundles lists every known tool bundle, in fixed order, retired ones
+// included. nixbox is publishable and selectable by name, but it is not a tool
+// bundle and joins no "all" selection.
 var CanonicalBundles = []string{"toolbox", "code-server", "node", "node-current", "bun", "codex", "agy", "claude", "opentofu"}
+
+// retired mirrors RETIRED in scripts/bundle-config.py. A retired bundle stays known
+// (its source, record and Quay images remain) but takes part in no automatic
+// update or publication. OpenTofu was retired on 2026-10-31: the toolbox ships tofu.
+var retired = map[string]bool{"opentofu": true}
+
+// IsRetired reports whether the named bundle is retired from updates and publication.
+func IsRetired(name string) bool { return retired[name] }
+
+// ActiveBundles lists the bundles `tools publish --all` and `tools upgrade --all` walk.
+func ActiveBundles() []string {
+	var active []string
+	for _, name := range CanonicalBundles {
+		if !retired[name] {
+			active = append(active, name)
+		}
+	}
+	return active
+}
 
 func SelectBundle(name string) (Bundle, error) {
 	if name == "" {

@@ -40,12 +40,15 @@ class NixboxPublicationTests(unittest.TestCase):
         self.assertEqual((selected['lock'], selected['inventory'], selected['proposal_lock']),
                          ('bundles/nixbox/packages.lock.json', 'docs/nixbox.md', 'nixbox.lock.json'))
         self.assertEqual(config.MANUAL_ONLY, ('nixbox',))
-        self.assertEqual(config.AUTOMATIC, tuple(name for name in config.BUNDLES if name != 'nixbox'))
+        self.assertEqual(config.RETIRED, ('opentofu',))
+        self.assertEqual(config.AUTOMATIC, tuple(name for name in config.BUNDLES if name not in ('nixbox', 'opentofu')))
 
     def test_dispatch_dropdown_lists_exactly_the_configured_bundles(self):
-        self.assertEqual(workflow_options('publish-bundles.yml'), list(config.BUNDLES))
+        active = [name for name in config.BUNDLES if name not in config.RETIRED]
+        self.assertEqual(workflow_options('publish-bundles.yml'), active)
         self.assertEqual(workflow_options('publish-bundles.yml')[-1], 'nixbox')
-        self.assertEqual(workflow_options('propose-upgrades.yml'), ['all', *config.BUNDLES])
+        self.assertEqual(workflow_options('propose-upgrades.yml'), ['all', *active])
+        self.assertNotIn('opentofu', workflow_options('publish-bundles.yml'))
 
     def test_selection_helpers_know_nixbox(self):
         self.assertEqual(tags.BUNDLES, tuple(config.BUNDLES))
@@ -74,6 +77,29 @@ class NixboxPublicationTests(unittest.TestCase):
             with mock.patch.dict(os.environ, env), mock.patch.object(publication.sys, 'argv', ['p', '--bundle', 'nixbox', '--mode', 'preflight']):
                 with self.assertRaisesRegex(SystemExit, 'manual dispatch'):
                     publication.run()
+
+    def run_publication(self, bundle, mode, event_name, **extra):
+        with tempfile.TemporaryDirectory() as directory:
+            event = Path(directory) / 'event.json'
+            event.write_text('{}')
+            env = {'GITHUB_REPOSITORY': 'wstein/bundledock', 'GITHUB_EVENT_NAME': event_name,
+                   'GITHUB_EVENT_PATH': str(event), 'GITHUB_TOKEN': 'x', 'BUNDLE': bundle, **extra}
+            with mock.patch.dict(os.environ, env), mock.patch.object(publication.sys, 'argv', ['p', '--bundle', bundle, '--mode', mode]):
+                publication.run()
+
+    def test_a_retired_bundle_is_never_published_or_proposed(self):
+        self.assertIn('opentofu', config.BUNDLES)
+        self.assertEqual(config.select_bundle('opentofu')['repository'], 'opentofu')
+        self.assertNotIn('opentofu', config.AUTOMATIC)
+        with self.assertRaisesRegex(SystemExit, 'retired'):
+            self.run_publication('opentofu', 'plan', 'workflow_dispatch', APPROVED_SHA='a' * 40)
+        with self.assertRaisesRegex(SystemExit, 'retired'):
+            self.run_publication('opentofu', 'preflight', 'workflow_run')
+        with self.assertRaises(ValueError):
+            publication.bundle_for_branch('automation/opentofu-upgrade-123-1')
+        files = [{'filename': config.select_bundle(name)['lock']} for name in ('agy', 'opentofu')]
+        pr = {'number': 7, 'changed_files': 2}
+        self.assertEqual(publication.updater_members(pr, publication.COMBINED, lambda path: files), ['agy'])
 
     def test_nixbox_publication_records_use_the_daily_tag(self):
         record = dict(bundle='nixbox', image='quay.io/bundledock/nixbox', source=tags.SOURCE, commit='a' * 40,
@@ -119,7 +145,7 @@ class NixboxPublicationTests(unittest.TestCase):
         options = re.search(r'bundle:\n(?:.*\n)*?        options:\n((?:          - .+\n)+)',
                             (ROOT / '.github/workflows/propose-upgrades.yml').read_text()).group(1)
         names = re.findall(r'- (\S+)', options)
-        self.assertEqual(names, ['all', *config.BUNDLES])
+        self.assertEqual(names, ['all', *(n for n in config.BUNDLES if n not in config.RETIRED)])
         for name in names[1:]:
             self.assertTrue((ROOT / 'bundles' / name / 'Dockerfile').is_file(), name)
 

@@ -4,7 +4,8 @@ set -euo pipefail
 : "${UPGRADE_RESULT:?set UPGRADE_RESULT to a temporary directory}"
 : "${GITHUB_OUTPUT:?set GITHUB_OUTPUT}"
 : "${GITHUB_STEP_SUMMARY:?set GITHUB_STEP_SUMMARY}"
-all_bundles=(toolbox code-server node node-current bun codex agy claude opentofu)
+all_bundles=(toolbox code-server node node-current bun codex agy claude)
+# opentofu is retired (2026-10-31; the toolbox ships tofu): no updater proposal, no publication.
 is_bundle() { local name; for name in "${all_bundles[@]}"; do [[ $1 != "$name" ]] || return 0; done; return 1; }
 # nixbox is proposed by its own flow: a lock refresh in the pinned nixos/nix image
 # for its Nix store paths, and the official-release resolver for its glibc release
@@ -29,7 +30,7 @@ if [[ ${1:-} == publish ]]; then
     *) echo 'PROPOSAL_GROUP must be empty or nixbox.' >&2; exit 1 ;;
   esac
 else
-  is_upgrade_bundle "${BUNDLE:-toolbox}" || { echo 'BUNDLE must be toolbox, code-server, node, node-current, bun, codex, agy, claude, opentofu or nixbox.' >&2; exit 1; }
+  is_upgrade_bundle "${BUNDLE:-toolbox}" || { echo 'BUNDLE must be toolbox, code-server, node, node-current, bun, codex, agy, claude or nixbox.' >&2; exit 1; }
   bundles=("${BUNDLE:-toolbox}")
 fi
 locks=() inventories=() artifacts=()

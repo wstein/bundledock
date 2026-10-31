@@ -19,7 +19,6 @@ on:
           - codex
           - agy
           - claude
-          - opentofu
           - nixbox
       approved_sha:
         description: Full main commit SHA explicitly approved for build and publication

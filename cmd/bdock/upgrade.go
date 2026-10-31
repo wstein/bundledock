@@ -34,7 +34,7 @@ func newUpgradeCommandWithClient(client *http.Client) *cobra.Command {
 				if cmd.Flags().Changed("directory") {
 					return fmt.Errorf("cannot combine --directory and --all")
 				}
-				for _, name := range toolpublish.CanonicalBundles {
+				for _, name := range toolpublish.ActiveBundles() {
 					b, err := toolpublish.SelectBundle(name)
 					if err != nil {
 						return err
@@ -70,7 +70,7 @@ func newUpgradeCommandWithClient(client *http.Client) *cobra.Command {
 
 	cmd.Flags().StringVar(&bundleName, "bundle", "", "canonical bundle name (toolbox, code-server, node, node-current, bun, codex, agy, claude, opentofu)")
 	cmd.Flags().StringVar(&directory, "directory", toolconfig.ToolboxDirectory, "directory containing the tool bundle inputs and lock")
-	cmd.Flags().BoolVar(&all, "all", false, "upgrade all canonical bundles")
+	cmd.Flags().BoolVar(&all, "all", false, "upgrade all active canonical bundles (retired bundles are skipped)")
 
 	return cmd
 }

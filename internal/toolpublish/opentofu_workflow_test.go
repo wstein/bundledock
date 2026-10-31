@@ -10,9 +10,23 @@ import (
 	"bundledock/internal/testdir"
 )
 
-func TestOpenTofuWorkflowSourcesSeparateApprovalAndArtifacts(t *testing.T) {
-	for _, bundle := range []string{"opentofu"} {
-		checkConsolidatedBundleWorkflowSource(t, bundle)
+// OpenTofu is retired (2026-10-31): no dispatch choice for publication or the updater.
+func TestOpenTofuIsAbsentFromAutomaticWorkflowChoices(t *testing.T) {
+	for _, file := range []string{"publish-bundles.yml", "propose-upgrades.yml"} {
+		data, err := os.ReadFile("../../.github/workflows/" + file)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if strings.Contains(string(data), "          - opentofu") {
+			t.Fatal(file + " still offers the retired opentofu bundle")
+		}
+	}
+	data, err := os.ReadFile("../../.github/workflows/staging-cleanup.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(data), "opentofu") {
+		t.Fatal("staging cleanup must keep cleaning stale staging tags of the retired repository")
 	}
 }
 

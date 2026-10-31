@@ -45,6 +45,7 @@ def dispatch(args):
     bundles = args.bundles.split(',')
     require(all(name in BUNDLES for name in bundles) and len(set(bundles)) == len(bundles),
             'Known, unique bundles required')
+    require(not set(bundles) & set(CONFIG['RETIRED']), 'A retired bundle is never proposed')
     require(not set(bundles) & set(MANUAL_ONLY) or len(bundles) == 1,
             'A manually published bundle such as nixbox needs its own proposal')
     # One bundle keeps its own topic name (publication recognises it); several share one.
