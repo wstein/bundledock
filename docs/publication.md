@@ -325,10 +325,15 @@ local checks and the scope of historical native CI results.
 
 ## Source tags for published bundles
 
+The `opentofu` bundle is retired (2026-10-31): the updater never proposes it, the
+manual dispatch does not offer it and the planner refuses it. Its Quay images and
+existing `opentofu/<version>` tags stay; only the staging cleanup still lists its
+repository, to remove stale staging tags.
+
 After successful image promotion, the shared workflow for toolbox, code-server,
-node, node-current, bun, codex, agy, claude and opentofu creates an annotated Git tag `<bundle>/<immutable-version>` at the
+node, node-current, bun, codex, agy and claude creates an annotated Git tag `<bundle>/<immutable-version>` at the
 image's exact source commit, for example `node/24.21.0-b1`. Approval of that
-publication includes this source tag. All nine bundles support the owner-merged updater
+publication includes this source tag. All eight active bundles support the owner-merged updater
 path described above; the shared read-only source provenance gate is revalidated
 before automatic tagging. The workflow SHA remains distinct from the authorized
 image source SHA, and both must

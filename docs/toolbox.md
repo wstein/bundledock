@@ -401,8 +401,9 @@ The source lock includes the official stable prebuilt OpenTofu CLI (`tofu`,
 catalog and package ID `opentofu`, `opentofu>=1.13.1,<2.0.0`) because the toolbox
 is rebuilt daily and is the default toolset (owner decision 2026-10-22). It uses
 the same recipe, pin (v1.13.2) and publisher `tofu_{version}_SHA256SUMS` evidence
-as the separate [OpenTofu bundle](opentofu.md), which remains published and
-supported until the owner retires it; consumers may keep pinning either. No
+as the separate [OpenTofu bundle](opentofu.md), which the owner retired on
+2026-10-31: it is no longer updated or published, and its existing images stay
+pullable by digest. Use the toolbox for `tofu`. No
 Sigstore or GPG verification is added, and providers stay out: they, their
 licenses, lock files, credentials and state belong to the consumer's project.
 The catalog installs only `bin/tofu`; the full MPL-2.0 `LICENSE`, `README.md`
