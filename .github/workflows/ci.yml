@@ -73,7 +73,7 @@ jobs:
           umask 022
           python3 -B -m unittest discover -s scripts/tests
           python3 -B -m unittest discover -s scripts -p '*_test.py'
-      - name: Run the suspect test modules verbosely (shim, codex, rolling locks, fake-make build workflows)
+      - name: Run the suspect test modules verbosely (shim, codex, rolling locks, toolbox and nixbox build workflows)
         if: always()
         run: |
           umask 022
