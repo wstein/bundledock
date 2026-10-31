@@ -27,8 +27,8 @@ workflow dispatches by agents or repository/environment settings changes.
 Builds and releases other than the Pages exception and the CLI release workflow exception require explicit user approval
 of the intended operation and source revision. The approved bundle automation
 exception covers toolbox,
-code-server, Node LTS, Node Current, Bun, Codex, Antigravity, Claude and OpenTofu updater PRs authored by `github-actions[bot]`, changing
-only their own lock and generated inventory; a combined updater PR changes the
+code-server, Node LTS, Node Current, Bun, Codex, Antigravity and Claude updater PRs authored by `github-actions[bot]`, changing
+only their own lock and generated inventory (the separate OpenTofu bundle is retired since 2026-10-31: no updater PR, no publication; its Quay images stay); a combined updater PR changes the
 locks and inventories of several bundles, each checked like a per-bundle updater. The actual human owner `wstein`
 merging an eligible updater authorizes publication of that exact frozen lock;
 a submitted APPROVED review is not required. Source merges are the human's job:

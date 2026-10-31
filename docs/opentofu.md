@@ -1,20 +1,26 @@
 ---
 title: OpenTofu bundle
-description: Use the official OpenTofu CLI carrier and inspect its source inventory and publication receipt.
+description: Retired OpenTofu CLI bundle; use tofu from the toolbox, and inspect the last publication receipt of the existing images.
 ---
 
-# Optional OpenTofu bundle
+# OpenTofu bundle (retired)
 
 [All bundles](bundles.md)
+
+> **Status: retired on 2026-10-31.** Get `tofu` from the [toolbox](toolbox.md#opentofu),
+> which ships the same recipe, pin and evidence. This bundle receives no further
+> updates and no new publication. Existing images stay on Quay, immutable and
+> pullable by digest, so current pins keep working; nothing is deleted. The source
+> and this page remain for reference.
 
 `bundles/opentofu` supplies the official stable prebuilt OpenTofu CLI (`tofu`)
 for Linux AMD64 and ARM64. It has a separate catalog, lock, image, volume and
 `/opt/bdock/opentofu` mount. Providers are not bundled or pinned here;
 projects manage provider versions, lock files, credentials and licenses.
 
-The default [toolbox](toolbox.md#opentofu) also ships `tofu` at the same pin
-(owner decision 2026-10-22). This separate bundle remains published and
-supported until the owner retires it; no migration is required.
+The default [toolbox](toolbox.md#opentofu) ships `tofu` at the same pin (owner
+decision 2026-10-22). The sections below describe the retired bundle as it was
+last published.
 
 <!-- BEGIN PUBLISHED BUNDLE -->
 <!-- publication-record: {"attempt":"1","bundle":"opentofu","commit":"e22571142a2f6371844dbd948df94abc602ed278","created":"2026-10-22T13:44:39Z","digest":"sha256:803d6e5d20547e80e1654b417c0406e6d205915dfb65fbdb7d0411ede9ca56bb","image":"quay.io/bundledock/opentofu","lock_sha256":"62fe0970627802f84b6c87d9884763bf27d050cd546ecc0909af3bbe774f86cc","reference":"quay.io/bundledock/opentofu@sha256:803d6e5d20547e80e1654b417c0406e6d205915dfb65fbdb7d0411ede9ca56bb","run_attempt":"1","run_id":"39788387031","source":"https://github.com/wstein/bundledock","tag":"1.13.2-b1"} -->
@@ -102,15 +108,15 @@ and preservation of a consumer-owned `.tofurc`.
 
 ## Updates and publication
 
-`bdock tools upgrade --directory bundles/opentofu` resolves the CLI alone
-within `>=1.13.1,<2.0.0`. The **Propose upgrades** workflow runs at 06:50 UTC and manual
-dry runs default to true. It changes only this lock and generated inventory;
-upgrades do not build or dispatch publication.
+Retired: the **Propose upgrades** workflow no longer resolves this bundle, and
+**Publish bundles** neither offers nor accepts it, so no new image or source tag
+is created. The toolbox carries `tofu` updates. The remainder of this section
+documents how the existing images were produced.
 
-The [shared publication flow](publication.md) verifies an actual human **wstein**
-owner merge, exact merged-main CI and frozen-lock publication for eligible
-bot updater PRs. Manual publication requires the exact approved full main SHA.
-Native AMD64 and ARM64 smoke must pass before promotion. Immutable versions
+`bdock tools upgrade --directory bundles/opentofu` resolved the CLI alone
+within `>=1.13.1,<2.0.0`. The [shared publication flow](publication.md) verified
+an actual human **wstein** owner merge, exact merged-main CI and frozen-lock
+publication. Native AMD64 and ARM64 smoke had to pass before promotion. Immutable versions
 use `<upstream-version>-b<packaging-revision>` (initially `1.13.1-b1` when
 unreserved); successful approved publication creates an annotated
 `opentofu/<immutable-version>` source tag. Image build, tool execution, native
