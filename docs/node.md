@@ -132,7 +132,8 @@ for verification, conflicts and separately authorized backfills.
 Both Node source bundles target `quay.io/bundledock/node`. An approved LTS
 publication updates `:lts`, `:latest` and backward compatible `:stable`; an
 approved Current publication updates only `:current`. Thus `node:latest` and
-an unqualified Node pull select LTS. Current remains [planned and unpublished](node-current.md).
+an unqualified Node pull select LTS. Current is published separately as the
+[`node-current` bundle](node-current.md); its `current` tag follows the Current line.
 These source rules do not move any existing alias. The immutable published LTS
 reference above remains the verified consumer pin.
 
