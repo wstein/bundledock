@@ -572,3 +572,45 @@ func TestQuayPrunePublication(t *testing.T) {
 		t.Fatalf("apply without the source tag: err = %v deletes = %v", err, deletes)
 	}
 }
+
+func TestQuayPruneWritesTheStepSummary(t *testing.T) {
+	srv := fakeQuayAPI(t, nil)
+	run := quay.Run{}
+	defer func(old func() quay.GitHub) { newGitHub = old }(newGitHub)
+	newGitHub = func() quay.GitHub { return stubGitHub{run} }
+	t.Setenv("REPOSITORY_USERNAME", "robot")
+	t.Setenv("REPOSITORY_TOKEN", "pw-secret")
+	root := t.TempDir()
+	dir := t.TempDir()
+	plan := filepath.Join(dir, "plan.json")
+
+	// Without GITHUB_STEP_SUMMARY nothing is written.
+	t.Setenv("GITHUB_STEP_SUMMARY", "")
+	if _, _, err := runQuayAt(t, root, srv, "prune", "--repository", "toolbox", "--output", plan); err != nil {
+		t.Fatal(err)
+	}
+	summary := filepath.Join(dir, "summary.md")
+	t.Setenv("GITHUB_STEP_SUMMARY", summary)
+	if _, err := os.Stat(summary); err == nil {
+		t.Fatal("summary created without a write")
+	}
+	os.WriteFile(summary, []byte("earlier step\n"), 0o644)
+	if _, _, err := runQuayAt(t, root, srv, "prune", "--repository", "toolbox", "--output", plan); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := runQuayAt(t, root, srv, "prune", "--repository", "toolbox", "--apply", "--approved-plan", plan, "--output", filepath.Join(dir, "result.json")); err != nil {
+		t.Fatal(err)
+	}
+	raw, _ := os.ReadFile(summary)
+	got := string(raw)
+	if !strings.HasPrefix(got, "earlier step\n") || !strings.Contains(got, "### Staging cleanup (fallback)") || !strings.Contains(got, "### Staging cleanup apply (fallback)") ||
+		!strings.Contains(got, "Staging tags: 0; eligible: 0") || strings.Contains(got, "pw-secret") || strings.Contains(got, "robot") {
+		t.Fatalf("summary = %q", got)
+	}
+	// An unwritable summary is a warning, not a failed cleanup.
+	t.Setenv("GITHUB_STEP_SUMMARY", filepath.Join(dir, "none", "summary.md"))
+	_, errOut, err := runQuayAt(t, root, srv, "prune", "--repository", "toolbox")
+	if err != nil || !strings.Contains(errOut, "step summary") {
+		t.Fatalf("err = %v stderr = %q", err, errOut)
+	}
+}

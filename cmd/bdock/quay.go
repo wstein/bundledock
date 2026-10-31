@@ -324,6 +324,7 @@ func newQuayPruneCommand(o *quayOptions) *cobra.Command {
 				if serr := save(result); serr != nil && err == nil {
 					err = serr
 				}
+				summarize(cmd, quay.ApplySummary(plan.Mode, plan.Target, result.Actions, err))
 				if o.json {
 					if werr := quay.WriteJSON(cmd.OutOrStdout(), "bdock.quay.prune/v1", result); werr != nil && err == nil {
 						err = werr
@@ -342,6 +343,7 @@ func newQuayPruneCommand(o *quayOptions) *cobra.Command {
 			if err := save(plan); err != nil {
 				return err
 			}
+			summarize(cmd, quay.PlanSummary(plan))
 			eligible := 0
 			for _, r := range plan.Rows {
 				if r.Eligible {
@@ -373,6 +375,14 @@ func newQuayPruneCommand(o *quayOptions) *cobra.Command {
 	cmd.Flags().StringVar(&output, "output", "", "save the plan (or, with --apply, the result) to this file")
 	cmd.Flags().StringVar(&approved, "approved-plan", "", "saved plan to apply")
 	return cmd
+}
+
+// summarize appends a section to the GitHub step summary when GITHUB_STEP_SUMMARY
+// is set. The summary is informational: a write failure is a warning only.
+func summarize(cmd *cobra.Command, section string) {
+	if err := quay.AppendStepSummary(os.Getenv("GITHUB_STEP_SUMMARY"), section); err != nil {
+		fmt.Fprintln(cmd.ErrOrStderr(), "warning: cannot write the step summary")
+	}
 }
 
 func contains(list []string, s string) bool {
