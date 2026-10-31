@@ -810,3 +810,15 @@ func TestCIGreenMutantsAreCaught(t *testing.T) {
 		}
 	}
 }
+
+func TestReleaseNotesRangeOfOnlyMergesPrintsNoChanges(t *testing.T) {
+	dir := gitRepo(t)
+	second := commit(t, dir, "second")
+	mustRun(t, dir, nil, "git", "tag", "-a", "-m", "r", "bdock/v0.1.0")
+	tree := strings.TrimSpace(mustRun(t, dir, nil, "git", "rev-parse", "HEAD^{tree}"))
+	merge := strings.TrimSpace(mustRun(t, dir, nil, "git", "commit-tree", tree, "-p", second, "-p", second+"^", "-m", "merge only"))
+	out := mustRun(t, dir, nil, "sh", script(t, "release-notes.sh"), "bdock/v0.2.0", merge, "1.27.2")
+	if !strings.HasSuffix(out, "## Changes since bdock/v0.1.0\n\nNo changes.\n") {
+		t.Errorf("a range of only merge commits must print exactly No changes.:\n%s", out)
+	}
+}
