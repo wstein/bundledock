@@ -71,12 +71,17 @@ jobs:
       - name: Run the Python test suite as make check does
         run: |
           umask 022
-          python3 -B -m unittest discover -s scripts/tests
-          python3 -B -m unittest discover -s scripts -p '*_test.py'
+          set -o pipefail
+          status=0
+          python3 -B -m unittest discover -s scripts/tests 2>&1 | tee "$RUNNER_TEMP/suite.log" || status=1
+          python3 scripts/macos-ci-annotate.py "$RUNNER_TEMP/suite.log" || true
+          python3 -B -m unittest discover -s scripts -p '*_test.py' || status=1
+          exit "$status"
       - name: Run the suspect test modules verbosely (shim, codex, rolling locks, toolbox and nixbox build workflows)
         if: always()
         run: |
           umask 022
+          set -o pipefail
           status=0
           for mod in test_nixbox_shim test_codex_smoke test_rolling_locks test_toolbox_build_workflow test_nixbox_build_workflow; do
             echo "::group::$mod"
