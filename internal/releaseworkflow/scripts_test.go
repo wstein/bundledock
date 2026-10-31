@@ -157,8 +157,81 @@ func TestReleaseNotesNameBaselineAndFacts(t *testing.T) {
 	commit(t, dir, "fix: second change")
 	head2 := commit(t, dir, "docs: third change")
 	second := notes("bdock/v0.1.1", head2)
-	if !strings.Contains(second, "Changes since bdock/v0.1.0") || !strings.Contains(second, "- fix: second change") || !strings.Contains(second, "- docs: third change") || strings.Contains(second, "first change") {
+	if !strings.Contains(second, "Changes since bdock/v0.1.0") || !strings.Contains(second, "<details><summary>Fixes (1)</summary>\n\n- fix: second change (") ||
+		strings.Contains(second, "docs: third change") || strings.Contains(second, "first change") ||
+		!strings.Contains(second, "Not listed here: 1 documentation and 0 other commits (tests, style, CI, chores). Full comparison: https://github.com/wstein/bundledock/compare/bdock/v0.1.0...bdock/v0.1.1\n") {
 		t.Errorf("second release notes wrong:\n%s", second)
+	}
+}
+
+// releaseNotesIn tags the first commit bdock/v0.1.0, adds the subjects and returns the
+// notes for bdock/v0.2.0.
+func releaseNotesIn(t *testing.T, subjects ...string) string {
+	t.Helper()
+	dir := gitRepo(t)
+	mustRun(t, dir, nil, "git", "tag", "-a", "-m", "r", "bdock/v0.1.0")
+	for _, s := range subjects {
+		commit(t, dir, s)
+	}
+	head := strings.TrimSpace(mustRun(t, dir, nil, "git", "rev-parse", "HEAD"))
+	return mustRun(t, dir, nil, "sh", script(t, "release-notes.sh"), "bdock/v0.2.0", head, "1.27.2")
+}
+
+func TestReleaseNotesCountDocsAndOtherCommitsInsteadOfListingThem(t *testing.T) {
+	out := releaseNotesIn(t, "docs: d1", "docs(x): d2", "test: t1", "style: s1", "ci: c1", "chore: h1", "build: b1", "fix: f1", "fix(y): f2", "feat: f3", "perf: p1", "refactor(z): r1", "wip not conventional")
+	for _, want := range []string{"### Features (1)\n\n- feat: f3 (", "<details><summary>Fixes (2)</summary>\n\n- fix(y): f2 (", "- fix: f1 (",
+		"### Other changes (2)\n\n- refactor(z): r1 (", "- perf: p1 (",
+		"Not listed here: 2 documentation and 6 other commits (tests, style, CI, chores). Full comparison: https://github.com/wstein/bundledock/compare/bdock/v0.1.0...bdock/v0.2.0\n"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("notes lack %q:\n%s", want, out)
+		}
+	}
+	for _, unwanted := range []string{"docs: d1", "docs(x): d2", "test: t1", "style: s1", "ci: c1", "chore: h1", "build: b1", "wip not", "### Breaking"} {
+		if strings.Contains(out, unwanted) {
+			t.Errorf("notes must not list %q:\n%s", unwanted, out)
+		}
+	}
+}
+
+func TestReleaseNotesListEachCommitOnceWhenTheDescriptionHasParentheses(t *testing.T) {
+	subjects := []string{"fix(a)!: x (y): z", "docs(b)!: rename (c): z", "perf(x)!: y (z): w", "fix(q): plain (r): s", "docs(d): plain (e): f", "chore: other"}
+	out := releaseNotesIn(t, subjects...)
+	for _, s := range subjects[:3] {
+		if n := strings.Count(out, "- "+s+" ("); n != 1 {
+			t.Errorf("%q must be listed once, got %d:\n%s", s, n, out)
+		}
+	}
+	if !strings.Contains(out, "### Breaking changes (3)") || !strings.Contains(out, "Fixes (1)") ||
+		!strings.Contains(out, "Not listed here: 1 documentation and 1 other commits") {
+		t.Errorf("counts must add up to the six commits:\n%s", out)
+	}
+}
+
+func TestReleaseNotesListBreakingChangesOfAnyType(t *testing.T) {
+	subjects := []string{"deps!: bump api", "security!: x", "Feat!: capitalized", "Fix(a)!: capitalized"}
+	out := releaseNotesIn(t, append(subjects, "feat!: lower")...)
+	for _, s := range subjects {
+		if n := strings.Count(out, "- "+s+" ("); n != 1 {
+			t.Errorf("%q must be listed once, got %d:\n%s", s, n, out)
+		}
+	}
+	if !strings.Contains(out, "### Breaking changes (4)") || !strings.Contains(out, "### Features (1)\n\n- feat!: lower (") || strings.Count(out, "feat!: lower") != 1 {
+		t.Errorf("feat! stays under Features only:\n%s", out)
+	}
+}
+
+func TestReleaseNotesEscapeHTMLInSubjects(t *testing.T) {
+	out := releaseNotesIn(t, "fix: see </details> <b>x</b> & more")
+	if strings.Count(out, "</details>") != 1 || strings.Contains(out, "<b>") || !strings.Contains(out, "see &lt;/details> &lt;b>x&lt;/b> &amp; more (") {
+		t.Errorf("a subject must not close or inject HTML:\n%s", out)
+	}
+}
+
+func TestReleaseNotesWithoutFixesOrFeaturesPrintNoEmptyBlock(t *testing.T) {
+	out := releaseNotesIn(t, "docs: only docs")
+	if strings.Contains(out, "<details>") || strings.Contains(out, "### ") || strings.Contains(out, "(0)") ||
+		!strings.Contains(out, "Not listed here: 1 documentation and 0 other commits") {
+		t.Errorf("an empty group must print nothing:\n%s", out)
 	}
 }
 
