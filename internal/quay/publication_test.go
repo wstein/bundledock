@@ -382,3 +382,60 @@ func TestRegistryManifestRefReadsOnlyTagsAliasesAndDigests(t *testing.T) {
 		t.Fatalf("a rejected reference reached the network: %v", paths[before:])
 	}
 }
+
+// receiptFor builds a complete, valid receipt for validateReceipt.
+func receiptFor(image, tag, commit string, withBundle string, attempt string) map[string]any {
+	r := map[string]any{"image": image, "tag": tag, "commit": commit, "source": SourceURL, "created": "2026-10-01T00:00:00Z",
+		"lock_sha256": strings.Repeat("1", 64), "run_id": "123", "digest": "sha256:" + strings.Repeat("3", 64)}
+	r["reference"] = image + "@" + r["digest"].(string)
+	if attempt != "" {
+		r["run_attempt"] = attempt
+	}
+	if withBundle != "" {
+		r["bundle"] = withBundle
+	}
+	var platforms []any
+	for _, arch := range []string{"amd64", "arm64"} {
+		p := map[string]any{"architecture": arch, "digest": "sha256:" + strings.Repeat("4", 64), "image_id": "sha256:" + strings.Repeat("2", 64), "smoked": true}
+		for _, k := range []string{"image", "tag", "commit", "source", "created", "lock_sha256", "run_id", "run_attempt", "bundle"} {
+			if v, ok := r[k]; ok {
+				p[k] = v
+			}
+		}
+		platforms = append(platforms, p)
+	}
+	r["platforms"] = platforms
+	return r
+}
+
+func TestReceiptRequiresExplicitBundleForNodeCurrentAndSemanticNode(t *testing.T) {
+	env := PublicationEnv{SHA: strings.Repeat("a", 40), RunID: "123", RunAttempt: "1"}
+	node := func(name string) Bundle { b, _ := FindBundle(name); return b }
+	cases := []struct {
+		bundle, tag string
+		identity    bool
+	}{
+		{"node-current", "26.12.0-b1", true},
+		{"node", "22.1.0-b1", true},
+		{"node", "2026.10.01-b4.1", false}, // dated release tag of the node channel: no identity required
+		{"bun", "1.2.3-b1", false},
+	}
+	for _, c := range cases {
+		b := node(c.bundle)
+		img := "quay.io/bundledock/" + b.Repository
+		attempt := ""
+		if c.tag != "2026.10.01-b4.1" {
+			attempt = "1"
+		}
+		if _, err := validateReceipt(receiptFor(img, c.tag, env.SHA, c.bundle, attempt), b, env); err != nil {
+			t.Errorf("%s %s with bundle: %v", c.bundle, c.tag, err)
+		}
+		_, err := validateReceipt(receiptFor(img, c.tag, env.SHA, "", attempt), b, env)
+		if c.identity && err == nil {
+			t.Errorf("%s %s without bundle accepted", c.bundle, c.tag)
+		}
+		if !c.identity && err != nil {
+			t.Errorf("%s %s without bundle: %v", c.bundle, c.tag, err)
+		}
+	}
+}

@@ -93,10 +93,11 @@ func validateReceipt(receipt map[string]any, b Bundle, env PublicationEnv) (map[
 	if err != nil {
 		return nil, err
 	}
-	if v, present := receipt["bundle"]; present {
-		if err := check(v == b.Name, "Wrong source bundle identity"); err != nil {
-			return nil, err
-		}
+	// Node channels share a repository: the receipt must name its bundle explicitly.
+	required := b.Name == "node-current" || (b.Name == "node" && semantic)
+	v, present := receipt["bundle"]
+	if err := check((present || !required) && (!present || v == b.Name), "Wrong source bundle identity"); err != nil {
+		return nil, err
 	}
 	explicit := daily || semantic
 	if explicit {
