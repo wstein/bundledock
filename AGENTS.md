@@ -4,6 +4,9 @@ BundleDock owns the Go CLI, declarative tool inputs, OCI build and smoke tests,
 license notices, publication workflow, and brand assets. Anchorage is the
 separate umbrella repository that owns consumer devcontainer integration.
 
+Collaboration of the agents: see the global rules (`~/.claude/CLAUDE.md`, skill
+`agent-workflow`); this file contains only repository-specific rules.
+
 Run `make check` before handing over Go or build changes (with `umask 022`; a
 sandbox `umask 0000` breaks the Python tool-state checks). Routine source tests,
 vet and their compiler verification may run automatically. Obtain the user's
@@ -55,8 +58,7 @@ consumer activation remains a separate explicit authorization. Successful approv
 bundle publication includes one annotated `<bundle>/<immutable-version>` source tag,
 after verification of the final index and image aliases. Never overwrite source
 tags or create moving Git aliases. Backfills require separate explicit approval
-and independently verified deployed-image/source/workflow provenance. Do not perform
-live merges, workflow runs, builds or settings changes while authoring source.
+and independently verified deployed-image/source/workflow provenance.
 
 CLI release workflow exception (owner decision, recorded here). On 2026-10-17
 Werner Stein asked in chat "what about https://github.com/wstein/bundledock/tree/main/cmd
@@ -119,9 +121,6 @@ supporting evidence. Resolve unfinished or blocked items, or obtain an explicit
 user decision to defer each one, before creating a release tag or publishing.
 Keep the local TODO list untracked.
 
-Make multiple atomic, focused commits using Conventional Commits.
-Keep each commit limited to one logical change.
-
 Rolling prebuilt releases within packages.txt constraints are a normal success
 path. Tests reading production locks must assert allowed stable versions,
 architecture agreement, official recipes and checksum provenance rather than
@@ -131,8 +130,6 @@ bundles when changing these contracts. Historical license snapshots retain their
 reviewed source identity and exact license bytes independently of current binary
 pins; manifests and locks describe the installed artifacts. Separate docs-tool pins remain exceptions.
 
-Use test-driven development (TDD): write a failing test before implementing behavior changes, make it pass, then refactor.
-
 Write all English text in US spelling: documentation, comments, commit messages, pull
 request text and identifiers (color, behavior, license, canceled, catalog, labeled,
 analyzed, organization). This applies to new and changed text. Do not convert existing
@@ -141,13 +138,24 @@ quotations, testdata, goldens and external names unchanged.
 
 ## Pull requests and history
 
-Agents push only their own topic branches, rewrite their own branches with an
-explicit lease (a rewritten head of a branch that changes code, tests, scripts or generated
-files is independently reviewed at its exact new SHA before the lease push; a branch
-that changes only specs or documentation needs before it only checks and, for a pure
-rebase, `git range-diff` equality), and open pull requests for reviewed work within the requested task. They never push the default branch or tags, never
-merge, and never rewrite commits they did not author. The owner merges. A containing
-workspace may add owner-workflow rules in its own `AGENTS.md`; follow them when present.
+Merge style, merging and tagging belong to the owner (see the CLI release workflow
+exception above for tags). A containing workspace may add owner-workflow rules in
+its own `AGENTS.md`; follow them when present.
+
+## Light and heavy checks
+
+| Lane | Job | Trigger | Command / duration |
+| --- | --- | --- | --- |
+| Light | `check` in `ci.yml` | every PR and push | `make check`, plus `go vet` for the three release platforms; timeout 15 min |
+| Light | `python-tests-macos` in `ci.yml` | every PR and push | informative only, not required; timeout 20 min |
+| Heavy | `toolbox-build.yml`, `nixbox-build.yml` | `workflow_dispatch` only | native build and smoke; timeout 90 min |
+| Heavy | `release.yml` | owner tag push `bdock/vX.Y.Z`; manual run is a dry run | verify, build, smoke, publish; timeouts 15 to 20 min per job |
+| Heavy | `publish-bundles.yml`, `published-consumers.yml` | after merged-main `CI`, or dispatch | publication and consumer verification; see docs/publication.md |
+
+There is no `ci-full` label in this repository: heavy jobs run only by dispatch or
+owner tag and always need the approval described above. Local equivalents:
+`make check` (light); `make bundle-test`, `make bundle-build bundle-smoke`,
+`make docs-test`, `make release-test` (heavy, approval first).
 
 ## Common CLI tools
 
