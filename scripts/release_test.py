@@ -368,7 +368,8 @@ else:
                     self.assertEqual((base / 'outside').read_text(), 'preserve')
 
     def ln_shim(self, base, mode):
-        """A `ln` ahead of PATH: rejects GNU-only -T like BSD ln and may race the destination."""
+        """A `ln` ahead of PATH: rejects GNU-only -T like BSD ln and may race the destination
+        (a directory, a file, or a symlink to a directory created after the check)."""
         shim = base / 'shim'
         shim.mkdir()
         real = shutil.which('ln')
@@ -381,6 +382,7 @@ for dest in "$@"; do :; done
 case "MODE" in
     directory) mkdir -- "$dest" ;;
     file) echo preserve > "$dest" ;;
+    symlink) mkdir -- "$dest.target" && REAL -s -- "$PWD/$dest.target" "$dest" ;;
 esac
 exec REAL "$@"
 '''.replace('MODE', mode).replace('REAL', real))
@@ -390,7 +392,7 @@ exec REAL "$@"
     @requires_gnu_tar
     def test_final_link_is_portable_and_refuses_destination_created_after_check(self):
         name = 'bdock_0.1.0_linux_amd64.tar.gz'
-        for mode in ('none', 'directory', 'file'):
+        for mode in ('none', 'directory', 'file', 'symlink'):
             with self.subTest(mode=mode), tempfile.TemporaryDirectory() as directory:
                 base = Path(directory)
                 root, env = self.fixture(base)
@@ -407,10 +409,15 @@ exec REAL "$@"
                 self.assertNotIn('illegal option', result.stderr)
                 if mode == 'file':
                     self.assertEqual(output.read_text(), 'preserve\n')
+                elif mode == 'symlink':
+                    # ln -n must not follow the symlink: nothing is linked into its target.
+                    self.assertTrue(output.is_symlink())
+                    self.assertEqual(list(output.resolve().iterdir()), [])
                 else:
                     self.assertTrue(output.is_dir())
                     self.assertEqual(list(output.iterdir()), [])  # no link left inside it
-                self.assertEqual([p.name for p in (root / 'dist/release').iterdir()], [name])
+                expected = [name, name + '.target'] if mode == 'symlink' else [name]
+                self.assertEqual(sorted(p.name for p in (root / 'dist/release').iterdir()), expected)
                 self.assertEqual(list((base / 'tmp').iterdir()), [])
 
     @requires_gnu_tar
