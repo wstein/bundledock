@@ -63,7 +63,7 @@ The source inventory below describes the current lock; this publication retains 
 | lsd (`lsd`) | 1.2.0 | [Homepage](https://github.com/lsd-rs/lsd) | [Source](https://github.com/lsd-rs/lsd) |
 | lychee (`lychee`) | 0.24.2 | [Homepage](https://lychee.cli.rs) | [Source](https://github.com/lycheeverse/lychee) |
 | Mike Farah yq (`yq`) | 4.54.1 | [Homepage](https://mikefarah.gitbook.io/yq/) | [Source](https://github.com/mikefarah/yq) |
-| mise (`mise`) | 2026.10.24 | [Homepage](https://mise.jdx.dev) | [Source](https://github.com/jdx/mise) |
+| mise (`mise`) | 2026.10.25 | [Homepage](https://mise.jdx.dev) | [Source](https://github.com/jdx/mise) |
 | misspell (`misspell`) | 0.8.0 | [Homepage](https://github.com/golangci/misspell) | [Source](https://github.com/golangci/misspell) |
 | navi (`navi`) | 2.24.0 | [Homepage](https://github.com/denisidoro/navi) | [Source](https://github.com/denisidoro/navi) |
 | Nushell (`nu`) | 0.116.1 | [Homepage](https://www.nushell.sh/) | [Source](https://github.com/nushell/nushell) |
@@ -90,7 +90,7 @@ The source inventory below describes the current lock; this publication retains 
 | Typst (`typst`) | 0.15.1 | [Homepage](https://typst.app) | [Source](https://github.com/typst/typst) |
 | uv (`uv`, `uvx`) | 0.13.6 | [Homepage](https://docs.astral.sh/uv) | [Source](https://github.com/astral-sh/uv) |
 | watchexec (`watchexec`) | 2.8.0 | [Homepage](https://watchexec.github.io) | [Source](https://github.com/watchexec/watchexec) |
-| WorkHarbor (`whr`) | 0.1.0 | [Homepage](https://github.com/wstein/workharbor) | [Source](https://github.com/wstein/workharbor) |
+| WorkHarbor (`whr`) | 0.2.0 | [Homepage](https://github.com/wstein/workharbor) | [Source](https://github.com/wstein/workharbor) |
 | xh (`xh`) | 0.26.3 | [Homepage](https://github.com/ducaale/xh) | [Source](https://github.com/ducaale/xh) |
 | zoxide (`zoxide`) | 0.10.0 | [Homepage](https://github.com/ajeetdsouza/zoxide) | [Source](https://github.com/ajeetdsouza/zoxide) |
 <!-- END GENERATED TOOL INVENTORY -->

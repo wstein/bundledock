@@ -36,7 +36,7 @@ The source inventory below describes the current lock; this publication retains 
 <!-- BEGIN GENERATED TOOL INVENTORY -->
 | Tool | Pinned version |
 | --- | --- |
-| agy | 1.4.11 |
+| agy | 1.4.12 |
 <!-- END GENERATED TOOL INVENTORY -->
 
 The official updater's [AMD64 manifest](https://antigravity-cli-auto-updater-974169037036.us-central1.run.app/manifests/linux_amd64.json)
