@@ -12,7 +12,8 @@ import (
 	"time"
 )
 
-// This file is the publication mode of scripts/staging-cleanup.py: a staging
+// This file is the publication mode of prune (ported from the former Python
+// cleanup script): a staging
 // tag is removed because a verified publication receipt names exactly its
 // platform digest, not because it is old.
 

@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-// This file is the plan logic of the former scripts/staging-cleanup.py
+// This file is the plan logic of the former Python cleanup script
 // (fallback, failed-run and, in publication.go, publication modes). It only
 // ever selects staging tags; version, alias and source tags are never touched.
 
