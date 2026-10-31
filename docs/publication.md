@@ -613,6 +613,13 @@ the specified tag. Digest references and production aliases are rejected before
 authentication; manifest-by-digest and blob deletion are never used. Published
 indexes continue to reference their platform manifests.
 
+The publication cleanup job runs `go run ./cmd/bdock quay prune` from the source
+checked out at `PUBLICATION_SHA`, so `REPOSITORY_TOKEN` is in the environment of the
+Go build and of the compiled command, which needs the Go toolchain and the module
+proxy. If the job fails (for example an approved source that predates the command, or
+no module proxy), the staging tags stay, and the failed-run mode of
+`staging-cleanup.yml` removes them later with the code at `main` HEAD.
+
 The `Clean stale staging tags` workflow also runs after `Publish bundles`
 completes with `failure`, `cancelled` or `timed_out`. This includes superseded runs
 whose promotion was refused. It checks out trusted default-branch cleanup code,
