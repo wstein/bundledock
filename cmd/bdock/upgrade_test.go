@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -12,6 +13,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"bundledock/internal/toolpublish"
 )
 
 func TestUpgradeHelp(t *testing.T) {
@@ -162,6 +165,66 @@ func TestUpgradeWithBundleFlag(t *testing.T) {
 	}
 	if out.String() != "code-server v4.142.0\n" {
 		t.Fatalf("output %q", out.String())
+	}
+}
+
+func recordUpgrades(t *testing.T) *[]string {
+	t.Helper()
+	var dirs []string
+	original := upgradeBundle
+	t.Cleanup(func() { upgradeBundle = original })
+	upgradeBundle = func(_ context.Context, _ *http.Client, directory, _ string, _ io.Writer) error {
+		dirs = append(dirs, directory)
+		return nil
+	}
+	return &dirs
+}
+
+func TestUpgradeAllSkipsRetiredBundles(t *testing.T) {
+	dirs := recordUpgrades(t)
+	cmd := newRootCommand()
+	cmd.SetOut(&bytes.Buffer{})
+	cmd.SetErr(&bytes.Buffer{})
+	cmd.SetArgs([]string{"upgrade", "--all"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if len(*dirs) != len(toolpublish.ActiveBundles()) || len(*dirs) == 0 {
+		t.Fatalf("upgraded %v", *dirs)
+	}
+	for _, dir := range *dirs {
+		if dir == "bundles/opentofu" {
+			t.Fatal("--all upgraded the retired opentofu bundle")
+		}
+	}
+}
+
+func TestUpgradeOfARetiredBundleWarnsButStillWorks(t *testing.T) {
+	dirs := recordUpgrades(t)
+	var out, errOut bytes.Buffer
+	cmd := newRootCommand()
+	cmd.SetOut(&out)
+	cmd.SetErr(&errOut)
+	cmd.SetArgs([]string{"upgrade", "--bundle", "opentofu"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if len(*dirs) != 1 || (*dirs)[0] != "bundles/opentofu" {
+		t.Fatalf("upgraded %v", *dirs)
+	}
+	if !strings.Contains(errOut.String(), "opentofu is retired") || strings.Contains(out.String(), "retired") {
+		t.Fatalf("warning belongs on stderr: out=%q err=%q", out.String(), errOut.String())
+	}
+	errOut.Reset()
+	cmd = newRootCommand()
+	cmd.SetOut(&out)
+	cmd.SetErr(&errOut)
+	cmd.SetArgs([]string{"upgrade", "--bundle", "agy"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(errOut.String(), "retired") {
+		t.Fatalf("unexpected warning %q", errOut.String())
 	}
 }
 
