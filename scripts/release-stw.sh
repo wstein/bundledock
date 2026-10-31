@@ -33,10 +33,19 @@ done
 [ ! -e "$output" ] && [ ! -L "$output" ] || fail "output exists: $output"
 
 # Stage beside the output so the final hard link is atomic and cannot overwrite
-# an existing path. GNU coreutils ln -T also refuses a concurrently created directory;
-# the underlying archive builder already requires GNU tar on its Linux build host.
+# an existing path. GNU-only ln -T is avoided (BSD ln on macOS lacks it): plain ln
+# refuses an existing file but links inside an existing directory, so the destination is
+# re-checked right before linking and the result is verified after it.
 stage=$(mktemp -d "$root/dist/release/.bdock-stw.XXXXXXXX")
 trap 'rm -rf -- "$stage"' EXIT
 trap 'exit 1' HUP INT TERM
 VERSION=$version TARGETS="$os/$arch" RELEASE_DIR="$stage/package" sh scripts/release.sh
-ln -T -- "$stage/package/$name" "$output"
+built=$stage/package/$name
+[ ! -e "$output" ] && [ ! -L "$output" ] || fail "output exists: $output"
+ln -- "$built" "$output" || fail "cannot link output: $output"
+# A directory created at $output after the check above would receive the link instead;
+# only a regular non-symlink file that is our staged inode is accepted.
+if [ -L "$output" ] || [ -d "$output" ] || [ ! -f "$output" ] || [ ! "$built" -ef "$output" ]; then
+    [ ! -d "$output" ] || [ -L "$output" ] || ! [ "$built" -ef "$output/$name" ] || rm -f -- "$output/$name"
+    fail "output is not the staged archive: $output"
+fi

@@ -367,6 +367,52 @@ else:
                 if existing == 'symlink':
                     self.assertEqual((base / 'outside').read_text(), 'preserve')
 
+    def ln_shim(self, base, mode):
+        """A `ln` ahead of PATH: rejects GNU-only -T like BSD ln and may race the destination."""
+        shim = base / 'shim'
+        shim.mkdir()
+        real = shutil.which('ln')
+        script = shim / 'ln'
+        script.write_text('''#!/bin/sh
+for arg in "$@"; do
+    if [ "$arg" = -T ]; then echo "ln: illegal option -- T" >&2; exit 1; fi
+done
+for dest in "$@"; do :; done
+case "MODE" in
+    directory) mkdir -- "$dest" ;;
+    file) echo preserve > "$dest" ;;
+esac
+exec REAL "$@"
+'''.replace('MODE', mode).replace('REAL', real))
+        script.chmod(0o755)
+        return shim
+
+    @requires_gnu_tar
+    def test_final_link_is_portable_and_refuses_destination_created_after_check(self):
+        name = 'bdock_0.1.0_linux_amd64.tar.gz'
+        for mode in ('none', 'directory', 'file'):
+            with self.subTest(mode=mode), tempfile.TemporaryDirectory() as directory:
+                base = Path(directory)
+                root, env = self.fixture(base)
+                env['PATH'] = str(self.ln_shim(base, mode)) + os.pathsep + env['PATH']
+                result = self.invoke(root, env)
+                output = root / 'dist/release' / name
+                if mode == 'none':
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertTrue(output.is_file() and not output.is_symlink())
+                    self.assertGreater(output.stat().st_size, 0)
+                    continue
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn('release-stw:', result.stderr)
+                self.assertNotIn('illegal option', result.stderr)
+                if mode == 'file':
+                    self.assertEqual(output.read_text(), 'preserve\n')
+                else:
+                    self.assertTrue(output.is_dir())
+                    self.assertEqual(list(output.iterdir()), [])  # no link left inside it
+                self.assertEqual([p.name for p in (root / 'dist/release').iterdir()], [name])
+                self.assertEqual(list((base / 'tmp').iterdir()), [])
+
     @requires_gnu_tar
     def test_compiler_failure_cleans_staging_without_publishing_output(self):
         with tempfile.TemporaryDirectory() as directory:
