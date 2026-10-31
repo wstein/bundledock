@@ -1,7 +1,8 @@
 # Design: Quay support for CI, one tool instead of scattered scripts
 
-Status: proposed, owner direction 2026-10-30 ("full CI related quay.io support":
-metadata, read and verify, cleanup). Nothing here is implemented. Secrets,
+Status: implemented; the cleanup script was removed once `bdock quay prune` covered
+its modes. Owner direction 2026-10-30 ("full CI related quay.io support":
+metadata, read and verify, cleanup). Secrets,
 repository settings and the first live run stay with the owner.
 
 ## Problem
@@ -9,7 +10,7 @@ repository settings and the first live run stay with the owner.
 Quay access is spread over three places that each carry their own HTTP client,
 pagination and error handling:
 
-- `scripts/staging-cleanup.py`: tag inventory (REST, anonymous) and manifest
+- `scripts/staging-cleanup.py` (removed): tag inventory (REST, anonymous) and manifest
   deletion (registry v2, robot token).
 - `internal/toolpublish` (used by `cmd/tools-publish`): tag allocation, tag absence
   and digest checks.
@@ -78,9 +79,9 @@ Read only, anonymous REST, bounded pagination, response size limit and no redire
 
 ### Cleanup (stage 3)
 
-`prune` is the former `clean`. The plan logic of `scripts/staging-cleanup.py` (seven-day fallback, failed-run
-proof, staging-tag pattern only) moves into the package unchanged in behavior; the
-script becomes a thin caller until the workflow runs `bdock quay prune`. Deletion
+`prune` is the former `clean`. The plan logic of the former `scripts/staging-cleanup.py` (seven-day fallback,
+failed-run proof, publication receipt proof, staging-tag pattern only) moved into the package unchanged in
+behavior, and the workflows run `bdock quay prune` from source. Deletion
 stays limited to tags that match the staging pattern, uses the robot token over
 registry v2, and applies only a saved plan after a fresh recheck, as today.
 
@@ -109,5 +110,6 @@ Separate PRs, each independently useful:
 2. `status` after promotion only reports (run summary); it does not fail the
    publication run. It can be tightened once it has proved stable.
 3. The Python cleanup script is replaced in stage 3, after the Go plan passes the
-   same test cases as `scripts/tests/test_staging_cleanup*`; both are never active
-   writers at the same time.
+   same test cases as the former `test_staging_cleanup*` tests; both are never active
+   writers at the same time. Done: the test cases were ported, the workflows switched
+   in one commit, and the script and its tests were removed afterwards.

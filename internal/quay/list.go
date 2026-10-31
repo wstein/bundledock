@@ -21,7 +21,7 @@ func IsStaging(name string) bool { return stagingPattern.MatchString(name) }
 
 // Inventory fetches and caches the tags of repositories. A repository that
 // does not exist yet (HTTP 404 or 401) counts as empty when the bundle is
-// not published and manual-only (as scripts/staging-cleanup.py allows).
+// not published and manual-only (as the former cleanup script allowed).
 type Inventory struct {
 	Client *Client
 	cache  map[string][]Tag
