@@ -25,7 +25,7 @@ func TestOpenTofuIsAbsentFromAutomaticWorkflowChoices(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(data), "opentofu") {
+	if !strings.Contains(string(data), "        repository: [agy, bun, claude, code-server, codex, nixbox, node, opentofu, toolbox]\n") {
 		t.Fatal("staging cleanup must keep cleaning stale staging tags of the retired repository")
 	}
 }
