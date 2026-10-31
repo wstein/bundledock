@@ -207,13 +207,18 @@ func newQuayDescribeCommand(o *quayOptions) *cobra.Command {
 // newGitHub supplies the GitHub evidence for prune; tests replace it.
 var newGitHub = func() quay.GitHub { return &quay.GitHubAPI{Fetch: quay.GHCLI} }
 
+// newGit supplies the Git checks for a publication; tests replace it.
+var newGit = func() quay.Git { return &quay.GitCLI{} }
+
 func newQuayPruneCommand(o *quayOptions) *cobra.Command {
 	var apply bool
-	var repository, failedRun, failedAttempt, output, approved string
+	var repository, failedRun, failedAttempt, output, approved, publication, bundle string
 	cmd := &cobra.Command{
 		Use: "prune", Short: "Plan the removal of verified staging tags; --apply deletes a saved plan", Args: cobra.NoArgs,
 		Long: "Plan the removal of architecture staging tags (staging-<version>-<arch>) whose publication run is complete\n" +
-			"and older than seven days, or that belong to one exact failed run (--failed-run and --failed-attempt).\n" +
+			"and older than seven days, or that belong to one exact failed run (--failed-run and --failed-attempt),\n" +
+			"or that a verified publication receipt names (--publication file --bundle name, with PUBLICATION_SHA,\n" +
+			"GITHUB_RUN_ID and GITHUB_RUN_ATTEMPT in the environment).\n" +
 			"Without --apply nothing changes. --apply deletes only the tags of a saved plan (--approved-plan) that\n" +
 			"are still eligible after a fresh recheck, with the robot account in REPOSITORY_USERNAME and\n" +
 			"REPOSITORY_TOKEN. Version, alias and source tags are never deleted.",
@@ -237,8 +242,28 @@ func newQuayPruneCommand(o *quayOptions) *cobra.Command {
 				attempt, _ := strconv.Atoi(failedAttempt)
 				target = &quay.FailedRun{RunID: failedRun, Attempt: attempt}
 			}
+			if (publication == "") != (bundle == "") {
+				return fmt.Errorf("--publication and --bundle must be used together")
+			}
+			if publication != "" && target != nil {
+				return fmt.Errorf("conflicting cleanup modes: --publication and --failed-run")
+			}
+			var publicationBundle quay.Bundle
+			var receipt []byte
+			if publication != "" {
+				var err error
+				if publicationBundle, err = quay.FindBundle(bundle); err != nil {
+					return err
+				}
+				if receipt, err = os.ReadFile(publication); err != nil {
+					return err
+				}
+			}
 			repos := quay.Repositories()
-			if repository != "all" {
+			if publication != "" {
+				// The receipt decides the scope; --repository does not apply.
+				repos = []string{publicationBundle.Repository}
+			} else if repository != "all" {
 				if !contains(repos, repository) {
 					return fmt.Errorf("unknown repository %q", repository)
 				}
@@ -254,6 +279,13 @@ func newQuayPruneCommand(o *quayOptions) *cobra.Command {
 				Now:       time.Now,
 				Repos:     repos,
 				FailedRun: target,
+				Git:       newGit(),
+			}
+			if publication != "" {
+				env := quay.PublicationEnv{SHA: os.Getenv("PUBLICATION_SHA"), RunID: os.Getenv("GITHUB_RUN_ID"), RunAttempt: os.Getenv("GITHUB_RUN_ATTEMPT")}
+				if _, err := p.ProvePublication(cmd.Context(), receipt, publicationBundle.Name, env); err != nil {
+					return err
+				}
 			}
 			save := func(v any) error {
 				if output == "" {
@@ -336,6 +368,8 @@ func newQuayPruneCommand(o *quayOptions) *cobra.Command {
 	cmd.Flags().StringVar(&repository, "repository", "all", "Quay repository to scan, or all")
 	cmd.Flags().StringVar(&failedRun, "failed-run", "", "exact completed failed publication run ID")
 	cmd.Flags().StringVar(&failedAttempt, "failed-attempt", "", "exact latest attempt of the failed run")
+	cmd.Flags().StringVar(&publication, "publication", "", "publication receipt file; plans the staging tags of that verified publication (needs --bundle)")
+	cmd.Flags().StringVar(&bundle, "bundle", "", "bundle of the publication receipt")
 	cmd.Flags().StringVar(&output, "output", "", "save the plan (or, with --apply, the result) to this file")
 	cmd.Flags().StringVar(&approved, "approved-plan", "", "saved plan to apply")
 	return cmd
