@@ -79,7 +79,7 @@ bullets() { # bullets LINES
 	printf '%s\n' "$1" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/^/- /'
 }
 feats=$(pick '^feat(\([^)]*\))?!?:')
-breaking=$(pick '^[A-Za-z]+(\([^)]*\))?!:' | grep -Ev '^feat(\([^)]*\))?!:' || true)
+breaking=$(pick '^[A-Za-z][A-Za-z0-9_-]*(\([^)]*\))?!:' | grep -Ev '^feat(\([^)]*\))?!:' || true)
 fixes=$(pick '^fix(\([^)]*\))?:')
 tidy=$(pick '^(perf|refactor)(\([^)]*\))?:')
 docs=$(pick '^docs(\([^)]*\))?:')
