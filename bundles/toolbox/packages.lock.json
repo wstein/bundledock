@@ -189,9 +189,9 @@
         "verification": "publisher-sha256"
       },
       "mise": {
-        "version": "v2026.10.24",
-        "url": "https://github.com/jdx/mise/releases/download/v2026.10.24/mise-v2026.10.24-linux-x64-musl",
-        "sha256": "0c15f901202c23eb75fb0267df7278c802f8b0c3f5a9da823e47da59e164088e",
+        "version": "v2026.10.25",
+        "url": "https://github.com/jdx/mise/releases/download/v2026.10.25/mise-v2026.10.25-linux-x64-musl",
+        "sha256": "9ab24871281d46383d13a1ad4334fd7a707be033f08d5005c928a2db8601f34b",
         "verification": "publisher-sha256"
       },
       "misspell": {
@@ -341,9 +341,9 @@
         "verification": "publisher-sha256"
       },
       "whr": {
-        "version": "v0.1.0",
-        "url": "https://github.com/wstein/workharbor/releases/download/v0.1.0/whr_0.1.0_linux_amd64.tar.gz",
-        "sha256": "5bbbf4950b22154332d67e7a3bc7187d959aabb3ea6e702a6516c66882e5ff64",
+        "version": "v0.2.0",
+        "url": "https://github.com/wstein/workharbor/releases/download/v0.2.0/whr_0.2.0_linux_amd64.tar.gz",
+        "sha256": "791105a1804239c3567c082c516229d4ff5422c9f0cfb7fa40d7900d72f0fd83",
         "verification": "publisher-sha256"
       },
       "xh": {
@@ -535,9 +535,9 @@
         "verification": "publisher-sha256"
       },
       "mise": {
-        "version": "v2026.10.24",
-        "url": "https://github.com/jdx/mise/releases/download/v2026.10.24/mise-v2026.10.24-linux-arm64-musl",
-        "sha256": "c080144a6a0af4bc6f581fef2ef03335c2ef8ca5385de44ef14abf9dba8aa142",
+        "version": "v2026.10.25",
+        "url": "https://github.com/jdx/mise/releases/download/v2026.10.25/mise-v2026.10.25-linux-arm64-musl",
+        "sha256": "561db7a5003f2c4fd89c20244d320099857ecff0d19e9438bfaa856156dec797",
         "verification": "publisher-sha256"
       },
       "misspell": {
@@ -687,9 +687,9 @@
         "verification": "publisher-sha256"
       },
       "whr": {
-        "version": "v0.1.0",
-        "url": "https://github.com/wstein/workharbor/releases/download/v0.1.0/whr_0.1.0_linux_arm64.tar.gz",
-        "sha256": "42930ee6e41349facc49921e0b51667cbcb737a5d9ef3488544d6c1e5ec2be2a",
+        "version": "v0.2.0",
+        "url": "https://github.com/wstein/workharbor/releases/download/v0.2.0/whr_0.2.0_linux_arm64.tar.gz",
+        "sha256": "b0f8bcd408d8b123014896345dfff2ac8472e24dc479de6f49cec8f275ae36bf",
         "verification": "publisher-sha256"
       },
       "xh": {
