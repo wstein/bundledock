@@ -13,21 +13,21 @@ continues to supply Node.js 24 LTS with its existing catalog, lock, image,
 volume and consumer configuration.
 
 <!-- BEGIN PUBLISHED BUNDLE -->
-<!-- publication-record: {"attempt":"1","bundle":"node-current","commit":"e21d027576ae2582a98e10da4abd62141389a8a7","created":"2026-10-15T18:05:46Z","digest":"sha256:c6e4e6361259fc631c3a4bee1a6ddab9d7634c05c606c749e1cf948ac5258496","image":"quay.io/bundledock/node","lock_sha256":"7c0299f180588ee15f5cd32ae7f9e6eb8bb5c6aa8b4912006156c54150baf369","reference":"quay.io/bundledock/node@sha256:c6e4e6361259fc631c3a4bee1a6ddab9d7634c05c606c749e1cf948ac5258496","run_attempt":"1","run_id":"38782490023","source":"https://github.com/wstein/bundledock","tag":"26.12.0-b1"} -->
+<!-- publication-record: {"attempt":"1","bundle":"node-current","commit":"8b283660858c413f09d6eba3121557a5fb02186d","created":"2026-10-21T14:17:59Z","digest":"sha256:5ae42b68a755674753faa95bf71f324971fcaf59d6ec03c76b25d129ede5efed","image":"quay.io/bundledock/node","lock_sha256":"65ad022f717934d44ed4cf7f96c65d752674b3fb90d6b74fb0a269b392c2efca","reference":"quay.io/bundledock/node@sha256:5ae42b68a755674753faa95bf71f324971fcaf59d6ec03c76b25d129ede5efed","run_attempt":"1","run_id":"39615361999","source":"https://github.com/wstein/bundledock","tag":"26.12.1-b1"} -->
 ## Published bundle
 
-Version: `26.12.0-b1`
+Version: `26.12.1-b1`
 
-Index digest: `sha256:c6e4e6361259fc631c3a4bee1a6ddab9d7634c05c606c749e1cf948ac5258496`
+Index digest: `sha256:5ae42b68a755674753faa95bf71f324971fcaf59d6ec03c76b25d129ede5efed`
 
-Source: [`e21d027576ae2582a98e10da4abd62141389a8a7`](https://github.com/wstein/bundledock/commit/e21d027576ae2582a98e10da4abd62141389a8a7)
+Source: [`8b283660858c413f09d6eba3121557a5fb02186d`](https://github.com/wstein/bundledock/commit/8b283660858c413f09d6eba3121557a5fb02186d)
 
-Publication: [run 38782490023, attempt 1](https://github.com/wstein/bundledock/actions/runs/38782490023/attempts/1)
+Publication: [run 39615361999, attempt 1](https://github.com/wstein/bundledock/actions/runs/39615361999/attempts/1)
 
 Pull this published carrier by its immutable index digest:
 
 ```sh
-docker pull quay.io/bundledock/node@sha256:c6e4e6361259fc631c3a4bee1a6ddab9d7634c05c606c749e1cf948ac5258496
+docker pull quay.io/bundledock/node@sha256:5ae42b68a755674753faa95bf71f324971fcaf59d6ec03c76b25d129ede5efed
 ```
 
 The source inventory below describes the current lock; this publication retains its exact source revision.

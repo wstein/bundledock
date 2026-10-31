@@ -17,21 +17,21 @@ The default [toolbox](toolbox.md#opentofu) also ships `tofu` at the same pin
 supported until the owner retires it; no migration is required.
 
 <!-- BEGIN PUBLISHED BUNDLE -->
-<!-- publication-record: {"attempt":"1","bundle":"opentofu","commit":"84216f3a45e35ba741cc8245f96803b5b9a2a31f","created":"2026-10-12T22:02:34Z","digest":"sha256:67bd27de607af0d950789a3a0308262141860a331bae31b3f2a9d170c0cb3414","image":"quay.io/bundledock/opentofu","lock_sha256":"142e60e99b8603649549d5dc83679f8257563772e6301c155cf6ec535b8dfd84","reference":"quay.io/bundledock/opentofu@sha256:67bd27de607af0d950789a3a0308262141860a331bae31b3f2a9d170c0cb3414","run_attempt":"1","run_id":"38314225387","source":"https://github.com/wstein/bundledock","tag":"1.13.1-b1"} -->
+<!-- publication-record: {"attempt":"1","bundle":"opentofu","commit":"e22571142a2f6371844dbd948df94abc602ed278","created":"2026-10-22T13:44:39Z","digest":"sha256:803d6e5d20547e80e1654b417c0406e6d205915dfb65fbdb7d0411ede9ca56bb","image":"quay.io/bundledock/opentofu","lock_sha256":"62fe0970627802f84b6c87d9884763bf27d050cd546ecc0909af3bbe774f86cc","reference":"quay.io/bundledock/opentofu@sha256:803d6e5d20547e80e1654b417c0406e6d205915dfb65fbdb7d0411ede9ca56bb","run_attempt":"1","run_id":"39788387031","source":"https://github.com/wstein/bundledock","tag":"1.13.2-b1"} -->
 ## Published bundle
 
-Version: `1.13.1-b1`
+Version: `1.13.2-b1`
 
-Index digest: `sha256:67bd27de607af0d950789a3a0308262141860a331bae31b3f2a9d170c0cb3414`
+Index digest: `sha256:803d6e5d20547e80e1654b417c0406e6d205915dfb65fbdb7d0411ede9ca56bb`
 
-Source: [`84216f3a45e35ba741cc8245f96803b5b9a2a31f`](https://github.com/wstein/bundledock/commit/84216f3a45e35ba741cc8245f96803b5b9a2a31f)
+Source: [`e22571142a2f6371844dbd948df94abc602ed278`](https://github.com/wstein/bundledock/commit/e22571142a2f6371844dbd948df94abc602ed278)
 
-Publication: [run 38314225387, attempt 1](https://github.com/wstein/bundledock/actions/runs/38314225387/attempts/1)
+Publication: [run 39788387031, attempt 1](https://github.com/wstein/bundledock/actions/runs/39788387031/attempts/1)
 
 Pull this published carrier by its immutable index digest:
 
 ```sh
-docker pull quay.io/bundledock/opentofu@sha256:67bd27de607af0d950789a3a0308262141860a331bae31b3f2a9d170c0cb3414
+docker pull quay.io/bundledock/opentofu@sha256:803d6e5d20547e80e1654b417c0406e6d205915dfb65fbdb7d0411ede9ca56bb
 ```
 
 The source inventory below describes the current lock; this publication retains its exact source revision.
