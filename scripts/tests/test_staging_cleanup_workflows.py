@@ -9,6 +9,8 @@ import unittest
 from types import SimpleNamespace
 
 ROOT = Path(__file__).resolve().parents[2]
+SETUP_GO = 'actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0'
+PRUNE = 'go run ./cmd/bdock quay prune'
 
 
 class WorkflowTests(unittest.TestCase):
@@ -20,7 +22,27 @@ class WorkflowTests(unittest.TestCase):
         self.assertLess(job.index('name: Save cleanup dry run'), job.index('name: Remove verified staging tags'))
         self.assertIn('--approved-plan staging-plan.json', job)
         self.assertNotIn('contents: write', job)
-        self.assertIn('--publication publication.json', job)
+        self.assertIn('--publication publication.json --bundle "$BUNDLE"', job)
+        self.assertEqual(job.count(PRUNE), 2)
+        self.assertEqual(job.count('--publication publication.json --bundle "$BUNDLE" --output staging-plan.json'), 1)
+        self.assertEqual(job.count('--apply --approved-plan staging-plan.json --output staging-result.json'), 1)
+        self.assertNotIn('staging-cleanup.py', job)
+
+    def test_cleanup_runs_bdock_from_source_with_the_pinned_go_action(self):
+        publisher = (ROOT / '.github/workflows/bundle-publish.yml').read_text()
+        job = publisher.split('\n  cleanup:\n')[1].split('\n  outcome:\n')[0]
+        fallback = (ROOT / '.github/workflows/staging-cleanup.yml').read_text()
+        for source in (job, fallback):
+            self.assertIn('- uses: ' + SETUP_GO + '\n        with:\n          go-version-file: .go-version\n          cache: false\n', source)
+            self.assertLess(source.index(SETUP_GO), source.index(PRUNE))
+            self.assertLess(source.index('actions/checkout@'), source.index(SETUP_GO))
+            self.assertNotIn('staging-cleanup.py', source)
+            self.assertNotIn('python3', source)
+        self.assertEqual(fallback.count(PRUNE), 2)
+        # The only action pins are the ones the repository already uses.
+        pins = set(re.findall(r'uses: (\S+@[0-9a-f]{40}) #', fallback + job))
+        known = set(re.findall(r'uses: (\S+@[0-9a-f]{40}) #', publisher))
+        self.assertTrue(pins <= known)
 
     def test_fallback_is_daily_and_shares_repository_lock(self):
         source = (ROOT / '.github/workflows/staging-cleanup.yml').read_text()
@@ -30,6 +52,7 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn('default: false', source)
         self.assertIn('group: bundledock-${{ matrix.repository }}-publish', source)
         self.assertIn('--approved-plan staging-plan.json', source)
+        self.assertIn('--apply', source)
         self.assertLess(source.index('name: Save cleanup dry run'), source.index('name: Remove stale staging tags'))
         self.assertNotIn('docker ', source)
         self.assertNotIn('contents: write', source)
@@ -51,6 +74,7 @@ class WorkflowTests(unittest.TestCase):
         self.assertNotIn('ref: ${{ github.event.workflow_run.head_sha }}', source)
         self.assertIn('github.event.workflow_run.run_attempt', source)
         self.assertEqual(source.count('--failed-run "$FAILED_RUN" --failed-attempt "$FAILED_ATTEMPT"'), 2)
+        self.assertEqual(source.count(PRUNE), 2)
         self.assertIn("github.event_name == 'workflow_run'", source)
         self.assertIn('group: bundledock-${{ matrix.repository }}-publish', source)
         self.assertLess(source.index('name: Save cleanup dry run'), source.index('name: Remove stale staging tags'))

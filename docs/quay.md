@@ -96,7 +96,9 @@ its digest equal the receipt. The plan has `"mode": "publication"` and no target
 `--apply` proves the receipt again, rechecks each tag, and accepts only plan rows
 for the two staging names of that receipt. `--publication` needs `--bundle`, and
 the two cannot be combined with `--failed-run`; `--repository` is ignored.
-Until the workflows switch, `scripts/staging-cleanup.py` stays the active writer.
+The publication workflow runs this mode after promotion, and the daily
+`staging-cleanup.yml` workflow runs the fallback and failed-run modes, both with
+`go run ./cmd/bdock quay prune` from the checked-out source.
 
 ## Safety rules
 
