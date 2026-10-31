@@ -150,12 +150,16 @@ its own `AGENTS.md`; follow them when present.
 | Light | `python-tests-macos` in `ci.yml` | every PR and push | informative only, not required; timeout 20 min |
 | Heavy | `toolbox-build.yml`, `nixbox-build.yml` | `workflow_dispatch` only | native build and smoke; timeout 90 min |
 | Heavy | `release.yml` | owner tag push `bdock/vX.Y.Z`; manual run is a dry run | verify, build, smoke, publish; timeouts 15 to 20 min per job |
-| Heavy | `publish-bundles.yml`, `published-consumers.yml` | after merged-main `CI`, or dispatch | publication and consumer verification; see docs/publication.md |
+| Heavy | `publish-bundles.yml` | `workflow_run` after merged-main `CI` (eligible bot updater PRs), or dispatch | publication; see docs/publication.md |
+| Heavy | `published-consumers.yml` | `workflow_dispatch` only | consumer verification |
 
-There is no `ci-full` label in this repository: heavy jobs run only by dispatch or
-owner tag and always need the approval described above. Local equivalents:
-`make check` (light); `make bundle-test`, `make bundle-build bundle-smoke`,
-`make docs-test`, `make release-test` (heavy, approval first).
+There is no `ci-full` label in this repository. Heavy jobs run by dispatch, by the
+owner's tag push, or, for `publish-bundles.yml`, automatically after merged-main `CI`
+only for the eligible bot updater PRs whose owner merge is the approval (see above);
+every other heavy run needs the approval described above. Local equivalents:
+`make check` and `make bundle-test` (light, routine source tests);
+`make bundle-build bundle-smoke`, `make docs-test`, `make release-test` (heavy,
+approval first).
 
 ## Common CLI tools
 
