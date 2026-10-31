@@ -80,8 +80,7 @@ request. Link related issues and identify remaining limitations. Keep unrelated
 cleanup separate so each commit can be reviewed on its own.
 
 Outside an authorized work request, local checks and commits do not authorize
-pushing; an agent's own topic push and PR for reviewed work within a work request
-need no extra approval. Local checks and commits never authorize publishing images,
+pushing. Local checks and commits never authorize publishing images,
 tagging a release, or activating a consumer image. Follow the
 [release review requirement](docs/development.md#release-review) before any release:
 every local TODO item needs resolution or an explicit user decision to defer it.
