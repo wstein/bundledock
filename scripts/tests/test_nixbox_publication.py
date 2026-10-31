@@ -98,7 +98,8 @@ class NixboxPublicationTests(unittest.TestCase):
         self.assertIsNone(publication.bundle_for_branch('automation/opentofu-upgrade-123-1'))
         files = [{'filename': config.select_bundle(name)['lock']} for name in ('agy', 'opentofu')]
         pr = {'number': 7, 'changed_files': 2}
-        self.assertEqual(publication.updater_members(pr, publication.COMBINED, lambda path: files), ['agy'])
+        with self.assertRaisesRegex(ValueError, 'retired bundle opentofu'):
+            publication.updater_members(pr, publication.COMBINED, lambda path: files)
 
     def test_nixbox_publication_records_use_the_daily_tag(self):
         record = dict(bundle='nixbox', image='quay.io/bundledock/nixbox', source=tags.SOURCE, commit='a' * 40,
