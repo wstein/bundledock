@@ -32,7 +32,13 @@ case "$targets" in *'
 '*) echo 'TARGETS must be a space-separated list' >&2; exit 1 ;; esac
 list=$(printf '%s' "$list" | LC_ALL=C sort -u)
 test -n "$list" || { echo 'TARGETS must name at least one target' >&2; exit 1; }
-tar --version 2>/dev/null | grep -q 'GNU tar' || { echo 'GNU tar is required for repeatable archives' >&2; exit 1; }
+# Repeatable archives need GNU tar flags. Use `tar` when it is GNU tar; otherwise accept
+# Homebrew's `gtar` (macOS ships bsdtar as `tar`). Never fall back to a non-GNU tar.
+tar_cmd=
+for candidate in tar gtar; do
+    if "$candidate" --version 2>/dev/null | grep -q 'GNU tar'; then tar_cmd=$candidate; break; fi
+done
+test -n "$tar_cmd" || { echo 'GNU tar is required for repeatable archives (on macOS: brew install gnu-tar, which provides gtar)' >&2; exit 1; }
 # Capture source state before creating output, including untracked files.
 revision=$(git rev-parse HEAD)
 modified=false
@@ -74,7 +80,7 @@ for target in $list; do
     chmod 0644 "$destination/.stage/LICENSE" "$destination/.stage/PROVENANCE"
     # Normalize archive metadata and gzip headers so equal inputs give equal bytes.
     name=bdock_${version}_${os}_${arch}.tar.gz
-    tar --sort=name --mtime=@0 --owner=0 --group=0 --numeric-owner --format=ustar \
+    "$tar_cmd" --sort=name --mtime=@0 --owner=0 --group=0 --numeric-owner --format=ustar \
         -cf "$destination/.stage.tar" -C "$destination/.stage" bdock LICENSE PROVENANCE
     gzip -n < "$destination/.stage.tar" > "$destination/$name"
     archives="$archives $name"

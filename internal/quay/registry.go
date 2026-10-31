@@ -127,6 +127,18 @@ func (r *Registry) Manifest(ctx context.Context, digest string) ([]byte, error) 
 	return r.get(ctx, "manifests", digest)
 }
 
+// refPattern matches the references a version tag or alias read may use.
+var refPattern = regexp.MustCompile(`^(?:sha256:[0-9a-f]{64}|\d{4}\.\d{2}\.\d{2}-b[1-9]\d*|\d{4}\.\d{2}\.\d{2}-b[1-9]\d*\.[1-9]\d*|(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)-b[1-9]\d*|\d{4}\.\d{2}\.\d{2}-[1-9]\d*-[1-9]\d*|stable|latest|lts|current)$`)
+
+// ManifestRef fetches a manifest by version tag or alias name (or digest). The
+// content is not verified against a name; the caller compares its digest.
+func (r *Registry) ManifestRef(ctx context.Context, ref string) ([]byte, error) {
+	if !refPattern.MatchString(ref) {
+		return nil, fmt.Errorf("invalid registry metadata request")
+	}
+	return r.get(ctx, "manifests", ref)
+}
+
 // Blob fetches a blob by digest.
 func (r *Registry) Blob(ctx context.Context, digest string) ([]byte, error) {
 	if !digestPattern.MatchString(digest) {

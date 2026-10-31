@@ -7,6 +7,11 @@
 # commit subjects between the nearest earlier strict bdock/vX.Y.Z tag (by version
 # order) and COMMIT, or "First release." when there is none. Image tags such as
 # toolbox/2026.10.15-b98.1 are never a baseline.
+#
+# Listed: every feat commit (Features), every breaking commit (!) of any other type (Breaking
+# changes), every fix commit (Fixes, in a collapsed <details> block) and perf and refactor commits
+# (Other changes, only when present). Documentation and all remaining commits (tests, style,
+# build, CI, chores, reverts) are only counted, followed by a link to the full comparison.
 set -eu
 
 [ "$#" -eq 3 ] || {
@@ -49,9 +54,56 @@ release workflow run and commit; verify one with the GitHub CLI:
 This release contains the CLI only; OCI tool images are published separately and are unaffected.
 
 TEXT
-if [ -n "$prev" ]; then
-	printf '## Changes since %s\n\n' "$prev"
-	git log --no-merges --format='- %s (%h)' "$prev..$commit"
-else
+if [ -z "$prev" ]; then
 	printf '## Changes\n\nFirst release.\n'
+	exit 0
 fi
+printf '## Changes since %s\n\n' "$prev"
+range=$prev..$commit
+subjects=$(git log --no-merges --format='%s (%h)' "$range")
+if [ -z "$subjects" ]; then
+	printf 'No changes.\n'
+	exit 0
+fi
+pick() { # pick ERE: the subjects matching ERE, empty when none
+	printf '%s\n' "$subjects" | grep -E "$1" || true
+}
+count() { # count LINES: the number of lines, 0 for none
+	if [ -z "$1" ]; then
+		printf '0'
+	else
+		printf '%s\n' "$1" | wc -l | tr -d ' '
+	fi
+}
+bullets() { # bullets LINES
+	printf '%s\n' "$1" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/^/- /'
+}
+feats=$(pick '^feat(\([^)]*\))?!?:')
+breaking=$(pick '^[A-Za-z][A-Za-z0-9_-]*(\([^)]*\))?!:' | grep -Ev '^feat(\([^)]*\))?!:' || true)
+fixes=$(pick '^fix(\([^)]*\))?:')
+tidy=$(pick '^(perf|refactor)(\([^)]*\))?:')
+docs=$(pick '^docs(\([^)]*\))?:')
+ndocs=$(count "$docs")
+nall=$(count "$subjects")
+nother=$((nall - $(count "$feats") - $(count "$breaking") - $(count "$fixes") - $(count "$tidy") - ndocs))
+if [ -n "$feats" ]; then
+	printf '### Features (%s)\n\n' "$(count "$feats")"
+	bullets "$feats"
+	printf '\n'
+fi
+if [ -n "$breaking" ]; then
+	printf '### Breaking changes (%s)\n\n' "$(count "$breaking")"
+	bullets "$breaking"
+	printf '\n'
+fi
+if [ -n "$fixes" ]; then
+	printf '<details><summary>Fixes (%s)</summary>\n\n' "$(count "$fixes")"
+	bullets "$fixes"
+	printf '\n</details>\n\n'
+fi
+if [ -n "$tidy" ]; then
+	printf '### Other changes (%s)\n\n' "$(count "$tidy")"
+	bullets "$tidy"
+	printf '\n'
+fi
+printf 'Not listed here: %s documentation and %s other commits (tests, style, CI, chores). Full comparison: https://github.com/wstein/bundledock/compare/%s...%s\n' "$ndocs" "$nother" "$prev" "$tag"

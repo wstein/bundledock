@@ -613,6 +613,13 @@ the specified tag. Digest references and production aliases are rejected before
 authentication; manifest-by-digest and blob deletion are never used. Published
 indexes continue to reference their platform manifests.
 
+The publication cleanup job runs `go run ./cmd/bdock quay prune` from the source
+checked out at `PUBLICATION_SHA`, so `REPOSITORY_TOKEN` is in the environment of the
+Go build and of the compiled command, which needs the Go toolchain and the module
+proxy. If the job fails (for example an approved source that predates the command, or
+no module proxy), the staging tags stay, and the failed-run mode of
+`staging-cleanup.yml` removes them later with the code at `main` HEAD.
+
 The `Clean stale staging tags` workflow also runs after `Publish bundles`
 completes with `failure`, `cancelled` or `timed_out`. This includes superseded runs
 whose promotion was refused. It checks out trusted default-branch cleanup code,
@@ -654,7 +661,7 @@ repository scope.
 For a local read-only preview, for example:
 
 ```sh
-python3 -B scripts/staging-cleanup.py --repository toolbox \
+go run ./cmd/bdock quay prune --repository toolbox \
   --failed-run 38805010929 --failed-attempt 1 --output staging-plan.json
 ```
 
@@ -669,7 +676,7 @@ These workflows do not build images, merge source or modify aliases.
 For a local inventory (requires authenticated `gh` read access to run evidence):
 
 ```sh
-python3 -B scripts/staging-cleanup.py --output staging-plan.json
+go run ./cmd/bdock quay prune --output staging-plan.json
 ```
 
 Review every plan row, including retained tags and reasons. To apply that saved
@@ -677,7 +684,7 @@ fallback plan with `REPOSITORY_USERNAME` and `REPOSITORY_TOKEN` supplied securel
 in the environment:
 
 ```sh
-python3 -B scripts/staging-cleanup.py --apply \
+go run ./cmd/bdock quay prune --apply \
   --approved-plan staging-plan.json --output staging-result.json
 ```
 
@@ -686,7 +693,7 @@ For immediate cleanup of an existing verified publication, use `--publication
 `PUBLICATION_SHA`, `GITHUB_RUN_ID` and `GITHUB_RUN_ATTEMPT` set to that publication's
 identity. Save and review the plan first. Keep the publisher serialized while
 applying locally. The Quay tag-name deletion route has no conditional digest
-check: workflows share a repository concurrency lock and the script rechecks immediately before each
+check: workflows share a repository concurrency lock and `bdock quay prune` rechecks immediately before each
 tag deletion, but an external registry writer can still race that final check.
 Missing tags are idempotent; moved tags stop cleanup. A partially completed pass
 can be planned again. Quay retention/time-machine policy controls later storage

@@ -407,3 +407,210 @@ func TestQuayHasNoEndpointFlag(t *testing.T) {
 		t.Fatal("--api-url exists; credentials could be sent to any host")
 	}
 }
+
+type stubGit struct {
+	verified []string
+	found    bool
+}
+
+func (g *stubGit) VerifySource(_ context.Context, commit string) error {
+	g.verified = append(g.verified, commit)
+	return nil
+}
+func (g *stubGit) RemoteTag(context.Context, string, string, string) (bool, error) {
+	return g.found, nil
+}
+
+func TestQuayPrunePublication(t *testing.T) {
+	commit := strings.Repeat("a", 40)
+	labels := map[string]string{
+		"io.bundledock.bundle": "toolbox", "io.bundledock.github.run-id": "123", "io.bundledock.github.run-attempt": "1",
+		"org.opencontainers.image.source": "https://github.com/wstein/bundledock", "org.opencontainers.image.revision": commit,
+		"org.opencontainers.image.version": "2026.10.01-b4.1",
+	}
+	docs := map[string][]byte{}
+	add := func(v any) string {
+		raw, _ := json.Marshal(v)
+		d := fmt.Sprintf("sha256:%x", sha256.Sum256(raw))
+		docs[d] = raw
+		return d
+	}
+	manifest := func(arch string) string {
+		config := add(map[string]any{"os": "linux", "architecture": arch, "config": map[string]any{"Labels": labels}})
+		return add(map[string]any{"config": map[string]any{"digest": config}})
+	}
+	amd, arm := manifest("amd64"), manifest("arm64")
+	index := map[string]any{"manifests": []any{
+		map[string]any{"digest": amd, "platform": map[string]any{"os": "linux", "architecture": "amd64"}},
+		map[string]any{"digest": arm, "platform": map[string]any{"os": "linux", "architecture": "arm64"}},
+	}}
+	indexDigest := add(index)
+	for _, ref := range []string{"2026.10.01-b4.1", "stable", "latest"} {
+		docs[ref] = docs[indexDigest]
+	}
+	const modified = "Thu, 01 Oct 2026 00:00:00 -0000"
+	tags := []quayTag{
+		{Name: "staging-2026.10.01-b4.1-amd64", ManifestDigest: amd, LastModified: modified},
+		{Name: "staging-2026.10.01-b4.1-arm64", ManifestDigest: arm, LastModified: modified},
+		{Name: "staging-2026.10.01-b9.1-amd64", ManifestDigest: amd, LastModified: modified},
+		{Name: "stable", ManifestDigest: indexDigest, LastModified: modified},
+	}
+	var deletes []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		path := r.URL.Path
+		switch {
+		case path == "/v2/auth":
+			w.Write([]byte(`{"token":"tok"}`))
+		case r.Method == http.MethodDelete:
+			deletes = append(deletes, path)
+			w.WriteHeader(202)
+		case strings.HasPrefix(path, "/v2/bundledock/toolbox/"):
+			parts := strings.Split(path, "/")
+			if raw, ok := docs[parts[len(parts)-1]]; ok {
+				w.Write(raw)
+				return
+			}
+			http.NotFound(w, r)
+		case strings.HasSuffix(path, "/tag/"):
+			rows := []quayTag{}
+			if strings.Contains(path, "/toolbox/") {
+				for _, tag := range tags {
+					if name := r.URL.Query().Get("specificTag"); name == "" || tag.Name == name {
+						rows = append(rows, tag)
+					}
+				}
+			}
+			json.NewEncoder(w).Encode(map[string]any{"page": 1, "tags": rows, "has_additional": false})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+	run := quay.Run{ID: 123, RunNumber: 4, RunAttempt: 1, Status: "in_progress", UpdatedAt: "2026-10-14T00:00:00Z",
+		Event: "workflow_dispatch", HeadBranch: "main", HeadSHA: commit, WorkflowID: 1, Path: ".github/workflows/publish-bundles.yml"}
+	run.Repository.FullName, run.HeadRepository.FullName = "wstein/bundledock", "wstein/bundledock"
+	git := &stubGit{found: true}
+	defer func(a func() quay.GitHub, b func() quay.Git) { newGitHub, newGit = a, b }(newGitHub, newGit)
+	newGitHub = func() quay.GitHub { return stubGitHub{run} }
+	newGit = func() quay.Git { return git }
+
+	dir := t.TempDir()
+	platform := func(arch, digest string) map[string]any {
+		return map[string]any{"architecture": arch, "digest": digest, "image_id": "sha256:" + strings.Repeat("2", 64), "smoked": true,
+			"image": "quay.io/bundledock/toolbox", "tag": "2026.10.01-b4.1", "commit": commit, "source": "https://github.com/wstein/bundledock",
+			"created": "2026-10-01T00:00:00Z", "lock_sha256": strings.Repeat("1", 64), "run_id": "123"}
+	}
+	receipt, _ := json.Marshal(map[string]any{
+		"image": "quay.io/bundledock/toolbox", "tag": "2026.10.01-b4.1", "commit": commit, "source": "https://github.com/wstein/bundledock",
+		"created": "2026-10-01T00:00:00Z", "lock_sha256": strings.Repeat("1", 64), "run_id": "123", "digest": indexDigest,
+		"reference": "quay.io/bundledock/toolbox@" + indexDigest, "platforms": []any{platform("amd64", amd), platform("arm64", arm)},
+	})
+	receiptFile := filepath.Join(dir, "publication.json")
+	os.WriteFile(receiptFile, receipt, 0o644)
+	t.Setenv("PUBLICATION_SHA", commit)
+	t.Setenv("GITHUB_RUN_ID", "123")
+	t.Setenv("GITHUB_RUN_ATTEMPT", "1")
+	t.Setenv("REPOSITORY_USERNAME", "")
+	t.Setenv("REPOSITORY_TOKEN", "")
+	root := t.TempDir()
+	planFile := filepath.Join(dir, "plan.json")
+
+	// Selector errors stop before any evidence is read.
+	for name, args := range map[string][]string{
+		"publication without bundle": {"prune", "--publication", receiptFile},
+		"bundle without publication": {"prune", "--bundle", "toolbox"},
+		"both modes":                 {"prune", "--publication", receiptFile, "--bundle", "toolbox", "--failed-run", "123", "--failed-attempt", "1"},
+		"unknown bundle":             {"prune", "--publication", receiptFile, "--bundle", "nope"},
+		"missing receipt":            {"prune", "--publication", filepath.Join(dir, "none.json"), "--bundle", "toolbox"},
+	} {
+		if _, _, err := runQuayAt(t, root, srv, args...); err == nil {
+			t.Errorf("%s: accepted", name)
+		}
+	}
+	if len(git.verified) != 0 {
+		t.Fatalf("source verified for an invalid selection: %v", git.verified)
+	}
+
+	_, _, err := runQuayAt(t, root, srv, "prune", "--publication", receiptFile, "--bundle", "toolbox", "--output", planFile)
+	if err != nil || len(deletes) != 0 || len(git.verified) != 1 {
+		t.Fatalf("dry run: err = %v deletes = %v verified = %v", err, deletes, git.verified)
+	}
+	var plan struct {
+		Mode   string          `json:"mode"`
+		Target json.RawMessage `json:"target"`
+		Rows   []struct {
+			Name     string
+			Eligible bool
+		}
+	}
+	raw, _ := os.ReadFile(planFile)
+	if json.Unmarshal(raw, &plan) != nil || plan.Mode != "publication" || plan.Target != nil || len(plan.Rows) != 2 || !plan.Rows[0].Eligible || !plan.Rows[1].Eligible {
+		t.Fatalf("plan = %s", raw)
+	}
+	args := []string{"prune", "--publication", receiptFile, "--bundle", "toolbox", "--apply", "--approved-plan", planFile}
+	if _, _, err = runQuayAt(t, root, srv, args...); err == nil || len(deletes) != 0 {
+		t.Fatalf("apply without credentials: err = %v deletes = %v", err, deletes)
+	}
+	// A fallback request does not accept the publication plan.
+	t.Setenv("REPOSITORY_USERNAME", "robot")
+	t.Setenv("REPOSITORY_TOKEN", "pw")
+	if _, _, err = runQuayAt(t, root, srv, "prune", "--apply", "--approved-plan", planFile); err == nil || len(deletes) != 0 {
+		t.Fatalf("fallback request applied a publication plan: err = %v deletes = %v", err, deletes)
+	}
+	result := filepath.Join(dir, "result.json")
+	_, _, err = runQuayAt(t, root, srv, append(args, "--output", result)...)
+	if err != nil || len(deletes) != 2 || deletes[0] != "/v2/bundledock/toolbox/manifests/staging-2026.10.01-b4.1-amd64" || deletes[1] != "/v2/bundledock/toolbox/manifests/staging-2026.10.01-b4.1-arm64" {
+		t.Fatalf("apply: err = %v deletes = %v", err, deletes)
+	}
+	if saved, _ := os.ReadFile(result); !strings.Contains(string(saved), `"mode": "publication"`) || strings.Contains(string(saved), "pw") {
+		t.Fatalf("result = %s", saved)
+	}
+	// The receipt must be verified again by the apply step: a missing source tag stops it.
+	git.found = false
+	deletes = nil
+	if _, _, err = runQuayAt(t, root, srv, args...); err == nil || len(deletes) != 0 {
+		t.Fatalf("apply without the source tag: err = %v deletes = %v", err, deletes)
+	}
+}
+
+func TestQuayPruneWritesTheStepSummary(t *testing.T) {
+	srv := fakeQuayAPI(t, nil)
+	run := quay.Run{}
+	defer func(old func() quay.GitHub) { newGitHub = old }(newGitHub)
+	newGitHub = func() quay.GitHub { return stubGitHub{run} }
+	t.Setenv("REPOSITORY_USERNAME", "robot")
+	t.Setenv("REPOSITORY_TOKEN", "pw-secret")
+	root := t.TempDir()
+	dir := t.TempDir()
+	plan := filepath.Join(dir, "plan.json")
+
+	// Without GITHUB_STEP_SUMMARY nothing is written.
+	t.Setenv("GITHUB_STEP_SUMMARY", "")
+	if _, _, err := runQuayAt(t, root, srv, "prune", "--repository", "toolbox", "--output", plan); err != nil {
+		t.Fatal(err)
+	}
+	summary := filepath.Join(dir, "summary.md")
+	t.Setenv("GITHUB_STEP_SUMMARY", summary)
+	if _, err := os.Stat(summary); err == nil {
+		t.Fatal("summary created without a write")
+	}
+	os.WriteFile(summary, []byte("earlier step\n"), 0o644)
+	if _, _, err := runQuayAt(t, root, srv, "prune", "--repository", "toolbox", "--output", plan); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := runQuayAt(t, root, srv, "prune", "--repository", "toolbox", "--apply", "--approved-plan", plan, "--output", filepath.Join(dir, "result.json")); err != nil {
+		t.Fatal(err)
+	}
+	raw, _ := os.ReadFile(summary)
+	got := string(raw)
+	if !strings.HasPrefix(got, "earlier step\n") || !strings.Contains(got, "### Staging cleanup (fallback)") || !strings.Contains(got, "### Staging cleanup apply (fallback)") ||
+		!strings.Contains(got, "Staging tags: 0; eligible: 0") || strings.Contains(got, "pw-secret") || strings.Contains(got, "robot") {
+		t.Fatalf("summary = %q", got)
+	}
+	// An unwritable summary is a warning, not a failed cleanup.
+	t.Setenv("GITHUB_STEP_SUMMARY", filepath.Join(dir, "none", "summary.md"))
+	_, errOut, err := runQuayAt(t, root, srv, "prune", "--repository", "toolbox")
+	if err != nil || !strings.Contains(errOut, "step summary") {
+		t.Fatalf("err = %v stderr = %q", err, errOut)
+	}
+}

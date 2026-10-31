@@ -68,12 +68,37 @@ GitHub evidence comes from the `gh` CLI. `--repository <name>` limits the scan t
 one Quay repository. `--apply` reads the plan file saved with `--output`; the
 `--json` output on stdout is a report, not a plan file. Registry evidence is read
 with the robot account when `REPOSITORY_USERNAME` and `REPOSITORY_TOKEN` are set,
-else anonymously. `prune` does not write `GITHUB_STEP_SUMMARY`.
+else anonymously.
 
-Out of scope for now: the publication mode of `scripts/staging-cleanup.py`
-(`--publication` with `--bundle`, which removes the staging tags of one verified
-publication receipt). The workflow keeps using `scripts/staging-cleanup.py` for that
-mode until a later PR, and `bdock quay prune --apply` rejects such plans.
+When `GITHUB_STEP_SUMMARY` is set, `prune` appends one section to that file: the
+plan (counts and one row per staging tag with its decision and reason) or, with
+`--apply`, the actions and, if it stopped, the reason. It only appends, shows no
+credential, and lists at most 100 rows (the saved plan has all of them). A
+failure to write it is a warning, not a failed cleanup.
+
+#### Publication mode
+
+`bdock quay prune --publication <receipt> --bundle <name>` removes the two staging
+tags (`staging-<version>-amd64` and `-arm64`) of one verified publication, right
+after promotion, regardless of age. It first proves the receipt:
+
+- The receipt matches the expected provenance in the environment: `PUBLICATION_SHA`
+  (the approved source commit), `GITHUB_RUN_ID` and `GITHUB_RUN_ATTEMPT`.
+- The commit is an ancestor of `origin/main`, and `origin` is the official
+  repository (fetch and push URL).
+- The version tag and every alias of the bundle resolve to the recorded index,
+  which holds exactly linux/amd64 and linux/arm64 images whose labels match.
+- The index platform digests equal the receipt's, and the annotated source tag
+  `<bundle>/<version>` exists with the exact provenance message.
+
+A staging tag is then eligible only when its provenance labels, its GitHub run and
+its digest equal the receipt. The plan has `"mode": "publication"` and no target.
+`--apply` proves the receipt again, rechecks each tag, and accepts only plan rows
+for the two staging names of that receipt. `--publication` needs `--bundle`, and
+the two cannot be combined with `--failed-run`; `--repository` is ignored.
+The publication workflow runs this mode after promotion, and the daily
+`staging-cleanup.yml` workflow runs the fallback and failed-run modes, both with
+`go run ./cmd/bdock quay prune` from the checked-out source.
 
 ## Safety rules
 

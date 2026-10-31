@@ -425,8 +425,12 @@ jobs:
         with:
           name: ${{ inputs.bundle }}-publication-${{ github.run_attempt }}
           path: .
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: .go-version
+          cache: false
       - name: Verify publication and plan exact staging tags
-        run: python3 -B scripts/staging-cleanup.py --publication publication.json --bundle "$BUNDLE" --output staging-plan.json
+        run: go run ./cmd/bdock quay prune --publication publication.json --bundle "$BUNDLE" --output staging-plan.json
       - name: Save cleanup dry run
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -436,7 +440,7 @@ jobs:
           retention-days: 90
       - name: Remove verified staging tags
         if: env.REPOSITORY_USERNAME != '' && env.REPOSITORY_TOKEN != ''
-        run: python3 -B scripts/staging-cleanup.py --publication publication.json --bundle "$BUNDLE" --apply --approved-plan staging-plan.json --output staging-result.json
+        run: go run ./cmd/bdock quay prune --publication publication.json --bundle "$BUNDLE" --apply --approved-plan staging-plan.json --output staging-result.json
       - name: Report missing cleanup credential
         if: env.REPOSITORY_USERNAME == '' || env.REPOSITORY_TOKEN == ''
         run: echo 'Staging cleanup is dry-run only; configure REPOSITORY_USERNAME and REPOSITORY_TOKEN for tag deletion.' >> "$GITHUB_STEP_SUMMARY"
