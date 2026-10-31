@@ -10,9 +10,9 @@ import (
 	"time"
 )
 
-// This file is the plan logic of scripts/staging-cleanup.py (fallback and
-// failed-run modes). It only ever selects staging tags; version, alias and
-// source tags are never touched.
+// This file is the plan logic of the former scripts/staging-cleanup.py
+// (fallback, failed-run and, in publication.go, publication modes). It only
+// ever selects staging tags; version, alias and source tags are never touched.
 
 const (
 	// SourceURL is the only accepted source repository of a staging image.
@@ -124,6 +124,9 @@ type GitHub interface {
 type Evidence interface {
 	Manifest(ctx context.Context, digest string) ([]byte, error)
 	Blob(ctx context.Context, digest string) ([]byte, error)
+	// ManifestRef reads a manifest by version tag or alias name; the caller
+	// verifies its digest.
+	ManifestRef(ctx context.Context, ref string) ([]byte, error)
 }
 
 // TagStore lists and removes tags.
@@ -182,6 +185,10 @@ type Pruner struct {
 	// Repos is the selected scope.
 	Repos     []string
 	FailedRun *FailedRun
+	// Publication selects the publication mode; ProvePublication sets it.
+	Publication *Publication
+	// Git verifies the source of a publication.
+	Git Git
 
 	evidence map[string]Evidence
 }
@@ -500,6 +507,9 @@ func (p *Pruner) assess(ctx context.Context, repository string, row Tag, fresh b
 		}
 	}
 	if p.FailedRun != nil {
+		if err := check(p.Publication == nil, "Conflicting cleanup modes"); err != nil {
+			return "", err
+		}
 		if err := check(runID == p.FailedRun.RunID && attempt == p.FailedRun.Attempt, "Tag belongs to another run or attempt"); err != nil {
 			return "", err
 		}
@@ -534,6 +544,16 @@ func (p *Pruner) assess(ctx context.Context, repository string, row Tag, fresh b
 		return "", err
 	}
 	now := p.Now()
+	if pub := p.Publication; pub != nil {
+		if err := first(
+			check(bundle == pub.Bundle && version == pub.Tag && record.commit == pub.Commit && runID == pub.RunID && attempt == pub.Attempt, "Receipt identity mismatch"),
+			check(pub.Platforms[arch] == row.ManifestDigest && run.RunAttempt == attempt, "Receipt platform or current attempt mismatch"),
+			check(!modified.After(now), "Future staging timestamp"),
+		); err != nil {
+			return "", err
+		}
+		return "Verified publication staging tag", nil
+	}
 	updated, err := time.Parse(time.RFC3339, run.UpdatedAt)
 	if err != nil {
 		return "", err
@@ -561,6 +581,9 @@ func (p *Pruner) assess(ctx context.Context, repository string, row Tag, fresh b
 // Plan lists and assesses every staging tag of the selected repositories.
 func (p *Pruner) Plan(ctx context.Context) (Plan, error) {
 	now := p.Now()
+	if err := check(p.Publication == nil || p.FailedRun == nil, "Conflicting cleanup modes"); err != nil {
+		return Plan{}, err
+	}
 	plan := Plan{Schema: 1, Mode: p.mode(), GeneratedAt: now.Format(time.RFC3339Nano), Target: p.FailedRun, Rows: []PlanRow{}}
 	if p.FailedRun != nil {
 		if _, err := ProveFailedRun(ctx, p.GitHub, p.FailedRun.RunID, p.FailedRun.Attempt, true, nil); err != nil {
@@ -573,7 +596,7 @@ func (p *Pruner) Plan(ctx context.Context) (Plan, error) {
 			return Plan{}, err
 		}
 		for _, tag := range tags {
-			if len(tag.Name) >= 8 && tag.Name[:8] == "staging-" {
+			if len(tag.Name) >= 8 && tag.Name[:8] == "staging-" && (p.Publication == nil || p.Publication.names(tag.Name)) {
 				plan.Rows = append(plan.Rows, p.Assess(ctx, repository, tag, false))
 			}
 		}
@@ -583,6 +606,9 @@ func (p *Pruner) Plan(ctx context.Context) (Plan, error) {
 }
 
 func (p *Pruner) mode() string {
+	if p.Publication != nil {
+		return ModePublication
+	}
 	if p.FailedRun != nil {
 		return ModeFailedRun
 	}
@@ -602,10 +628,7 @@ func (p *Pruner) inScope(repository string) bool {
 // Every approved row is validated before the first deletion. report is
 // called after each action; its error stops the run.
 func (p *Pruner) Apply(ctx context.Context, plan Plan, report func([]Action) error) ([]Action, error) {
-	if plan.Mode == "publication" {
-		return nil, reasonError("Publication-mode plans are not supported by bdock quay prune; use scripts/staging-cleanup.py")
-	}
-	if err := check(plan.Schema == 1 && (plan.Mode == ModeFallback || plan.Mode == ModeFailedRun), "Invalid cleanup plan"); err != nil {
+	if err := check(plan.Schema == 1 && (plan.Mode == ModeFallback || plan.Mode == ModeFailedRun || plan.Mode == ModePublication), "Invalid cleanup plan"); err != nil {
 		return nil, err
 	}
 	if err := check(plan.Mode == p.mode(), "Plan mode differs from request"); err != nil {
@@ -630,6 +653,11 @@ func (p *Pruner) Apply(ctx context.Context, plan Plan, report func([]Action) err
 		}
 		if _, _, err := Identity(row.Repository, row.Name); err != nil {
 			return nil, err
+		}
+		if plan.Mode == ModePublication {
+			if err := check(p.Publication.names(row.Name), "Plan row outside the publication receipt"); err != nil {
+				return nil, err
+			}
 		}
 		if plan.Mode == ModeFailedRun {
 			if err := check(row.RunID == plan.Target.RunID && row.Attempt == plan.Target.Attempt, "Plan row outside exact failed attempt"); err != nil {

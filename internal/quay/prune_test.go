@@ -18,8 +18,9 @@ var pruneNow = time.Date(2026, 10, 14, 0, 0, 0, 0, time.UTC)
 
 type fakeEvidence map[string][]byte
 
-func (f fakeEvidence) Manifest(_ context.Context, d string) ([]byte, error) { return f.get(d) }
-func (f fakeEvidence) Blob(_ context.Context, d string) ([]byte, error)     { return f.get(d) }
+func (f fakeEvidence) Manifest(_ context.Context, d string) ([]byte, error)      { return f.get(d) }
+func (f fakeEvidence) Blob(_ context.Context, d string) ([]byte, error)          { return f.get(d) }
+func (f fakeEvidence) ManifestRef(_ context.Context, ref string) ([]byte, error) { return f.get(ref) }
 func (f fakeEvidence) get(d string) ([]byte, error) {
 	if raw, ok := f[d]; ok {
 		return raw, nil
@@ -281,9 +282,6 @@ func TestApplyValidatesEveryApprovedRowBeforeDeleting(t *testing.T) {
 	if _, err := f.pruner.Apply(context.Background(), Plan{Schema: 2, Mode: ModeFallback}, nil); err == nil {
 		t.Error("invalid schema accepted")
 	}
-	if _, err := f.pruner.Apply(context.Background(), Plan{Schema: 1, Mode: "publication"}, nil); err == nil {
-		t.Error("unsupported mode accepted")
-	}
 }
 
 func failedFixture(t *testing.T) *pruneFixture {
@@ -522,12 +520,8 @@ func TestAssessChecksIdentity(t *testing.T) {
 	}
 }
 
-func TestApplyRejectsPublicationModePlansNamingTheScript(t *testing.T) {
+func TestApplyRejectsUnknownModes(t *testing.T) {
 	f := newPruneFixture(t)
-	_, err := f.pruner.Apply(context.Background(), Plan{Schema: 1, Mode: "publication", Rows: []PlanRow{f.assess()}}, nil)
-	if err == nil || !strings.Contains(err.Error(), "scripts/staging-cleanup.py") || len(f.store.deleted) != 0 {
-		t.Fatalf("err = %v deleted = %v", err, f.store.deleted)
-	}
 	for _, mode := range []string{"", "unknown"} {
 		if _, err := f.pruner.Apply(context.Background(), Plan{Schema: 1, Mode: mode}, nil); err == nil {
 			t.Errorf("mode %q accepted", mode)
