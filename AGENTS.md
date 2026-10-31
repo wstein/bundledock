@@ -47,7 +47,7 @@ separate explicit approval of the exact full source revision and intended
 build/publication operation; an updater PR cannot authorize a first publication.
 Verify repository visibility and robot access before that operation. Existing environment settings remain untouched. Manual publication
 retains exact full-SHA human dispatch. OpenTofu initial publication requires
-this manual gate; a bot updater cannot bootstrap an absent stable baseline. Source PRs, documentation PRs, schedules,
+this manual gate; a bot updater cannot bootstrap an absent stable baseline. The OpenTofu bundle is retired (2026-10-31), so these OpenTofu gates no longer apply and nothing publishes it. Source PRs, documentation PRs, schedules,
 bot activity and local commits alone supply no artifact build approval outside
 the Pages-specific exception above and the CLI release workflow exception below.
 Tagging and publication must follow the explicitly authorized workflow scope (the CLI release workflow exception below is the only CLI one);

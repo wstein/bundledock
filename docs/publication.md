@@ -9,7 +9,8 @@ weight: 40
 [Back to BundleDock](../README.md)
 
 **Publish bundles** (`publish-bundles.yml`) is the publication entrypoint for
-all nine bundles. Successful merged-main CI selects one eligible updater;
+the nine active bundles (the eight tool bundles and the manually published
+nixbox); the retired opentofu bundle is not offered. Successful merged-main CI selects one eligible updater;
 manual runs select one bundle and the explicitly approved full source SHA.
 Bundle-specific native smoke checks, artifacts and source tag namespaces remain.
 **Propose upgrades** (`propose-upgrades.yml`) shares the source-only updater,
