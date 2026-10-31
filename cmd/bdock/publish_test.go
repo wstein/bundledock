@@ -8,6 +8,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"bundledock/internal/toolpublish"
 )
 
 func TestPublishHelp(t *testing.T) {
@@ -131,6 +133,38 @@ func TestPublishDryRun(t *testing.T) {
 		if !strings.Contains(output, want) {
 			t.Fatalf("output missing %q: %s", want, output)
 		}
+	}
+}
+
+func TestPublishAllTargetsOnlyActiveBundles(t *testing.T) {
+	const sha = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	original := gitPreflight
+	t.Cleanup(func() { gitPreflight = original })
+	gitPreflight = func() (string, string, bool, bool, error) {
+		return sha, "main", true, true, nil
+	}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(map[string]any{"total_count": 1, "workflow_runs": []map[string]any{{
+			"id": int64(1), "name": "CI", "head_sha": sha, "head_branch": "main", "status": "completed",
+			"conclusion": "success", "html_url": "https://github.com/wstein/bundledock/actions/runs/1"}}})
+	}))
+	defer server.Close()
+	var out bytes.Buffer
+	cmd := newRootCommandWithClient(server.Client())
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{"publish", "--all", "--dry-run", "--token", "tok", "--server-url", server.URL})
+	if err := cmd.ExecuteContext(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	var target string
+	for _, line := range strings.Split(out.String(), "\n") {
+		if rest, ok := strings.CutPrefix(line, "  Target bundles: "); ok {
+			target = rest
+		}
+	}
+	if target != strings.Join(toolpublish.ActiveBundles(), ", ") || strings.Contains(target, "opentofu") {
+		t.Fatalf("target bundles %q", target)
 	}
 }
 
