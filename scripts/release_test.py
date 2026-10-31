@@ -16,16 +16,27 @@ try:
 except ModuleNotFoundError:  # Python < 3.11
     tomllib = None
 
+def _gnu_tar_path():
+    """Path of a GNU tar on PATH as `tar` or Homebrew's `gtar`, else None (mirrors scripts/release.sh)."""
+    for name in ('tar', 'gtar'):
+        path = shutil.which(name)
+        if path is None:
+            continue
+        try:
+            out = subprocess.run([path, '--version'], capture_output=True, text=True).stdout
+        except OSError:
+            continue
+        if 'GNU tar' in out:
+            return path
+    return None
+
+
 def _has_gnu_tar():
-    try:
-        out = subprocess.run(['tar', '--version'], capture_output=True, text=True).stdout
-    except OSError:
-        return False
-    return 'GNU tar' in out
+    return _gnu_tar_path() is not None
 
 
-# scripts/release.sh refuses any tar that is not GNU tar, by design.
-requires_gnu_tar = unittest.skipUnless(_has_gnu_tar(), 'scripts/release.sh requires GNU tar, which is not the tar on PATH')
+# scripts/release.sh refuses any tar that is not GNU tar (`tar` or `gtar`), by design.
+requires_gnu_tar = unittest.skipUnless(_has_gnu_tar(), 'scripts/release.sh requires GNU tar (tar or gtar), which is not on PATH')
 
 ROOT = Path(__file__).resolve().parents[1]
 # Sorted by archive name; darwin/amd64 (end of life) and Windows are not built.
@@ -113,6 +124,43 @@ else:
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual({p.name for p in (base / 'out').iterdir()},
                              {'bdock_0.1.0_darwin_arm64.tar.gz', 'LICENSE', 'PROVENANCE', 'SHA256SUMS'})
+
+    def stub_tars(self, base, gtar):
+        """A PATH-first directory whose `tar` mimics bsdtar; `gtar` is bsdtar-like (None) or wraps `gnu`."""
+        stubs = base / 'stubs'
+        stubs.mkdir()
+        bsd = '#!/bin/sh\nif [ "$1" = --version ]; then echo "bsdtar 3.5.3 - libarchive 3.5.3"; exit 0; fi\n' \
+              'echo "bsdtar stub must not build archives" >&2; exit 2\n'
+        (stubs / 'tar').write_text(bsd)
+        (stubs / 'gtar').write_text(bsd if gtar is None else '#!/bin/sh\ntouch "$GTAR_USED"\nexec "%s" "$@"\n' % gtar)
+        for stub in stubs.iterdir():
+            stub.chmod(0o755)
+        return stubs
+
+    def test_non_gnu_tar_without_gtar_fails_with_install_hint(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            stubs = self.stub_tars(base, None)
+            result = self.run_release(base, PATH=str(stubs) + os.pathsep + os.environ['PATH'])
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn('GNU tar is required for repeatable archives', result.stderr)
+            self.assertIn('brew install gnu-tar', result.stderr)
+            self.assertFalse((base / 'out').exists())
+
+    @requires_gnu_tar
+    def test_non_gnu_tar_falls_back_to_gtar_with_gnu_flags(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            stubs = self.stub_tars(base, _gnu_tar_path())
+            used = base / 'gtar-used'
+            result = self.run_release(base, PATH=str(stubs) + os.pathsep + os.environ['PATH'], GTAR_USED=str(used),
+                                      TARGETS='linux/amd64')
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertTrue(used.exists())
+            with tarfile.open(base / 'out/bdock_0.1.0_linux_amd64.tar.gz') as archive:
+                self.assertEqual(archive.getnames(), ['bdock', 'LICENSE', 'PROVENANCE'])
+                for member in archive.getmembers():
+                    self.assertEqual((member.uid, member.gid, member.mtime), (0, 0, 0))
 
     def test_unsupported_targets_are_refused_before_building(self):
         for target in ('darwin/amd64', 'windows/amd64', 'linux/386', 'linux/amd64 ../x', 'linux/amd64\nlinux/arm64', ''):
