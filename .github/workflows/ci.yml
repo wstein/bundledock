@@ -75,7 +75,8 @@ jobs:
           status=0
           python3 -B -m unittest discover -s scripts/tests 2>&1 | tee "$RUNNER_TEMP/suite.log" || status=1
           python3 scripts/macos-ci-annotate.py "$RUNNER_TEMP/suite.log" || true
-          python3 -B -m unittest discover -s scripts -p '*_test.py' || status=1
+          python3 -B -m unittest discover -s scripts -p '*_test.py' 2>&1 | tee "$RUNNER_TEMP/scripts.log" || status=1
+          python3 scripts/macos-ci-annotate.py "$RUNNER_TEMP/scripts.log" || true
           exit "$status"
       - name: Run the suspect test modules verbosely (shim, codex, rolling locks, toolbox and nixbox build workflows)
         if: always()
