@@ -354,19 +354,103 @@ func (f *sqliteFile) findValidPaths() (int, []string, error) {
 	return root, cols, nil
 }
 
-// sqlColumns returns the column names of a CREATE TABLE statement.
+// quotedEnd returns the index after the quoted section that starts at s[i]
+// ('...', "...", `...` with a doubled quote as escape, or [...]), or -1 if s[i]
+// does not start one. An unterminated section ends at len(s).
+func quotedEnd(s string, i int) int {
+	closer := byte(0)
+	switch s[i] {
+	case '\'', '"', '`':
+		closer = s[i]
+	case '[':
+		closer = ']'
+	default:
+		return -1
+	}
+	for j := i + 1; j < len(s); j++ {
+		if s[j] != closer {
+			continue
+		}
+		if closer != ']' && j+1 < len(s) && s[j+1] == closer {
+			j++
+			continue
+		}
+		return j + 1
+	}
+	return len(s)
+}
+
+// stripSQLComments replaces every "--" and "/* */" comment outside quoted
+// sections by one space.
+func stripSQLComments(sql string) string {
+	var out strings.Builder
+	for i := 0; i < len(sql); {
+		if end := quotedEnd(sql, i); end >= 0 {
+			out.WriteString(sql[i:end])
+			i = end
+			continue
+		}
+		switch {
+		case strings.HasPrefix(sql[i:], "--"):
+			nl := strings.IndexByte(sql[i:], '\n')
+			if nl < 0 {
+				i = len(sql)
+			} else {
+				i += nl
+			}
+			out.WriteByte(' ')
+		case strings.HasPrefix(sql[i:], "/*"):
+			end := strings.Index(sql[i+2:], "*/")
+			if end < 0 {
+				i = len(sql)
+			} else {
+				i += end + 4
+			}
+			out.WriteByte(' ')
+		default:
+			out.WriteByte(sql[i])
+			i++
+		}
+	}
+	return out.String()
+}
+
+// sqlColumns returns the column names of a CREATE TABLE statement. Comments are
+// ignored, table constraints are skipped, and commas inside parentheses or
+// quoted sections do not split a definition.
 func sqlColumns(sql string) []string {
-	open, end := strings.Index(sql, "("), strings.LastIndex(sql, ")")
-	if open < 0 || end < open {
+	sql = stripSQLComments(sql)
+	open := -1
+	for i := 0; i < len(sql) && open < 0; {
+		if end := quotedEnd(sql, i); end >= 0 {
+			i = end
+			continue
+		}
+		if sql[i] == '(' {
+			open = i
+		}
+		i++
+	}
+	if open < 0 {
 		return nil
 	}
 	var defs []string
 	depth, start := 0, open+1
-	for i := open + 1; i < end; i++ {
+loop:
+	for i := open + 1; i < len(sql); {
+		if end := quotedEnd(sql, i); end >= 0 {
+			i = end
+			continue
+		}
 		switch sql[i] {
 		case '(':
 			depth++
 		case ')':
+			if depth == 0 {
+				defs = append(defs, sql[start:i])
+				start = -1
+				break loop
+			}
 			depth--
 		case ',':
 			if depth == 0 {
@@ -374,19 +458,31 @@ func sqlColumns(sql string) []string {
 				start = i + 1
 			}
 		}
+		i++
 	}
-	defs = append(defs, sql[start:end])
+	if start >= 0 { // unterminated statement
+		defs = append(defs, sql[start:])
+	}
 	var cols []string
 	for _, d := range defs {
-		fields := strings.Fields(d)
-		if len(fields) == 0 {
+		d = strings.TrimSpace(d)
+		if d == "" {
 			continue
 		}
-		switch strings.ToUpper(fields[0]) {
+		name := d
+		if end := quotedEnd(d, 0); end >= 0 {
+			name = d[:end]
+		} else if sp := strings.IndexAny(d, " \t\r\n"); sp >= 0 {
+			name = d[:sp]
+		}
+		switch strings.ToUpper(name) {
 		case "PRIMARY", "UNIQUE", "CHECK", "FOREIGN", "CONSTRAINT":
 			continue
 		}
-		cols = append(cols, strings.Trim(fields[0], "\"`[]'"))
+		if len(name) >= 2 && quotedEnd(name, 0) == len(name) {
+			name = strings.ReplaceAll(name[1:len(name)-1], name[:1]+name[:1], name[:1])
+		}
+		cols = append(cols, name)
 	}
 	return cols
 }
