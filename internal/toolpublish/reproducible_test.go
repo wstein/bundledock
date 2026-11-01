@@ -202,18 +202,29 @@ func TestCheckNixDBNormalized(t *testing.T) {
 
 // Each rejection names its own reason, not a follow-on problem.
 func TestCheckNixDBNormalizedNamesTheReason(t *testing.T) {
-	for want, mutate := range map[string]func(string) string{
+	// The key is the expected text, a "|" and a label for the case.
+	for key, mutate := range map[string]func(string) string{
 		"outside the roots": func(s string) string { return strings.Replace(s, "-db /out/opt", "-db /elsewhere/opt", 1) },
 		"not a path ending": func(s string) string { return strings.Replace(s, "var/nix/db/db.sqlite", "var/nix/db/schema", 1) },
 		"after normalize-mtimes": func(s string) string {
 			return strings.Replace(strings.Replace(s, "    && tools normalize-nix-db -db /out/opt/nixbox/var/nix/db/db.sqlite \\\n", "", 1), "-root /out\n", "-root /out \\\n    && tools normalize-nix-db -db /out/opt/nixbox/var/nix/db/db.sqlite\n", 1)
 		},
+		"after normalize-nix-db|a parent directory is copied over after the step": func(s string) string {
+			return strings.Replace(s, "    && tools normalize-mtimes", "    && cp -a /src/nixbox /out/opt/ \\\n    && tools normalize-mtimes", 1)
+		},
+		"after normalize-nix-db|a later RUN removes and copies the parent": func(s string) string {
+			return strings.Replace(s, "    && tools normalize-mtimes -root /out\n", "\nRUN rm -rf /out/opt/nixbox && cp -a /x /out/opt/nixbox\nRUN tools normalize-mtimes -root /out\n", 1)
+		},
+		"after normalize-nix-db|the whole root is copied over after the step": func(s string) string {
+			return strings.Replace(s, "    && tools normalize-mtimes", "    && cp -a /src/. /out/ \\\n    && tools normalize-mtimes", 1)
+		},
 		"after normalize-nix-db": func(s string) string {
 			return strings.Replace(s, "    && tools normalize-mtimes", "    && echo x >> /out/opt/nixbox/var/nix/db/db.sqlite \\\n    && tools normalize-mtimes", 1)
 		},
 	} {
+		want, _, _ := strings.Cut(key, "|")
 		if p := strings.Join(checkNixDBNormalized(mutate(nixDBDockerfile)), "; "); !strings.Contains(p, want) {
-			t.Errorf("want a problem containing %q, got %q", want, p)
+			t.Errorf("%s: want a problem containing %q, got %q", key, want, p)
 		}
 	}
 }
