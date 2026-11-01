@@ -1,0 +1,97 @@
+{
+  "schema": 1,
+  "layers": [
+    {
+      "name": "stable-large",
+      "tools": [
+        "hadolint",
+        "nu",
+        "opentofu",
+        "sops"
+      ]
+    },
+    {
+      "name": "stable",
+      "tools": [
+        "actionlint",
+        "age",
+        "bat",
+        "direnv",
+        "dust",
+        "fd",
+        "fish",
+        "fzf",
+        "git-cliff",
+        "gitleaks",
+        "hyperfine",
+        "jj",
+        "jq",
+        "jsonschema-cli",
+        "lsd",
+        "lychee",
+        "misspell",
+        "navi",
+        "rg",
+        "scc",
+        "shellcheck",
+        "shfmt",
+        "smill",
+        "sqlite3",
+        "stw",
+        "tmux",
+        "typos",
+        "typst",
+        "watchexec",
+        "yq",
+        "zoxide"
+      ]
+    },
+    {
+      "name": "occasional-large",
+      "tools": [
+        "cosign",
+        "gh-stack",
+        "syft"
+      ]
+    },
+    {
+      "name": "occasional",
+      "tools": [
+        "bottom",
+        "btop",
+        "cscribe",
+        "git-lfs",
+        "just",
+        "lazygit",
+        "regctl",
+        "starship",
+        "whr",
+        "xh"
+      ]
+    },
+    {
+      "name": "frequent-large",
+      "tools": [
+        "herdr",
+        "hugo",
+        "trivy",
+        "trufflehog"
+      ]
+    },
+    {
+      "name": "mise",
+      "tools": [
+        "mise"
+      ]
+    },
+    {
+      "name": "frequent",
+      "tools": [
+        "gh",
+        "pinact",
+        "ruff",
+        "uv"
+      ]
+    }
+  ]
+}
