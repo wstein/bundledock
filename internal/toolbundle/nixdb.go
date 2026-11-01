@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -44,7 +45,39 @@ func NormalizeNixDB(path string, epoch int64) error {
 	if err := normalizeNixDBBytes(data, epoch); err != nil {
 		return fmt.Errorf("%s: %w", path, err)
 	}
-	return os.WriteFile(path, data, 0o644)
+	return replaceFile(path, data)
+}
+
+// replaceFile writes data to a temporary file in the directory of path, syncs
+// it and renames it over path, keeping the permissions of the old file.
+func replaceFile(path string, data []byte) (err error) {
+	info, err := os.Stat(path)
+	if err != nil {
+		return err
+	}
+	tmp, err := os.CreateTemp(filepath.Dir(path), "."+filepath.Base(path)+".tmp-")
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err != nil {
+			tmp.Close()
+			os.Remove(tmp.Name())
+		}
+	}()
+	if _, err = tmp.Write(data); err != nil {
+		return err
+	}
+	if err = tmp.Chmod(info.Mode().Perm()); err != nil {
+		return err
+	}
+	if err = tmp.Sync(); err != nil {
+		return err
+	}
+	if err = tmp.Close(); err != nil {
+		return err
+	}
+	return os.Rename(tmp.Name(), path)
 }
 
 const (
