@@ -282,6 +282,22 @@ func (a Adapter) smokeBundle(id, consumer, script string) error {
 	return err
 }
 
+// SourceDateEpoch is the fixed time (Unix seconds) in every image layer. It is
+// constant, not derived from the version or the date, so that unchanged files
+// give identical layers in every version. 1 is the canonical mtime of a Nix
+// store path. The bundle Dockerfiles use the same value as the ARG default.
+const SourceDateEpoch = "1"
+
+// buildTagIndex is the position of the local build tag in buildArgs.
+const buildTagIndex = 8
+
+// buildArgs is the docker build command up to the labels and the context.
+func buildArgs(bundle Bundle, m Metadata, arch string) []string {
+	return []string{"docker", "build", "--pull", "--platform", "linux/" + arch,
+		"-f", bundle.Directory + "/Dockerfile", "-t", "bundledock-" + bundle.Name + ":build-" + m.Tag + "-" + arch,
+		"--build-arg", "SOURCE_DATE_EPOCH=" + SourceDateEpoch}
+}
+
 func (a Adapter) Build(m Metadata, lock, arch, consumer string) (Receipt, error) {
 	var r Receipt
 	if err := validate(m, lock); err != nil {
@@ -295,7 +311,7 @@ func (a Adapter) Build(m Metadata, lock, arch, consumer string) (Receipt, error)
 		return r, fmt.Errorf("native Linux architecture required")
 	}
 	bundle := BundleForMetadata(m)
-	args := []string{"docker", "build", "--pull", "--platform", "linux/" + arch, "-f", bundle.Directory + "/Dockerfile", "-t", "bundledock-" + bundle.Name + ":build-" + m.Tag + "-" + arch}
+	args := buildArgs(bundle, m, arch)
 	imageLabels, err := labels(m, lock, arch)
 	if err != nil {
 		return r, err
@@ -306,7 +322,7 @@ func (a Adapter) Build(m Metadata, lock, arch, consumer string) (Receipt, error)
 	if _, err = a.Run(append(args, ".")...); err != nil {
 		return r, err
 	}
-	id, err := a.inspectLocal(m, lock, arch, args[8])
+	id, err := a.inspectLocal(m, lock, arch, args[buildTagIndex])
 	if err != nil {
 		return r, err
 	}

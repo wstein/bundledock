@@ -37,12 +37,18 @@ RUN --network=none tools-bundle compile -tool sqlite3 -arch "${TARGETARCH}" -wor
 
 FROM downloads AS builder
 ARG TARGETARCH
+# Fixed time for every file in the layers (docs/reproducibility.md). The default
+# equals toolpublish.SourceDateEpoch, which the publisher passes explicitly.
+ARG SOURCE_DATE_EPOCH=1
 COPY --from=compile-sqlite3 /out /compiled/sqlite3
 RUN tools-bundle -arch "${TARGETARCH}" -destination /image-root/opt/bdock/toolbox --shell-layer /build/shell-layer --build-outputs /compiled \
     && ln -s /opt/bdock /image-root/opt/bundledock
+# The init layer is staged here too, so its directories get a fixed time as well.
+COPY --from=compiler /out/init-volume /init-root/usr/local/bin/init-volume
+RUN tools-bundle normalize-mtimes -root /image-root && tools-bundle normalize-mtimes -root /init-root
 
 FROM scratch
-COPY --from=builder /image-root/opt/ /opt/
-COPY --from=compiler /out/init-volume /usr/local/bin/init-volume
+COPY --from=builder /image-root/ /
+COPY --from=builder /init-root/ /
 ENV PATH="/opt/bdock/toolbox/bin:/usr/local/bin" DISABLE_UPDATES=1 DISABLE_AUTOUPDATER=1
 ENTRYPOINT ["/usr/local/bin/init-volume"]
