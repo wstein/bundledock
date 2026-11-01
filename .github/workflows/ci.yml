@@ -1,9 +1,11 @@
-# Source CI. A bdock/vX.Y.Z tag push also runs this workflow (unfiltered push); the tag-driven
-# CLI release in release.yml requires a successful push run of this workflow for the tagged commit.
+# Source CI. Branches are covered by the pull_request event; push runs only on main. A tag push
+# does not run this workflow; the tag-driven CLI release in release.yml requires a successful
+# push run of this workflow for the tagged commit, which its main push provides.
 name: CI
 
 on:
   push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
     inputs:
