@@ -57,3 +57,23 @@ func TestNormalizeMtimesRejectsBadInput(t *testing.T) {
 		t.Error("negative epoch accepted")
 	}
 }
+
+// An unreadable directory must fail the walk, not be skipped: a skipped
+// subtree would keep its build-time mtimes in the layer.
+func TestNormalizeMtimesReportsWalkErrors(t *testing.T) {
+	if os.Geteuid() == 0 {
+		t.Skip("root reads every directory")
+	}
+	root := t.TempDir()
+	locked := filepath.Join(root, "locked")
+	if err := os.MkdirAll(filepath.Join(locked, "inner"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(locked, 0); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chmod(locked, 0o755)
+	if err := NormalizeMtimes(root, 1); err == nil {
+		t.Fatal("unreadable directory was skipped without an error")
+	}
+}
