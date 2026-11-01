@@ -77,6 +77,16 @@ func TestCheckNormalizedBeforeCopy(t *testing.T) {
 	if p := checkNormalizedBeforeCopy(goodDockerfile); len(p) != 0 {
 		t.Fatalf("good Dockerfile rejected: %v", p)
 	}
+	// A different root that merely starts with the normalized name is not a write to it.
+	sibling := strings.Replace(goodDockerfile, "\n\nFROM scratch", "\nCOPY --from=x /y /image-root-extra/y\n\nFROM scratch", 1)
+	if p := checkNormalizedBeforeCopy(sibling); len(p) != 0 {
+		t.Errorf("write to /image-root-extra counted as a write to /image-root: %v", p)
+	}
+	// Joined continuation lines and a trailing statement separator are normal forms.
+	joined := strings.Replace(goodDockerfile, "RUN tools normalize-mtimes -root /image-root && tools normalize-mtimes -root /init-root", "RUN set -eu; \\\n    tools normalize-mtimes -root /image-root; \\\n    tools normalize-mtimes -root /init-root", 1)
+	if p := checkNormalizedBeforeCopy(joined); len(p) != 0 {
+		t.Errorf("continuation form rejected: %v", p)
+	}
 	for name, mutate := range map[string]func(string) string{
 		"write after normalize": func(s string) string {
 			return strings.Replace(s, "\n\nFROM scratch", "\nCOPY --from=x /late /image-root/late\n\nFROM scratch", 1)
@@ -89,6 +99,18 @@ func TestCheckNormalizedBeforeCopy(t *testing.T) {
 		},
 		"write later in the same RUN": func(s string) string {
 			return strings.Replace(s, "-root /init-root", "-root /init-root && touch /init-root/x", 1)
+		},
+		"normalize only echoed": func(s string) string {
+			return strings.Replace(s, "RUN tools normalize-mtimes -root /image-root", "RUN echo tools normalize-mtimes -root /image-root", 1)
+		},
+		"normalize in a shell comment": func(s string) string {
+			return strings.Replace(s, "&& tools normalize-mtimes -root /init-root", "# tools normalize-mtimes -root /init-root", 1)
+		},
+		"normalize failure ignored": func(s string) string {
+			return strings.Replace(s, "-root /init-root", "-root /init-root || true", 1)
+		},
+		"sibling prefix is not the same root": func(s string) string {
+			return strings.Replace(strings.Replace(s, "-root /image-root", "-root /image", 1), "COPY --from=builder /image-root/ /", "COPY --from=builder /image-root/ /", 1)
 		},
 		"final stage copies an unknown root": func(s string) string {
 			return s + "COPY --from=builder /other/ /\n"

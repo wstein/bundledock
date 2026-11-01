@@ -7,8 +7,9 @@ import (
 )
 
 var (
-	normalizeCmd = regexp.MustCompile(`normalize-mtimes -root ([^\s;&|"']+)`)
-	fromLine     = regexp.MustCompile(`(?i)^FROM\s+(?:--\S+\s+)*\S+(?:\s+AS\s+(\S+))?`)
+	normalizeWord = regexp.MustCompile(`(?:\S*/)?[\w-]+ normalize-mtimes -root ([^\s;&|"']+)`)
+	shellComment  = regexp.MustCompile(`(^|\s)#.*$`)
+	fromLine      = regexp.MustCompile(`(?i)^FROM\s+(?:--\S+\s+)*\S+(?:\s+AS\s+(\S+))?`)
 )
 
 type dockerStage struct {
@@ -32,6 +33,8 @@ func parseStages(dockerfile string) []dockerStage {
 		}
 		line = pending + line
 		pending = ""
+		// In the joined instruction a shell comment runs to the end of it.
+		line = shellComment.ReplaceAllString(line, "$1")
 		if m := fromLine.FindStringSubmatch(line); m != nil {
 			stages = append(stages, dockerStage{name: m[1]})
 			cur = &stages[len(stages)-1]
@@ -87,11 +90,11 @@ func checkStage(st dockerStage, root string) []string {
 	// whose root covers the copied root.
 	last := -1
 	covering := ""
-	blanked := normalizeCmd.ReplaceAllStringFunc(st.text, func(m string) string { return strings.Repeat(" ", len(m)) })
-	for _, m := range normalizeCmd.FindAllStringSubmatchIndex(st.text, -1) {
-		n := st.text[m[2]:m[3]]
-		if root == n || strings.HasPrefix(root, n+"/") {
-			last, covering = m[0], n
+	blanked := st.text
+	for _, c := range normalizeCalls(st.text) {
+		blanked = blanked[:c.start] + strings.Repeat(" ", c.end-c.start) + blanked[c.end:]
+		if root == c.root || strings.HasPrefix(root, c.root+"/") {
+			last, covering = c.start, c.root
 		}
 	}
 	if last < 0 {
@@ -105,4 +108,29 @@ func checkStage(st dockerStage, root string) []string {
 		}
 	}
 	return problems
+}
+
+type normalizeCall struct {
+	start, end int
+	root       string
+}
+
+// normalizeCalls finds normalize-mtimes calls that run as a command: the text
+// before is the start of a RUN or && or ;, and the text after is && or ; or the
+// end of the instruction. echo, another command word, "|| true" and pipes do not
+// qualify. It cannot see conditionals, subshells, variables or globs.
+func normalizeCalls(text string) []normalizeCall {
+	var calls []normalizeCall
+	for _, m := range normalizeWord.FindAllStringSubmatchIndex(text, -1) {
+		before := strings.TrimRight(text[:m[0]], " \t")
+		after := strings.TrimLeft(text[m[1]:], " \t")
+		lineStart := strings.LastIndex(before, "\n") + 1
+		okBefore := strings.HasSuffix(before, "&&") || strings.HasSuffix(before, ";") ||
+			regexp.MustCompile(`^RUN$`).MatchString(strings.TrimSpace(before[lineStart:]))
+		okAfter := after == "" || strings.HasPrefix(after, "\n") || strings.HasPrefix(after, "&&") || strings.HasPrefix(after, ";")
+		if okBefore && okAfter {
+			calls = append(calls, normalizeCall{m[0], m[1], text[m[2]:m[3]]})
+		}
+	}
+	return calls
 }
