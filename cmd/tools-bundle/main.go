@@ -33,6 +33,13 @@ func main() {
 		}
 		return
 	}
+	if len(os.Args) > 1 && os.Args[1] == "normalize-nix-db" {
+		if err := runNormalizeNixDB(os.Args[2:]); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		return
+	}
 	arch := flag.String("arch", "", "target architecture (amd64 or arm64)")
 	directory := flag.String("directory", "/build", "directory containing packages.txt, packages.catalog.json and packages.lock.json")
 	destination := flag.String("destination", "/opt/bdock/toolbox", "bundle directory")
@@ -118,4 +125,24 @@ func runSplitLayers(args []string) error {
 		fmt.Println(n)
 	}
 	return nil
+}
+
+// runNormalizeNixDB fixes registrationTime in the Nix store database so that
+// the image layer holding it does not depend on the build time. The epoch
+// defaults to SOURCE_DATE_EPOCH.
+func runNormalizeNixDB(args []string) error {
+	fs := flag.NewFlagSet("normalize-nix-db", flag.ContinueOnError)
+	db := fs.String("db", "", "path of the Nix database (var/nix/db/db.sqlite)")
+	epoch := fs.String("epoch", os.Getenv("SOURCE_DATE_EPOCH"), "Unix time in seconds (default: SOURCE_DATE_EPOCH)")
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	if *db == "" || *epoch == "" {
+		return fmt.Errorf("normalize-nix-db needs -db and an epoch (-epoch or SOURCE_DATE_EPOCH)")
+	}
+	n, err := strconv.ParseInt(*epoch, 10, 64)
+	if err != nil {
+		return fmt.Errorf("epoch %q: %w", *epoch, err)
+	}
+	return toolbundle.NormalizeNixDB(*db, n)
 }
