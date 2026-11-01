@@ -470,8 +470,8 @@ func TestNormalizeNixDBRejectsABrokenCellContentStart(t *testing.T) {
 		for pg := 1; pg < len(b)/4096; pg++ {
 			binary.BigEndian.PutUint16(b[pg*4096+5:], start)
 		}
-		if err := normalizeNixDBBytes(b, 1); err == nil {
-			t.Errorf("content start %s accepted", name)
+		if err := normalizeNixDBBytes(b, 1); err == nil || !strings.Contains(err.Error(), "cell content starts") {
+			t.Errorf("content start %s: got %v, want a cell content start error", name, err)
 		}
 	}
 }
