@@ -97,11 +97,16 @@ func TestScratchCarrierContract(t *testing.T) {
 					t.Fatalf("unexpected final carrier content: %s", line)
 				}
 			}
+			// The toolbox stages both roots with fixed mtimes (see reproducible_test.go).
+			copyTree, copyInit := "COPY --from=builder /image-root/opt/ /opt/", "COPY --from=compiler /out/init-volume /usr/local/bin/init-volume"
+			if bundle == "toolbox" {
+				copyTree, copyInit = "COPY --from=builder /image-root/ /", "COPY --from=builder /init-root/ /"
+			}
 			for _, required := range []string{
 				"-destination /image-root/opt/bdock/" + bundle,
 				"ln -s /opt/bdock /image-root/opt/bundledock",
-				"COPY --from=builder /image-root/opt/ /opt/",
-				"COPY --from=compiler /out/init-volume /usr/local/bin/init-volume",
+				copyTree,
+				copyInit,
 				`ENV PATH="/opt/bdock/` + bundle + `/bin:/usr/local/bin"`,
 			} {
 				if !strings.Contains(dockerfile, required) {

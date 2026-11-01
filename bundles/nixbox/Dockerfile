@@ -33,7 +33,12 @@ RUN /out/tools-bundle -arch "${TARGETARCH}" -directory /build -destination /offi
 # if it holds anything); the store must hold the locked paths and nothing else.
 FROM --platform=$BUILDPLATFORM nixos/nix@sha256:f159a58f390677f41e8e900a74b6e2f9c7f27b364122ae6acf7a652ce6c551c0 AS fetch
 ARG TARGETARCH
+# Fixed time for every file in the layers (docs/reproducibility.md). The default
+# equals toolpublish.SourceDateEpoch (1 is also the canonical mtime of a Nix store).
+ARG SOURCE_DATE_EPOCH=1
 COPY --from=compiler /out/nixbox-build /build/nixbox
+COPY --from=compiler /out/tools-bundle /build/tools-bundle
+COPY --from=compiler /out/nixbox /init-root/usr/local/bin/nixbox
 COPY bundles/nixbox/packages.catalog.json bundles/nixbox/packages.lock.json /build/
 COPY bundles/nixbox/shims/nixbox-shim /build/nixbox-shim
 COPY --from=official /official /official
@@ -54,9 +59,11 @@ RUN set -eu; \
         -store /image-root/nix/store -out /image-root/nix/profile -shim /build/nixbox-shim; \
     mkdir -p /out/opt/bdock; \
     mv /image-root/nix /out/opt/bdock/nixbox; \
-    ln -s bdock /out/opt/bundledock
+    ln -s bdock /out/opt/bundledock; \
+    /build/tools-bundle normalize-mtimes -root /out; \
+    /build/tools-bundle normalize-mtimes -root /init-root
 
 FROM scratch
-COPY --from=fetch /out/opt/ /opt/
-COPY --from=compiler /out/nixbox /usr/local/bin/nixbox
+COPY --from=fetch /out/ /
+COPY --from=fetch /init-root/ /
 ENTRYPOINT ["/usr/local/bin/nixbox", "init", "--source", "/opt/bdock/nixbox"]
