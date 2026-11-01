@@ -419,3 +419,88 @@ func TestNormalizeNixDBReplacesTheFileAtomically(t *testing.T) {
 		t.Errorf("%d entries after a failed call", len(entries))
 	}
 }
+
+// Every byte of the gap of every ValidPaths page is zero, and the gaps are not
+// empty (the check would pass for a tool that never looks at them).
+func TestNormalizeNixDBLeavesNoByteInAnyGap(t *testing.T) {
+	for _, name := range []string{"nixdb-a.sqlite", "nixdb-split.sqlite", "nixdb-overflow.sqlite"} {
+		p := nixDBCopy(t, name)
+		if err := NormalizeNixDB(p, 1); err != nil {
+			t.Fatal(err)
+		}
+		f, err := openSQLite(readNixDB(t, p))
+		if err != nil {
+			t.Fatal(err)
+		}
+		root, _, err := f.findValidPaths()
+		if err != nil {
+			t.Fatal(err)
+		}
+		f.visited = map[int]bool{}
+		if err := f.walkTable(root, 0, func(int, int, int) error { return nil }); err != nil {
+			t.Fatal(err)
+		}
+		gapBytes := 0
+		for n := range f.visited {
+			pg, hdr, _ := f.page(n)
+			hdrSize := 8
+			if pg[hdr] == 0x05 {
+				hdrSize = 12
+			}
+			start := hdr + hdrSize + 2*int(binary.BigEndian.Uint16(pg[hdr+3:]))
+			end := int(binary.BigEndian.Uint16(pg[hdr+5:]))
+			for _, b := range pg[start:end] {
+				if b != 0 {
+					t.Errorf("%s: page %d has a non-zero byte in its gap [%d,%d)", name, n, start, end)
+					break
+				}
+			}
+			gapBytes += end - start
+		}
+		if gapBytes == 0 {
+			t.Errorf("%s: no page has a gap", name)
+		}
+	}
+}
+
+func TestNormalizeNixDBRejectsABrokenCellContentStart(t *testing.T) {
+	good := readNixDB(t, nixDBCopy(t, "nixdb-a.sqlite"))
+	for name, start := range map[string]uint16{"before the cell pointer array": 10, "beyond the page": 0xFFFF} {
+		b := append([]byte(nil), good...)
+		for pg := 1; pg < len(b)/4096; pg++ {
+			binary.BigEndian.PutUint16(b[pg*4096+5:], start)
+		}
+		if err := normalizeNixDBBytes(b, 1); err == nil {
+			t.Errorf("content start %s accepted", name)
+		}
+	}
+}
+
+// Values by the formula of the SQLite file format ("Cell Format").
+func TestLocalSize(t *testing.T) {
+	for _, tc := range []struct{ usable, payload, want int }{
+		{4096, 100, 100}, {4096, 4061, 4061}, {4096, 4062, 489}, {4096, 6000, 1908}, {4096, 100000, 1792}, {4096, 12288, 489},
+		{4084, 4049, 4049}, {4084, 4050, 487}, {4084, 6000, 1920}, {4084, 100000, 2080},
+		{512, 477, 477}, {512, 478, 39}, {512, 6000, 412}, {512, 100000, 432},
+	} {
+		if got := (&sqliteFile{usable: tc.usable}).localSize(tc.payload); got != tc.want {
+			t.Errorf("usable %d, payload %d: got %d, want %d", tc.usable, tc.payload, got, tc.want)
+		}
+	}
+}
+
+// A failure after the temporary file exists leaves no temporary file behind: the
+// destination is a directory here, so the final rename fails.
+func TestReplaceFileRemovesTheTemporaryFileOnFailure(t *testing.T) {
+	dir := t.TempDir()
+	target := filepath.Join(dir, "target")
+	if err := os.Mkdir(target, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := replaceFile(target, []byte("data")); err == nil {
+		t.Fatal("renaming a file over a directory succeeded")
+	}
+	if entries, _ := os.ReadDir(dir); len(entries) != 1 {
+		t.Errorf("%d entries, want only the directory", len(entries))
+	}
+}

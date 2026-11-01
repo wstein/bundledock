@@ -95,30 +95,39 @@ type sqliteFile struct {
 	zeroGaps         bool
 }
 
-func normalizeNixDBBytes(data []byte, epoch int64) error {
+// openSQLite checks the database header and the file size.
+func openSQLite(data []byte) (*sqliteFile, error) {
 	if len(data) < sqliteHeaderSize || !bytes.HasPrefix(data, []byte("SQLite format 3\x00")) {
-		return errors.New("not an SQLite database")
+		return nil, errors.New("not an SQLite database")
 	}
 	ps := int(binary.BigEndian.Uint16(data[16:18]))
 	if ps == 1 {
 		ps = 65536
 	}
 	if ps < 512 || ps&(ps-1) != 0 {
-		return fmt.Errorf("invalid page size %d", ps)
+		return nil, fmt.Errorf("invalid page size %d", ps)
 	}
 	if len(data)%ps != 0 {
-		return fmt.Errorf("file size %d is not a multiple of the page size %d", len(data), ps)
+		return nil, fmt.Errorf("file size %d is not a multiple of the page size %d", len(data), ps)
 	}
 	pages := len(data) / ps
 	if got := int(binary.BigEndian.Uint32(data[28:32])); got != pages {
-		return fmt.Errorf("header page count %d differs from the file (%d pages)", got, pages)
+		return nil, fmt.Errorf("header page count %d differs from the file (%d pages)", got, pages)
 	}
 	if n := binary.BigEndian.Uint32(data[36:40]); n != 0 {
-		return fmt.Errorf("freelist holds %d pages that may contain stale rows", n)
+		return nil, fmt.Errorf("freelist holds %d pages that may contain stale rows", n)
 	}
 	f := &sqliteFile{b: data, pageSize: ps, usable: ps - int(data[20]), pages: pages, visited: map[int]bool{}}
 	if f.usable < 480 {
-		return fmt.Errorf("usable page size %d too small", f.usable)
+		return nil, fmt.Errorf("usable page size %d too small", f.usable)
+	}
+	return f, nil
+}
+
+func normalizeNixDBBytes(data []byte, epoch int64) error {
+	f, err := openSQLite(data)
+	if err != nil {
+		return err
 	}
 	root, cols, err := f.findValidPaths()
 	if err != nil {
