@@ -157,25 +157,36 @@ func checkNixDBNormalized(dockerfile string) []string {
 		byName[st.name] = st
 	}
 	// The roots the final stage copies, per source stage.
-	var problems []string
-	found := false
+	roots := map[string][]string{}
 	for _, line := range strings.Split(stages[len(stages)-1].text, "\n") {
 		f := strings.Fields(line)
 		if len(f) != 4 || !strings.EqualFold(f[0], "COPY") || !strings.HasPrefix(f[1], "--from=") || !strings.HasSuffix(f[2], "/") {
 			continue
 		}
-		root := strings.TrimSuffix(f[2], "/")
-		st, ok := byName[strings.TrimPrefix(f[1], "--from=")]
+		name := strings.TrimPrefix(f[1], "--from=")
+		roots[name] = append(roots[name], strings.TrimSuffix(f[2], "/"))
+	}
+	var problems []string
+	found := false
+	for name, copied := range roots {
+		st, ok := byName[name]
 		if !ok {
 			continue
 		}
-		for _, c := range commandCalls(nixDBWord, st.text) {
+		calls := commandCalls(nixDBWord, st.text)
+		for _, c := range calls {
 			if !strings.HasSuffix(c.root, dbSuffix) {
 				problems = append(problems, fmt.Sprintf("normalize-nix-db -db %s: not a path ending in %s", c.root, dbSuffix))
 				continue
 			}
-			if !strings.HasPrefix(c.root, root+"/") {
-				problems = append(problems, fmt.Sprintf("normalize-nix-db -db %s lies outside the copied root %s", c.root, root))
+			root := ""
+			for _, r := range copied {
+				if strings.HasPrefix(c.root, r+"/") {
+					root = r
+				}
+			}
+			if root == "" {
+				problems = append(problems, fmt.Sprintf("normalize-nix-db -db %s lies outside the roots the final stage copies (%v)", c.root, copied))
 				continue
 			}
 			found = true
@@ -184,7 +195,7 @@ func checkNixDBNormalized(dockerfile string) []string {
 			// directory is a possible write after the step.
 			blanked := st.text
 			last := -1
-			for _, d := range commandCalls(nixDBWord, st.text) {
+			for _, d := range calls {
 				blanked = blanked[:d.start] + strings.Repeat(" ", d.end-d.start) + blanked[d.end:]
 				if d.root == c.root {
 					last = d.start
