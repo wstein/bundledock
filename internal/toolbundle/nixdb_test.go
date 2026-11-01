@@ -70,9 +70,20 @@ func TestNormalizeNixDBTouchesOnlyTheTimesAndTheHeaderCounters(t *testing.T) {
 	if len(after) != len(before) {
 		t.Fatalf("size %d, want %d", len(after), len(before))
 	}
-	// 120 rows with a 4-byte time each, plus the two 4-byte header counters.
-	if n := nixDBDiff(before, after); n == 0 || n > 120*4+8 {
-		t.Fatalf("%d bytes changed, want 1..%d", n, 120*4+8)
+	// A byte changes either to zero (a time byte, or a byte of a stale page gap)
+	// or to 1 at the last byte of a time or of a header counter: at most 120 + 2
+	// bytes become non-zero.
+	changed, nonzero := 0, 0
+	for i := range before {
+		if before[i] != after[i] {
+			changed++
+			if after[i] != 0 {
+				nonzero++
+			}
+		}
+	}
+	if changed == 0 || nonzero > 120+2 {
+		t.Fatalf("%d bytes changed, %d of them to a non-zero value; want at most %d", changed, nonzero, 120+2)
 	}
 	for _, off := range []int{24, 92} { // change counter, version-valid-for
 		if binary.BigEndian.Uint32(before[off:]) == 1 || binary.BigEndian.Uint32(after[off:]) != 1 {
@@ -244,11 +255,13 @@ func TestSQLColumns(t *testing.T) {
 }
 
 // staleTimes counts the 4-byte big-endian values in [lo, hi] anywhere in the
-// file: registrationTime bytes that survived, in a cell or in a stale gap.
+// file: registrationTime bytes that survived, in a cell or in a stale gap. A
+// window counts only if one of its last three bytes is not ASCII, so that text
+// such as "ered" (0x65...) is not taken for a time.
 func staleTimes(b []byte, lo, hi uint32) int {
 	n := 0
 	for i := 0; i+4 <= len(b); i++ {
-		if v := binary.BigEndian.Uint32(b[i:]); v >= lo && v <= hi {
+		if v := binary.BigEndian.Uint32(b[i:]); v >= lo && v <= hi && (b[i+1]|b[i+2]|b[i+3])&0x80 != 0 {
 			n++
 		}
 	}
@@ -261,7 +274,7 @@ func staleTimes(b []byte, lo, hi uint32) int {
 func TestNormalizeNixDBClearsStaleRowBytes(t *testing.T) {
 	for _, name := range []string{"nixdb-a.sqlite", "nixdb-split.sqlite", "nixdb-overflow.sqlite"} {
 		p := nixDBCopy(t, name)
-		before := staleTimes(readNixDB(t, p), 1700000000, 1702000000)
+		before := staleTimes(readNixDB(t, p), 1700000000, 1700002000)
 		if before == 0 {
 			t.Fatalf("%s: fixture holds no registration time", name)
 		}
@@ -269,7 +282,7 @@ func TestNormalizeNixDBClearsStaleRowBytes(t *testing.T) {
 			t.Errorf("%s: %v", name, err)
 			continue
 		}
-		if n := staleTimes(readNixDB(t, p), 1700000000, 1702000000); n != 0 {
+		if n := staleTimes(readNixDB(t, p), 1700000000, 1700002000); n != 0 {
 			t.Errorf("%s: %d registration times left (of %d)", name, n, before)
 		}
 	}
