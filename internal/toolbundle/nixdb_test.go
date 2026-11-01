@@ -74,6 +74,11 @@ func TestNormalizeNixDBTouchesOnlyTheTimesAndTheHeaderCounters(t *testing.T) {
 	if n := nixDBDiff(before, after); n == 0 || n > 120*4+8 {
 		t.Fatalf("%d bytes changed, want 1..%d", n, 120*4+8)
 	}
+	for _, off := range []int{24, 92} { // change counter, version-valid-for
+		if binary.BigEndian.Uint32(before[off:]) == 1 || binary.BigEndian.Uint32(after[off:]) != 1 {
+			t.Errorf("header counter at %d: %d -> %d, want a change to 1", off, binary.BigEndian.Uint32(before[off:]), binary.BigEndian.Uint32(after[off:]))
+		}
+	}
 	// Idempotent.
 	if err := NormalizeNixDB(p, 1); err != nil {
 		t.Fatal(err)
@@ -124,12 +129,24 @@ func TestNormalizeNixDBRejectsWhatItCannotMakeDeterministic(t *testing.T) {
 		mutate func([]byte) []byte
 		epoch  int64
 	}{
-		"not sqlite":          {func(b []byte) []byte { return []byte("hello world, not a database") }, 1},
-		"empty":               {func(b []byte) []byte { return nil }, 1},
-		"truncated":           {func(b []byte) []byte { return b[:len(b)-4096] }, 1},
-		"partial last page":   {func(b []byte) []byte { return b[:len(b)-7] }, 1},
-		"freelist not empty":  {func(b []byte) []byte { binary.BigEndian.PutUint32(b[36:], 1); return b }, 1},
-		"stale page count":    {func(b []byte) []byte { binary.BigEndian.PutUint32(b[28:], 3); return b }, 1},
+		"not sqlite":         {func(b []byte) []byte { return []byte("hello world, not a database") }, 1},
+		"empty":              {func(b []byte) []byte { return nil }, 1},
+		"truncated":          {func(b []byte) []byte { return b[:len(b)-4096] }, 1},
+		"partial last page":  {func(b []byte) []byte { return b[:len(b)-7] }, 1},
+		"freelist not empty": {func(b []byte) []byte { binary.BigEndian.PutUint32(b[36:], 1); return b }, 1},
+		"stale page count":   {func(b []byte) []byte { binary.BigEndian.PutUint32(b[28:], 3); return b }, 1},
+		"free block in a page": {func(b []byte) []byte {
+			for pg := 1; pg < len(b)/4096; pg++ {
+				binary.BigEndian.PutUint16(b[pg*4096+1:], 0x0ff0)
+			}
+			return b
+		}, 1},
+		"fragmented bytes in a page": {func(b []byte) []byte {
+			for pg := 1; pg < len(b)/4096; pg++ {
+				b[pg*4096+7] = 3
+			}
+			return b
+		}, 1},
 		"negative epoch":      {func(b []byte) []byte { return b }, -1},
 		"epoch beyond 4 byte": {func(b []byte) []byte { return b }, 1 << 40},
 		"no ValidPaths table": {func(b []byte) []byte { return []byte(strings.ReplaceAll(string(b), "ValidPaths", "ValidPathz")) }, 1},
