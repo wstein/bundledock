@@ -19,7 +19,7 @@ ARG TARGETARCH
 RUN apk add --no-cache ca-certificates
 COPY --from=compiler /out/tools-bundle /usr/local/bin/tools-bundle
 COPY --from=compiler /out/tools-bundle-native /build/native/tools-bundle
-COPY bundles/toolbox/packages.txt bundles/toolbox/packages.catalog.json bundles/toolbox/packages.lock.json /build/
+COPY bundles/toolbox/packages.txt bundles/toolbox/packages.catalog.json bundles/toolbox/packages.lock.json bundles/toolbox/layers.json /build/
 COPY bundles/toolbox/licenses /build/licenses
 # BundleDock's own shared shell layer (committed, generated files and notices);
 # only the toolbox takes it, and the builder copies these files without running them.
@@ -43,12 +43,20 @@ ARG SOURCE_DATE_EPOCH=1
 COPY --from=compile-sqlite3 /out /compiled/sqlite3
 RUN tools-bundle -arch "${TARGETARCH}" -destination /image-root/opt/bdock/toolbox --shell-layer /build/shell-layer --build-outputs /compiled \
     && ln -s /opt/bdock /image-root/opt/bundledock
-# The init layer is staged here too, so its directories get a fixed time as well.
-COPY --from=compiler /out/init-volume /init-root/usr/local/bin/init-volume
-RUN tools-bundle normalize-mtimes -root /image-root && tools-bundle normalize-mtimes -root /init-root
+COPY --from=compiler /out/init-volume /image-root/usr/local/bin/init-volume
+# One directory per image layer, rarely changing tools first (bundles/toolbox/layers.json);
+# the remainder (manifest, checksums, licenses, shell layer, initializer) is the topmost layer.
+RUN tools-bundle split-layers -root /image-root -bundle opt/bdock/toolbox -directory /build -plan /build/layers.json -out /layers \
+    && tools-bundle normalize-mtimes -root /layers
 
 FROM scratch
-COPY --from=builder /image-root/ /
-COPY --from=builder /init-root/ /
+COPY --from=builder /layers/01-stable-large/ /
+COPY --from=builder /layers/02-stable/ /
+COPY --from=builder /layers/03-occasional-large/ /
+COPY --from=builder /layers/04-occasional/ /
+COPY --from=builder /layers/05-frequent-large/ /
+COPY --from=builder /layers/06-mise/ /
+COPY --from=builder /layers/07-frequent/ /
+COPY --from=builder /layers/08-meta/ /
 ENV PATH="/opt/bdock/toolbox/bin:/usr/local/bin" DISABLE_UPDATES=1 DISABLE_AUTOUPDATER=1
 ENTRYPOINT ["/usr/local/bin/init-volume"]

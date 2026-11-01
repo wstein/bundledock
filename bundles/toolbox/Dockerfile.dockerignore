@@ -20,6 +20,7 @@
 !bundles/toolbox/packages.txt
 !bundles/toolbox/packages.catalog.json
 !bundles/toolbox/packages.lock.json
+!bundles/toolbox/layers.json
 !bundles/toolbox/licenses
 !bundles/toolbox/licenses/**
 !bundles/toolbox/scripts
