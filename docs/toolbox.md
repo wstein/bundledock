@@ -315,16 +315,16 @@ each tool's version between consecutive commits.
 | 07 frequent | uv, gh, ruff, pinact | 49.9 MB | 2-6 each |
 | 08 meta | manifest, checksums, licenses, shell layer, init-volume | UNKNOWN | every version |
 
-The arm64 sizes are within 8 percent (`--arch arm64`). The total is 1003.6 MB of
+The arm64 sizes are within 11 percent (`--arch arm64`). The total is 1003.6 MB of
 downloads against about 638 MB of compressed layer in the current image, so the
 download sizes overstate the layer sizes. The window is three weeks; the
 assignment is a data file and can be changed when the rates change. A tool that
 is new to the catalog must be placed in the plan before the build passes its
-tests. Mise is below `frequent` on purpose: with the 10, 6, 4, 3 and 2 changes
-observed, a frequent bump then costs the 07 layer plus 06 in the worst case
-(prefix reuse only), while a mise bump costs 06 and 07.
+tests. Mise is below `frequent` on purpose: a bump of a 07 tool then costs 07
+and 08 in every case, while a mise bump costs 06 and 08, or 06, 07 and 08 in the
+worst case (layers above a change are re-pulled).
 
-### Pull delt
+### Pull delta
 
 Whether a client re-downloads the layers above a changed layer depends on how
 Docker and Podman match layers (by blob digest or by chain ID). That is UNKNOWN
