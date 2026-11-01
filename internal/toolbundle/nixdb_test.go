@@ -381,3 +381,41 @@ func TestVarint(t *testing.T) {
 		}
 	}
 }
+
+// The result replaces the file by rename of a temporary file in the same
+// directory, so a reader or a crash never sees a half-written database.
+func TestNormalizeNixDBReplacesTheFileAtomically(t *testing.T) {
+	p := nixDBCopy(t, "nixdb-a.sqlite")
+	if err := os.Chmod(p, 0o640); err != nil {
+		t.Fatal(err)
+	}
+	old, err := os.Stat(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := NormalizeNixDB(p, 1); err != nil {
+		t.Fatal(err)
+	}
+	now, err := os.Stat(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if os.SameFile(old, now) {
+		t.Error("the file was rewritten in place")
+	}
+	if now.Mode().Perm() != 0o640 {
+		t.Errorf("mode %v, want 0640", now.Mode().Perm())
+	}
+	entries, _ := os.ReadDir(filepath.Dir(p))
+	if len(entries) != 1 {
+		t.Errorf("%d entries in the directory, want only db.sqlite", len(entries))
+	}
+	// A failed call leaves no temporary file either.
+	q := nixDBCopy(t, "nixdb-late.sqlite")
+	if err := NormalizeNixDB(q, 1); err == nil {
+		t.Fatal("overflow fixture accepted")
+	}
+	if entries, _ := os.ReadDir(filepath.Dir(q)); len(entries) != 1 {
+		t.Errorf("%d entries after a failed call", len(entries))
+	}
+}
