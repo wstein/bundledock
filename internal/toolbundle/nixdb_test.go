@@ -217,3 +217,28 @@ func TestNormalizeNixDBPatchesEveryIntegerWidthInPlace(t *testing.T) {
 		t.Error("constant registrationTime changed to another epoch")
 	}
 }
+
+func TestSQLColumns(t *testing.T) {
+	upstream, err := os.ReadFile(filepath.Join("testdata", "nixdb", "schema.sql"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	validPaths := string(upstream)[:strings.Index(string(upstream), ");")+2]
+	for name, tc := range map[string]struct {
+		sql  string
+		want string
+	}{
+		"upstream Nix schema with comments": {validPaths, "id path hash registrationTime deriver narSize ultimate sigs ca"},
+		"block comment":                     {"create table T (a int, /* c, d */ b text, c integer)", "a b c"},
+		"line comment with comma and paren": {"create table T (a int, -- e, f)\n b text)", "a b"},
+		"table constraints":                 {"create table T (a integer, b text, primary key (a, b), unique (b), check (a > 0), foreign key (a) references X(id), constraint k check (b != ''))", "a b"},
+		"quoted names":                      {"create table T (\"a b\" int, `c` int, [d] int, 'e' int)", "a b c d e"},
+		"type with arguments":               {"create table T (a numeric(10, 2), b text)", "a b"},
+		"string literal with comma":         {"create table T (a text default 'x,--y)', b text)", "a b"},
+		"nested default":                    {"create table T (a int default (1 + (2)), b text)", "a b"},
+	} {
+		if got := strings.Join(sqlColumns(tc.sql), " "); got != tc.want {
+			t.Errorf("%s: got %q, want %q", name, got, tc.want)
+		}
+	}
+}
