@@ -103,8 +103,15 @@ func TestCheckNormalizedBeforeCopy(t *testing.T) {
 		"normalize only echoed": func(s string) string {
 			return strings.Replace(s, "RUN tools normalize-mtimes -root /image-root", "RUN echo tools normalize-mtimes -root /image-root", 1)
 		},
-		"normalize in a shell comment": func(s string) string {
-			return strings.Replace(s, "&& tools normalize-mtimes -root /init-root", "# && tools normalize-mtimes -root /init-root", 1)
+		"normalize hidden in a trailing shell comment": func(string) string {
+			return `FROM alpine AS builder
+RUN build -out /image-root /init-root
+RUN tools normalize-mtimes -root /image-root && true # ; tools normalize-mtimes -root /init-root
+
+FROM scratch
+COPY --from=builder /image-root/ /
+COPY --from=builder /init-root/ /
+`
 		},
 		"normalize failure ignored": func(s string) string {
 			return strings.Replace(s, "-root /init-root", "-root /init-root || true", 1)
