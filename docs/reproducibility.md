@@ -28,11 +28,17 @@ on every file's path, content, mode, owner and modification time.
   nixbox). It needs no BuildKit exporter option, but the Dockerfiles themselves
   need BuildKit (`# syntax=` and `RUN --network=none`).
 - The final stage copies only whole normalized roots (`COPY --from=… /root/ /`).
-  A test (`TestRealDockerfilesNormalizeAfterTheLastWrite`) fails when a copied
-  root has no active `normalize-mtimes` step, or when the stage mentions that
-  root again after the step. It checks the Dockerfile text, not the built image.
-  The design avoids implicit parent directories such as `/usr/local/bin` that a
-  `COPY` may create with the build time; whether it does is UNKNOWN until a build.
+  A test (`TestRealDockerfilesNormalizeAfterTheLastWrite`) reads the Dockerfile
+  text and fails when a copied root has no `normalize-mtimes -root <root>` call
+  that runs as a command (at the start of a `RUN` or after `&&` or `;`, followed
+  by `&&`, `;` or the end of the instruction; not `echo`, not after a `#`, not
+  followed by `|| true`), or when a later part of the stage mentions that root
+  again. A copied root is covered by a call for the same path or a parent path.
+  The test cannot see relative paths, `$VAR` or `ARG` expansion, globs, writes
+  through `tar -C /`, conditionals or subshells; it does not look at the built
+  image, and it promises nothing beyond these checks. The design avoids implicit
+  parent directories such as `/usr/local/bin` that a `COPY` may create with the
+  build time; whether it does is UNKNOWN until a build.
 - File content comes from checksum-pinned downloads or from the pinned Go
   sources compiled with `-trimpath`.
 
