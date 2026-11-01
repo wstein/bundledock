@@ -242,3 +242,81 @@ func TestSQLColumns(t *testing.T) {
 		}
 	}
 }
+
+// staleTimes counts the 4-byte big-endian values in [lo, hi] anywhere in the
+// file: registrationTime bytes that survived, in a cell or in a stale gap.
+func staleTimes(b []byte, lo, hi uint32) int {
+	n := 0
+	for i := 0; i+4 <= len(b); i++ {
+		if v := binary.BigEndian.Uint32(b[i:]); v >= lo && v <= hi {
+			n++
+		}
+	}
+	return n
+}
+
+// With secure_delete off SQLite leaves the old bytes of moved or changed rows in
+// the unallocated gap of a page (between the cell pointer array and the cell
+// content). After a normalization no registration time may be left anywhere.
+func TestNormalizeNixDBClearsStaleRowBytes(t *testing.T) {
+	for _, name := range []string{"nixdb-a.sqlite", "nixdb-split.sqlite", "nixdb-overflow.sqlite"} {
+		p := nixDBCopy(t, name)
+		before := staleTimes(readNixDB(t, p), 1700000000, 1702000000)
+		if before == 0 {
+			t.Fatalf("%s: fixture holds no registration time", name)
+		}
+		if err := NormalizeNixDB(p, 1); err != nil {
+			t.Errorf("%s: %v", name, err)
+			continue
+		}
+		if n := staleTimes(readNixDB(t, p), 1700000000, 1702000000); n != 0 {
+			t.Errorf("%s: %d registration times left (of %d)", name, n, before)
+		}
+	}
+	p := nixDBCopy(t, "nixdb-b.sqlite")
+	if err := NormalizeNixDB(p, 1); err != nil {
+		t.Fatal(err)
+	}
+	if n := staleTimes(readNixDB(t, p), 1780000000, 1780001000); n != 0 {
+		t.Errorf("nixdb-b.sqlite: %d registration times left", n)
+	}
+}
+
+// The same rows with different times and a different history of the page must
+// give the same bytes: here the split fixture is compared with itself shifted.
+func TestNormalizeNixDBKeepsSplitAndUpdatedDatabasesValid(t *testing.T) {
+	sqlite, err := exec.LookPath("sqlite3")
+	if err != nil {
+		t.Skip("no sqlite3 shell")
+	}
+	for _, name := range []string{"nixdb-split.sqlite", "nixdb-overflow.sqlite"} {
+		p := nixDBCopy(t, name)
+		query := "select count(*), sum(narSize), sum(length(sigs)), group_concat(path) from ValidPaths; select count(*) from Refs;"
+		want, err := exec.Command(sqlite, p, query).Output()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := NormalizeNixDB(p, 1); err != nil {
+			t.Errorf("%s: %v", name, err)
+			continue
+		}
+		got, err := exec.Command(sqlite, p, "pragma integrity_check; select distinct registrationTime from ValidPaths;"+query).CombinedOutput()
+		if err != nil || string(got) != "ok\n1\n"+string(want) {
+			t.Errorf("%s: %v\n%s\nwant ok, 1, %s", name, err, got, want)
+		}
+	}
+}
+
+// A history of updates and deletes leaves free blocks and fragments whose old
+// bytes cannot be located reliably: the call refuses, and changes nothing.
+func TestNormalizeNixDBRefusesFreeBlocksOfARealHistory(t *testing.T) {
+	p := nixDBCopy(t, "nixdb-update.sqlite")
+	before := readNixDB(t, p)
+	err := NormalizeNixDB(p, 1)
+	if err == nil || !strings.Contains(err.Error(), "free blocks") {
+		t.Fatalf("got %v, want a free blocks error", err)
+	}
+	if !bytes.Equal(before, readNixDB(t, p)) {
+		t.Fatal("file modified")
+	}
+}
