@@ -280,6 +280,69 @@ checksums, member hashes and sizes, rejects unsafe or duplicate paths, and
 bounds expansion before printing bytes. Retaining these notices does not
 establish a complete transitive license audit.
 
+## Image layers
+
+The toolbox image has one layer per change-rate group instead of one layer for
+the whole bundle, so updating one tool leaves the lower layers unchanged.
+`bundles/toolbox/layers.json` assigns every catalog tool to exactly one layer,
+bottom first; `tools-bundle split-layers` moves each tool's files (its `members`
+and `aliases` paths) into its layer directory, and everything else (manifest,
+`SHA256SUMS`, license archive and index, shell layer, `/opt/bundledock` link,
+`init-volume`) forms the topmost `meta` layer. The Dockerfile copies the layers
+in plan order. A test fails when the plan and the catalog name different tools,
+when the Dockerfile copies the layers in another order, or when a tool uses an install form that the split cannot name (`preserve`, `profile`). Layers need the
+fixed timestamps of [layer determinism](reproducibility.md).
+
+### Measuring tool sizes without an image
+
+`python3 scripts/toolbox-layer-sizes.py --arch amd64` asks each lock URL for one
+byte and reads the archive size from `Content-Range`; it downloads no payload.
+The sizes are download sizes (compressed archives, or the raw binary for `raw`
+installs), not installed or layer sizes. Update rates come from the lock history:
+`git log --format=%H -- bundles/toolbox/packages.lock.json` and a comparison of
+each tool's version between consecutive commits.
+
+### Grouping (amd64, measured 2026-11-01 over 61 lock commits since 2026-10-12)
+
+| Layer | Tools | Download size | Version changes in the window |
+| --- | --- | --- | --- |
+| 01 stable-large | nu, hadolint, sops, opentofu | 228.9 MB | 0 |
+| 02 stable | 31 small tools (age, typst, yq, jj, stw, direnv, ...) | 172.6 MB | 0 |
+| 03 occasional-large | cosign, syft, gh-stack | 203.8 MB | 1 each |
+| 04 occasional | 10 tools (regctl, lazygit, git-lfs, whr, starship, xh, ...) | 50.7 MB | 1 each |
+| 05 frequent-large | trivy, trufflehog, herdr, hugo | 140.1 MB | 2-3 each |
+| 06 mise | mise (raw binary) | 157.7 MB | 10 |
+| 07 frequent | uv, gh, ruff, pinact | 49.9 MB | 2-6 each |
+| 08 meta | manifest, checksums, licenses, shell layer, init-volume | UNKNOWN | every version |
+
+The arm64 sizes are within 8 percent (`--arch arm64`). The total is 1003.6 MB of
+downloads against about 638 MB of compressed layer in the current image, so the
+download sizes overstate the layer sizes. The window is three weeks; the
+assignment is a data file and can be changed when the rates change. A tool that
+is new to the catalog must be placed in the plan before the build passes its
+tests. Mise is below `frequent` on purpose: with the 10, 6, 4, 3 and 2 changes
+observed, a frequent bump then costs the 07 layer plus 06 in the worst case
+(prefix reuse only), while a mise bump costs 06 and 07.
+
+### Pull delt
+
+Whether a client re-downloads the layers above a changed layer depends on how
+Docker and Podman match layers (by blob digest or by chain ID). That is UNKNOWN
+and must be measured. The sizes below are download sizes, not compressed layer
+sizes:
+
+| Update | Changed layers | Layers re-pulled if only changed layers count | Worst case if layers above a change are re-pulled |
+| --- | --- | --- | --- |
+| mise | 06, 08 | 157.7 MB + meta | 06 + 07 + 08 = 207.6 MB + meta |
+| gh, uv, ruff or pinact | 07, 08 | 49.9 MB + meta | 49.9 MB + meta |
+| trivy | 05, 08 | 140.1 MB + meta | 05 + 06 + 07 + 08 = 347.7 MB + meta |
+| cosign | 03, 08 | 203.8 MB + meta | 03 to 07 = 602.2 MB + meta |
+
+The current single layer is 638 MB compressed for every update. The measured
+pull delta of two real versions, with layer digests and compressed sizes, is
+UNKNOWN until two images are built and pushed (each build needs the owner's
+approval).
+
 ## Propose upgrades with GitHub Actions
 
 The **Propose upgrades** workflow with `bundle=toolbox` (`.github/workflows/propose-upgrades.yml`)

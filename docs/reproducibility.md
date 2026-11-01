@@ -24,9 +24,9 @@ on every file's path, content, mode, owner and modification time.
 - Before the final stage, `tools-bundle normalize-mtimes -root <dir>` sets the
   mtime of the directory and of every entry below it (symlinks themselves, not
   their targets) to the epoch. This runs in the build stage on the staged roots
-  (`/image-root` and `/init-root` in the toolbox, `/out` and `/init-root` in
-  nixbox). It needs no BuildKit exporter option, but the Dockerfiles themselves
-  need BuildKit (`# syntax=` and `RUN --network=none`).
+  (`/layers` in the toolbox, `/out` and `/init-root` in nixbox). It needs no
+  BuildKit exporter option, but the Dockerfiles themselves need BuildKit
+  (`# syntax=` and `RUN --network=none`).
 - The final stage copies only whole normalized roots (`COPY --from=… /root/ /`).
   A test (`TestRealDockerfilesNormalizeAfterTheLastWrite`) reads the Dockerfile
   text and fails when a copied root has no `normalize-mtimes -root <root>` call
