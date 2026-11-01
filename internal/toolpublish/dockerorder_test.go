@@ -2,6 +2,7 @@ package toolpublish
 
 import (
 	"fmt"
+	"path"
 	"regexp"
 	"strings"
 )
@@ -190,9 +191,9 @@ func checkNixDBNormalized(dockerfile string) []string {
 				continue
 			}
 			found = true
-			dir := strings.TrimSuffix(c.root, "/db.sqlite")
-			// Blank every normalize-nix-db call; any later mention of the database
-			// directory is a possible write after the step.
+			// Blank every normalize-nix-db and normalize-mtimes call. Any later
+			// mention of the database directory or of one of its parents up to the
+			// copied root is a possible write or overwrite after the step.
 			blanked := st.text
 			last := -1
 			for _, d := range calls {
@@ -201,10 +202,19 @@ func checkNixDBNormalized(dockerfile string) []string {
 					last = d.start
 				}
 			}
-			mention := regexp.MustCompile(regexp.QuoteMeta(dir) + `($|[^A-Za-z0-9_.-])`)
-			for _, w := range mention.FindAllStringIndex(blanked, -1) {
-				if w[0] > last {
-					problems = append(problems, fmt.Sprintf("%s is written (%q) after normalize-nix-db", dir, strings.TrimSpace(blanked[w[0]:min(len(blanked), w[0]+40)])))
+			for _, m := range normalizeCalls(st.text) {
+				blanked = blanked[:m.start] + strings.Repeat(" ", m.end-m.start) + blanked[m.end:]
+			}
+			for dir := strings.TrimSuffix(c.root, "/db.sqlite"); strings.HasPrefix(dir, root); dir = path.Dir(dir) {
+				kind := "is written"
+				if dir != strings.TrimSuffix(c.root, "/db.sqlite") {
+					kind = "a parent of the database, is written"
+				}
+				mention := regexp.MustCompile(regexp.QuoteMeta(dir) + `($|[^A-Za-z0-9_.-])`)
+				for _, w := range mention.FindAllStringIndex(blanked, -1) {
+					if w[0] > last {
+						problems = append(problems, fmt.Sprintf("%s %s (%q) after normalize-nix-db", dir, kind, strings.TrimSpace(blanked[w[0]:min(len(blanked), w[0]+40)])))
+					}
 				}
 			}
 			// The mtime step that covers the database must come after the nix step.
