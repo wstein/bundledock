@@ -171,9 +171,12 @@ func SplitLayers(root, bundle, out string, plan *LayerPlan, packages map[string]
 	return append(names, meta), nil
 }
 
+// rename is replaced in tests to force the copy fallback.
+var rename = os.Rename
+
 // moveFile renames a file or symlink and falls back to copy and remove.
 func moveFile(src, dst string) error {
-	if err := os.Rename(src, dst); err == nil {
+	if err := rename(src, dst); err == nil {
 		return nil
 	}
 	if err := copyEntry(src, dst); err != nil {

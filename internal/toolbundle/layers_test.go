@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"syscall"
 	"testing"
 )
 
@@ -199,5 +200,85 @@ func TestToolboxLayerPlanCoversTheCatalog(t *testing.T) {
 		if _, err := OwnedPaths(p); err != nil {
 			t.Errorf("%s: %v", name, err)
 		}
+	}
+}
+
+func TestSplitLayersMetaCopyKeepsModesAndSymlinks(t *testing.T) {
+	root, out := t.TempDir(), filepath.Join(t.TempDir(), "layers")
+	writeTree(t, root, map[string]string{bundleRel + "/bin/x": "x", "usr/local/bin/init-volume": "i", bundleRel + "/manifest.json": "m", "opt/secret": "s"})
+	for name, mode := range map[string]os.FileMode{"usr/local/bin/init-volume": 0o755, bundleRel + "/manifest.json": 0o644, "opt/secret": 0o600} {
+		if err := os.Chmod(filepath.Join(root, name), mode); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.Symlink("/opt/bdock", filepath.Join(root, "opt", "bundledock")); err != nil {
+		t.Fatal(err)
+	}
+	plan := &LayerPlan{Schema: 1, Layers: []Layer{{Name: "a", Tools: []string{"x"}}}}
+	if _, err := SplitLayers(root, bundleRel, out, plan, map[string]toolconfig.Package{"x": pkg(map[string]string{"x": "bin/x"}, nil)}); err != nil {
+		t.Fatal(err)
+	}
+	meta := filepath.Join(out, "02-meta")
+	for name, want := range map[string]os.FileMode{"usr/local/bin/init-volume": 0o755, bundleRel + "/manifest.json": 0o644, "opt/secret": 0o600} {
+		info, err := os.Lstat(filepath.Join(meta, name))
+		if err != nil || info.Mode().Perm() != want {
+			t.Errorf("%s: mode %v err %v, want %v", name, info, err, want)
+		}
+	}
+	target, err := os.Readlink(filepath.Join(meta, "opt", "bundledock"))
+	if err != nil || target != "/opt/bdock" {
+		t.Errorf("symlink opt/bundledock: %q %v", target, err)
+	}
+}
+
+// moveFile must still work when rename fails (EXDEV between overlayfs layers).
+func TestMoveFileFallsBackToCopy(t *testing.T) {
+	old := rename
+	rename = func(string, string) error { return &os.LinkError{Op: "rename", Err: syscall.EXDEV} }
+	defer func() { rename = old }()
+	dir := t.TempDir()
+	src, dst := filepath.Join(dir, "src"), filepath.Join(dir, "dst")
+	if err := os.WriteFile(src, []byte("payload"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := moveFile(src, dst); err != nil {
+		t.Fatal(err)
+	}
+	data, _ := os.ReadFile(dst)
+	info, _ := os.Stat(dst)
+	if string(data) != "payload" || info.Mode().Perm() != 0o755 {
+		t.Errorf("copy: %q %v", data, info.Mode())
+	}
+	if _, err := os.Lstat(src); !os.IsNotExist(err) {
+		t.Error("source still exists after the move")
+	}
+	link := filepath.Join(dir, "link")
+	os.Symlink("target", link)
+	if err := moveFile(link, filepath.Join(dir, "link2")); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := os.Readlink(filepath.Join(dir, "link2")); got != "target" {
+		t.Errorf("symlink moved as %q", got)
+	}
+}
+
+// Each path exists on disk, so only the safety check can reject it.
+func TestOwnedPathsRejectsUnsafePaths(t *testing.T) {
+	for _, bad := range []string{"../x", "/etc/x", "bin/../x", "./bin/x", "bin//x", ".", "bin/x/", ""} {
+		if _, err := OwnedPaths(pkg(map[string]string{"x": bad}, nil)); err == nil {
+			t.Errorf("member target %q accepted", bad)
+		}
+		if _, err := OwnedPaths(pkg(map[string]string{"x": "bin/x"}, map[string]string{bad: "bin/x"})); err == nil {
+			t.Errorf("alias %q accepted", bad)
+		}
+	}
+	root := t.TempDir()
+	writeTree(t, root, map[string]string{"opt/bdock/x": "outside the bin tree", bundleRel + "/bin/x": "x"})
+	plan := &LayerPlan{Schema: 1, Layers: []Layer{{Name: "a", Tools: []string{"x"}}}}
+	if _, err := SplitLayers(root, bundleRel, filepath.Join(t.TempDir(), "o"), plan, map[string]toolconfig.Package{"x": pkg(map[string]string{"x": "../x"}, nil)}); err == nil {
+		t.Error("split moved a file outside the bundle through ..")
+	}
+	if _, err := os.Stat(filepath.Join(root, "opt/bdock/x")); err != nil {
+		t.Errorf("the file outside the bundle was touched: %v", err)
 	}
 }
