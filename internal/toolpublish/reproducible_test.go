@@ -4,7 +4,6 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"regexp"
 	"strings"
 	"testing"
 )
@@ -35,50 +34,68 @@ func TestSourceDateEpochIsConstant(t *testing.T) {
 	a := buildArgs(b, Metadata{Tag: "2026.11.01-b1"}, "amd64")
 	c := buildArgs(b, Metadata{Tag: "2026.12.24-b3"}, "amd64")
 	if a[10] != c[10] {
-		t.Fatalf("epoch differs between versions: %q vs %q", a[6], c[6])
+		t.Fatalf("epoch differs between versions: %q vs %q", a[10], c[10])
 	}
 }
 
-var normalizeRoot = regexp.MustCompile(`normalize-mtimes -root (\S+)`)
-
-// Every directory that the final stage copies must have passed through
-// normalize-mtimes; a COPY of an un-normalized path would put build-time mtimes
-// into a layer. The Dockerfile default must equal the publisher's constant.
-func TestDockerfilesNormalizeEveryCopiedRoot(t *testing.T) {
+// The Dockerfile default must equal the publisher's constant.
+func TestDockerfilesDeclareSourceDateEpoch(t *testing.T) {
 	for _, bundle := range []string{"toolbox", "nixbox"} {
 		data, err := os.ReadFile(filepath.Join("..", "..", "bundles", bundle, "Dockerfile"))
 		if err != nil {
 			t.Fatal(err)
 		}
-		text := string(data)
-		if !strings.Contains(text, "\nARG SOURCE_DATE_EPOCH="+SourceDateEpoch+"\n") {
+		if !strings.Contains(string(data), "\nARG SOURCE_DATE_EPOCH="+SourceDateEpoch+"\n") {
 			t.Errorf("%s: Dockerfile lacks ARG SOURCE_DATE_EPOCH=%s", bundle, SourceDateEpoch)
 		}
-		normalized := map[string]bool{}
-		for _, m := range normalizeRoot.FindAllStringSubmatch(text, -1) {
-			normalized[strings.TrimRight(m[1], ";")] = true
+	}
+}
+
+func TestRealDockerfilesNormalizeAfterTheLastWrite(t *testing.T) {
+	for _, bundle := range []string{"toolbox", "nixbox"} {
+		data, err := os.ReadFile(filepath.Join("..", "..", "bundles", bundle, "Dockerfile"))
+		if err != nil {
+			t.Fatal(err)
 		}
-		_, final, ok := strings.Cut(text, "\nFROM scratch\n")
-		if !ok {
-			t.Fatalf("%s: no final scratch stage", bundle)
+		if problems := checkNormalizedBeforeCopy(string(data)); len(problems) != 0 {
+			t.Errorf("%s: %s", bundle, strings.Join(problems, "; "))
 		}
-		copies := 0
-		for _, line := range strings.Split(final, "\n") {
-			f := strings.Fields(line)
-			if len(f) == 0 || f[0] != "COPY" {
-				continue
-			}
-			copies++
-			if len(f) != 4 || !strings.HasPrefix(f[1], "--from=") || !strings.HasSuffix(f[2], "/") || f[3] != "/" {
-				t.Errorf("%s: final COPY must copy a whole staged root to /: %q", bundle, line)
-				continue
-			}
-			if root := strings.TrimSuffix(f[2], "/"); !normalized[root] {
-				t.Errorf("%s: %s is copied into a layer but never passed to normalize-mtimes", bundle, root)
-			}
-		}
-		if copies == 0 {
-			t.Errorf("%s: final stage has no COPY", bundle)
+	}
+}
+
+const goodDockerfile = `FROM alpine AS builder
+RUN build -out /image-root
+COPY --from=x /bin/init /init-root/usr/bin/init
+RUN tools normalize-mtimes -root /image-root && tools normalize-mtimes -root /init-root
+
+FROM scratch
+COPY --from=builder /image-root/ /
+COPY --from=builder /init-root/ /
+`
+
+func TestCheckNormalizedBeforeCopy(t *testing.T) {
+	if p := checkNormalizedBeforeCopy(goodDockerfile); len(p) != 0 {
+		t.Fatalf("good Dockerfile rejected: %v", p)
+	}
+	for name, mutate := range map[string]func(string) string{
+		"write after normalize": func(s string) string {
+			return strings.Replace(s, "\n\nFROM scratch", "\nCOPY --from=x /late /image-root/late\n\nFROM scratch", 1)
+		},
+		"normalize commented out": func(s string) string {
+			return strings.Replace(s, "RUN tools normalize", "# RUN tools normalize", 1)
+		},
+		"normalize missing for one root": func(s string) string {
+			return strings.Replace(s, " && tools normalize-mtimes -root /init-root", "", 1)
+		},
+		"write later in the same RUN": func(s string) string {
+			return strings.Replace(s, "-root /init-root", "-root /init-root && touch /init-root/x", 1)
+		},
+		"final stage copies an unknown root": func(s string) string {
+			return s + "COPY --from=builder /other/ /\n"
+		},
+	} {
+		if p := checkNormalizedBeforeCopy(mutate(goodDockerfile)); len(p) == 0 {
+			t.Errorf("%s: accepted", name)
 		}
 	}
 }
