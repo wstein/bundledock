@@ -127,6 +127,15 @@ COPY --from=builder /init-root/ /
 		"lowercase copy of an unknown root": func(s string) string {
 			return s + "copy --from=builder /other/ /\n"
 		},
+		"normalize runs before the split that writes the layers": func(string) string {
+			return `FROM alpine AS builder
+RUN tools normalize-mtimes -root /layers
+RUN tools split-layers -root /image-root -out /layers
+
+FROM scratch
+COPY --from=builder /layers/01-a/ /
+`
+		},
 		"final stage copies an unknown root": func(s string) string {
 			return s + "COPY --from=builder /other/ /\n"
 		},
