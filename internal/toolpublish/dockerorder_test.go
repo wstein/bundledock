@@ -8,6 +8,7 @@ import (
 
 var (
 	normalizeWord = regexp.MustCompile(`(?:\S*/)?[\w-]+ normalize-mtimes -root ([^\s;&|"']+)`)
+	nixDBWord     = regexp.MustCompile(`(?:\S*/)?[\w-]+ normalize-nix-db -db ([^\s;&|"']+)`)
 	shellComment  = regexp.MustCompile(`(^|\s)#.*$`)
 	fromLine      = regexp.MustCompile(`(?i)^FROM\s+(?:--\S+\s+)*\S+(?:\s+AS\s+(\S+))?`)
 )
@@ -120,8 +121,12 @@ type normalizeCall struct {
 // end of the instruction. echo, another command word, "|| true" and pipes do not
 // qualify. It cannot see conditionals, subshells, variables or globs.
 func normalizeCalls(text string) []normalizeCall {
+	return commandCalls(normalizeWord, text)
+}
+
+func commandCalls(word *regexp.Regexp, text string) []normalizeCall {
 	var calls []normalizeCall
-	for _, m := range normalizeWord.FindAllStringSubmatchIndex(text, -1) {
+	for _, m := range word.FindAllStringSubmatchIndex(text, -1) {
 		before := strings.TrimRight(text[:m[0]], " \t")
 		after := strings.TrimLeft(text[m[1]:], " \t")
 		lineStart := strings.LastIndex(before, "\n") + 1
@@ -140,7 +145,73 @@ func normalizeCalls(text string) []normalizeCall {
 // "normalize-nix-db -db <root>/.../var/nix/db/db.sqlite" as a command, after
 // every other mention of that database directory and before the normalize-mtimes
 // step that covers it, and the database must lie under a root the final stage
-// copies from that stage.
+// copies from that stage. Like the other checks it reads the text only.
 func checkNixDBNormalized(dockerfile string) []string {
-	return []string{"not implemented"}
+	const dbSuffix = "/var/nix/db/db.sqlite"
+	stages := parseStages(dockerfile)
+	if len(stages) < 2 {
+		return []string{"no multi-stage Dockerfile"}
+	}
+	byName := map[string]dockerStage{}
+	for _, st := range stages {
+		byName[st.name] = st
+	}
+	// The roots the final stage copies, per source stage.
+	var problems []string
+	found := false
+	for _, line := range strings.Split(stages[len(stages)-1].text, "\n") {
+		f := strings.Fields(line)
+		if len(f) != 4 || !strings.EqualFold(f[0], "COPY") || !strings.HasPrefix(f[1], "--from=") || !strings.HasSuffix(f[2], "/") {
+			continue
+		}
+		root := strings.TrimSuffix(f[2], "/")
+		st, ok := byName[strings.TrimPrefix(f[1], "--from=")]
+		if !ok {
+			continue
+		}
+		for _, c := range commandCalls(nixDBWord, st.text) {
+			if !strings.HasSuffix(c.root, dbSuffix) {
+				problems = append(problems, fmt.Sprintf("normalize-nix-db -db %s: not a path ending in %s", c.root, dbSuffix))
+				continue
+			}
+			if !strings.HasPrefix(c.root, root+"/") {
+				problems = append(problems, fmt.Sprintf("normalize-nix-db -db %s lies outside the copied root %s", c.root, root))
+				continue
+			}
+			found = true
+			dir := strings.TrimSuffix(c.root, "/db.sqlite")
+			// Blank every normalize-nix-db call; any later mention of the database
+			// directory is a possible write after the step.
+			blanked := st.text
+			last := -1
+			for _, d := range commandCalls(nixDBWord, st.text) {
+				blanked = blanked[:d.start] + strings.Repeat(" ", d.end-d.start) + blanked[d.end:]
+				if d.root == c.root {
+					last = d.start
+				}
+			}
+			mention := regexp.MustCompile(regexp.QuoteMeta(dir) + `($|[^A-Za-z0-9_.-])`)
+			for _, w := range mention.FindAllStringIndex(blanked, -1) {
+				if w[0] > last {
+					problems = append(problems, fmt.Sprintf("%s is written (%q) after normalize-nix-db", dir, strings.TrimSpace(blanked[w[0]:min(len(blanked), w[0]+40)])))
+				}
+			}
+			// The mtime step that covers the database must come after the nix step.
+			covering := -1
+			for _, m := range normalizeCalls(st.text) {
+				if root == m.root || strings.HasPrefix(root, m.root+"/") {
+					covering = m.start
+				}
+			}
+			if covering < 0 {
+				problems = append(problems, root+" has no normalize-mtimes step")
+			} else if covering < last {
+				problems = append(problems, "normalize-nix-db runs after normalize-mtimes -root "+root)
+			}
+		}
+	}
+	if !found && len(problems) == 0 {
+		problems = append(problems, "the final stage copies no root with a normalize-nix-db step for var/nix/db/db.sqlite")
+	}
+	return problems
 }
