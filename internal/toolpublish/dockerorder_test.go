@@ -63,7 +63,7 @@ func checkNormalizedBeforeCopy(dockerfile string) []string {
 	copies := 0
 	for _, line := range strings.Split(stages[len(stages)-1].text, "\n") {
 		f := strings.Fields(line)
-		if len(f) == 0 || f[0] != "COPY" {
+		if len(f) == 0 || !strings.EqualFold(f[0], "COPY") {
 			continue
 		}
 		copies++
@@ -126,7 +126,7 @@ func normalizeCalls(text string) []normalizeCall {
 		after := strings.TrimLeft(text[m[1]:], " \t")
 		lineStart := strings.LastIndex(before, "\n") + 1
 		okBefore := strings.HasSuffix(before, "&&") || strings.HasSuffix(before, ";") ||
-			regexp.MustCompile(`^RUN$`).MatchString(strings.TrimSpace(before[lineStart:]))
+			regexp.MustCompile(`(?i)^RUN$`).MatchString(strings.TrimSpace(before[lineStart:]))
 		okAfter := after == "" || strings.HasPrefix(after, "\n") || strings.HasPrefix(after, "&&") || strings.HasPrefix(after, ";")
 		if okBefore && okAfter {
 			calls = append(calls, normalizeCall{m[0], m[1], text[m[2]:m[3]]})
