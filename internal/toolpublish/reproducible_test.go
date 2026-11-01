@@ -200,6 +200,24 @@ func TestCheckNixDBNormalized(t *testing.T) {
 	}
 }
 
+// Each rejection names its own reason, not a follow-on problem.
+func TestCheckNixDBNormalizedNamesTheReason(t *testing.T) {
+	for want, mutate := range map[string]func(string) string{
+		"outside the roots": func(s string) string { return strings.Replace(s, "-db /out/opt", "-db /elsewhere/opt", 1) },
+		"not a path ending": func(s string) string { return strings.Replace(s, "var/nix/db/db.sqlite", "var/nix/db/schema", 1) },
+		"after normalize-mtimes": func(s string) string {
+			return strings.Replace(strings.Replace(s, "    && tools normalize-nix-db -db /out/opt/nixbox/var/nix/db/db.sqlite \\\n", "", 1), "-root /out\n", "-root /out \\\n    && tools normalize-nix-db -db /out/opt/nixbox/var/nix/db/db.sqlite\n", 1)
+		},
+		"after normalize-nix-db": func(s string) string {
+			return strings.Replace(s, "    && tools normalize-mtimes", "    && echo x >> /out/opt/nixbox/var/nix/db/db.sqlite \\\n    && tools normalize-mtimes", 1)
+		},
+	} {
+		if p := strings.Join(checkNixDBNormalized(mutate(nixDBDockerfile)), "; "); !strings.Contains(p, want) {
+			t.Errorf("want a problem containing %q, got %q", want, p)
+		}
+	}
+}
+
 func TestRealNixboxDockerfileNormalizesTheNixDatabase(t *testing.T) {
 	data, err := os.ReadFile(filepath.Join("..", "..", "bundles", "nixbox", "Dockerfile"))
 	if err != nil {
