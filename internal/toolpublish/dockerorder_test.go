@@ -134,3 +134,13 @@ func normalizeCalls(text string) []normalizeCall {
 	}
 	return calls
 }
+
+// checkNixDBNormalized returns the problems of a Dockerfile whose final stage
+// copies a Nix store root: the build stage must run
+// "normalize-nix-db -db <root>/.../var/nix/db/db.sqlite" as a command, after
+// every other mention of that database directory and before the normalize-mtimes
+// step that covers it, and the database must lie under a root the final stage
+// copies from that stage.
+func checkNixDBNormalized(dockerfile string) []string {
+	return []string{"not implemented"}
+}
