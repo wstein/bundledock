@@ -17,7 +17,11 @@ import (
 // time as a 4-byte integer, and epoch must fit that width), so no page, cell or
 // offset moves. The file is written back only when every check passed.
 //
-// It does not touch the order of rows, the page layout or any other content. It
+// It sets the unallocated gap of every ValidPaths table page (between the cell
+// pointer array and the cell content) to zero: with secure_delete off, SQLite
+// leaves the old bytes of moved or changed rows there. It does not touch the
+// order of rows, the page layout or any other content; gaps of other pages
+// (indexes, other tables, overflow pages) are left as they are. It
 // refuses (and leaves the file unchanged) a database that is not a clean,
 // closed database: a non-empty -wal or -journal file next to it, a non-empty
 // freelist (freed pages may hold stale rows), a page count in the header that
@@ -55,6 +59,7 @@ type sqliteFile struct {
 	timeCol          int
 	visited          map[int]bool
 	checkFreeBlocks  bool
+	zeroGaps         bool
 }
 
 func normalizeNixDBBytes(data []byte, epoch int64) error {
@@ -97,6 +102,7 @@ func normalizeNixDBBytes(data []byte, epoch int64) error {
 	}
 	f.visited = map[int]bool{}
 	f.checkFreeBlocks = true
+	f.zeroGaps = true
 	var fields []timeField
 	if err := f.walkTable(root, 0, func(abs, local, total int) error {
 		tf, err := f.locateTime(abs, local)
@@ -175,6 +181,24 @@ func (f *sqliteFile) walkTable(root, depth int, fn func(abs, local, total int) e
 	n := int(binary.BigEndian.Uint16(pg[hdr+3 : hdr+5]))
 	if f.checkFreeBlocks && (binary.BigEndian.Uint16(pg[hdr+1:hdr+3]) != 0 || pg[hdr+7] != 0) {
 		return fmt.Errorf("page %d has free blocks or fragmented bytes that may hold stale rows", root)
+	}
+	if f.zeroGaps {
+		// The unallocated gap between the cell pointer array and the cell content
+		// may hold the old bytes of rows that were moved or changed (secure_delete
+		// off). It is not part of the database content, so it is set to zero.
+		hdrSize := 8
+		if typ == 0x05 {
+			hdrSize = 12
+		}
+		gapStart := hdr + hdrSize + 2*n
+		gapEnd := int(binary.BigEndian.Uint16(pg[hdr+5 : hdr+7]))
+		if gapEnd == 0 {
+			gapEnd = 65536
+		}
+		if gapStart > gapEnd || gapEnd > f.usable {
+			return fmt.Errorf("page %d: cell content starts at %d, before the end of the cell pointer array (%d)", root, gapEnd, gapStart)
+		}
+		clear(pg[gapStart:gapEnd])
 	}
 	switch typ {
 	case 0x0d: // table leaf
