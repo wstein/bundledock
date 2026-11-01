@@ -100,7 +100,7 @@ func TestNormalizeNixDBKeepsTheDatabaseValid(t *testing.T) {
 	}
 	p := nixDBCopy(t, "nixdb-b.sqlite")
 	want := func() string {
-		out, err := exec.Command(sqlite, "-readonly", p, "select count(*), sum(narSize), group_concat(path) from ValidPaths; select count(*) from Refs;").Output()
+		out, err := exec.Command(sqlite, p, "select count(*), sum(narSize), group_concat(path) from ValidPaths; select count(*) from Refs;").Output()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -109,7 +109,7 @@ func TestNormalizeNixDBKeepsTheDatabaseValid(t *testing.T) {
 	if err := NormalizeNixDB(p, 1704067200); err != nil {
 		t.Fatal(err)
 	}
-	out, err := exec.Command(sqlite, "-readonly", p, "pragma integrity_check; select distinct registrationTime from ValidPaths; select count(*), sum(narSize), group_concat(path) from ValidPaths; select count(*) from Refs;").CombinedOutput()
+	out, err := exec.Command(sqlite, p, "pragma integrity_check; select distinct registrationTime from ValidPaths; select count(*), sum(narSize), group_concat(path) from ValidPaths; select count(*) from Refs;").CombinedOutput()
 	if err != nil {
 		t.Fatalf("%v: %s", err, out)
 	}
@@ -132,7 +132,7 @@ func TestNormalizeNixDBRejectsWhatItCannotMakeDeterministic(t *testing.T) {
 		"stale page count":    {func(b []byte) []byte { binary.BigEndian.PutUint32(b[28:], 3); return b }, 1},
 		"negative epoch":      {func(b []byte) []byte { return b }, -1},
 		"epoch beyond 4 byte": {func(b []byte) []byte { return b }, 1 << 40},
-		"no ValidPaths table": {func(b []byte) []byte { return []byte(strings.Replace(string(b), "ValidPaths (id", "ValidPathz (id", 1)) }, 1},
+		"no ValidPaths table": {func(b []byte) []byte { return []byte(strings.ReplaceAll(string(b), "ValidPaths", "ValidPathz")) }, 1},
 	} {
 		p := filepath.Join(t.TempDir(), "db.sqlite")
 		in := tc.mutate(append([]byte(nil), good...))
@@ -172,5 +172,31 @@ func TestNormalizeNixDBRefusesAnOpenJournal(t *testing.T) {
 	}
 	if err := NormalizeNixDB(p, 1); err != nil {
 		t.Errorf("empty WAL rejected: %v", err)
+	}
+}
+
+// nixdb-widths.sqlite holds registrationTime as the constant 1 and as 1, 2, 3, 4
+// and 6 byte integers, in the third column. Every width is patched in place.
+func TestNormalizeNixDBPatchesEveryIntegerWidthInPlace(t *testing.T) {
+	sqlite, err := exec.LookPath("sqlite3")
+	if err != nil {
+		t.Skip("no sqlite3 shell")
+	}
+	p := nixDBCopy(t, "nixdb-widths.sqlite")
+	if err := NormalizeNixDB(p, 1); err != nil {
+		t.Fatal(err)
+	}
+	out, err := exec.Command(sqlite, p, "pragma integrity_check; select group_concat(registrationTime), group_concat(hash) from ValidPaths;").CombinedOutput()
+	if err != nil {
+		t.Fatalf("%v: %s", err, out)
+	}
+	if got, want := string(out), "ok\n1,1,1,1,1,1|h1,h2,h3,h4,h5,h6\n"; got != want {
+		t.Fatalf("got %q, want %q", got, want)
+	}
+	// 1 is the constant serial type 9 in the fixture, so another epoch cannot be
+	// written in place.
+	q := nixDBCopy(t, "nixdb-widths.sqlite")
+	if err := NormalizeNixDB(q, 2); err == nil {
+		t.Error("constant registrationTime changed to another epoch")
 	}
 }
