@@ -301,7 +301,8 @@ not verified for the current script; rerun the smoke test to refresh them.
 The lock closure is 52 store paths and 197.3 MiB on arm64, and 51 paths and
 180.1 MiB on amd64. The initialized volume is 221 MB on arm64 and 203 MB on amd64.
 The local image is 308 MB on arm64 and 291 MB on amd64. The image is not
-byte-reproducible because the Nix database holds registration times. The smoke
+byte-reproducible because the Nix database holds registration times; all
+other mtimes are fixed (see [layer determinism](reproducibility.md)). The smoke
 test reads `NIXBOX_PLATFORM` and `NIXBOX_OFFLINE`; since the move it mounts no
 toolbox.
 
