@@ -145,3 +145,67 @@ COPY --from=builder /layers/01-a/ /
 		}
 	}
 }
+
+const nixDBDockerfile = `FROM alpine AS fetch
+RUN nix copy --to /image-root \
+    && mv /image-root/nix /out/opt/nixbox \
+    && tools normalize-nix-db -db /out/opt/nixbox/var/nix/db/db.sqlite \
+    && tools normalize-mtimes -root /out
+
+FROM scratch
+COPY --from=fetch /out/ /
+`
+
+func TestCheckNixDBNormalized(t *testing.T) {
+	if p := checkNixDBNormalized(nixDBDockerfile); len(p) != 0 {
+		t.Fatalf("good Dockerfile rejected: %v", p)
+	}
+	// Continuation lines with ';' and lowercase instruction names are normal forms.
+	semi := strings.ReplaceAll(nixDBDockerfile, "\\\n    && ", "; \\\n    ")
+	if p := checkNixDBNormalized(semi); len(p) != 0 {
+		t.Errorf("';' form rejected: %v", p)
+	}
+	for name, mutate := range map[string]func(string) string{
+		"no nix database step": func(s string) string {
+			return strings.Replace(s, "    && tools normalize-nix-db -db /out/opt/nixbox/var/nix/db/db.sqlite \\\n", "", 1)
+		},
+		"step commented out": func(s string) string {
+			return strings.Replace(s, "    && tools normalize-nix-db", "    # && tools normalize-nix-db", 1)
+		},
+		"step only echoed": func(s string) string {
+			return strings.Replace(s, "&& tools normalize-nix-db", "&& echo tools normalize-nix-db", 1)
+		},
+		"failure ignored": func(s string) string {
+			return strings.Replace(s, "db.sqlite \\", "db.sqlite || true \\", 1)
+		},
+		"database written after the step": func(s string) string {
+			return strings.Replace(s, "    && tools normalize-mtimes", "    && nix-store --load-db < /dump && echo x >> /out/opt/nixbox/var/nix/db/db.sqlite \\\n    && tools normalize-mtimes", 1)
+		},
+		"step after the mtime step": func(s string) string {
+			return strings.Replace(strings.Replace(s, "    && tools normalize-nix-db -db /out/opt/nixbox/var/nix/db/db.sqlite \\\n", "", 1), "-root /out\n", "-root /out \\\n    && tools normalize-nix-db -db /out/opt/nixbox/var/nix/db/db.sqlite\n", 1)
+		},
+		"other file than the Nix database": func(s string) string {
+			return strings.Replace(s, "var/nix/db/db.sqlite", "var/nix/db/schema", 1)
+		},
+		"database outside the copied root": func(s string) string {
+			return strings.Replace(s, "-db /out/opt", "-db /elsewhere/opt", 1)
+		},
+		"no mtime step": func(s string) string {
+			return strings.Replace(s, "    && tools normalize-mtimes -root /out", "", 1)
+		},
+	} {
+		if p := checkNixDBNormalized(mutate(nixDBDockerfile)); len(p) == 0 {
+			t.Errorf("%s: accepted", name)
+		}
+	}
+}
+
+func TestRealNixboxDockerfileNormalizesTheNixDatabase(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join("..", "..", "bundles", "nixbox", "Dockerfile"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if problems := checkNixDBNormalized(string(data)); len(problems) != 0 {
+		t.Error(strings.Join(problems, "; "))
+	}
+}
