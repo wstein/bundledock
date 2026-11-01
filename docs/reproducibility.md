@@ -39,6 +39,19 @@ on every file's path, content, mode, owner and modification time.
   image, and it promises nothing beyond these checks. The design avoids implicit
   parent directories such as `/usr/local/bin` that a `COPY` may create with the
   build time; whether it does is UNKNOWN until a build.
+- The nixbox build creates `var/nix/db/db.sqlite` with `nix copy --to` in the
+  fetch stage. `tools-bundle normalize-nix-db -db <db.sqlite>` then sets
+  `registrationTime` of every `ValidPaths` row to the epoch and the database
+  header's file change counter and version-valid-for number to 1, before
+  `normalize-mtimes`. The patch is in place in the file bytes (no SQLite library,
+  no new dependency): Nix writes the build time as a 4-byte integer, which keeps
+  its width, so no page or offset moves. The command refuses, and leaves the file
+  unchanged, when a non-empty `-wal` or `-journal` file exists, the freelist is
+  not empty, the header page count differs from the file size, a `ValidPaths`
+  page has free blocks or fragments, or the epoch does not fit the field width.
+  A test (`TestRealNixboxDockerfileNormalizesTheNixDatabase`) requires the step
+  in the Dockerfile text, after every other mention of the database directory and
+  before the `normalize-mtimes` step that covers it.
 - File content comes from checksum-pinned downloads or from the pinned Go
   sources compiled with `-trimpath`.
 
@@ -46,7 +59,9 @@ on every file's path, content, mode, owner and modification time.
 
 | Item | Cause | Effect |
 | --- | --- | --- |
-| nixbox `var/nix/db/db.sqlite` | The Nix database stores a registration time per store path. | The nixbox `/opt` layer differs between builds. Not normalized. |
+| nixbox `db.sqlite`: row ids and page layout | `nix copy` assigns `ValidPaths.id` in registration order and lays pages out in insertion order; `normalize-nix-db` does not reorder or rebuild. | The nixbox `/opt` layer differs when two builds register the paths in a different order. UNKNOWN until two builds are compared. |
+| nixbox `db.sqlite`: SQLite version number | Header bytes 96-99 hold the version of the SQLite that last wrote the file. | Fixed by the pinned `nixos/nix` image digest; changes when that image changes. |
+| nixbox `var/nix` other than the database | Files such as `temproots/<pid>` or lock files, if Nix leaves any. | UNKNOWN; not inspected without a build. |
 | Image config and image ID | `created` and history times of the image config. | Config digest and image ID may differ; layer digests do not. The effect of the build argument on `created` is UNKNOWN. |
 | Parent directories created by `COPY` | Not fixed by Dockerfile text alone. | UNKNOWN until two builds are compared; the staged-root design avoids them. |
 | Go compiler output | The init binary is rebuilt in every build. | Byte-identical for the same source and `-trimpath`; unverified until two builds are compared. |
