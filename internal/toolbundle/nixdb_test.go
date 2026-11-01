@@ -333,3 +333,51 @@ func TestNormalizeNixDBRefusesFreeBlocksOfARealHistory(t *testing.T) {
 		t.Fatal("file modified")
 	}
 }
+
+// registrationTime is a 4-byte signed integer in the fixtures: 2^31-1 fits, 2^31
+// does not.
+func TestNormalizeNixDBWidthBoundary(t *testing.T) {
+	if err := NormalizeNixDB(nixDBCopy(t, "nixdb-a.sqlite"), 1<<31-1); err != nil {
+		t.Errorf("2^31-1 into a 4-byte field: %v", err)
+	}
+	p := nixDBCopy(t, "nixdb-a.sqlite")
+	before := readNixDB(t, p)
+	if err := NormalizeNixDB(p, 1<<31); err == nil || !strings.Contains(err.Error(), "does not fit") {
+		t.Errorf("2^31 into a 4-byte field: %v", err)
+	}
+	if !bytes.Equal(before, readNixDB(t, p)) {
+		t.Error("file modified")
+	}
+}
+
+// A time behind a 6000 byte column lies on an overflow page, which is not read.
+func TestNormalizeNixDBRefusesATimeOnAnOverflowPage(t *testing.T) {
+	p := nixDBCopy(t, "nixdb-late.sqlite")
+	before := readNixDB(t, p)
+	if err := NormalizeNixDB(p, 1); err == nil || !strings.Contains(err.Error(), "overflow") {
+		t.Fatalf("got %v, want an overflow error", err)
+	}
+	if !bytes.Equal(before, readNixDB(t, p)) {
+		t.Fatal("file modified")
+	}
+}
+
+func TestVarint(t *testing.T) {
+	for name, tc := range map[string]struct {
+		in   []byte
+		want uint64
+		n    int
+	}{
+		"one byte":         {[]byte{0x7f, 0xee}, 0x7f, 1},
+		"two bytes":        {[]byte{0x81, 0x00, 0xee}, 128, 2},
+		"three bytes":      {[]byte{0xff, 0xff, 0x7f}, 1<<21 - 1, 3},
+		"nine bytes":       {[]byte{0x81, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x05, 0xee}, 1<<57 | 5, 9},
+		"nine bytes, full": {[]byte{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}, 1<<64 - 1, 9},
+		"truncated":        {[]byte{0x81}, 0, 0},
+		"empty":            {nil, 0, 0},
+	} {
+		if got, n := varint(tc.in); got != tc.want || n != tc.n {
+			t.Errorf("%s: got %d (%d bytes), want %d (%d bytes)", name, got, n, tc.want, tc.n)
+		}
+	}
+}
