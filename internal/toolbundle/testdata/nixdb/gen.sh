@@ -26,3 +26,12 @@ make() {
 }
 make "$out/nixdb-a.sqlite" 1700000000 1
 make "$out/nixdb-b.sqlite" 1780000000 7
+# Mixed integer widths: the constant 1 (no bytes), then 1, 2, 3, 4 and 6 byte
+# integers, and a non-default column order.
+rm -f "$out/nixdb-widths.sqlite"
+sqlite3 "$out/nixdb-widths.sqlite" >/dev/null <<'SQL'
+PRAGMA journal_mode=wal;
+create table ValidPaths (id integer primary key autoincrement not null, path text unique not null, registrationTime integer not null, hash text not null);
+insert into ValidPaths (path, registrationTime, hash) values ('/nix/store/a-1', 1, 'h1'), ('/nix/store/b-2', 100, 'h2'), ('/nix/store/c-3', 300, 'h3'), ('/nix/store/d-4', 70000, 'h4'), ('/nix/store/e-5', 1700000000, 'h5'), ('/nix/store/f-6', 5000000000, 'h6');
+SQL
+rm -f "$out"/*-wal "$out"/*-shm
