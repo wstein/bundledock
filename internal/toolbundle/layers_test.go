@@ -282,3 +282,26 @@ func TestOwnedPathsRejectsUnsafePaths(t *testing.T) {
 		t.Errorf("the file outside the bundle was touched: %v", err)
 	}
 }
+
+// The meta layer is the top layer: its directory modes decide the modes of /,
+// /opt and /usr/local/bin in the image.
+func TestSplitLayersMetaCopyKeepsDirectoryModes(t *testing.T) {
+	root, out := t.TempDir(), filepath.Join(t.TempDir(), "layers")
+	writeTree(t, root, map[string]string{bundleRel + "/bin/x": "x", "usr/local/bin/init-volume": "i", "opt/bdock/f": "f"})
+	modes := map[string]os.FileMode{".": 0o711, "opt": 0o755, "opt/bdock": 0o775, "usr": 0o751, "usr/local": 0o750, "usr/local/bin": 0o755}
+	for dir, mode := range modes {
+		if err := os.Chmod(filepath.Join(root, dir), mode); err != nil {
+			t.Fatal(err)
+		}
+	}
+	plan := &LayerPlan{Schema: 1, Layers: []Layer{{Name: "a", Tools: []string{"x"}}}}
+	if _, err := SplitLayers(root, bundleRel, out, plan, map[string]toolconfig.Package{"x": pkg(map[string]string{"x": "bin/x"}, nil)}); err != nil {
+		t.Fatal(err)
+	}
+	for dir, want := range modes {
+		info, err := os.Lstat(filepath.Join(out, "02-meta", dir))
+		if err != nil || info.Mode().Perm() != want {
+			t.Errorf("%s: mode %v err %v, want %v", dir, info, err, want)
+		}
+	}
+}
