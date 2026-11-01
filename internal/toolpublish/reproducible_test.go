@@ -104,7 +104,7 @@ func TestCheckNormalizedBeforeCopy(t *testing.T) {
 			return strings.Replace(s, "RUN tools normalize-mtimes -root /image-root", "RUN echo tools normalize-mtimes -root /image-root", 1)
 		},
 		"normalize in a shell comment": func(s string) string {
-			return strings.Replace(s, "&& tools normalize-mtimes -root /init-root", "# tools normalize-mtimes -root /init-root", 1)
+			return strings.Replace(s, "&& tools normalize-mtimes -root /init-root", "# && tools normalize-mtimes -root /init-root", 1)
 		},
 		"normalize failure ignored": func(s string) string {
 			return strings.Replace(s, "-root /init-root", "-root /init-root || true", 1)
