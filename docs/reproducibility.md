@@ -41,17 +41,28 @@ on every file's path, content, mode, owner and modification time.
   build time; whether it does is UNKNOWN until a build.
 - The nixbox build creates `var/nix/db/db.sqlite` with `nix copy --to` in the
   fetch stage. `tools-bundle normalize-nix-db -db <db.sqlite>` then sets
-  `registrationTime` of every `ValidPaths` row to the epoch and the database
-  header's file change counter and version-valid-for number to 1, before
-  `normalize-mtimes`. The patch is in place in the file bytes (no SQLite library,
-  no new dependency): Nix writes the build time as a 4-byte integer, which keeps
-  its width, so no page or offset moves. The command refuses, and leaves the file
-  unchanged, when a non-empty `-wal` or `-journal` file exists, the freelist is
-  not empty, the header page count differs from the file size, a `ValidPaths`
-  page has free blocks or fragments, or the epoch does not fit the field width.
+  `registrationTime` of every `ValidPaths` row to the epoch, the database
+  header's file change counter and version-valid-for number to 1, and the
+  unallocated gap of every `ValidPaths` table page to zero, before
+  `normalize-mtimes`. The gap lies between the cell pointer array and the cell
+  content; with `secure_delete` off SQLite leaves the old bytes of moved rows
+  there (a root split already does). It is an assumption, not checked, that the
+  SQLite inside the pinned `nixos/nix` image builds with `SQLITE_SECURE_DELETE`
+  (nixpkgs does), in which case the gaps are already zero. The patch is in place
+  in the file bytes (no SQLite library, no new dependency): Nix writes the build
+  time as a 4-byte integer, which keeps its width, so no page or offset moves.
+  The file is replaced by rename of a synced temporary file. The command refuses,
+  and leaves the file unchanged, when a non-empty `-wal` or `-journal` file
+  exists, the freelist is not empty, the header page count differs from the file
+  size, a `ValidPaths` page has free blocks or fragments (a history of deletes
+  and updates), the time lies on an overflow page, or the epoch does not fit the
+  field width. The tests use fixtures built from NixOS/nix `schema.sql` (commit
+  5286c0477d77, with its SQL comments); whether the schema in the pinned image
+  matches is UNKNOWN.
   A test (`TestRealNixboxDockerfileNormalizesTheNixDatabase`) requires the step
-  in the Dockerfile text, after every other mention of the database directory and
-  before the `normalize-mtimes` step that covers it.
+  in the Dockerfile text, after every other mention of the database directory or
+  of a parent of it up to the copied root, and before the `normalize-mtimes` step
+  that covers it. It cannot see variables, globs or relative paths.
 - File content comes from checksum-pinned downloads or from the pinned Go
   sources compiled with `-trimpath`.
 
@@ -60,6 +71,7 @@ on every file's path, content, mode, owner and modification time.
 | Item | Cause | Effect |
 | --- | --- | --- |
 | nixbox `db.sqlite`: row ids and page layout | `nix copy` assigns `ValidPaths.id` in registration order and lays pages out in insertion order; `normalize-nix-db` does not reorder or rebuild. | The nixbox `/opt` layer differs when two builds register the paths in a different order. UNKNOWN until two builds are compared. |
+| nixbox `db.sqlite`: gaps of other pages | Only `ValidPaths` pages are cleared; stale bytes in the gaps of index, `Refs` or overflow pages are not looked at, and the unused tail of a reused overflow page is not cleared. | These bytes do not hold registration times unless a row moved there; UNKNOWN until two builds are compared. |
 | nixbox `db.sqlite`: SQLite version number | Header bytes 96-99 hold the version of the SQLite that last wrote the file. | Fixed by the pinned `nixos/nix` image digest; changes when that image changes. |
 | nixbox `var/nix` other than the database | Files such as `temproots/<pid>` or lock files, if Nix leaves any. | UNKNOWN; not inspected without a build. |
 | Image config and image ID | `created` and history times of the image config. | Config digest and image ID may differ; layer digests do not. The effect of the build argument on `created` is UNKNOWN. |
