@@ -82,6 +82,11 @@ func TestCheckNormalizedBeforeCopy(t *testing.T) {
 	if p := checkNormalizedBeforeCopy(sibling); len(p) != 0 {
 		t.Errorf("write to /image-root-extra counted as a write to /image-root: %v", p)
 	}
+	// Instruction names are case-insensitive in a Dockerfile.
+	lower := strings.NewReplacer("RUN ", "run ", "COPY ", "copy ", "FROM ", "from ", " AS ", " as ").Replace(goodDockerfile)
+	if p := checkNormalizedBeforeCopy(lower); len(p) != 0 {
+		t.Errorf("lowercase instructions rejected: %v", p)
+	}
 	// Joined continuation lines and a trailing statement separator are normal forms.
 	joined := strings.Replace(goodDockerfile, "RUN tools normalize-mtimes -root /image-root && tools normalize-mtimes -root /init-root", "RUN set -eu; \\\n    tools normalize-mtimes -root /image-root; \\\n    tools normalize-mtimes -root /init-root", 1)
 	if p := checkNormalizedBeforeCopy(joined); len(p) != 0 {
@@ -118,6 +123,9 @@ COPY --from=builder /init-root/ /
 		},
 		"sibling prefix is not the same root": func(s string) string {
 			return strings.Replace(strings.Replace(s, "-root /image-root", "-root /image", 1), "COPY --from=builder /image-root/ /", "COPY --from=builder /image-root/ /", 1)
+		},
+		"lowercase copy of an unknown root": func(s string) string {
+			return s + "copy --from=builder /other/ /\n"
 		},
 		"final stage copies an unknown root": func(s string) string {
 			return s + "COPY --from=builder /other/ /\n"
