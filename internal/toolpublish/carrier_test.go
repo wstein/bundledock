@@ -1,9 +1,12 @@
 package toolpublish
 
 import (
+	"encoding/json"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -68,7 +71,7 @@ func TestBuildStagesUseMinimalAlpineBases(t *testing.T) {
 	}
 	for _, required := range []string{
 		"COPY --from=compiler /out/tools-bundle /usr/local/bin/tools-bundle",
-		"COPY bundles/toolbox/packages.txt bundles/toolbox/packages.catalog.json bundles/toolbox/packages.lock.json /build/",
+		"COPY bundles/toolbox/packages.txt bundles/toolbox/packages.catalog.json bundles/toolbox/packages.lock.json bundles/toolbox/layers.json /build/",
 		"COPY bundles/toolbox/licenses /build/licenses",
 	} {
 		if !strings.Contains(downloads, required) {
@@ -100,7 +103,7 @@ func TestScratchCarrierContract(t *testing.T) {
 			// The toolbox stages both roots with fixed mtimes (see reproducible_test.go).
 			copyTree, copyInit := "COPY --from=builder /image-root/opt/ /opt/", "COPY --from=compiler /out/init-volume /usr/local/bin/init-volume"
 			if bundle == "toolbox" {
-				copyTree, copyInit = "COPY --from=builder /image-root/ /", "COPY --from=builder /init-root/ /"
+				copyTree, copyInit = "COPY --from=builder /layers/01-stable-large/ /", "COPY --from=compiler /out/init-volume /image-root/usr/local/bin/init-volume"
 			}
 			for _, required := range []string{
 				"-destination /image-root/opt/bdock/" + bundle,
@@ -120,7 +123,11 @@ func TestScratchCarrierContract(t *testing.T) {
 			} else if !strings.Contains(final, `"--source", "/opt/bdock/`+bundle+`"`) {
 				t.Error("initializer must select its canonical bundle root")
 			}
-			if strings.Count(final, "COPY ") != 2 || strings.Contains(final, "${PATH}") {
+			copies := 2
+			if bundle == "toolbox" {
+				copies = 8 // seven plan layers and the meta layer; see TestToolboxDockerfileCopiesLayersInPlanOrder
+			}
+			if strings.Count(final, "COPY ") != copies || strings.Contains(final, "${PATH}") {
 				t.Fatal("carrier must contain only the isolated bundle tree and initializer with explicit PATH")
 			}
 			if !strings.Contains(dockerfile, "CGO_ENABLED=0 GOOS=linux GOARCH=$TARGETARCH go build -trimpath -o /out/init-volume") {
@@ -347,4 +354,46 @@ func runFlag(args, flag string) bool {
 		}
 	}
 	return found == 1
+}
+
+// The final toolbox stage must copy one layer directory per plan entry, in plan
+// order, then the meta layer last. A mismatch would drop tools from the image
+// or reorder layers, and only an image build would show it.
+func TestToolboxDockerfileCopiesLayersInPlanOrder(t *testing.T) {
+	data, err := os.ReadFile("../../bundles/toolbox/layers.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Plain JSON, not toolbundle.ParseLayerPlan: this package must not import
+	// toolbundle (the offline lock tests copy only part of the module).
+	var plan struct{ Layers []struct{ Name string } }
+	if err := json.Unmarshal(data, &plan); err != nil || len(plan.Layers) == 0 {
+		t.Fatalf("layers.json: %v", err)
+	}
+	var want []string
+	for i, l := range plan.Layers {
+		want = append(want, fmt.Sprintf("COPY --from=builder /layers/%02d-%s/ /", i+1, l.Name))
+	}
+	want = append(want, fmt.Sprintf("COPY --from=builder /layers/%02d-%s/ /", len(plan.Layers)+1, "meta"))
+	dockerfile, err := os.ReadFile("../../bundles/toolbox/Dockerfile")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got []string
+	_, final, _ := strings.Cut(string(dockerfile), "\nFROM scratch\n")
+	for _, line := range strings.Split(final, "\n") {
+		if strings.HasPrefix(line, "COPY ") {
+			got = append(got, line)
+		}
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("final stage copies\n%s\nwant\n%s", strings.Join(got, "\n"), strings.Join(want, "\n"))
+	}
+	if !strings.Contains(string(dockerfile), "split-layers -root /image-root -bundle opt/bdock/toolbox") || !strings.Contains(string(dockerfile), "bundles/toolbox/layers.json") {
+		t.Error("builder must split with bundles/toolbox/layers.json")
+	}
+	ignore, _ := os.ReadFile("../../bundles/toolbox/Dockerfile.dockerignore")
+	if !strings.Contains(string(ignore), "!bundles/toolbox/layers.json\n") {
+		t.Error("Dockerfile.dockerignore must allow layers.json")
+	}
 }
