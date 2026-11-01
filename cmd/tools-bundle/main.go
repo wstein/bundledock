@@ -19,6 +19,13 @@ func main() {
 		}
 		return
 	}
+	if len(os.Args) > 1 && os.Args[1] == "split-layers" {
+		if err := runSplitLayers(os.Args[2:]); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		return
+	}
 	if len(os.Args) > 1 && os.Args[1] == "normalize-mtimes" {
 		if err := runNormalize(os.Args[2:]); err != nil {
 			fmt.Fprintln(os.Stderr, err)
@@ -73,4 +80,42 @@ func runNormalize(args []string) error {
 		return fmt.Errorf("epoch %q: %w", *epoch, err)
 	}
 	return toolbundle.NormalizeMtimes(*root, n)
+}
+
+// runSplitLayers distributes a built image root over the layer directories of
+// a plan (bundles/<name>/layers.json) and prints their names, bottom first.
+func runSplitLayers(args []string) error {
+	fs := flag.NewFlagSet("split-layers", flag.ContinueOnError)
+	root := fs.String("root", "", "built image root")
+	bundle := fs.String("bundle", "", "bundle directory below the root, for example opt/bdock/toolbox")
+	directory := fs.String("directory", "/build", "directory containing the catalog and lock")
+	planFile := fs.String("plan", "", "layer plan (layers.json)")
+	out := fs.String("out", "", "new directory that receives one subdirectory per layer")
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	if *root == "" || *bundle == "" || *planFile == "" || *out == "" {
+		return fmt.Errorf("split-layers needs -root, -bundle, -plan and -out")
+	}
+	c, err := toolconfig.Load(*directory)
+	if err != nil {
+		return err
+	}
+	f, err := os.Open(*planFile)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	plan, err := toolbundle.ParseLayerPlan(f)
+	if err != nil {
+		return err
+	}
+	names, err := toolbundle.SplitLayers(*root, *bundle, *out, plan, c.Catalog.Packages)
+	if err != nil {
+		return err
+	}
+	for _, n := range names {
+		fmt.Println(n)
+	}
+	return nil
 }
