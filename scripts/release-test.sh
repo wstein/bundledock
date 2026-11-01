@@ -5,11 +5,26 @@ test_dir=$(mktemp -d)
 trap 'rm -rf "$test_dir"' EXIT
 trap 'exit 1' HUP INT TERM
 cd "$root"
+# Verifying SHA256SUMS needs a SHA-256 tool: sha256sum (GNU coreutils) or macOS's stock `shasum -a 256`.
+if command -v sha256sum >/dev/null 2>&1; then
+    sha256_tool=sha256sum
+elif command -v shasum >/dev/null 2>&1; then
+    sha256_tool=shasum
+else
+    echo 'sha256sum or shasum is required to verify SHA256SUMS (macOS ships shasum; Linux: coreutils)' >&2
+    exit 1
+fi
+sha256_check() {
+    case "$sha256_tool" in
+        sha256sum) sha256sum -c "$@" ;;
+        *) shasum -a 256 -c "$@" ;;
+    esac
+}
 modified=false
 if test -n "$(git status --porcelain --untracked-files=normal)"; then modified=true; fi
 # Exercise the public Make target with a linker-injected version.
 make release VERSION=local-test RELEASE_DIR="$test_dir/first"
-(cd "$test_dir/first" && sha256sum -c SHA256SUMS)
+(cd "$test_dir/first" && sha256_check SHA256SUMS)
 cmp LICENSE "$test_dir/first/LICENSE"
 grep -Eq '^[0-9a-f]{64}  LICENSE$' "$test_dir/first/SHA256SUMS"
 for target in linux_amd64 linux_arm64 darwin_arm64; do
@@ -52,5 +67,5 @@ if make release VERSION='../invalid version' RELEASE_DIR="$test_dir/invalid"; th
     exit 1
 fi
 test ! -e "$test_dir/invalid"
-(cd "$test_dir/first" && sha256sum -c SHA256SUMS)
+(cd "$test_dir/first" && sha256_check SHA256SUMS)
 echo 'Release artifact checks passed'

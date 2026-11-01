@@ -482,6 +482,58 @@ exec REAL "$@"
             self.assertEqual(list((base / 'tmp').iterdir()), [])
 
 
+class ReleaseTestScriptChecksumsTest(unittest.TestCase):
+    """scripts/release-test.sh must verify SHA256SUMS with sha256sum or, on stock macOS, `shasum -a 256`.
+
+    `make` is a shim that only writes LICENSE and SHA256SUMS, so no Go build runs; the script then
+    stops at its first later step (the missing archive), after the first checksum verification."""
+
+    def tools(self, base, shasum_shim):
+        tools = base / 'tools'
+        tools.mkdir()
+        for name in ('sh', 'git', 'mktemp', 'rm', 'dirname', 'cat', 'cmp', 'grep', 'tar', 'mkdir', 'cp', 'touch'):
+            path = shutil.which(name)
+            if path is not None:
+                (tools / name).symlink_to(path)
+        make = tools / 'make'
+        make.write_text('#!/bin/sh\ntouch "$MAKE_USED"\nfor a in "$@"; do case $a in RELEASE_DIR=*) d=${a#RELEASE_DIR=};; esac; done\n'
+                        'mkdir -p "$d" && cp LICENSE "$d/LICENSE" && printf \'%s\\n\' "$SUMS_LINE" > "$d/SHA256SUMS"\n')
+        make.chmod(0o755)
+        if shasum_shim:
+            real = shutil.which('sha256sum') or shutil.which('shasum')
+            real_args = '' if shutil.which('sha256sum') else '-a 256 '
+            shim = tools / 'shasum'
+            shim.write_text('#!/bin/sh\n[ "$1 $2" = "-a 256" ] || { echo "shasum shim: want -a 256" >&2; exit 2; }\n'
+                            'shift 2\necho "$@" > "$SHASUM_USED"\nexec %s %s"$@"\n' % (real, real_args))
+            shim.chmod(0o755)
+        return tools
+
+    def run_script(self, base, shasum_shim):
+        digest = hashlib.sha256((ROOT / 'LICENSE').read_bytes()).hexdigest()
+        env = dict(os.environ, PATH=str(self.tools(base, shasum_shim)), MAKE_USED=str(base / 'make-used'),
+                   SHASUM_USED=str(base / 'shasum-used'), SUMS_LINE='%s  LICENSE' % digest, TMPDIR=str(base))
+        return subprocess.run(['sh', 'scripts/release-test.sh'], cwd=ROOT, env=env, capture_output=True, text=True)
+
+    @unittest.skipUnless(shutil.which('sha256sum') or shutil.which('shasum'), 'needs a SHA-256 tool to delegate to')
+    def test_shasum_fallback_verifies_checksums(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            result = self.run_script(base, True)
+            self.assertTrue((base / 'make-used').exists(), result.stderr)
+            self.assertEqual((base / 'shasum-used').read_text(), '-c SHA256SUMS\n', result.stderr)
+            self.assertNotIn('not found', result.stderr)
+            self.assertNotIn('FAILED', result.stdout + result.stderr)
+            self.assertIn('LICENSE: OK', result.stdout)
+
+    def test_missing_sha256_tools_fail_clearly_before_building(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            result = self.run_script(base, False)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn('sha256sum or shasum is required', result.stderr)
+            self.assertFalse((base / 'make-used').exists())
+
+
 class ReleaseSmokeChecksumsTest(unittest.TestCase):
     def fixture(self, base):
         archive = base / 'bdock_0.1.0_linux_amd64.tar.gz'
