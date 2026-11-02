@@ -90,14 +90,14 @@ toolbox by its immutable multi-platform index digest, then initialize its volume
 
 <!-- BEGIN PUBLISHED QUICKSTART -->
 ```sh
-TOOLBOX_IMAGE=quay.io/bundledock/toolbox@sha256:6a618d9a5da4e086be39054df37e77f20a1db8318bb2c71e4ecdef584cb43fae
+TOOLBOX_IMAGE=quay.io/bundledock/toolbox@sha256:108acd2054064e14b0796a15dc1cf1b934ac29d9048f647f339dbe62e02ca696
 docker pull "$TOOLBOX_IMAGE"
 make bundle-volume BUNDLE=toolbox IMAGE="$TOOLBOX_IMAGE"
 ```
 
-This example is toolbox version `2026.11.01-b1`, published from
-[`0f5301f519999c4efd44c24a792e91c767aed093`](https://github.com/wstein/bundledock/commit/0f5301f519999c4efd44c24a792e91c767aed093)
-in [publication run 41314177330, attempt 1](https://github.com/wstein/bundledock/actions/runs/41314177330/attempts/1).
+This example is toolbox version `2026.11.02-b1`, published from
+[`79a0d7e3ff5b72ee91431a145d5e2c7bc7081eae`](https://github.com/wstein/bundledock/commit/79a0d7e3ff5b72ee91431a145d5e2c7bc7081eae)
+in [publication run 41517252976, attempt 1](https://github.com/wstein/bundledock/actions/runs/41517252976/attempts/1).
 The initializer prints `Volume: bundledock-toolbox-<full image ID>`; use that volume name below:
 <!-- END PUBLISHED QUICKSTART -->
 
