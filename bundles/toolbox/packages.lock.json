@@ -69,9 +69,9 @@
         "verification": "publisher-sha256"
       },
       "dust": {
-        "version": "v1.2.6",
-        "url": "https://github.com/bootandy/dust/releases/download/v1.2.6/dust-v1.2.6-x86_64-unknown-linux-musl.tar.gz",
-        "sha256": "cbf2cb5c9d6227e46fc4b29c03dc43b8632020dfc5cf269d263d6e29c399e044",
+        "version": "v1.2.7",
+        "url": "https://github.com/bootandy/dust/releases/download/v1.2.7/dust-v1.2.7-x86_64-unknown-linux-musl.tar.gz",
+        "sha256": "2f1a1106f1f14c0b684b2f0a5f4482c6d53e07a871df4afc11e3b91ade300b55",
         "verification": "publisher-sha256"
       },
       "fd": {
@@ -415,9 +415,9 @@
         "verification": "publisher-sha256"
       },
       "dust": {
-        "version": "v1.2.6",
-        "url": "https://github.com/bootandy/dust/releases/download/v1.2.6/dust-v1.2.6-aarch64-unknown-linux-musl.tar.gz",
-        "sha256": "a51cf42a4654864837cc116eaca914271d7a09a9c2a60de90ecc2187b8d855a7",
+        "version": "v1.2.7",
+        "url": "https://github.com/bootandy/dust/releases/download/v1.2.7/dust-v1.2.7-aarch64-unknown-linux-musl.tar.gz",
+        "sha256": "4c8ebaf224179bfd42db45d8a50fd5304bbd89532eda94db684d309c7b734ed6",
         "verification": "publisher-sha256"
       },
       "fd": {
