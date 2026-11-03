@@ -21,10 +21,11 @@ Workflow triggers (checked, and pinned by `TestReleaseWorkflowDoesNotTriggerOnOt
 `ci.yml` runs only on a push to `main` and on `pull_request`, not on tags, so a tag push
 starts no workflow except the release workflow itself (owner decision: the release gate has no
 tag trigger and reads the `main` push run of the tagged commit). No other workflow has a
-`push` trigger. Workflows started by `workflow_run` of CI (`pages.yml`, `publish-bundles.yml`) require `head_branch == main`
-(`pages.yml` as a trigger filter, `publish-bundles.yml` in the job condition; a tag run's head
-branch is the tag name), so a tag push publishes no documentation and no image; this is
-unchanged behaviour for the existing image tags (read from the workflow files, not exercised).
+`push` trigger. Workflows started by `workflow_run` of CI (`pages.yml`, `publish-bundles.yml`,
+`staging-cleanup.yml`) require `head_branch == main` (`pages.yml` as a trigger filter, the others
+in the job condition). Since CI no longer runs on tags, they have no tag run to react to; the
+`head_branch` filter would also exclude one (a tag run's head branch is the tag name), which
+matters if a tag trigger is added later (read from the workflow files, not exercised).
 The strict pattern means `bdock/v1.2.3-rc1` starts
 nothing. `release.yml` itself triggers on no image tag.
 
