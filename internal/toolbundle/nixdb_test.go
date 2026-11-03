@@ -298,9 +298,9 @@ func TestNormalizeNixDBClearsStaleRowBytes(t *testing.T) {
 	}
 }
 
-// The same rows with different times and a different history of the page must
-// give the same bytes: here the split fixture is compared with itself shifted.
-func TestNormalizeNixDBKeepsSplitAndUpdatedDatabasesValid(t *testing.T) {
+// The split and the overflow fixture stay valid databases after normalization:
+// integrity_check is ok, registrationTime is 1 and the row content is unchanged.
+func TestNormalizeNixDBKeepsSplitAndOverflowDatabasesValid(t *testing.T) {
 	sqlite, err := exec.LookPath("sqlite3")
 	if err != nil {
 		t.Skip("no sqlite3 shell")
