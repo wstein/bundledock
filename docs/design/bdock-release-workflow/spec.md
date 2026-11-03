@@ -107,8 +107,9 @@ that tag.
   modes, determinism, `TARGETS` validation). All run in `go test ./...` and `make check`
   without building a distribution artifact.
 - **FR-10 Pipeline.** `ci.yml` keeps its job name `check` and gains a step that runs `go vet`
-  for the three release platforms (compiler verification, no artifact). It already runs on
-  every push including tag pushes; the release requires its success for the tagged commit.
+  for the three release platforms (compiler verification, no artifact). It runs on
+  pushes to `main` and on pull requests, not on tags; the release requires the success of the
+  `main` push run for the tagged commit.
 - **FR-11 Documentation.** `docs/releasing.md` (owner procedure), this spec set,
   `docs/release-readiness.md` rewritten, `docs/development.md`, `README.md`, `CONTRIBUTING.md`,
   `AGENTS.md`.
@@ -142,8 +143,9 @@ that tag.
   environment, `gh release create`, runner labels. The `releases/tags/bdock/vX.Y.Z` route is
   unverified; if it answered 404 for an existing release, the publish job's list check
   still refuses.
-- The `ci.yml` run for the tag push itself is unrelated to `main` CI; the gate counts any
-  successful push run of the same commit, which is the same code.
+- A tag push starts no `ci.yml` run. The gate counts the successful push run of the same
+  commit, which comes from its push to `main`; a tag on a commit never pushed to `main` has no run
+  and the gate refuses.
 
 ## Out of scope
 

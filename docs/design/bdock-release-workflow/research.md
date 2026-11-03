@@ -18,9 +18,10 @@ only for the exact name `<bundle>/<tag>` of a verified publication; no script en
 | `cli/vX.Y.Z` | Rejected: `bdock` is the product name users see. |
 
 Workflow triggers (checked, and pinned by `TestReleaseWorkflowDoesNotTriggerOnOtherTags`):
-`ci.yml` has an unfiltered `push:` so it already runs on every tag push, image tags
-included, and will on `bdock/` tags. No other workflow has a `push` trigger. Workflows started
-by `workflow_run` of CI (`pages.yml`, `publish-bundles.yml`) require `head_branch == main`
+`ci.yml` runs only on a push to `main` and on `pull_request`, not on tags, so a tag push
+starts no workflow except the release workflow itself (owner decision: the release gate has no
+tag trigger and reads the `main` push run of the tagged commit). No other workflow has a
+`push` trigger. Workflows started by `workflow_run` of CI (`pages.yml`, `publish-bundles.yml`) require `head_branch == main`
 (`pages.yml` as a trigger filter, `publish-bundles.yml` in the job condition; a tag run's head
 branch is the tag name), so a tag push publishes no documentation and no image; this is
 unchanged behaviour for the existing image tags (read from the workflow files, not exercised).
