@@ -287,15 +287,15 @@
         "verification": "publisher-sha256"
       },
       "stw": {
-        "version": "v0.1.0",
-        "url": "https://github.com/wstein/sourcesteward/releases/download/v0.1.0/stw_0.1.0_linux_amd64.tar.gz",
-        "sha256": "067e143f01f75eb2c9a25e12a83d5d3ba4522f074dd1ff6f16f50164fe52248a",
+        "version": "v0.2.0",
+        "url": "https://github.com/wstein/sourcesteward/releases/download/v0.2.0/stw_0.2.0_linux_amd64.tar.gz",
+        "sha256": "5fb21024b6c1d545bc8d377597995a8b71e3bcafeea232e9f693525d09de0f1e",
         "verification": "publisher-sha256"
       },
       "syft": {
-        "version": "v1.55.0",
-        "url": "https://github.com/anchore/syft/releases/download/v1.55.0/syft_1.55.0_linux_amd64.tar.gz",
-        "sha256": "bb65249542db5fedeeb4d3f9b018b75e7264dbfbbb10486f044581a92f90490d",
+        "version": "v1.56.0",
+        "url": "https://github.com/anchore/syft/releases/download/v1.56.0/syft_1.56.0_linux_amd64.tar.gz",
+        "sha256": "1c2493cfcf52d3367d6cb25780d9190c111c2219c34c820574c43e8bae15c528",
         "verification": "publisher-sha256"
       },
       "tmux": {
@@ -311,15 +311,15 @@
         "verification": "publisher-sha256"
       },
       "trufflehog": {
-        "version": "v3.99.7",
-        "url": "https://github.com/trufflesecurity/trufflehog/releases/download/v3.99.7/trufflehog_3.99.7_linux_amd64.tar.gz",
-        "sha256": "bdbea0508e439b144f49de14e775908de5f902f3d14ea7ae8354bae72b0b72ef",
+        "version": "v3.99.8",
+        "url": "https://github.com/trufflesecurity/trufflehog/releases/download/v3.99.8/trufflehog_3.99.8_linux_amd64.tar.gz",
+        "sha256": "7c3b02f160f28929a467e29e20fba98746e0729f6e37c3c25761e4f8789abe08",
         "verification": "publisher-sha256"
       },
       "typos": {
-        "version": "v1.51.1",
-        "url": "https://github.com/crate-ci/typos/releases/download/v1.51.1/typos-v1.51.1-x86_64-unknown-linux-musl.tar.gz",
-        "sha256": "93c301fd4120ff076e2cc2a6d6a61cab4a4bdb81899287c0938b452e56d1f454",
+        "version": "v1.52.0",
+        "url": "https://github.com/crate-ci/typos/releases/download/v1.52.0/typos-v1.52.0-x86_64-unknown-linux-musl.tar.gz",
+        "sha256": "6155d4114f9a0f5b8f6d4fda96266c9d5f6add71df80da7f684ee5e72eb14588",
         "verification": "publisher-sha256"
       },
       "typst": {
@@ -329,9 +329,9 @@
         "verification": "publisher-sha256"
       },
       "uv": {
-        "version": "0.13.6",
-        "url": "https://github.com/astral-sh/uv/releases/download/0.13.6/uv-x86_64-unknown-linux-musl.tar.gz",
-        "sha256": "5d61f26b6c7213779eda90edc6971ea6b0b796bfb8d49a574c8ad69b59838548",
+        "version": "0.13.7",
+        "url": "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-x86_64-unknown-linux-musl.tar.gz",
+        "sha256": "287491da03f2a785c70fa75b13e1f849918c2f2b5415fe84876b8214eeb792f9",
         "verification": "publisher-sha256"
       },
       "watchexec": {
@@ -633,15 +633,15 @@
         "verification": "publisher-sha256"
       },
       "stw": {
-        "version": "v0.1.0",
-        "url": "https://github.com/wstein/sourcesteward/releases/download/v0.1.0/stw_0.1.0_linux_arm64.tar.gz",
-        "sha256": "d35fe8fb5ea3c11d914301d3bbe1ebbccd7b448d1976d96061013636f8eb743a",
+        "version": "v0.2.0",
+        "url": "https://github.com/wstein/sourcesteward/releases/download/v0.2.0/stw_0.2.0_linux_arm64.tar.gz",
+        "sha256": "f4cd56d7612da98fb176ffedb36de6c83ba1a54623680ddbd40aec91cf8ad75b",
         "verification": "publisher-sha256"
       },
       "syft": {
-        "version": "v1.55.0",
-        "url": "https://github.com/anchore/syft/releases/download/v1.55.0/syft_1.55.0_linux_arm64.tar.gz",
-        "sha256": "929bd163db2d7cd2255d3bcb8967208079813d7b46b0c952f7b794d8e2c7d304",
+        "version": "v1.56.0",
+        "url": "https://github.com/anchore/syft/releases/download/v1.56.0/syft_1.56.0_linux_arm64.tar.gz",
+        "sha256": "ace61b9397ae28189c674ae332d67a8074dafd71e87724dfb8b22412d8253bb5",
         "verification": "publisher-sha256"
       },
       "tmux": {
@@ -657,15 +657,15 @@
         "verification": "publisher-sha256"
       },
       "trufflehog": {
-        "version": "v3.99.7",
-        "url": "https://github.com/trufflesecurity/trufflehog/releases/download/v3.99.7/trufflehog_3.99.7_linux_arm64.tar.gz",
-        "sha256": "3060f7c9f18c70afdc432984cacabdd1e9103729b5d5fee7fb6755a90d1c59d4",
+        "version": "v3.99.8",
+        "url": "https://github.com/trufflesecurity/trufflehog/releases/download/v3.99.8/trufflehog_3.99.8_linux_arm64.tar.gz",
+        "sha256": "a0382d83dd58c967af5dd0175cc732c62c836ab1d15dc9ae71b01a2d3f0911b2",
         "verification": "publisher-sha256"
       },
       "typos": {
-        "version": "v1.51.1",
-        "url": "https://github.com/crate-ci/typos/releases/download/v1.51.1/typos-v1.51.1-aarch64-unknown-linux-musl.tar.gz",
-        "sha256": "2ac5e37b3236b3c07dec5cdf1527acf143aec4674a6089b0bf424d021b35e099",
+        "version": "v1.52.0",
+        "url": "https://github.com/crate-ci/typos/releases/download/v1.52.0/typos-v1.52.0-aarch64-unknown-linux-musl.tar.gz",
+        "sha256": "63b7d4478d467a61fe47cdb3162f720c6797856e61a04f7e125d1cdc282488b8",
         "verification": "publisher-sha256"
       },
       "typst": {
@@ -675,9 +675,9 @@
         "verification": "publisher-sha256"
       },
       "uv": {
-        "version": "0.13.6",
-        "url": "https://github.com/astral-sh/uv/releases/download/0.13.6/uv-aarch64-unknown-linux-musl.tar.gz",
-        "sha256": "819692e404d23e5aae6bc44c0e260f1f5492fd1910ab4693b2c650f926dbe800",
+        "version": "0.13.7",
+        "url": "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-aarch64-unknown-linux-musl.tar.gz",
+        "sha256": "2d3ec076a0c4c0e8250bb6418c44080828b544f1a3be0b6e46adf9fb6923de45",
         "verification": "publisher-sha256"
       },
       "watchexec": {
