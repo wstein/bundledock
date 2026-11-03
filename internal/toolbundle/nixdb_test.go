@@ -247,6 +247,9 @@ func TestSQLColumns(t *testing.T) {
 		"type with arguments":               {"create table T (a numeric(10, 2), b text)", "a b"},
 		"string literal with comma":         {"create table T (a text default 'x,--y)', b text)", "a b"},
 		"nested default":                    {"create table T (a int default (1 + (2)), b text)", "a b"},
+		"doubled quote in a name":           {"create table T ('a''b' int, \"c\"\"d\" int, e int)", "a'b c\"d e"},
+		"doubled quote in a literal":        {"create table T (a text default 'it''s,x)', b text)", "a b"},
+		"tab and newline after the name":    {"create table T (a\tint, b\ninteger, c\rtext)", "a b c"},
 	} {
 		if got := strings.Join(sqlColumns(tc.sql), " "); got != tc.want {
 			t.Errorf("%s: got %q, want %q", name, got, tc.want)
@@ -481,7 +484,7 @@ func TestLocalSize(t *testing.T) {
 	for _, tc := range []struct{ usable, payload, want int }{
 		{4096, 100, 100}, {4096, 4061, 4061}, {4096, 4062, 489}, {4096, 6000, 1908}, {4096, 100000, 1792}, {4096, 12288, 489},
 		{4084, 4049, 4049}, {4084, 4050, 487}, {4084, 6000, 1920}, {4084, 100000, 2080},
-		{512, 477, 477}, {512, 478, 39}, {512, 6000, 412}, {512, 100000, 432},
+		{512, 477, 477}, {512, 478, 39}, {512, 985, 477}, {4096, 8153, 4061}, {512, 6000, 412}, {512, 100000, 432},
 	} {
 		if got := (&sqliteFile{usable: tc.usable}).localSize(tc.payload); got != tc.want {
 			t.Errorf("usable %d, payload %d: got %d, want %d", tc.usable, tc.payload, got, tc.want)
