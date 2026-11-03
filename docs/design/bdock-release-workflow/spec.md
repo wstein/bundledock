@@ -109,7 +109,7 @@ that tag.
 - **FR-10 Pipeline.** `ci.yml` keeps its job name `check` and gains a step that runs `go vet`
   for the three release platforms (compiler verification, no artifact). It runs on
   pushes to `main` and on pull requests, not on tags; the release requires the success of the
-  `main` push run for the tagged commit.
+  `main` push run for the tagged commit (see Known limitations for superseded runs).
 - **FR-11 Documentation.** `docs/releasing.md` (owner procedure), this spec set,
   `docs/release-readiness.md` rewritten, `docs/development.md`, `README.md`, `CONTRIBUTING.md`,
   `AGENTS.md`.
@@ -144,8 +144,10 @@ that tag.
   unverified; if it answered 404 for an existing release, the publish job's list check
   still refuses.
 - A tag push starts no `ci.yml` run. The gate counts the successful push run of the same
-  commit, which comes from its push to `main`; a tag on a commit never pushed to `main` has no run
-  and the gate refuses.
+  commit. That run exists only for a commit that was the head of a push to `main` and whose run
+  was not cancelled by a later push (`cancel-in-progress`). A tag on a commit never pushed to
+  `main`, or on an intermediate commit whose run was cancelled, has no successful run and the
+  gate refuses; re-run CI for that commit or tag a later `main` commit.
 
 ## Out of scope
 
