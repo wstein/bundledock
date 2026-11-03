@@ -809,8 +809,8 @@ func TestReleaseWorkflowMutantsAreCaught(t *testing.T) {
 }
 
 func TestReleaseWorkflowDoesNotTriggerOnOtherTags(t *testing.T) {
-	// Every other workflow must keep ignoring bdock/ tags: only ci.yml (push, any ref)
-	// reacts to a tag push, as it does to the existing image tags.
+	// No workflow reacts to a tag push except release.yml itself: ci.yml pushes only on main
+	// (the release gate reads the main push run), every other workflow has no tag trigger.
 	dir := filepath.Join(repoRoot(t), ".github", "workflows")
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -824,7 +824,12 @@ func TestReleaseWorkflowDoesNotTriggerOnOtherTags(t *testing.T) {
 		w := parse(t, string(raw))
 		push, hasPush := w.On["push"]
 		switch e.Name() {
-		case "release.yml", "ci.yml":
+		case "release.yml":
+			continue
+		case "ci.yml":
+			if msg := ciPushViolation(push, hasPush); msg != "" {
+				t.Errorf("ci.yml: %s", msg)
+			}
 			continue
 		}
 		if !hasPush {
@@ -837,6 +842,42 @@ func TestReleaseWorkflowDoesNotTriggerOnOtherTags(t *testing.T) {
 		if _, ok := cfg["branches"]; !ok && cfg["tags-ignore"] == nil {
 			t.Errorf("%s has an unfiltered push trigger that would also start on bdock/ tags", e.Name())
 		}
+	}
+}
+
+// ciPushViolation returns a message unless the push trigger is exactly branches: [main]
+// (no tags, no tags-ignore, no other keys, no unfiltered push).
+func ciPushViolation(push any, hasPush bool) string {
+	if !hasPush {
+		return "has no push trigger; the release gate needs the main push run"
+	}
+	cfg, _ := push.(map[string]any)
+	if len(cfg) != 1 {
+		return fmt.Sprintf("push trigger must be exactly branches: [main], got %v", push)
+	}
+	br, _ := cfg["branches"].([]any)
+	if len(br) != 1 || br[0] != "main" {
+		return fmt.Sprintf("push branches must be [main], got %v", cfg["branches"])
+	}
+	return ""
+}
+
+func TestCIPushViolationRejectsOtherTriggers(t *testing.T) {
+	for name, push := range map[string]any{
+		"unfiltered":  nil,
+		"tags":        map[string]any{"branches": []any{"main"}, "tags": []any{"bdock/v*"}},
+		"tags-ignore": map[string]any{"branches": []any{"main"}, "tags-ignore": []any{"x"}},
+		"other":       map[string]any{"branches": []any{"dev"}},
+	} {
+		if ciPushViolation(push, true) == "" {
+			t.Errorf("%s: push trigger accepted", name)
+		}
+	}
+	if ciPushViolation(nil, false) == "" {
+		t.Error("missing push accepted")
+	}
+	if m := ciPushViolation(map[string]any{"branches": []any{"main"}}, true); m != "" {
+		t.Errorf("branches: [main] rejected: %s", m)
 	}
 }
 
