@@ -504,3 +504,147 @@ func TestReplaceFileRemovesTheTemporaryFileOnFailure(t *testing.T) {
 		t.Errorf("%d entries, want only the directory", len(entries))
 	}
 }
+
+// putVarint encodes v as an SQLite varint (1 to 9 bytes).
+func putVarint(v uint64) []byte {
+	if v > 1<<56-1 {
+		out := make([]byte, 9)
+		out[8] = byte(v)
+		v >>= 8
+		for i := 7; i >= 0; i-- {
+			out[i] = byte(v&0x7f) | 0x80
+			v >>= 7
+		}
+		return out
+	}
+	var rev []byte
+	rev = append(rev, byte(v&0x7f))
+	for v >>= 7; v != 0; v >>= 7 {
+		rev = append(rev, byte(v&0x7f)|0x80)
+	}
+	for i, j := 0, len(rev)-1; i < j; i, j = i+1, j-1 {
+		rev[i], rev[j] = rev[j], rev[i]
+	}
+	return rev
+}
+
+// cellOf builds a table leaf cell: payload size, rowid 1 and the payload.
+func cellOf(payload []byte) []byte {
+	return append(append(putVarint(uint64(len(payload))), 1), payload...)
+}
+
+// recordOf builds a record from the given serial types and the value bytes.
+func recordOf(types []uint64, values []byte) []byte {
+	var hdr []byte
+	for _, t := range types {
+		hdr = append(hdr, putVarint(t)...)
+	}
+	hdr = append(putVarint(uint64(len(hdr)+1)), hdr...)
+	return append(hdr, values...)
+}
+
+// miniNixDB builds a database of two pages: page 1 holds the schema entry of a
+// ValidPaths table created by sql with its root on page 2, page 2 holds the given
+// leaf cells (none: an empty page). The header says 0 as the content start of an
+// empty page of 65536 bytes.
+func miniNixDB(pageSize int, sql string, cells ...[]byte) []byte {
+	b := make([]byte, 2*pageSize)
+	copy(b, "SQLite format 3\x00")
+	ps := pageSize
+	if ps == 65536 {
+		ps = 1
+	}
+	binary.BigEndian.PutUint16(b[16:], uint16(ps))
+	binary.BigEndian.PutUint32(b[28:], 2)
+	text := func(s string) (uint64, []byte) { return uint64(13 + 2*len(s)), []byte(s) }
+	var types []uint64
+	var vals []byte
+	for _, s := range []string{"table", "ValidPaths", "ValidPaths"} {
+		t, v := text(s)
+		types, vals = append(types, t), append(vals, v...)
+	}
+	types, vals = append(types, 1), append(vals, 2)
+	t, v := text(sql)
+	types, vals = append(types, t), append(vals, v...)
+	leaf := func(page []byte, hdr int, cells [][]byte) {
+		page[hdr] = 0x0d
+		binary.BigEndian.PutUint16(page[hdr+3:], uint16(len(cells)))
+		end := len(page)
+		for i, c := range cells {
+			end -= len(c)
+			copy(page[end:], c)
+			binary.BigEndian.PutUint16(page[hdr+8+2*i:], uint16(end))
+		}
+		binary.BigEndian.PutUint16(page[hdr+5:], uint16(end))
+	}
+	leaf(b[:pageSize], sqliteHeaderSize, [][]byte{cellOf(recordOf(types, vals))})
+	leaf(b[pageSize:], 0, cells)
+	return b
+}
+
+// normalizeMustNotPanic runs the normalization of data in memory and fails the
+// test when it panics instead of returning an error.
+func normalizeMustNotPanic(t *testing.T, name string, data []byte) (err error) {
+	t.Helper()
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("%s: panic instead of an error: %v", name, r)
+		}
+	}()
+	return normalizeNixDBBytes(data, 1)
+}
+
+// A hand-built database is accepted when its single row is well formed (the
+// other tests of malformed rows depend on this).
+func TestMiniNixDBWellFormedRowIsPatched(t *testing.T) {
+	cell := cellOf(recordOf([]uint64{1, 4}, []byte{7, 0x65, 0x00, 0x00, 0x01}))
+	b := miniNixDB(512, "CREATE TABLE ValidPaths (id integer, registrationTime integer)", cell)
+	if err := normalizeNixDBBytes(b, 1); err != nil {
+		t.Fatal(err)
+	}
+	if got := b[len(b)-5:]; !bytes.Equal(got, []byte{7, 0, 0, 0, 1}) {
+		t.Fatalf("row values %v, want [7 0 0 0 1]", got)
+	}
+}
+
+// Malformed input is an error, never a panic, and the data stays unchanged.
+func TestNormalizeNixDBMalformedCellsFailClosed(t *testing.T) {
+	const sql = "CREATE TABLE ValidPaths (id integer, a text, registrationTime integer)"
+	// Two columns of about 2^62 bytes each overflow the offset of the third; types
+	// from 2^63+12 on give a negative length when converted to int.
+	huge := recordOf([]uint64{1<<63 + 8, 1<<63 + 8, 4}, nil)
+	hugeNegative := recordOf([]uint64{1<<64 - 2, 1<<64 - 2, 4}, nil)
+	for name, cell := range map[string][]byte{
+		"payload size 2^64-1":                append(append(bytes.Repeat([]byte{0xff}, 9), 1), 0, 0, 0, 0),
+		"payload size 2^63":                  append(append(putVarint(1<<63), 1), 0, 0, 0, 0),
+		"payload size beyond the file":       append(append(putVarint(1<<40), 1), 0, 0, 0, 0),
+		"column lengths overflow the offset": cellOf(huge),
+		"column length wraps negative":       cellOf(hugeNegative),
+		"column length beyond the payload":   cellOf(recordOf([]uint64{1, 13 + 2*100, 4}, []byte{1, 'x'})),
+	} {
+		b := miniNixDB(512, sql, cell)
+		before := append([]byte(nil), b...)
+		if err := normalizeMustNotPanic(t, name, b); err == nil {
+			t.Errorf("%s: accepted", name)
+		}
+		if !bytes.Equal(b, before) {
+			t.Errorf("%s: data modified although the call failed", name)
+		}
+	}
+}
+
+// A page of 65536 bytes stores 0 as the start of the cell content for "65536":
+// the empty gap of such a page is cleared like any other.
+func TestNormalizeNixDBPageSize65536ContentStart(t *testing.T) {
+	b := miniNixDB(65536, "CREATE TABLE ValidPaths (id integer, registrationTime integer)")
+	if got := binary.BigEndian.Uint16(b[65536+5:]); got != 0 {
+		t.Fatalf("fixture content start %d, want 0", got)
+	}
+	b[65536+20], b[2*65536-1] = 0xaa, 0xbb // stale bytes in the gap
+	if err := normalizeNixDBBytes(b, 1); err != nil {
+		t.Fatal(err)
+	}
+	if b[65536+20] != 0 || b[2*65536-1] != 0 {
+		t.Error("gap of the 65536 byte page not cleared")
+	}
+}
