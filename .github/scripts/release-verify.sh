@@ -144,7 +144,7 @@ ci-green)
 	if [ "$api_ok" = 0 ]; then
 		fail "the GitHub API kept failing for $sha after $attempts attempts: see the errors above"
 	fi
-	fail "no successful CI run on push for $sha; wait for or re-run CI for that commit first ($attempts attempts of the head_sha query and a client-side listing of up to $pages pages of 100 found none; older commits than the newest $((pages * 100)) successful push runs must re-run CI first)"
+	fail "no successful CI run on push for $sha; wait for or re-run CI for that commit first, or pick a main commit whose CI push run succeeded (a run superseded by a later push to main is cancelled) ($attempts attempts of the head_sha query and a client-side listing of up to $pages pages of 100 found none; older commits than the newest $((pages * 100)) successful push runs must re-run CI first)"
 	;;
 *)
 	usage
