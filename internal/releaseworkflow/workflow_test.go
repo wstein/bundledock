@@ -827,7 +827,7 @@ func TestReleaseWorkflowDoesNotTriggerOnOtherTags(t *testing.T) {
 		case "release.yml":
 			continue
 		case "ci.yml":
-			if msg := ciPushViolation(push, hasPush); msg != "" {
+			if msg := ciTriggerViolation(w.On); msg != "" {
 				t.Errorf("ci.yml: %s", msg)
 			}
 			continue
@@ -845,6 +845,25 @@ func TestReleaseWorkflowDoesNotTriggerOnOtherTags(t *testing.T) {
 	}
 }
 
+// ciTriggerViolation returns a message unless ci.yml has exactly the triggers push (main only),
+// pull_request and workflow_dispatch; create, release, workflow_run and the like are rejected.
+func ciTriggerViolation(on map[string]any) string {
+	for k := range on {
+		switch k {
+		case "push", "pull_request", "workflow_dispatch":
+		default:
+			return fmt.Sprintf("unexpected trigger %q; allowed: push (branches: [main]), pull_request, workflow_dispatch", k)
+		}
+	}
+	for _, k := range []string{"pull_request", "workflow_dispatch"} {
+		if _, ok := on[k]; !ok {
+			return fmt.Sprintf("trigger %q is missing", k)
+		}
+	}
+	push, hasPush := on["push"]
+	return ciPushViolation(push, hasPush)
+}
+
 // ciPushViolation returns a message unless the push trigger is exactly branches: [main]
 // (no tags, no tags-ignore, no other keys, no unfiltered push).
 func ciPushViolation(push any, hasPush bool) string {
@@ -860,6 +879,27 @@ func ciPushViolation(push any, hasPush bool) string {
 		return fmt.Sprintf("push branches must be [main], got %v", cfg["branches"])
 	}
 	return ""
+}
+
+func TestCITriggerViolationRejectsOtherTriggers(t *testing.T) {
+	ok := func() map[string]any {
+		return map[string]any{"push": map[string]any{"branches": []any{"main"}}, "pull_request": nil, "workflow_dispatch": nil}
+	}
+	if m := ciTriggerViolation(ok()); m != "" {
+		t.Fatalf("valid triggers rejected: %s", m)
+	}
+	for _, extra := range []string{"create", "release", "workflow_run", "schedule"} {
+		on := ok()
+		on[extra] = nil
+		if ciTriggerViolation(on) == "" {
+			t.Errorf("extra trigger %s accepted", extra)
+		}
+	}
+	on := ok()
+	delete(on, "pull_request")
+	if ciTriggerViolation(on) == "" {
+		t.Error("missing pull_request accepted")
+	}
 }
 
 func TestCIPushViolationRejectsOtherTriggers(t *testing.T) {
