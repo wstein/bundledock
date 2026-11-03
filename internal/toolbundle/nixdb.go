@@ -258,6 +258,10 @@ func (f *sqliteFile) walkTable(root, depth int, fn func(abs, local, total int) e
 			if l1 == 0 || l2 == 0 {
 				return fmt.Errorf("page %d: bad cell varint", root)
 			}
+			// The payload, local part and overflow chain together, lies in the file.
+			if size > uint64(len(f.b)) {
+				return fmt.Errorf("page %d: payload size %d exceeds the file size %d", root, size, len(f.b))
+			}
 			start := off + l1 + l2
 			local := f.localSize(int(size))
 			if start+local > f.usable {
@@ -322,8 +326,14 @@ func recordTypes(payload []byte) ([]uint64, int, error) {
 	return types, int(hl), nil
 }
 
+// maxSerialLen caps the length that serialLen reports for huge blob and text
+// serial types, so that sums of lengths cannot overflow an int. No payload on a
+// page is that long.
+const maxSerialLen = 1 << 30
+
 // serialLen is the length in bytes of a column value of serial type t, or -1
-// for the reserved types 10 and 11.
+// for the reserved types 10 and 11. Lengths above maxSerialLen are reported as
+// maxSerialLen.
 func serialLen(t uint64) int {
 	switch {
 	case t == 0, t == 8, t == 9:
@@ -334,10 +344,9 @@ func serialLen(t uint64) int {
 		return 6
 	case t == 6, t == 7:
 		return 8
-	case t >= 12 && t%2 == 0:
-		return int(t-12) / 2
-	case t >= 13:
-		return int(t-13) / 2
+	case t >= 12:
+		// Even: blob of (t-12)/2 bytes, odd: text of (t-13)/2 bytes.
+		return int(min((t-12)/2, maxSerialLen))
 	}
 	return -1
 }
@@ -357,6 +366,9 @@ func (f *sqliteFile) locateTime(abs, local int) (timeField, error) {
 		l := serialLen(t)
 		if l < 0 {
 			return timeField{}, fmt.Errorf("reserved serial type %d", t)
+		}
+		if l > len(payload)-off {
+			return timeField{}, errors.New("registrationTime lies on an overflow page (a column before it reaches beyond the local payload)")
 		}
 		off += l
 	}
