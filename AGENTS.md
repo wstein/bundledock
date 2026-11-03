@@ -146,8 +146,8 @@ its own `AGENTS.md`; follow them when present.
 
 | Lane | Job | Trigger | Command / duration |
 | --- | --- | --- | --- |
-| Light | `check` in `ci.yml` | every PR and push | `make check`, plus `go vet` for the three release platforms; timeout 15 min |
-| Light | `python-tests-macos` in `ci.yml` | every PR and push | informative only, not required; timeout 20 min |
+| Light | `check` in `ci.yml` | every PR and push to main | `make check`, plus `go vet` for the three release platforms; timeout 15 min |
+| Light | `python-tests-macos` in `ci.yml` | every PR and push to main | informative only, not required; timeout 20 min |
 | Heavy | `toolbox-build.yml`, `nixbox-build.yml` | `workflow_dispatch` only | native build and smoke; timeout 90 min |
 | Heavy | `release.yml` | owner tag push `bdock/vX.Y.Z`; manual run is a dry run | verify, build, smoke, publish; timeouts 15 to 20 min per job |
 | Heavy | `publish-bundles.yml` | `workflow_run` after merged-main `CI` (eligible bot updater PRs), or dispatch | publication; see docs/publication.md |
