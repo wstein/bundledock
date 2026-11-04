@@ -75,9 +75,9 @@
         "verification": "publisher-sha256"
       },
       "fd": {
-        "version": "v10.5.0",
-        "url": "https://github.com/sharkdp/fd/releases/download/v10.5.0/fd-v10.5.0-x86_64-unknown-linux-musl.tar.gz",
-        "sha256": "761c72dc8e120d85b22292063be8a796e2eeb20eb3e4f38b8fa2343ccf3514a7",
+        "version": "v10.5.1",
+        "url": "https://github.com/sharkdp/fd/releases/download/v10.5.1/fd-v10.5.1-x86_64-unknown-linux-musl.tar.gz",
+        "sha256": "f6c95edb190c241df6fddc815a5bab4051444993ac5d92ddc6eec0e0dc2342c7",
         "verification": "publisher-sha256"
       },
       "fish": {
@@ -189,9 +189,9 @@
         "verification": "publisher-sha256"
       },
       "mise": {
-        "version": "v2026.10.25",
-        "url": "https://github.com/jdx/mise/releases/download/v2026.10.25/mise-v2026.10.25-linux-x64-musl",
-        "sha256": "9ab24871281d46383d13a1ad4334fd7a707be033f08d5005c928a2db8601f34b",
+        "version": "v2026.11.0",
+        "url": "https://github.com/jdx/mise/releases/download/v2026.11.0/mise-v2026.11.0-linux-x64-musl",
+        "sha256": "78ecd491b7d5e6b03df73be27cc9d38f41e18f7bb627d93b87bbd916e2f98c76",
         "verification": "publisher-sha256"
       },
       "misspell": {
@@ -421,9 +421,9 @@
         "verification": "publisher-sha256"
       },
       "fd": {
-        "version": "v10.5.0",
-        "url": "https://github.com/sharkdp/fd/releases/download/v10.5.0/fd-v10.5.0-aarch64-unknown-linux-musl.tar.gz",
-        "sha256": "d76c4317f7d5dba69f8a2a15856c90c777e7f0dd4e85f0de8c76de6992c374d4",
+        "version": "v10.5.1",
+        "url": "https://github.com/sharkdp/fd/releases/download/v10.5.1/fd-v10.5.1-aarch64-unknown-linux-musl.tar.gz",
+        "sha256": "64c20b9b154c9d4b36d4b7df3521de771c499c4768b4b5b045ef6b01532117be",
         "verification": "publisher-sha256"
       },
       "fish": {
@@ -535,9 +535,9 @@
         "verification": "publisher-sha256"
       },
       "mise": {
-        "version": "v2026.10.25",
-        "url": "https://github.com/jdx/mise/releases/download/v2026.10.25/mise-v2026.10.25-linux-arm64-musl",
-        "sha256": "561db7a5003f2c4fd89c20244d320099857ecff0d19e9438bfaa856156dec797",
+        "version": "v2026.11.0",
+        "url": "https://github.com/jdx/mise/releases/download/v2026.11.0/mise-v2026.11.0-linux-arm64-musl",
+        "sha256": "65217931481c4c11f0af14d035d4c2f1226938280c16f894f7981d5e465dd7c4",
         "verification": "publisher-sha256"
       },
       "misspell": {
