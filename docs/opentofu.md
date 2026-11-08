@@ -8,7 +8,8 @@ description: Retired OpenTofu CLI bundle; use tofu from the toolbox, and inspect
 [All bundles](bundles.md)
 
 > **Status: retired on 2026-10-31.** Get `tofu` from the [toolbox](toolbox.md#opentofu),
-> which ships the same recipe, pin and evidence. This bundle receives no further
+> which ships the same recipe and publisher SHA256SUMS evidence
+> (the toolbox pin is in the toolbox lock and moves on its own). This bundle receives no further
 > updates and no new publication. Existing images stay on Quay, immutable and
 > pullable by digest, so current pins keep working; nothing is deleted. The source
 > and this page remain for reference.
@@ -18,7 +19,7 @@ for Linux AMD64 and ARM64. It has a separate catalog, lock, image, volume and
 `/opt/bdock/opentofu` mount. Providers are not bundled or pinned here;
 projects manage provider versions, lock files, credentials and licenses.
 
-The default [toolbox](toolbox.md#opentofu) ships `tofu` at the same pin (owner
+The default [toolbox](toolbox.md#opentofu) ships `tofu` with the same recipe; its pin is in the toolbox lock (owner
 decision 2026-10-22). The sections below describe the retired bundle as it was
 last published.
 
