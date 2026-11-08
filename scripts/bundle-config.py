@@ -17,7 +17,7 @@ MANUAL_ONLY = ('nixbox',)
 # Retired bundles stay known (source, docs, publication record and the Quay images stay,
 # so `bdock quay` keeps describing them) but take part in no automatic path: the
 # updater never proposes them and no manual or automatic publication builds them.
-# opentofu was retired on 2026-10-31; the toolbox ships the same tofu recipe and pin.
+# opentofu was retired on 2026-10-31; the toolbox ships the same tofu recipe; its pin is in the toolbox lock.
 RETIRED = ('opentofu',)
 AUTOMATIC = tuple(name for name in BUNDLES if name not in MANUAL_ONLY and name not in RETIRED)
 UPGRADEABLE = tuple(name for name in BUNDLES if name not in RETIRED)

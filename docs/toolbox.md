@@ -463,8 +463,8 @@ owner authorization.
 The source lock includes the official stable prebuilt OpenTofu CLI (`tofu`,
 catalog and package ID `opentofu`, `opentofu>=1.13.1,<2.0.0`) because the toolbox
 is rebuilt daily and is the default toolset (owner decision 2026-10-22). It uses
-the same recipe, pin (v1.13.2) and publisher `tofu_{version}_SHA256SUMS` evidence
-as the separate [OpenTofu bundle](opentofu.md), which the owner retired on
+the same recipe and publisher `tofu_{version}_SHA256SUMS` evidence
+(the toolbox pin is in the toolbox lock and moves on its own) as the separate [OpenTofu bundle](opentofu.md), which the owner retired on
 2026-10-31: it is no longer updated or published, and its existing images stay
 pullable by digest. Use the toolbox for `tofu`. No
 Sigstore or GPG verification is added, and providers stay out: they, their
