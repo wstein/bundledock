@@ -15,21 +15,21 @@ configuration remain unchanged. No browser service starts automatically.
 The current standalone pin comes from this bundle's own lock:
 
 <!-- BEGIN PUBLISHED BUNDLE -->
-<!-- publication-record: {"attempt":"1","bundle":"code-server","commit":"bf2e00da622131bbda824c2d2fc6c7d8e23867d3","created":"2026-10-29T14:10:55Z","digest":"sha256:8fad64406cb5238c5c9d7e91e72d3711d7deafd825cfdfb1f0fb2efa45c6f737","image":"quay.io/bundledock/code-server","lock_sha256":"2f3696e0b45650fd577d52b694cd5859f2ac858bbec6fd6030b56e7680409749","reference":"quay.io/bundledock/code-server@sha256:8fad64406cb5238c5c9d7e91e72d3711d7deafd825cfdfb1f0fb2efa45c6f737","run_attempt":"1","run_id":"40888530844","source":"https://github.com/wstein/bundledock","tag":"4.144.0-b1"} -->
+<!-- publication-record: {"attempt":"1","bundle":"code-server","commit":"945e33426e8fb722f3a369f418105639cf2ffdc7","created":"2026-11-08T14:53:53Z","digest":"sha256:165652bdf3c287bb9888caa290d8c0214f9b9fa2ef825b7a395b8740b418aa5f","image":"quay.io/bundledock/code-server","lock_sha256":"b5c05a2dd96b51b8f0cdd7e9f1826951c4d2bed60d81dbaca18c1891e9422917","reference":"quay.io/bundledock/code-server@sha256:165652bdf3c287bb9888caa290d8c0214f9b9fa2ef825b7a395b8740b418aa5f","run_attempt":"1","run_id":"42491829176","source":"https://github.com/wstein/bundledock","tag":"4.145.2-b1"} -->
 ## Published bundle
 
-Version: `4.144.0-b1`
+Version: `4.145.2-b1`
 
-Index digest: `sha256:8fad64406cb5238c5c9d7e91e72d3711d7deafd825cfdfb1f0fb2efa45c6f737`
+Index digest: `sha256:165652bdf3c287bb9888caa290d8c0214f9b9fa2ef825b7a395b8740b418aa5f`
 
-Source: [`bf2e00da622131bbda824c2d2fc6c7d8e23867d3`](https://github.com/wstein/bundledock/commit/bf2e00da622131bbda824c2d2fc6c7d8e23867d3)
+Source: [`945e33426e8fb722f3a369f418105639cf2ffdc7`](https://github.com/wstein/bundledock/commit/945e33426e8fb722f3a369f418105639cf2ffdc7)
 
-Publication: [run 40888530844, attempt 1](https://github.com/wstein/bundledock/actions/runs/40888530844/attempts/1)
+Publication: [run 42491829176, attempt 1](https://github.com/wstein/bundledock/actions/runs/42491829176/attempts/1)
 
 Pull this published carrier by its immutable index digest:
 
 ```sh
-docker pull quay.io/bundledock/code-server@sha256:8fad64406cb5238c5c9d7e91e72d3711d7deafd825cfdfb1f0fb2efa45c6f737
+docker pull quay.io/bundledock/code-server@sha256:165652bdf3c287bb9888caa290d8c0214f9b9fa2ef825b7a395b8740b418aa5f
 ```
 
 The source inventory below describes the current lock; this publication retains its exact source revision.
