@@ -36,14 +36,7 @@ func TestToolboxOpenTofuOfficialStableRecipe(t *testing.T) {
 		t.Fatal("missing stable requirement")
 	}
 	assertRollingPublisherPins(t, c, "opentofu")
-	// The toolbox must track the same stable pin as the separate bundle.
-	o, err := Load("../../bundles/opentofu")
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, arch := range []string{"amd64", "arm64"} {
-		if c.Lock.Platforms[arch]["opentofu"] != o.Lock.Platforms[arch]["opentofu"] {
-			t.Fatalf("%s pin differs from the separate opentofu bundle", arch)
-		}
-	}
+	// The separate opentofu bundle was retired on 2026-10-31 and receives no
+	// updater PRs, so the toolbox pin moves on its own and is not compared
+	// with the retired bundle's lock.
 }
