@@ -39,12 +39,12 @@ def numeric_version(version):
     return '%07d' % (major * 1000000 + minor * 10000 + patch * 100)
 
 
-def future_url(url, old, new, old_version, new_version):
-    # One pass: a chained replace would rewrite the new tag again whenever the
-    # old version is a prefix of the new one (3.8 -> 3.8a gave v3.8aa).
-    replacements = {old: new, old_version: new_version}
-    pattern = re.compile('|'.join(re.escape(k) for k in sorted(replacements, key=len, reverse=True)))
-    return pattern.sub(lambda match: replacements[match.group(0)], url)
+def future_url(url, old_version, new_version):
+    # The tag spelling (prefix + version) and the asset spelling both contain
+    # the bare version, so one replace covers both. Chaining a second replace
+    # on the tag would rewrite the new tag again when the old version is a
+    # prefix of the new one (3.8 -> 3.8a gave v3.8aa).
+    return url.replace(old_version, new_version)
 
 
 def exact_requirements(text):
@@ -85,14 +85,14 @@ class RollingLockTests(unittest.TestCase):
         old = 'v3.8'
         new, old_version, new_version = next_release(old, package)
         url = 'https://github.com/tmux/tmux-builds/releases/download/v3.8/tmux-3.8-linux-x86_64.tar.gz'
-        self.assertEqual(future_url(url, old, new, old_version, new_version),
+        self.assertEqual(future_url(url, old_version, new_version),
                          'https://github.com/tmux/tmux-builds/releases/download/v3.8a/tmux-3.8a-linux-x86_64.tar.gz')
         # The same result holds for a letter suffix and for plain semver.
         self.assertEqual(future_url(
-            'https://github.com/tmux/tmux-builds/releases/download/v3.7c/tmux-3.7c-linux-arm64.tar.gz', 'v3.7c', 'v3.7d', '3.7c', '3.7d'),
+            'https://github.com/tmux/tmux-builds/releases/download/v3.7c/tmux-3.7c-linux-arm64.tar.gz', '3.7c', '3.7d'),
             'https://github.com/tmux/tmux-builds/releases/download/v3.7d/tmux-3.7d-linux-arm64.tar.gz')
         self.assertEqual(future_url(
-            'https://github.com/opentofu/opentofu/releases/download/v1.13.9/tofu_1.13.9_linux_amd64.tar.gz', 'v1.13.9', 'v1.13.10', '1.13.9', '1.13.10'),
+            'https://github.com/opentofu/opentofu/releases/download/v1.13.9/tofu_1.13.9_linux_amd64.tar.gz', '1.13.9', '1.13.10'),
             'https://github.com/opentofu/opentofu/releases/download/v1.13.10/tofu_1.13.10_linux_amd64.tar.gz')
 
     def test_repository_config_tests_accept_future_stable_lock_only_updates(self):
@@ -129,7 +129,7 @@ class RollingLockTests(unittest.TestCase):
                             # The URL carries the publisher's seven-digit form, not the dotted version.
                             url = pin['url'].replace(numeric_version(old_version), numeric_version(new_version))
                         else:
-                            url = future_url(pin['url'], old, new, old_version, new_version)
+                            url = future_url(pin['url'], old_version, new_version)
                         self.assertNotEqual(url, pin['url'], (name, arch, 'version missing from URL'))
                         pin.update(version=new, url=url)
                         # Synthetic metadata only: no binary downloads or claims
