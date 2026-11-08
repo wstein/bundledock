@@ -5,17 +5,17 @@
   "platforms": {
     "amd64": {
       "code-server": {
-        "version": "v4.144.0",
-        "url": "https://github.com/coder/code-server/releases/download/v4.144.0/code-server-4.144.0-linux-amd64.tar.gz",
-        "sha256": "710f749c40a0f3d0ab3be09c0de65314e5c2907cc50646f5fbc0f24c0e8fba2d",
+        "version": "v4.145.2",
+        "url": "https://github.com/coder/code-server/releases/download/v4.145.2/code-server-4.145.2-linux-amd64.tar.gz",
+        "sha256": "2f6db6c3e8b733dd6b3aeee83532e148b2bae2e392353ba85452d03572348962",
         "verification": "publisher-sha256"
       }
     },
     "arm64": {
       "code-server": {
-        "version": "v4.144.0",
-        "url": "https://github.com/coder/code-server/releases/download/v4.144.0/code-server-4.144.0-linux-arm64.tar.gz",
-        "sha256": "4404c784f541bd56a2a8d6e2a9474ed0b4e37bc8502aa3a247898ca933434482",
+        "version": "v4.145.2",
+        "url": "https://github.com/coder/code-server/releases/download/v4.145.2/code-server-4.145.2-linux-arm64.tar.gz",
+        "sha256": "e867a34416e2da4a83496b09580001893e7a4e5bb58a0624c4fcd22819e7d53d",
         "verification": "publisher-sha256"
       }
     }
