@@ -62,11 +62,11 @@ The source inventory below describes the current lock; this publication retains 
 | lazygit (`lazygit`) | 0.66.3 | [Homepage](https://github.com/jesseduffield/lazygit) | [Source](https://github.com/jesseduffield/lazygit) |
 | lsd (`lsd`) | 1.2.0 | [Homepage](https://github.com/lsd-rs/lsd) | [Source](https://github.com/lsd-rs/lsd) |
 | lychee (`lychee`) | 0.24.2 | [Homepage](https://lychee.cli.rs) | [Source](https://github.com/lycheeverse/lychee) |
-| Mike Farah yq (`yq`) | 4.54.2 | [Homepage](https://mikefarah.gitbook.io/yq/) | [Source](https://github.com/mikefarah/yq) |
-| mise (`mise`) | 2026.11.4 | [Homepage](https://mise.jdx.dev) | [Source](https://github.com/jdx/mise) |
+| Mike Farah yq (`yq`) | 4.54.3 | [Homepage](https://mikefarah.gitbook.io/yq/) | [Source](https://github.com/mikefarah/yq) |
+| mise (`mise`) | 2026.11.6 | [Homepage](https://mise.jdx.dev) | [Source](https://github.com/jdx/mise) |
 | misspell (`misspell`) | 0.8.0 | [Homepage](https://github.com/golangci/misspell) | [Source](https://github.com/golangci/misspell) |
 | navi (`navi`) | 2.24.0 | [Homepage](https://github.com/denisidoro/navi) | [Source](https://github.com/denisidoro/navi) |
-| Nushell (`nu`) | 0.116.1 | [Homepage](https://www.nushell.sh/) | [Source](https://github.com/nushell/nushell) |
+| Nushell (`nu`) | 0.117.0 | [Homepage](https://www.nushell.sh/) | [Source](https://github.com/nushell/nushell) |
 | OpenTofu (`tofu`) | 1.13.9 | [Homepage](https://opentofu.org) | [Source](https://github.com/opentofu/opentofu) |
 | pinact (`pinact`) | 5.0.2 | [Homepage](https://github.com/suzuki-shunsuke/pinact) | [Source](https://github.com/suzuki-shunsuke/pinact) |
 | regctl (`regctl`) | 0.11.7 | [Homepage](https://regclient.org) | [Source](https://github.com/regclient/regclient) |
@@ -81,12 +81,12 @@ The source inventory below describes the current lock; this publication retains 
 | Spec Kit (`specify`, first-use pip launcher) | 1.1.3 | [Homepage](https://github.github.io/spec-kit/) | [Source](https://github.com/github/spec-kit) |
 | SQLite (`sqlite3`) | 3.54.1 | [Homepage](https://www.sqlite.org/) | [Source](https://www.sqlite.org/download.html) |
 | Starship (`starship`) | 1.27.0 | [Homepage](https://starship.rs) | [Source](https://github.com/starship/starship) |
-| Syft (`syft`) | 1.57.0 | [Homepage](https://github.com/anchore/syft) | [Source](https://github.com/anchore/syft) |
+| Syft (`syft`) | 1.57.1 | [Homepage](https://github.com/anchore/syft) | [Source](https://github.com/anchore/syft) |
 | tldr (`tldr`, first-use pip launcher) | 3.4.4 | [Homepage](https://pypi.org/project/tldr/) | [Source](https://github.com/tldr-pages/tldr-python-client) |
 | tmux (`tmux`) | 3.8 (official static builds) | [Homepage](https://github.com/tmux/tmux-builds) | [Source](https://github.com/tmux/tmux-builds) |
 | Trivy (`trivy`) | 0.76.2 | [Homepage](https://trivy.dev) | [Source](https://github.com/aquasecurity/trivy) |
 | TruffleHog (`trufflehog`) | 3.99.8 | [Homepage](https://github.com/trufflesecurity/trufflehog) | [Source](https://github.com/trufflesecurity/trufflehog) |
-| typos (`typos`) | 1.52.0 | [Homepage](https://github.com/crate-ci/typos) | [Source](https://github.com/crate-ci/typos) |
+| typos (`typos`) | 1.52.1 | [Homepage](https://github.com/crate-ci/typos) | [Source](https://github.com/crate-ci/typos) |
 | Typst (`typst`) | 0.15.1 | [Homepage](https://typst.app) | [Source](https://github.com/typst/typst) |
 | uv (`uv`, `uvx`) | 0.13.7 | [Homepage](https://docs.astral.sh/uv) | [Source](https://github.com/astral-sh/uv) |
 | watchexec (`watchexec`) | 2.8.0 | [Homepage](https://watchexec.github.io) | [Source](https://github.com/watchexec/watchexec) |

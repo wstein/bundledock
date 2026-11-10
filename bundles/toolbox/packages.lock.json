@@ -189,9 +189,9 @@
         "verification": "publisher-sha256"
       },
       "mise": {
-        "version": "v2026.11.4",
-        "url": "https://github.com/jdx/mise/releases/download/v2026.11.4/mise-v2026.11.4-linux-x64-musl",
-        "sha256": "cbd7b839af43709484e16e6305631093b673a0ee37c989ffcd69346bda831466",
+        "version": "v2026.11.6",
+        "url": "https://github.com/jdx/mise/releases/download/v2026.11.6/mise-v2026.11.6-linux-x64-musl",
+        "sha256": "fa7d5e5cad227c0e76f893172eb873964c464785e0fcfbab818cdf058823457d",
         "verification": "publisher-sha256"
       },
       "misspell": {
@@ -207,9 +207,9 @@
         "verification": "tls-download-sha256"
       },
       "nu": {
-        "version": "0.116.1",
-        "url": "https://github.com/nushell/nushell/releases/download/0.116.1/nu-0.116.1-x86_64-unknown-linux-musl.tar.gz",
-        "sha256": "13ef75df08df30f8d7b031df538e82a52c6e74ce839b1a9091c3a3f1969c3742",
+        "version": "0.117.0",
+        "url": "https://github.com/nushell/nushell/releases/download/0.117.0/nu-0.117.0-x86_64-unknown-linux-musl.tar.gz",
+        "sha256": "2b808786d44af41170a29f8b9a15b5113bb6ea5dda9221098eca932f8a149924",
         "verification": "publisher-sha256"
       },
       "opentofu": {
@@ -293,9 +293,9 @@
         "verification": "publisher-sha256"
       },
       "syft": {
-        "version": "v1.57.0",
-        "url": "https://github.com/anchore/syft/releases/download/v1.57.0/syft_1.57.0_linux_amd64.tar.gz",
-        "sha256": "9c077a7d43029b3b13e98a8db720661e700c4d58db6352153a06395ae4a2a704",
+        "version": "v1.57.1",
+        "url": "https://github.com/anchore/syft/releases/download/v1.57.1/syft_1.57.1_linux_amd64.tar.gz",
+        "sha256": "bf52519eb57f675d47c07d43213cb6dff6449f3d6d1147ff6701ed91f44eef0c",
         "verification": "publisher-sha256"
       },
       "tmux": {
@@ -317,9 +317,9 @@
         "verification": "publisher-sha256"
       },
       "typos": {
-        "version": "v1.52.0",
-        "url": "https://github.com/crate-ci/typos/releases/download/v1.52.0/typos-v1.52.0-x86_64-unknown-linux-musl.tar.gz",
-        "sha256": "6155d4114f9a0f5b8f6d4fda96266c9d5f6add71df80da7f684ee5e72eb14588",
+        "version": "v1.52.1",
+        "url": "https://github.com/crate-ci/typos/releases/download/v1.52.1/typos-v1.52.1-x86_64-unknown-linux-musl.tar.gz",
+        "sha256": "c034dbec8797cfa0c4548b3726c1eebbafcf703b8a17f15a961b037788eebcdd",
         "verification": "publisher-sha256"
       },
       "typst": {
@@ -353,9 +353,9 @@
         "verification": "publisher-sha256"
       },
       "yq": {
-        "version": "v4.54.2",
-        "url": "https://github.com/mikefarah/yq/releases/download/v4.54.2/yq_linux_amd64",
-        "sha256": "44c7759059b4910827a0059a2757b22001e59360cdecdb2ef8dedc4b6c7e9f32",
+        "version": "v4.54.3",
+        "url": "https://github.com/mikefarah/yq/releases/download/v4.54.3/yq_linux_amd64",
+        "sha256": "129534601871538efe0ba4c5e62a34fb1d5f469bcb975c4fddeb467d82974973",
         "verification": "publisher-sha256"
       },
       "zoxide": {
@@ -535,9 +535,9 @@
         "verification": "publisher-sha256"
       },
       "mise": {
-        "version": "v2026.11.4",
-        "url": "https://github.com/jdx/mise/releases/download/v2026.11.4/mise-v2026.11.4-linux-arm64-musl",
-        "sha256": "a0c01b0b6167ae5aded363555580bda9b410a64ade1d25d88380aa9b21341aed",
+        "version": "v2026.11.6",
+        "url": "https://github.com/jdx/mise/releases/download/v2026.11.6/mise-v2026.11.6-linux-arm64-musl",
+        "sha256": "65ce2ff8e21bb84f111b184067240c833f469e18c6351c5bcf5d4c4226a7fadf",
         "verification": "publisher-sha256"
       },
       "misspell": {
@@ -553,9 +553,9 @@
         "verification": "tls-download-sha256"
       },
       "nu": {
-        "version": "0.116.1",
-        "url": "https://github.com/nushell/nushell/releases/download/0.116.1/nu-0.116.1-aarch64-unknown-linux-musl.tar.gz",
-        "sha256": "b103770c00bf322c409caa007aad44882d1cc5d24d82f719f877812ac33d6ad1",
+        "version": "0.117.0",
+        "url": "https://github.com/nushell/nushell/releases/download/0.117.0/nu-0.117.0-aarch64-unknown-linux-musl.tar.gz",
+        "sha256": "19966b94ae19f52e2cf0402cb99844ddfa06e2361cf6c77b1b2e29abd17e9188",
         "verification": "publisher-sha256"
       },
       "opentofu": {
@@ -639,9 +639,9 @@
         "verification": "publisher-sha256"
       },
       "syft": {
-        "version": "v1.57.0",
-        "url": "https://github.com/anchore/syft/releases/download/v1.57.0/syft_1.57.0_linux_arm64.tar.gz",
-        "sha256": "410cbfa0ae0f63246bc0057843760b1de2833cd23919e025e368fd7681308cdb",
+        "version": "v1.57.1",
+        "url": "https://github.com/anchore/syft/releases/download/v1.57.1/syft_1.57.1_linux_arm64.tar.gz",
+        "sha256": "aa3d3e07344f590bcce8d31043b752daa76c8a56c2aa34ceeee63c6168152582",
         "verification": "publisher-sha256"
       },
       "tmux": {
@@ -663,9 +663,9 @@
         "verification": "publisher-sha256"
       },
       "typos": {
-        "version": "v1.52.0",
-        "url": "https://github.com/crate-ci/typos/releases/download/v1.52.0/typos-v1.52.0-aarch64-unknown-linux-musl.tar.gz",
-        "sha256": "63b7d4478d467a61fe47cdb3162f720c6797856e61a04f7e125d1cdc282488b8",
+        "version": "v1.52.1",
+        "url": "https://github.com/crate-ci/typos/releases/download/v1.52.1/typos-v1.52.1-aarch64-unknown-linux-musl.tar.gz",
+        "sha256": "3c82c3e97aafdd686fbb3f8c7b82bca3a870d21a0bcadd41babd37e84cc2f2df",
         "verification": "publisher-sha256"
       },
       "typst": {
@@ -699,9 +699,9 @@
         "verification": "publisher-sha256"
       },
       "yq": {
-        "version": "v4.54.2",
-        "url": "https://github.com/mikefarah/yq/releases/download/v4.54.2/yq_linux_arm64",
-        "sha256": "bd44211dcd29a5f0eb701d4b7eb5ccd0cfff3bd3966cb4f7f9bd5b13701d997e",
+        "version": "v4.54.3",
+        "url": "https://github.com/mikefarah/yq/releases/download/v4.54.3/yq_linux_arm64",
+        "sha256": "89f69310b61b68d1245065a1241d1fc843f7a36cd6103ffd77ad987613bd1b67",
         "verification": "publisher-sha256"
       },
       "zoxide": {
