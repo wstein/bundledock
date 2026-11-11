@@ -86,7 +86,7 @@ The source inventory below describes the current lock; this publication retains 
 | tmux (`tmux`) | 3.8 (official static builds) | [Homepage](https://github.com/tmux/tmux-builds) | [Source](https://github.com/tmux/tmux-builds) |
 | Trivy (`trivy`) | 0.76.2 | [Homepage](https://trivy.dev) | [Source](https://github.com/aquasecurity/trivy) |
 | TruffleHog (`trufflehog`) | 3.99.8 | [Homepage](https://github.com/trufflesecurity/trufflehog) | [Source](https://github.com/trufflesecurity/trufflehog) |
-| typos (`typos`) | 1.52.1 | [Homepage](https://github.com/crate-ci/typos) | [Source](https://github.com/crate-ci/typos) |
+| typos (`typos`) | 1.52.2 | [Homepage](https://github.com/crate-ci/typos) | [Source](https://github.com/crate-ci/typos) |
 | Typst (`typst`) | 0.15.1 | [Homepage](https://typst.app) | [Source](https://github.com/typst/typst) |
 | uv (`uv`, `uvx`) | 0.13.7 | [Homepage](https://docs.astral.sh/uv) | [Source](https://github.com/astral-sh/uv) |
 | watchexec (`watchexec`) | 2.8.0 | [Homepage](https://watchexec.github.io) | [Source](https://github.com/watchexec/watchexec) |

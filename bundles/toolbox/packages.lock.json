@@ -317,9 +317,9 @@
         "verification": "publisher-sha256"
       },
       "typos": {
-        "version": "v1.52.1",
-        "url": "https://github.com/crate-ci/typos/releases/download/v1.52.1/typos-v1.52.1-x86_64-unknown-linux-musl.tar.gz",
-        "sha256": "c034dbec8797cfa0c4548b3726c1eebbafcf703b8a17f15a961b037788eebcdd",
+        "version": "v1.52.2",
+        "url": "https://github.com/crate-ci/typos/releases/download/v1.52.2/typos-v1.52.2-x86_64-unknown-linux-musl.tar.gz",
+        "sha256": "3b13d1291281d39d01822e54035636487a7a0f228e70097899b1e33aeb0e7e93",
         "verification": "publisher-sha256"
       },
       "typst": {
@@ -663,9 +663,9 @@
         "verification": "publisher-sha256"
       },
       "typos": {
-        "version": "v1.52.1",
-        "url": "https://github.com/crate-ci/typos/releases/download/v1.52.1/typos-v1.52.1-aarch64-unknown-linux-musl.tar.gz",
-        "sha256": "3c82c3e97aafdd686fbb3f8c7b82bca3a870d21a0bcadd41babd37e84cc2f2df",
+        "version": "v1.52.2",
+        "url": "https://github.com/crate-ci/typos/releases/download/v1.52.2/typos-v1.52.2-aarch64-unknown-linux-musl.tar.gz",
+        "sha256": "f2f54b567f5f4688f000f1bf85c585ee22cce3b55befc9418bcdd4c5adc16595",
         "verification": "publisher-sha256"
       },
       "typst": {
