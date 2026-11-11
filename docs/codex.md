@@ -12,21 +12,21 @@ AMD64 and ARM64, with an independent catalog, lock, carrier image and volume
 mounted read-only at `/opt/bdock/codex`.
 
 <!-- BEGIN PUBLISHED BUNDLE -->
-<!-- publication-record: {"attempt":"1","bundle":"codex","commit":"945e33426e8fb722f3a369f418105639cf2ffdc7","created":"2026-11-08T14:53:11Z","digest":"sha256:5df80eee0bf6eccc01e9a2c558af30caab45a472a45de35c55e743350cb89efd","image":"quay.io/bundledock/codex","lock_sha256":"296976f45e19f9f8af21e297b323e43e8154cfb365dec6c4e46e01a383733596","reference":"quay.io/bundledock/codex@sha256:5df80eee0bf6eccc01e9a2c558af30caab45a472a45de35c55e743350cb89efd","run_attempt":"1","run_id":"42491829176","source":"https://github.com/wstein/bundledock","tag":"0.167.0-b1"} -->
+<!-- publication-record: {"attempt":"1","bundle":"codex","commit":"f6d86d211eadc2337d47de9d4eccb6f358ee9219","created":"2026-11-11T15:52:28Z","digest":"sha256:2cf756f8d684d8edf7d78df998f91c8d0a428a27c8efc14c18594e81489c8f81","image":"quay.io/bundledock/codex","lock_sha256":"a90fab0c055abe5860100c4f06922a320d072c85b9942cace3e5eb4e10cbbd5b","reference":"quay.io/bundledock/codex@sha256:2cf756f8d684d8edf7d78df998f91c8d0a428a27c8efc14c18594e81489c8f81","run_attempt":"1","run_id":"43052264202","source":"https://github.com/wstein/bundledock","tag":"0.167.1-b1"} -->
 ## Published bundle
 
-Version: `0.167.0-b1`
+Version: `0.167.1-b1`
 
-Index digest: `sha256:5df80eee0bf6eccc01e9a2c558af30caab45a472a45de35c55e743350cb89efd`
+Index digest: `sha256:2cf756f8d684d8edf7d78df998f91c8d0a428a27c8efc14c18594e81489c8f81`
 
-Source: [`945e33426e8fb722f3a369f418105639cf2ffdc7`](https://github.com/wstein/bundledock/commit/945e33426e8fb722f3a369f418105639cf2ffdc7)
+Source: [`f6d86d211eadc2337d47de9d4eccb6f358ee9219`](https://github.com/wstein/bundledock/commit/f6d86d211eadc2337d47de9d4eccb6f358ee9219)
 
-Publication: [run 42491829176, attempt 1](https://github.com/wstein/bundledock/actions/runs/42491829176/attempts/1)
+Publication: [run 43052264202, attempt 1](https://github.com/wstein/bundledock/actions/runs/43052264202/attempts/1)
 
 Pull this published carrier by its immutable index digest:
 
 ```sh
-docker pull quay.io/bundledock/codex@sha256:5df80eee0bf6eccc01e9a2c558af30caab45a472a45de35c55e743350cb89efd
+docker pull quay.io/bundledock/codex@sha256:2cf756f8d684d8edf7d78df998f91c8d0a428a27c8efc14c18594e81489c8f81
 ```
 
 The source inventory below describes the current lock; this publication retains its exact source revision.
