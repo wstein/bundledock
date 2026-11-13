@@ -35,9 +35,9 @@
         "verification": "publisher-sha256"
       },
       "leaf": {
-        "version": "1.29.2",
-        "url": "https://github.com/RivoLink/leaf/releases/download/1.29.2/leaf-linux-x86_64",
-        "sha256": "ee31e39a58c848053685f4302a94cf942f8fd36c8d2f5d7d77bdac54417c6da7",
+        "version": "1.29.3",
+        "url": "https://github.com/RivoLink/leaf/releases/download/1.29.3/leaf-linux-x86_64",
+        "sha256": "4037cbe69a24820921ad56f2c43595c52563ec57ffce80e9b9cf53d2e2c40cf7",
         "verification": "publisher-sha256"
       },
       "zizmor": {
@@ -85,9 +85,9 @@
         "verification": "publisher-sha256"
       },
       "leaf": {
-        "version": "1.29.2",
-        "url": "https://github.com/RivoLink/leaf/releases/download/1.29.2/leaf-linux-arm64",
-        "sha256": "748b0e91889d429f3a9002fb3440f42d3324a2e7c645011f423aec07c7bc44d3",
+        "version": "1.29.3",
+        "url": "https://github.com/RivoLink/leaf/releases/download/1.29.3/leaf-linux-arm64",
+        "sha256": "f07a87be4c6ccbabd2864bc61c1d72aa249d832cf1b2a01bed980529b19ef125",
         "verification": "publisher-sha256"
       },
       "zizmor": {
