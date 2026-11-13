@@ -35,7 +35,7 @@ The source inventory below describes the current lock; this publication retains 
 <!-- BEGIN GENERATED TOOL INVENTORY -->
 | Tool | Pinned version |
 | --- | --- |
-| codex | 0.167.2 |
+| codex | 0.169.0 |
 <!-- END GENERATED TOOL INVENTORY -->
 
 The [official stable release](https://github.com/openai/codex/releases/tag/rust-v0.162.1)

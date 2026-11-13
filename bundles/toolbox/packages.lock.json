@@ -93,9 +93,9 @@
         "verification": "publisher-sha256"
       },
       "gh": {
-        "version": "v2.103.3",
-        "url": "https://github.com/cli/cli/releases/download/v2.103.3/gh_2.103.3_linux_amd64.tar.gz",
-        "sha256": "4c806978ffce1cec70853302a56d70ac6da4f19bae7adca4e1a8ab00633dd91d",
+        "version": "v2.104.0",
+        "url": "https://github.com/cli/cli/releases/download/v2.104.0/gh_2.104.0_linux_amd64.tar.gz",
+        "sha256": "98cb101ad87dbbd3f6b2f2bfcbd43197ccd07643140121d8a9cfaa91eadbc24e",
         "verification": "publisher-sha256"
       },
       "gh-stack": {
@@ -189,9 +189,9 @@
         "verification": "publisher-sha256"
       },
       "mise": {
-        "version": "v2026.11.6",
-        "url": "https://github.com/jdx/mise/releases/download/v2026.11.6/mise-v2026.11.6-linux-x64-musl",
-        "sha256": "fa7d5e5cad227c0e76f893172eb873964c464785e0fcfbab818cdf058823457d",
+        "version": "v2026.11.8",
+        "url": "https://github.com/jdx/mise/releases/download/v2026.11.8/mise-v2026.11.8-linux-x64-musl",
+        "sha256": "1fe64489a99b6227b7f7e67ae4dd3293c20ecbbcd74b1367456010359383e712",
         "verification": "publisher-sha256"
       },
       "misspell": {
@@ -237,9 +237,9 @@
         "verification": "publisher-sha256"
       },
       "ruff": {
-        "version": "0.17.4",
-        "url": "https://github.com/astral-sh/ruff/releases/download/0.17.4/ruff-x86_64-unknown-linux-musl.tar.gz",
-        "sha256": "d1d6ec9ce1ce0c01e23532a157a677077ba1f82f7cd2cde6f0bd75e65f85df93",
+        "version": "0.17.5",
+        "url": "https://github.com/astral-sh/ruff/releases/download/0.17.5/ruff-x86_64-unknown-linux-musl.tar.gz",
+        "sha256": "dc94b7e225b8910fb6f55298ada32d00e356dbd195a5ffb647847f388cb54f84",
         "verification": "publisher-sha256"
       },
       "scc": {
@@ -311,9 +311,9 @@
         "verification": "publisher-sha256"
       },
       "trufflehog": {
-        "version": "v3.99.8",
-        "url": "https://github.com/trufflesecurity/trufflehog/releases/download/v3.99.8/trufflehog_3.99.8_linux_amd64.tar.gz",
-        "sha256": "7c3b02f160f28929a467e29e20fba98746e0729f6e37c3c25761e4f8789abe08",
+        "version": "v3.99.9",
+        "url": "https://github.com/trufflesecurity/trufflehog/releases/download/v3.99.9/trufflehog_3.99.9_linux_amd64.tar.gz",
+        "sha256": "12050095c8063bf4d34f9f6cbce6ba9fa8d0deea9d503d0570364feba093658e",
         "verification": "publisher-sha256"
       },
       "typos": {
@@ -329,9 +329,9 @@
         "verification": "publisher-sha256"
       },
       "uv": {
-        "version": "0.13.7",
-        "url": "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-x86_64-unknown-linux-musl.tar.gz",
-        "sha256": "287491da03f2a785c70fa75b13e1f849918c2f2b5415fe84876b8214eeb792f9",
+        "version": "0.13.8",
+        "url": "https://github.com/astral-sh/uv/releases/download/0.13.8/uv-x86_64-unknown-linux-musl.tar.gz",
+        "sha256": "61fb26dabc4f0cf1d050fc6c67d40e43e4fae2994af21ebc1e050b233bf2b5ed",
         "verification": "publisher-sha256"
       },
       "watchexec": {
@@ -439,9 +439,9 @@
         "verification": "publisher-sha256"
       },
       "gh": {
-        "version": "v2.103.3",
-        "url": "https://github.com/cli/cli/releases/download/v2.103.3/gh_2.103.3_linux_arm64.tar.gz",
-        "sha256": "ee32df2323c8847f5fac6cb6b4b69ca75828e9329a8f22f677021f7b3306ce63",
+        "version": "v2.104.0",
+        "url": "https://github.com/cli/cli/releases/download/v2.104.0/gh_2.104.0_linux_arm64.tar.gz",
+        "sha256": "cb34cefc6f4e77b90731374a2b737516bb8f3033c6ca46aa949e5344f68069e3",
         "verification": "publisher-sha256"
       },
       "gh-stack": {
@@ -535,9 +535,9 @@
         "verification": "publisher-sha256"
       },
       "mise": {
-        "version": "v2026.11.6",
-        "url": "https://github.com/jdx/mise/releases/download/v2026.11.6/mise-v2026.11.6-linux-arm64-musl",
-        "sha256": "65ce2ff8e21bb84f111b184067240c833f469e18c6351c5bcf5d4c4226a7fadf",
+        "version": "v2026.11.8",
+        "url": "https://github.com/jdx/mise/releases/download/v2026.11.8/mise-v2026.11.8-linux-arm64-musl",
+        "sha256": "3febd613b6e49f928acdacda006662cee252f160ebc3fc48f5197260e61dc758",
         "verification": "publisher-sha256"
       },
       "misspell": {
@@ -583,9 +583,9 @@
         "verification": "publisher-sha256"
       },
       "ruff": {
-        "version": "0.17.4",
-        "url": "https://github.com/astral-sh/ruff/releases/download/0.17.4/ruff-aarch64-unknown-linux-musl.tar.gz",
-        "sha256": "71491cf93242d1bde15dcc628fd105f27c54738bef6b94050b9363ba6795f97e",
+        "version": "0.17.5",
+        "url": "https://github.com/astral-sh/ruff/releases/download/0.17.5/ruff-aarch64-unknown-linux-musl.tar.gz",
+        "sha256": "98f5ee4cf0cd2ad122ef61bbcce236782e5ac3cd00122dcf458ce19488863428",
         "verification": "publisher-sha256"
       },
       "scc": {
@@ -657,9 +657,9 @@
         "verification": "publisher-sha256"
       },
       "trufflehog": {
-        "version": "v3.99.8",
-        "url": "https://github.com/trufflesecurity/trufflehog/releases/download/v3.99.8/trufflehog_3.99.8_linux_arm64.tar.gz",
-        "sha256": "a0382d83dd58c967af5dd0175cc732c62c836ab1d15dc9ae71b01a2d3f0911b2",
+        "version": "v3.99.9",
+        "url": "https://github.com/trufflesecurity/trufflehog/releases/download/v3.99.9/trufflehog_3.99.9_linux_arm64.tar.gz",
+        "sha256": "778b1913196dc9b9234e8fd366f64387efeb08c01930a1d2110dcb2ffd07e68b",
         "verification": "publisher-sha256"
       },
       "typos": {
@@ -675,9 +675,9 @@
         "verification": "publisher-sha256"
       },
       "uv": {
-        "version": "0.13.7",
-        "url": "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-aarch64-unknown-linux-musl.tar.gz",
-        "sha256": "2d3ec076a0c4c0e8250bb6418c44080828b544f1a3be0b6e46adf9fb6923de45",
+        "version": "0.13.8",
+        "url": "https://github.com/astral-sh/uv/releases/download/0.13.8/uv-aarch64-unknown-linux-musl.tar.gz",
+        "sha256": "0c6f8593fcf1eadfc60e663b685c408267559d7c5d61c689bbb9f3a7e369ba32",
         "verification": "publisher-sha256"
       },
       "watchexec": {
