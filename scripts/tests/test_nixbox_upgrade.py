@@ -93,11 +93,15 @@ class NixboxUpgradeTests(unittest.TestCase):
         (box / 'scripts').mkdir(parents=True)
         (box / 'packages.catalog.json').write_text(catalog(OLD_REV))
         (box / 'packages.lock.json').write_text(json.dumps(lock('a'), indent=2) + '\n')
+        # The license record of the fixture is the lock itself, so the adapter below can show that it follows the refreshed lock.
+        (box / 'licenses.json').write_text(json.dumps(lock('a'), indent=2) + '\n')
         # Adapters: the bump writes catalog $NEW_CATALOG, the refresh writes lock $NEW_LOCK; no Docker, no network.
         write_exec(box / 'scripts/bump-rev.sh', '#!/bin/sh\nset -eu\necho bump >> "$CALLS"\n'
                    '[ -z "${NEW_CATALOG:-}" ] || cp "$NEW_CATALOG" bundles/nixbox/packages.catalog.json\n')
         write_exec(box / 'scripts/refresh-lock.sh', '#!/bin/sh\nset -eu\necho refresh >> "$CALLS"\n'
                    'cp "$NEW_LOCK" bundles/nixbox/packages.lock.json\n')
+        write_exec(box / 'scripts/record-licenses.sh', '#!/bin/sh\nset -eu\necho record >> "$CALLS"\n'
+                   'cp bundles/nixbox/packages.lock.json bundles/nixbox/licenses.json\n')
         self.git('init', '-q', '-b', 'main')
         self.git('config', 'user.name', 'Test')
         self.git('config', 'user.email', 'test@example.invalid')
@@ -147,11 +151,15 @@ class NixboxUpgradeTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn('changed=true', self.output.read_text())
         self.assertEqual({p.name for p in self.result.iterdir()},
-                         {'nixbox.lock.json', 'nixbox.catalog.json', 'nixbox.tools.lock.json', 'nixbox.md', 'base.sha', 'lock.diff'})
+                         {'nixbox.lock.json', 'nixbox.catalog.json', 'nixbox.tools.lock.json', 'nixbox.licenses.json', 'nixbox.md',
+                          'base.sha', 'lock.diff'})
         self.assertIn(NEW_REV, (self.result / 'nixbox.catalog.json').read_text())
         self.assertIn('Proposed nixbox', self.summary.read_text())
         calls = self.call_log()
         self.assertLess(calls.index('bump'), calls.index('refresh'))
+        # The license record is regenerated from the refreshed lock and travels with it.
+        self.assertLess(calls.index('refresh'), calls.index('record'))
+        self.assertEqual((self.result / 'nixbox.licenses.json').read_text(), (self.result / 'nixbox.lock.json').read_text())
         self.assertTrue(any(c.startswith('go run ./cmd/nixbox check') for c in calls))
         # The official release binaries resolve in the same proposal, from the stable releases, never in Docker.
         self.assertIn('go run ./cmd/bdock tools upgrade --directory bundles/nixbox/tools', calls)
@@ -177,6 +185,16 @@ class NixboxUpgradeTests(unittest.TestCase):
         self.assertIn('9.8.7', (self.result / 'nixbox.tools.lock.json').read_text())
         self.assertIn('| zk (`zk`) | 9.8.7 |', (self.result / 'nixbox.md').read_text())
         self.assertIn('9.8.7', (self.result / 'lock.diff').read_text())
+
+    def test_resolve_proposes_a_changed_record_for_an_unchanged_lock(self):
+        # nixpkgs meta.license can change while the store paths do not: the regenerated record alone is a change.
+        write_exec(self.repo / 'bundles/nixbox/scripts/record-licenses.sh',
+                   '#!/bin/sh\necho record >> "$CALLS"\necho \'{"changed": true}\' > bundles/nixbox/licenses.json\n')
+        self.git('commit', '-qam', 'record adapter')
+        result = self.resolve(lock('a'))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('changed=true', self.output.read_text())
+        self.assertIn('changed', (self.result / 'nixbox.licenses.json').read_text())
 
     def test_resolve_refuses_edits_outside_the_lock_and_catalog_and_a_tool_argument(self):
         write_exec(self.repo / 'bundles/nixbox/scripts/refresh-lock.sh',
@@ -204,7 +222,8 @@ class NixboxUpgradeTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(self.git('branch', '--show-current'), 'automation/nixbox-upgrade-7-1')
         self.assertEqual(set(self.git('diff', '--name-only', 'main', 'HEAD').split()),
-                         {'bundles/nixbox/packages.lock.json', 'bundles/nixbox/packages.catalog.json'})
+                         {'bundles/nixbox/packages.lock.json', 'bundles/nixbox/packages.catalog.json', 'bundles/nixbox/licenses.json'})
+        self.assertEqual((self.repo / 'bundles/nixbox/licenses.json').read_text(), (self.repo / 'bundles/nixbox/packages.lock.json').read_text())
         self.assertEqual(self.git('log', '-1', '--format=%s'), 'chore(nixbox): bump nixpkgs to bbbbbbbbbbbb')
         body = (self.result / 'pr-body.md').read_text()
         for text in (OLD_REV, NEW_REV, 'dispatched source CI', 'nixbox-build.yml'):

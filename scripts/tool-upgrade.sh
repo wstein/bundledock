@@ -15,8 +15,9 @@ nixbox_lock=bundles/nixbox/packages.lock.json
 nixbox_catalog=bundles/nixbox/packages.catalog.json
 nixbox_tools=bundles/nixbox/tools
 nixbox_tools_lock=$nixbox_tools/packages.lock.json
+nixbox_licenses=bundles/nixbox/licenses.json
 nixbox_inventory=docs/nixbox.md
-nixbox_paths=("$nixbox_lock" "$nixbox_catalog" "$nixbox_tools_lock" "$nixbox_inventory")
+nixbox_paths=("$nixbox_lock" "$nixbox_catalog" "$nixbox_tools_lock" "$nixbox_licenses" "$nixbox_inventory")
 is_upgrade_bundle() { [[ $1 == nixbox ]] || is_bundle "$1"; }
 # resolve handles the one BUNDLE of its matrix job. publish combines every
 # bundle whose resolved lock is in the result directory (canonical order).
@@ -37,9 +38,10 @@ locks=() inventories=() artifacts=()
 for bundle in ${bundles[@]+"${bundles[@]}"}; do
   locks+=("bundles/$bundle/packages.lock.json")
   if [[ $bundle == nixbox ]]; then
-    # The Nix lock, the catalog (nixpkgs pin), the lock of the official release binaries
-    # and the generated inventory of those binaries are the own files.
-    artifacts+=(nixbox.lock.json nixbox.catalog.json nixbox.tools.lock.json nixbox.md)
+    # The Nix lock, the catalog (nixpkgs pin), the lock of the official release binaries,
+    # the license record of the Nix closure and the generated inventory of those binaries
+    # are the own files.
+    artifacts+=(nixbox.lock.json nixbox.catalog.json nixbox.tools.lock.json nixbox.licenses.json nixbox.md)
   elif [[ $bundle == toolbox ]]; then
     inventories+=(docs/toolbox.md)
     artifacts+=(toolbox.lock.json toolbox.md)
@@ -99,15 +101,18 @@ PYTHON
 
 # Move the nixpkgs pin to the head of nixpkgs-unstable, refresh the lock in the
 # pinned nixos/nix image, and resolve the official release binaries to their newest
-# stable releases. `nixbox check` is the sanity check. Nothing is built.
+# stable releases. The license record of the closure is regenerated from the refreshed
+# lock in the same image (record-licenses.sh), so the record always matches the lock.
+# `nixbox check` is the sanity check. Nothing is built.
 nixbox_resolve() {
   if [[ -n ${TOOL:-} ]]; then
     echo 'TOOL is not supported for nixbox: its lock is one closed list.' >&2; exit 1
   fi
   sh bundles/nixbox/scripts/bump-rev.sh
   sh bundles/nixbox/scripts/refresh-lock.sh
+  sh bundles/nixbox/scripts/record-licenses.sh
   go run ./cmd/bdock tools upgrade --directory "$nixbox_tools"
-  require_changes_only "$nixbox_lock" "$nixbox_catalog" "$nixbox_tools_lock"
+  require_changes_only "$nixbox_lock" "$nixbox_catalog" "$nixbox_tools_lock" "$nixbox_licenses"
   go run ./cmd/nixbox check -catalog "$nixbox_catalog" -lock "$nixbox_lock" -tools "$nixbox_tools"
   python3 scripts/tool-inventory.py --bundle nixbox
   require_changes_only "${nixbox_paths[@]}"
@@ -120,6 +125,7 @@ nixbox_resolve() {
     cp "$nixbox_lock" "$UPGRADE_RESULT/nixbox.lock.json"
     cp "$nixbox_catalog" "$UPGRADE_RESULT/nixbox.catalog.json"
     cp "$nixbox_tools_lock" "$UPGRADE_RESULT/nixbox.tools.lock.json"
+    cp "$nixbox_licenses" "$UPGRADE_RESULT/nixbox.licenses.json"
     cp "$nixbox_inventory" "$UPGRADE_RESULT/nixbox.md"
     git rev-parse HEAD > "$UPGRADE_RESULT/base.sha"
     echo 'changed=true' >> "$GITHUB_OUTPUT"
@@ -153,6 +159,7 @@ nixbox_publish() {
   cp "$UPGRADE_RESULT/nixbox.lock.json" "$nixbox_lock"
   cp "$UPGRADE_RESULT/nixbox.catalog.json" "$nixbox_catalog"
   cp "$UPGRADE_RESULT/nixbox.tools.lock.json" "$nixbox_tools_lock"
+  cp "$UPGRADE_RESULT/nixbox.licenses.json" "$nixbox_licenses"
   new_rev=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["nixpkgs"]["rev"])' "$nixbox_catalog")
   go run ./cmd/nixbox check -catalog "$nixbox_catalog" -lock "$nixbox_lock" -tools "$nixbox_tools"
   # Generate from checked-out prose. Never accept unrelated artifact prose.
