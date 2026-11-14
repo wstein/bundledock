@@ -112,7 +112,7 @@ volume without changing paths.
 | Difftastic (`difft`) | 0.72.0 | [Homepage](https://github.com/Wilfred/difftastic) | [Source](https://github.com/Wilfred/difftastic) |
 | Fastfetch (`fastfetch`) | 2.71.0 | [Homepage](https://github.com/fastfetch-cli/fastfetch) | [Source](https://github.com/fastfetch-cli/fastfetch) |
 | Helix (`hx`) | 25.07.1 | [Homepage](https://helix-editor.com) | [Source](https://github.com/helix-editor/helix) |
-| Leaf (`leaf`) | 1.29.2 | [Homepage](https://leaf.rivolink.mg) | [Source](https://github.com/RivoLink/leaf) |
+| Leaf (`leaf`) | 1.29.3 | [Homepage](https://leaf.rivolink.mg) | [Source](https://github.com/RivoLink/leaf) |
 | zizmor (`zizmor`) | 1.32.0 | [Homepage](https://github.com/zizmorcore/zizmor) | [Source](https://github.com/zizmorcore/zizmor) |
 | zk (`zk`) | 0.15.7 | [Homepage](https://github.com/zk-org/zk) | [Source](https://github.com/zk-org/zk) |
 <!-- END GENERATED TOOL INVENTORY -->
