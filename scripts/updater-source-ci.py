@@ -3,7 +3,7 @@
 
 The PR carries one commit for one or several bundles; only those bundles' own
 locks and generated inventories (nixbox: its Nix lock and catalog, the lock of its
-official release binaries in bundles/nixbox/tools, and its generated inventory) may change.
+official release binaries in bundles/nixbox/tools, the license record of its Nix closure, and its generated inventory) may change.
 """
 import argparse
 import json
@@ -65,10 +65,11 @@ def dispatch(args):
             pr['base']['ref'] == 'main' and pr['base']['sha'] == args.base and
             pr['head']['ref'] == args.branch and pr['head']['sha'] == args.head,
             'Proposal source/repository changed')
-    # nixbox adds its catalog (nixpkgs pin) and the lock of its official binaries to its generated inventory.
+    # nixbox adds its catalog (nixpkgs pin), the lock of its official binaries and the license record of its closure.
     allowed = {path for name in bundles for path in
                ('bundles/' + name + '/packages.lock.json', 'docs/' + name + '.md') +
-               (('bundles/' + name + '/packages.catalog.json', 'bundles/' + name + '/tools/packages.lock.json')
+               (('bundles/' + name + '/packages.catalog.json', 'bundles/' + name + '/tools/packages.lock.json',
+                 'bundles/' + name + '/licenses.json')
                 if name in MANUAL_ONLY else ())}
     require(pr['commits'] == 1 and 1 <= pr['changed_files'] <= len(allowed), 'One bounded updater commit required')
     files = api('/pulls/' + number + '/files?per_page=100&page=1')

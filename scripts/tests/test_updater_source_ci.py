@@ -176,7 +176,9 @@ else:
         catalog = {'filename': 'bundles/nixbox/packages.catalog.json', 'status': 'modified'}
         tools = {'filename': 'bundles/nixbox/tools/packages.lock.json', 'status': 'modified'}
         inventory = {'filename': 'docs/nixbox.md', 'status': 'modified'}
-        for extra in ([], [catalog], [tools], [tools, inventory], [catalog, tools, inventory]):
+        licenses = {'filename': 'bundles/nixbox/licenses.json', 'status': 'modified'}
+        for extra in ([], [catalog], [tools], [tools, inventory], [catalog, tools, inventory], [catalog, licenses],
+                      [catalog, tools, inventory, licenses]):
             with self.subTest(extra=extra):
                 data, branch = self.nixbox_evidence(extra)
                 result, calls = self.run_dispatch(data, bundles='nixbox', branch=branch)
@@ -185,7 +187,9 @@ else:
         for extra in ([{'filename': 'docs/nixbox-published.json', 'status': 'modified'}],
                       [{'filename': 'bundles/nixbox/tools/packages.catalog.json', 'status': 'modified'}],
                       [{'filename': 'bundles/nixbox/tools/licenses/zk/LICENSE', 'status': 'modified'}],
-                      [{'filename': 'bundles/nixbox/packages.catalog.json', 'status': 'added'}]):
+                      [{'filename': 'bundles/nixbox/packages.catalog.json', 'status': 'added'}],
+                      [{'filename': 'bundles/nixbox/licenses.json', 'status': 'added'}],
+                      [{'filename': 'bundles/agy/licenses.json', 'status': 'modified'}]):
             with self.subTest(extra=extra):
                 data, branch = self.nixbox_evidence(extra)
                 result, calls = self.run_dispatch(data, bundles='nixbox', branch=branch)
