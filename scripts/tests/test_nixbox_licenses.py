@@ -15,11 +15,10 @@ class NixboxLicenseTests(unittest.TestCase):
         self.catalog = json.loads((NIXBOX / 'packages.catalog.json').read_text())
 
     def test_record_covers_every_closure_path_of_the_lock(self):
-        # The record keeps the nixpkgs revision it was generated from. A rolling
-        # nixpkgs bump that leaves the closure's store paths unchanged (the
-        # updater PR changes only the catalog and lock) stays valid, because each
-        # path is matched by its output path; a changed path list must fail here
-        # until the record is regenerated with the owner's approval.
+        # The record keeps the nixpkgs revision it was generated from. The
+        # nixbox updater regenerates it with the lock (record-licenses.sh), so an
+        # updater PR passes; a path list changed by hand must fail here until the
+        # record is regenerated.
         self.assertRegex(self.record['nixpkgs_rev'], r'\A[0-9a-f]{40}\Z')
         self.assertEqual(sorted(self.record['platforms']), sorted(self.lock['platforms']))
         for arch, platform in self.lock['platforms'].items():

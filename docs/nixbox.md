@@ -191,8 +191,9 @@ What exists:
   catalog's nixpkgs `rev`, release `url` and `narHash` to the head of
   `nixpkgs-unstable` (`scripts/nixbox-bump-rev.py`, `bundles/nixbox/scripts/bump-rev.sh`),
   then refreshes the lock with `bundles/nixbox/scripts/refresh-lock.sh` in the
-  pinned `nixos/nix` image, resolves `bundles/nixbox/tools` to the newest stable
-  releases with the toolbox resolver, regenerates the inventory above and runs
+  pinned `nixos/nix` image, regenerates the license record
+  (`bundles/nixbox/scripts/record-licenses.sh`, see Licenses), resolves `bundles/nixbox/tools`
+  to the newest stable releases with the toolbox resolver, regenerates the inventory above and runs
   `nixbox check -tools`. If nothing moved, no pull request opens. A change becomes a separate
   nixbox-only pull request on an `automation/nixbox-upgrade-<run>-<attempt>`
   topic; its check is the dispatched source CI. The build and smoke run
@@ -233,13 +234,13 @@ for example `git` (`GPL-2.0-only`), `openssh` (`BSD-2-Clause`), `rsync`
 (`GPL-3.0-or-later`), `zstd` (`BSD-3-Clause`), `less` (`GPL-3.0-or-later`) and
 `cacert` (`MPL-2.0`).
 
-The record keeps the nixpkgs revision it was generated from (`nixpkgs_rev`),
-which may be older than the catalog revision. A nixpkgs bump that leaves the
-list of store paths unchanged does not require regenerating it, but nixpkgs
-`meta.license` is not part of a store path, so license corrections made after
-`nixpkgs_rev` are not reflected until the record is regenerated; regenerate it
-before a publication. A changed list of store paths fails the license test until
-the record is regenerated.
+The record keeps the nixpkgs revision it was generated from (`nixpkgs_rev`).
+The upgrade proposal regenerates it from the refreshed lock and commits it with
+the lock, so the record of an updater pull request matches that lock. Run
+`bundles/nixbox/scripts/record-licenses.sh` (Docker and network access) to regenerate it by hand. A changed list of
+store paths fails the license test until the record is regenerated. The record is
+a mechanical result, not a license review: the owner's merge of the pull request
+and the publication dispatch remain the approval of a changed list of store paths.
 
 Not determined: the license of `xgcc-16.2.0-libgcc` (both architectures),
 `gmp-with-cxx-6.3.0` (both) and `util-linux-minimal-2.42.4-login` (arm64). No
