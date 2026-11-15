@@ -1,151 +1,99 @@
 {
- "nixpkgs_rev": "e62746b0b472753ef019baceab6f1e2e52014980",
+ "nixpkgs_rev": "e126e9e73c335158ff8279ac14d5f4afec153716",
  "platforms": {
   "amd64": {
-   "/nix/store/00fs4zz9c0jjcvs62wg39b91dydz7zqb-libidn2-2.3.8": {
-    "attr": "libidn2",
+   "/nix/store/18jady12x8j4qrfw0kbkasd4mkqdq658-publicsuffix-list-0-unstable-2026-09-02": {
+    "attr": "publicsuffix-list",
     "license": [
-     "LGPL-3.0-or-later",
-     "GPL-2.0-or-later",
-     "GPL-3.0-or-later"
+     "MPL-2.0"
     ]
    },
-   "/nix/store/0m97g185g3y0f9dp77jdcxj0jpqds14w-xxhash-0.8.3": {
-    "attr": "xxhash",
+   "/nix/store/1js9hd8akc5wkcawcfza7fx72cldp696-libfido2-1.17.0": {
+    "attr": "libfido2",
     "license": [
-     "BSD-2-Clause",
-     "GPL-2.0-or-later"
+     "BSD-2-Clause"
     ]
    },
-   "/nix/store/18ykcs87zl2zxgdvjnl3zdzqcp7r2m44-linux-pam-1.7.2": {
-    "attr": "linux-pam",
-    "license": [
-     "BSD-3-Clause"
-    ]
-   },
-   "/nix/store/2aw3zp99m9jc250ajl42rhaankp2kjav-nghttp2-1.70.0-lib": {
-    "attr": "nghttp2",
+   "/nix/store/1s8bxpyfc3faqvdvr5hlv5bbf6zp49nj-krb5-1.22.2-lib": {
+    "attr": "krb5",
     "license": [
      "MIT"
     ]
    },
-   "/nix/store/2b7h6rnav6a0s6npjk8y76f6rjs86lvw-ngtcp2-1.23.0": {
-    "attr": "ngtcp2",
-    "license": [
-     "MIT"
-    ]
-   },
-   "/nix/store/2wlays4ahsvdx02v84s3x91ri2623qbl-git-minimal-2.56.0": {
-    "attr": "gitMinimal",
-    "license": [
-     "GPL-2.0-only"
-    ]
-   },
-   "/nix/store/2x2k0zpy7nvnqn26l55naziicj3gyf9w-popt-1.19": {
-    "attr": "popt",
-    "license": [
-     "MIT"
-    ]
-   },
-   "/nix/store/30qgvhl60m3lpnj99l3xjprk776qg3ik-libxcrypt-4.5.2": {
-    "attr": "libxcrypt",
-    "license": [
-     "LGPL-2.1-or-later"
-    ]
-   },
-   "/nix/store/3hk1ngk4hsk4s53v2s7sg096irdania4-acl-2.4.0": {
-    "attr": "acl",
+   "/nix/store/25svpf3rdkvkc43f0zp59j5g1wjlmfp5-keyutils-1.6.3-lib": {
+    "attr": "keyutils",
     "license": [
      "GPL-2.0-or-later"
     ]
    },
-   "/nix/store/3sj8msrsym648f35mk3gb3pp385hhk8r-gcc-16.2.0-libgcc": {
-    "attr": "stdenv.cc.cc",
-    "license": [
-     "GPL-3.0-or-later"
-    ]
-   },
-   "/nix/store/3xaspbv6nwvihmc3ybmlv0wjjksvpamq-xz-5.8.4": {
-    "attr": "xz",
-    "license": [
-     "GPL-2.0-or-later",
-     "LGPL-2.1-or-later"
-    ]
-   },
-   "/nix/store/42in9mqs4kcmha55xd0i3ahbnibbzwkb-zlib-ng-2.3.3": {
-    "attr": "zlib-ng",
-    "license": [
-     "Zlib"
-    ]
-   },
-   "/nix/store/4v80m0p93sk0glz555sxasacf7hvxz9w-libcbor-0.14.0": {
-    "attr": "libcbor",
-    "license": [
-     "MIT"
-    ]
-   },
-   "/nix/store/5klggq4viaanvn5sgnk71ar1hclv1gk7-pcsclite-2.4.1-lib": {
-    "attr": "pcsclite",
+   "/nix/store/2a69456iqj6rzzc2ys7l2yypsv1w6l5m-zstd-1.5.7": {
+    "attr": "zstd.bin",
     "license": [
      "BSD-3-Clause"
     ]
    },
-   "/nix/store/7a2cjhcgzyym5zaz6m4fksw47qvm150w-gcc-16.2.0-lib": {
-    "attr": "stdenv.cc.cc",
-    "license": [
-     "GPL-3.0-or-later"
-    ]
-   },
-   "/nix/store/7rx5im6jbgyfhrl0lc0kyxd9yf14rdxc-expat-2.9.0": {
-    "attr": "expat",
-    "license": [
-     "MIT"
-    ]
-   },
-   "/nix/store/7xkwycvjhvfyq2sjhq8yqf75y0afikaj-lz4-1.10.0-lib": {
+   "/nix/store/2f32l9p6dchas8d1gbybzqvx2mnfinww-lz4-1.10.0-lib": {
     "attr": "lz4",
     "license": [
      "BSD-2-Clause",
      "GPL-2.0-or-later"
     ]
    },
-   "/nix/store/8qdw9shgr7dd3315jim8sfva2dnhq86c-gettext-1.0": {
-    "attr": "gettext",
-    "license": [
-     "GPL-2.0-or-later"
-    ]
-   },
-   "/nix/store/9wc73n5izv0m7ppjbibi4hbr68rba1lj-gnused-4.10": {
-    "attr": "gnused",
-    "license": [
-     "GPL-3.0-or-later"
-    ]
-   },
-   "/nix/store/b8g0didzv422qhw67dh67wldkc9wkpdf-brotli-1.2.0-lib": {
-    "attr": "brotli",
+   "/nix/store/2slk4gxc605zqc9k3spzlli96vql7m14-nghttp2-1.70.0-lib": {
+    "attr": "nghttp2",
     "license": [
      "MIT"
     ]
    },
-   "/nix/store/bx7jdvkba26sy20ryr4l617qqmzj9hff-libunistring-1.4.2": {
+   "/nix/store/2zxs4qj22xcdnp4nbf5mqxwq7iq1c6r3-rsync-3.5.0": {
+    "attr": "rsync",
+    "license": [
+     "GPL-3.0-or-later"
+    ]
+   },
+   "/nix/store/3h4ifcg10i9j0kj5c0cmas23v15pc7cl-openssl-3.5.9": {
+    "attr": "openssl",
+    "license": [
+     "Apache-2.0"
+    ]
+   },
+   "/nix/store/3mc4ncapda9b1abkkwaj2b2jls5v3nqw-zlib-ng-2.3.3": {
+    "attr": "zlib-ng",
+    "license": [
+     "Zlib"
+    ]
+   },
+   "/nix/store/40ixrl4ppcv6xa7r17pqxrllb9wj3b6s-expat-2.9.0": {
+    "attr": "expat",
+    "license": [
+     "MIT"
+    ]
+   },
+   "/nix/store/4dyfcf97ajakj4v9kkbg551025d88z5f-libedit-20260508-3.1": {
+    "attr": "libedit",
+    "license": [
+     "BSD-3-Clause"
+    ]
+   },
+   "/nix/store/4r0d1hm8458zz59xrh22ga2p0nkwvbpy-libunistring-1.4.2": {
     "attr": "libunistring",
     "license": [
      "LGPL-3.0-or-later"
     ]
    },
-   "/nix/store/c3f45pxlb81gzz4w1nym7lpznfypva7s-gnugrep-3.12": {
-    "attr": "gnugrep",
+   "/nix/store/4vdll3ayvj82s2x722w9jzh1vqh6qj6p-libxcrypt-4.5.2": {
+    "attr": "libxcrypt",
     "license": [
-     "GPL-3.0-or-later"
+     "LGPL-2.1-or-later"
     ]
    },
-   "/nix/store/cb987zkxvsv0490753ilrvn5yk7ylgxi-coreutils-9.12": {
-    "attr": "coreutils",
+   "/nix/store/5fqzqh8jg38w6m3xn76gymn44n0n5bwm-gettext-1.0": {
+    "attr": "gettext",
     "license": [
-     "GPL-3.0-or-later"
+     "GPL-2.0-or-later"
     ]
    },
-   "/nix/store/cgzr5afjdbx30j7g44z2h92i8h3828k2-systemd-minimal-libs-262": {
+   "/nix/store/5j2w6s0j5jnjdb07qcgka29lblnrszrf-systemd-minimal-libs-262": {
     "attr": "systemdLibs",
     "license": [
      "BSD-2-Clause",
@@ -159,177 +107,268 @@
      "publicDomain"
     ]
    },
-   "/nix/store/djf269aylbphr1ynvd52nh3dana5jh91-keyutils-1.6.3-lib": {
-    "attr": "keyutils",
+   "/nix/store/5n1qsd423q10dlscj3k4np04imfv4nm2-xz-5.8.4": {
+    "attr": "xz",
     "license": [
-     "GPL-2.0-or-later"
+     "GPL-2.0-or-later",
+     "LGPL-2.1-or-later"
     ]
    },
-   "/nix/store/f5r77q40xh7rj30dfkajv8y6jwbf4xh2-zstd-1.5.7": {
-    "attr": "zstd.bin",
+   "/nix/store/5sgjjiqn90zmvlvlgadw7ss00nn3hpjb-gnugrep-3.12": {
+    "attr": "gnugrep",
     "license": [
-     "BSD-3-Clause"
+     "GPL-3.0-or-later"
     ]
    },
-   "/nix/store/fgwmn1g1n1v3kw4nj7g6bl3n2g1wrpgr-audit-4.2.1-lib": {
-    "attr": "audit",
-    "license": [
-     "GPL-2.0-or-later"
-    ]
+   "/nix/store/5smwg3fcf30jd7f1ga6imjaipbj0i0k9-gmp-with-cxx-6.3.0": {
+    "attr": null,
+    "license": null
    },
-   "/nix/store/fprs4zi8r6227x12qbsd1grvfrpz6201-nss-cacert-3.131.1": {
-    "attr": "cacert",
-    "license": [
-     "MPL-2.0"
-    ]
-   },
-   "/nix/store/gksybc3b64irpkf84k30qphb44yjwqiw-openssh-10.6p1": {
+   "/nix/store/5wyaj1kvkxbbscz6innrh6yjjkdq4qmk-openssh-10.6p1": {
     "attr": "openssh",
     "license": [
      "BSD-2-Clause"
     ]
    },
-   "/nix/store/hsv6gv4p5cvlgzqgj0ylszssifr2vh6x-rsync-3.5.0": {
-    "attr": "rsync",
-    "license": [
-     "GPL-3.0-or-later"
-    ]
-   },
-   "/nix/store/hy7qsmyk9nbhcylcxbsf2aapsx8c6khb-libssh2-1.11.1": {
-    "attr": "libssh2",
-    "license": [
-     "BSD-3-Clause"
-    ]
-   },
-   "/nix/store/ji36842higmp6b06hbbpmzbd59g1c07c-zlib-1.3.2": {
-    "attr": "zlib",
-    "license": [
-     "Zlib"
-    ]
-   },
-   "/nix/store/ka6nj2ppyjyn7s1xs9ibd1jpzdklx12y-libedit-20260508-3.1": {
-    "attr": "libedit",
-    "license": [
-     "BSD-3-Clause"
-    ]
-   },
-   "/nix/store/lazac5vw20j0pyahzbaxz8z8hyf7m9zf-openssl-3.5.9": {
-    "attr": "openssl",
-    "license": [
-     "Apache-2.0"
-    ]
-   },
-   "/nix/store/m27950v147ga4008dr5xwnjq22ysr49q-publicsuffix-list-0-unstable-2026-09-02": {
-    "attr": "publicsuffix-list",
-    "license": [
-     "MPL-2.0"
-    ]
-   },
-   "/nix/store/ngx10bp7v6bxi29hww1k2bmzmy07qhs7-libfido2-1.17.0": {
-    "attr": "libfido2",
-    "license": [
-     "BSD-2-Clause"
-    ]
-   },
-   "/nix/store/njx84z0ra0xj8498l67y4yczhkg7wca7-libpsl-0.21.5": {
-    "attr": "libpsl",
-    "license": [
-     "MIT"
-    ]
-   },
-   "/nix/store/nnm9gdr70ihc6zc9298mzz8jpcgaciql-bash-5.3p20": {
-    "attr": "bashNonInteractive",
-    "license": [
-     "GPL-3.0-or-later"
-    ]
-   },
-   "/nix/store/p40lblcsw1qwzqja83rfdpq0l15w4xv7-nghttp3-1.18.0": {
-    "attr": "nghttp3",
-    "license": [
-     "MIT"
-    ]
-   },
-   "/nix/store/p5dwcn4wpyjmhnnzj6iwwwjynyc6yif0-pcre2-10.49": {
-    "attr": "pcre2",
-    "license": [
-     "BSD-3-Clause"
-    ]
-   },
-   "/nix/store/p9i1b7jgfj4fl5bx557jnwbdsafl434i-curl-8.22.0": {
-    "attr": "curl",
-    "license": [
-     "curl"
-    ]
-   },
-   "/nix/store/pkkjnyk4z46n18fkyqwlg24p272apb69-xgcc-16.2.0-libgcc": {
+   "/nix/store/80v5n8kdscr9r2ls8h72s8ppwmccwrgm-xgcc-16.2.0-libgcc": {
     "attr": null,
     "license": null
    },
-   "/nix/store/pnwvsvwppd1lsamcxmiw6g7fp1k1g2j0-attr-2.6.0": {
-    "attr": "attr",
+   "/nix/store/a50ml7za6h61m4mv4cdbvkl33c6sx5yn-coreutils-9.12": {
+    "attr": "coreutils",
     "license": [
-     "GPL-2.0-or-later"
+     "GPL-3.0-or-later"
     ]
    },
-   "/nix/store/pqyiidz5mi73wv5f91d48s9plcqyj5bz-glibc-2.44-57": {
-    "attr": "glibc",
-    "license": [
-     "LGPL-2.0-or-later"
-    ]
-   },
-   "/nix/store/qbvmi6qgfw0ipjvfndy9f6k69rnip42m-krb5-1.22.2-lib": {
-    "attr": "krb5",
-    "license": [
-     "MIT"
-    ]
-   },
-   "/nix/store/r9nlzwasmr1hgcbrfzcp2b2cz33scij2-ncurses-6.6": {
+   "/nix/store/adz753psjvfr4j597fprrh4p0cvjylx9-ncurses-6.6": {
     "attr": "ncurses",
     "license": [
      "MIT"
     ]
    },
-   "/nix/store/s3mk12jzr2dy37m3cksi3j66gzw60lbq-less-710": {
+   "/nix/store/ajn83h1fdvxjv69fg1fpi6wcmhbkmzh3-linux-pam-1.7.2": {
+    "attr": "linux-pam",
+    "license": [
+     "BSD-3-Clause"
+    ]
+   },
+   "/nix/store/d56p3jpksslx6pqypzl53xidcxxrz2kc-nss-cacert-3.131.1": {
+    "attr": "cacert",
+    "license": [
+     "MPL-2.0"
+    ]
+   },
+   "/nix/store/gr73qzw1bdv8gwxmkc7swrcbkf2jwar1-popt-1.19": {
+    "attr": "popt",
+    "license": [
+     "MIT"
+    ]
+   },
+   "/nix/store/hasnvc0j36gg6qrdsfcx7yivx3c2bpqr-bash-5.3p20": {
+    "attr": "bashNonInteractive",
+    "license": [
+     "GPL-3.0-or-later"
+    ]
+   },
+   "/nix/store/hzr6xd6i4hxax19mj165p8nsy5n8l6ci-attr-2.6.0": {
+    "attr": "attr",
+    "license": [
+     "GPL-2.0-or-later"
+    ]
+   },
+   "/nix/store/i3fb4p14jn3xmj5kyvzxsaksd6i5dw8v-libpsl-0.23.3": {
+    "attr": "libpsl",
+    "license": [
+     "MIT"
+    ]
+   },
+   "/nix/store/j2bgw36d5qjjq48bk48v692bd01dz2ff-libssh2-1.11.1": {
+    "attr": "libssh2",
+    "license": [
+     "BSD-3-Clause"
+    ]
+   },
+   "/nix/store/j7nqmiia4h15b5gsqjdv091nsg9i1axp-acl-2.4.0": {
+    "attr": "acl",
+    "license": [
+     "GPL-2.0-or-later"
+    ]
+   },
+   "/nix/store/jyl4vqdxhjak7mw52vq4sscra2mk5yli-ngtcp2-1.23.0": {
+    "attr": "ngtcp2",
+    "license": [
+     "MIT"
+    ]
+   },
+   "/nix/store/kp68n1q6r8lzpf5mxjmfasn3zq2pql4x-zlib-1.3.2": {
+    "attr": "zlib",
+    "license": [
+     "Zlib"
+    ]
+   },
+   "/nix/store/m9y00qgmfbzvlffgbx0hi5hc38dps46q-pcre2-10.49": {
+    "attr": "pcre2",
+    "license": [
+     "BSD-3-Clause"
+    ]
+   },
+   "/nix/store/mkzp61qar527mf0fxhhykj76zlrvn5vk-pcsclite-2.5.2-lib": {
+    "attr": "pcsclite",
+    "license": [
+     "BSD-3-Clause"
+    ]
+   },
+   "/nix/store/myhwfdgqm39yms5clinafii9i1nmq43h-gcc-16.2.0-lib": {
+    "attr": "stdenv.cc.cc",
+    "license": [
+     "GPL-3.0-or-later"
+    ]
+   },
+   "/nix/store/nfhj1jkry4n6wjg5nmrfjr1v9pa7vscp-less-710": {
     "attr": "less",
     "license": [
      "GPL-3.0-or-later"
     ]
    },
-   "/nix/store/vs4bjcgq2r93adg875isf55hyn29dk09-gmp-with-cxx-6.3.0": {
-    "attr": null,
-    "license": null
+   "/nix/store/qk6cz4ba571znqrsyhma192y8h50yi05-gcc-16.2.0-libgcc": {
+    "attr": "stdenv.cc.cc",
+    "license": [
+     "GPL-3.0-or-later"
+    ]
    },
-   "/nix/store/wz8h60wc57f240dr1f6z1d9qj9sg6548-db-4.8.30": {
+   "/nix/store/r3hvhzl5fxhrgn0rfy5g7rda17702pj4-glibc-2.44-57": {
+    "attr": "glibc",
+    "license": [
+     "LGPL-2.0-or-later"
+    ]
+   },
+   "/nix/store/r7gc1i2zv83m9pryidpdk1wdav72sg5s-audit-4.2.1-lib": {
+    "attr": "audit",
+    "license": [
+     "GPL-2.0-or-later"
+    ]
+   },
+   "/nix/store/raag8qjvm4gxm451hfm7qb6xjas4yig7-git-minimal-2.56.0": {
+    "attr": "gitMinimal",
+    "license": [
+     "GPL-2.0-only"
+    ]
+   },
+   "/nix/store/rapxnw8qqv47psglrgfd2yg48rhzfpmz-db-4.8.30": {
     "attr": "db48",
     "license": [
      "Sleepycat"
     ]
    },
-   "/nix/store/xqhm88f6dgkah58ksrsyclswal2c2mzk-libcap-ng-0.9.6": {
+   "/nix/store/rgkgahpq277k2ak1zdxhi72k3093r62k-xxhash-0.8.3": {
+    "attr": "xxhash",
+    "license": [
+     "BSD-2-Clause",
+     "GPL-2.0-or-later"
+    ]
+   },
+   "/nix/store/rwq5g35321vg407qwg7ynsqfz77iyrrp-libidn2-2.3.8": {
+    "attr": "libidn2",
+    "license": [
+     "LGPL-3.0-or-later",
+     "GPL-2.0-or-later",
+     "GPL-3.0-or-later"
+    ]
+   },
+   "/nix/store/s4fkp2js2vg64a8z66gs42afrmyh82s4-zstd-1.5.7-bin": {
+    "attr": "zstd.bin",
+    "license": [
+     "BSD-3-Clause"
+    ]
+   },
+   "/nix/store/siq8wjazhghwjgwvdl4zcy2p351p3kvq-libcbor-0.14.0": {
+    "attr": "libcbor",
+    "license": [
+     "MIT"
+    ]
+   },
+   "/nix/store/sx0fyd6228r3m84d5bccs6d5kz81lh9n-brotli-1.2.1-lib": {
+    "attr": "brotli",
+    "license": [
+     "MIT"
+    ]
+   },
+   "/nix/store/sx5f2g42i3p6k5s0wfng4j98q6zgmzdp-nghttp3-1.18.0": {
+    "attr": "nghttp3",
+    "license": [
+     "MIT"
+    ]
+   },
+   "/nix/store/wlwfib24sapw01gny10balapq1pakz10-libcap-ng-0.9.6": {
     "attr": "libcap_ng",
     "license": [
      "LGPL-2.1"
     ]
    },
-   "/nix/store/yqgkjczmmxsp6l26nwriry7h3kq981vi-zstd-1.5.7-bin": {
-    "attr": "zstd.bin",
+   "/nix/store/x275j18p7dx6kv7vfj45saapbhbljia4-gnused-4.10": {
+    "attr": "gnused",
     "license": [
-     "BSD-3-Clause"
+     "GPL-3.0-or-later"
+    ]
+   },
+   "/nix/store/ykyk7ajsw31ybw4yq72pa4a6xp7jl3zs-curl-8.23.0": {
+    "attr": "curl",
+    "license": [
+     "curl"
     ]
    }
   },
   "arm64": {
-   "/nix/store/03rgyjxclvhxnif2klf13nkr92rpxqqg-gnused-4.10": {
-    "attr": "gnused",
+   "/nix/store/0hhgbij2wvdb35m9awyd6n90jd1rxx82-gcc-16.2.0-libgcc": {
+    "attr": "stdenv.cc.cc",
     "license": [
      "GPL-3.0-or-later"
     ]
    },
-   "/nix/store/09mqjwlgdr2jchjchwpgff2vryn4zc4q-xgcc-16.2.0-libgcc": {
-    "attr": null,
-    "license": null
+   "/nix/store/1q857rs68rs3gijls9wdnsjqnwnv5zd8-glibc-2.44-57": {
+    "attr": "glibc",
+    "license": [
+     "LGPL-2.0-or-later"
+    ]
    },
-   "/nix/store/0pccgl1hspv34592bhh88b6618090fsr-systemd-minimal-libs-262": {
+   "/nix/store/1r8dpvcp6g026ms2kqvdr7rrfcprwibx-nghttp2-1.70.0-lib": {
+    "attr": "nghttp2",
+    "license": [
+     "MIT"
+    ]
+   },
+   "/nix/store/3d5m1h0n001na0ksapl8ngla4mnv8ay0-libcap-ng-0.9.6": {
+    "attr": "libcap_ng",
+    "license": [
+     "LGPL-2.1"
+    ]
+   },
+   "/nix/store/3dgwmrm76gg1l53n4axckf990q2n0fqk-gettext-1.0": {
+    "attr": "gettext",
+    "license": [
+     "GPL-2.0-or-later"
+    ]
+   },
+   "/nix/store/3vmljzi06qk09g2zf3v72f4iqlpjrj1k-zstd-1.5.7-bin": {
+    "attr": "zstd.bin",
+    "license": [
+     "BSD-3-Clause"
+    ]
+   },
+   "/nix/store/44rpaiwlpdc4fc260b0pf9r42nrhp5p9-openssh-10.6p1": {
+    "attr": "openssh",
+    "license": [
+     "BSD-2-Clause"
+    ]
+   },
+   "/nix/store/4cfiirzwpv2g6nnmkd4k98frdynzb7nb-xz-5.8.4": {
+    "attr": "xz",
+    "license": [
+     "GPL-2.0-or-later",
+     "LGPL-2.1-or-later"
+    ]
+   },
+   "/nix/store/50cx9dj584m2zhfjy5qkcqphap07hjmi-systemd-minimal-libs-262": {
     "attr": "systemdLibs",
     "license": [
      "BSD-2-Clause",
@@ -343,299 +382,260 @@
      "publicDomain"
     ]
    },
-   "/nix/store/33r0n37000780rlkipq2zna6yn0aw20f-openssl-3.5.9": {
-    "attr": "openssl",
-    "license": [
-     "Apache-2.0"
-    ]
-   },
-   "/nix/store/3advb2s77lmajxkks58va12s2bfafhwy-zstd-1.5.7-bin": {
-    "attr": "zstd.bin",
-    "license": [
-     "BSD-3-Clause"
-    ]
-   },
-   "/nix/store/3g2mlwyf1wkiwkjcv86hi9j9d73r9xz9-pcre2-10.49": {
-    "attr": "pcre2",
-    "license": [
-     "BSD-3-Clause"
-    ]
-   },
-   "/nix/store/41jiigvp0p9wryqagywkr43rr94vf35q-pcsclite-2.4.1-lib": {
-    "attr": "pcsclite",
-    "license": [
-     "BSD-3-Clause"
-    ]
-   },
-   "/nix/store/43rgni0nzr84sd8qh5zmjzazhwfs2fl3-nss-cacert-3.131.1": {
-    "attr": "cacert",
-    "license": [
-     "MPL-2.0"
-    ]
-   },
-   "/nix/store/53mh4w1fp4676778i75rcyal8qbx2hwk-db-4.8.30": {
-    "attr": "db48",
-    "license": [
-     "Sleepycat"
-    ]
-   },
-   "/nix/store/74nxb0rnf6lm102ax6ax9b4cpyvrcifq-gnugrep-3.12": {
-    "attr": "gnugrep",
+   "/nix/store/5yv04945c9sx22h47ckz4vl3jkjqnmcb-gnused-4.10": {
+    "attr": "gnused",
     "license": [
      "GPL-3.0-or-later"
     ]
    },
-   "/nix/store/8gw3yn37j5cw4zx6z5kvb92akcbapw14-git-minimal-2.56.0": {
-    "attr": "gitMinimal",
-    "license": [
-     "GPL-2.0-only"
-    ]
-   },
-   "/nix/store/8hps8ixs8m0c4sbfwqjicxaaby003zrc-linux-pam-1.7.2": {
-    "attr": "linux-pam",
-    "license": [
-     "BSD-3-Clause"
-    ]
-   },
-   "/nix/store/91qsbvx8w31rd255w8ikficjqg4v3fh4-zstd-1.5.7": {
-    "attr": "zstd.bin",
-    "license": [
-     "BSD-3-Clause"
-    ]
-   },
-   "/nix/store/9ahnm6gsklq4dn20fjlz1wn36c34dik0-ncurses-6.6": {
-    "attr": "ncurses",
-    "license": [
-     "MIT"
-    ]
-   },
-   "/nix/store/a3b8i3frvq0gnxmh08zz99s0fsz07j46-libcap-ng-0.9.6": {
-    "attr": "libcap_ng",
-    "license": [
-     "LGPL-2.1"
-    ]
-   },
-   "/nix/store/adw348h6dcv6fchrbxc4ka50h9krmskm-nghttp3-1.18.0": {
-    "attr": "nghttp3",
-    "license": [
-     "MIT"
-    ]
-   },
-   "/nix/store/c1h1q4h9bfmb5d0w342qwjmhw8cxkxzc-gcc-16.2.0-libgcc": {
-    "attr": "stdenv.cc.cc",
-    "license": [
-     "GPL-3.0-or-later"
-    ]
-   },
-   "/nix/store/cz57r0bgh8az2215msz1yxkq3phqbjzh-brotli-1.2.0-lib": {
-    "attr": "brotli",
-    "license": [
-     "MIT"
-    ]
-   },
-   "/nix/store/czx7cscpnqqmc9nwmbpnv2zcvck64mmf-bash-5.3p20": {
-    "attr": "bashNonInteractive",
-    "license": [
-     "GPL-3.0-or-later"
-    ]
-   },
-   "/nix/store/dli4xp5h5h5bgfpzd81qflbafmp252hb-ngtcp2-1.23.0": {
+   "/nix/store/6bh157933k1lknlsphk8x2bv42zpa35h-ngtcp2-1.23.0": {
     "attr": "ngtcp2",
     "license": [
      "MIT"
     ]
    },
-   "/nix/store/j4i74h2a6i8i3jb0ljzai15hgy5w1dk6-less-710": {
+   "/nix/store/6iyxidgw801ibiaxsbl1y33a1rfh5pw6-gmp-with-cxx-6.3.0": {
+    "attr": null,
+    "license": null
+   },
+   "/nix/store/7dwc9h9kw4d3q2536h9yrwpaknx8rbfb-gnugrep-3.12": {
+    "attr": "gnugrep",
+    "license": [
+     "GPL-3.0-or-later"
+    ]
+   },
+   "/nix/store/9k16vs4qj1c8p142g4ra30k0swf2hf7k-publicsuffix-list-0-unstable-2026-09-02": {
+    "attr": "publicsuffix-list",
+    "license": [
+     "MPL-2.0"
+    ]
+   },
+   "/nix/store/9lvlihnvvwdnjc0bmha7v1rgx9i9pcyk-xgcc-16.2.0-libgcc": {
+    "attr": null,
+    "license": null
+   },
+   "/nix/store/9mfhqszzd8cz0si8pg1cdjid35zpy9bm-zstd-1.5.7": {
+    "attr": "zstd.bin",
+    "license": [
+     "BSD-3-Clause"
+    ]
+   },
+   "/nix/store/avdsjbxcpih48gxjbcyxnp1k5pf1jsw3-audit-4.2.1-lib": {
+    "attr": "audit",
+    "license": [
+     "GPL-2.0-or-later"
+    ]
+   },
+   "/nix/store/awhzch45pzazbqpcnx2ikrkyysg5spdd-libcbor-0.14.0": {
+    "attr": "libcbor",
+    "license": [
+     "MIT"
+    ]
+   },
+   "/nix/store/c954451nk8b0h3kp3mnxwsxl6mkgr7g9-attr-2.6.0": {
+    "attr": "attr",
+    "license": [
+     "GPL-2.0-or-later"
+    ]
+   },
+   "/nix/store/cajxy08kdvap0rhqnq4ddlwkf7s2q3lj-less-710": {
     "attr": "less",
     "license": [
      "GPL-3.0-or-later"
     ]
    },
-   "/nix/store/jjd503sp5z75bkqgb6j8jjcagz3v79xj-xxhash-0.8.3": {
+   "/nix/store/dy455a2qncqiv0gajv7n7fcz3s9bz4wl-libfido2-1.17.0": {
+    "attr": "libfido2",
+    "license": [
+     "BSD-2-Clause"
+    ]
+   },
+   "/nix/store/fb5r26rvys1z7pxzm12ifkavaq3zz12h-zlib-ng-2.3.3": {
+    "attr": "zlib-ng",
+    "license": [
+     "Zlib"
+    ]
+   },
+   "/nix/store/fnf24f2z4n30ixsjv6vyhikylj7czx0m-openssl-3.5.9": {
+    "attr": "openssl",
+    "license": [
+     "Apache-2.0"
+    ]
+   },
+   "/nix/store/fqfy1lllxaw0ank5m74i0a8n3vshalmc-util-linux-minimal-2.42.4-login": {
+    "attr": null,
+    "license": null
+   },
+   "/nix/store/gp2pwr1z9skh72i3xih4gc71437n09ch-libpsl-0.23.3": {
+    "attr": "libpsl",
+    "license": [
+     "MIT"
+    ]
+   },
+   "/nix/store/ihlpbh84xzxxrqrjbs5j9smzyif5jh22-db-4.8.30": {
+    "attr": "db48",
+    "license": [
+     "Sleepycat"
+    ]
+   },
+   "/nix/store/j21c6l74ch4fdzpl25lsywm0wy95s9gr-nss-cacert-3.131.1": {
+    "attr": "cacert",
+    "license": [
+     "MPL-2.0"
+    ]
+   },
+   "/nix/store/jvxrfyxq5m1l735yv3a9ppw1i51i4dkm-nghttp3-1.18.0": {
+    "attr": "nghttp3",
+    "license": [
+     "MIT"
+    ]
+   },
+   "/nix/store/jw0lpdmxdr8ixp4a0hmjpvdg4r6y7p35-coreutils-9.12": {
+    "attr": "coreutils",
+    "license": [
+     "GPL-3.0-or-later"
+    ]
+   },
+   "/nix/store/knba38mdn5za7d82z8n876bylrvn7h3c-brotli-1.2.1-lib": {
+    "attr": "brotli",
+    "license": [
+     "MIT"
+    ]
+   },
+   "/nix/store/lq3vw8dbnfxql6crlx2jfinppdpgz9j6-git-minimal-2.56.0": {
+    "attr": "gitMinimal",
+    "license": [
+     "GPL-2.0-only"
+    ]
+   },
+   "/nix/store/mkg0hfsr2x8xxihhn2g4gvh5b3jz94mi-popt-1.19": {
+    "attr": "popt",
+    "license": [
+     "MIT"
+    ]
+   },
+   "/nix/store/mwvdk8p61q613irrb9yp33arz8cvrlzn-rsync-3.5.0": {
+    "attr": "rsync",
+    "license": [
+     "GPL-3.0-or-later"
+    ]
+   },
+   "/nix/store/n8ix1n8kfs8yil2zq7bzm2jxz2v77151-keyutils-1.6.3-lib": {
+    "attr": "keyutils",
+    "license": [
+     "GPL-2.0-or-later"
+    ]
+   },
+   "/nix/store/p03fiza66glycn84xg4vma16sh0wsdrm-libssh2-1.11.1": {
+    "attr": "libssh2",
+    "license": [
+     "BSD-3-Clause"
+    ]
+   },
+   "/nix/store/q2r36g9izvvpw8gwqkja3yvkfhy7k8p2-acl-2.4.0": {
+    "attr": "acl",
+    "license": [
+     "GPL-2.0-or-later"
+    ]
+   },
+   "/nix/store/qdfg7f6l6d61jsywqzx21zn6kvpn5pbi-pcre2-10.49": {
+    "attr": "pcre2",
+    "license": [
+     "BSD-3-Clause"
+    ]
+   },
+   "/nix/store/r06vg0n5y9n0k65v3bf95jsrmjcp6iga-krb5-1.22.2-lib": {
+    "attr": "krb5",
+    "license": [
+     "MIT"
+    ]
+   },
+   "/nix/store/rmyaaa0jky4184n36cxfxyb61sdyn8nl-libunistring-1.4.2": {
+    "attr": "libunistring",
+    "license": [
+     "LGPL-3.0-or-later"
+    ]
+   },
+   "/nix/store/sp2y53mjk9fifz049rakcb53vrdxgvvb-ncurses-6.6": {
+    "attr": "ncurses",
+    "license": [
+     "MIT"
+    ]
+   },
+   "/nix/store/v9dh0sjhhkcifyl9d01kdh0w4z4a6z8n-pcsclite-2.5.2-lib": {
+    "attr": "pcsclite",
+    "license": [
+     "BSD-3-Clause"
+    ]
+   },
+   "/nix/store/vflrq602cnrgync3q2jcz5cg8hfvjcs5-libxcrypt-4.5.2": {
+    "attr": "libxcrypt",
+    "license": [
+     "LGPL-2.1-or-later"
+    ]
+   },
+   "/nix/store/w79cl5jdx1hggkmy4miwhb1j9w1pb7qg-gcc-16.2.0-lib": {
+    "attr": "stdenv.cc.cc",
+    "license": [
+     "GPL-3.0-or-later"
+    ]
+   },
+   "/nix/store/wh7c7v45wkn7r75n4m6hp3nq0dqkc3w0-expat-2.9.0": {
+    "attr": "expat",
+    "license": [
+     "MIT"
+    ]
+   },
+   "/nix/store/wlvrr34v3blb3gcfrw856007290qk69v-curl-8.23.0": {
+    "attr": "curl",
+    "license": [
+     "curl"
+    ]
+   },
+   "/nix/store/wnz942zz2zx7xgj6lx7hmzfx480m5d88-libedit-20260508-3.1": {
+    "attr": "libedit",
+    "license": [
+     "BSD-3-Clause"
+    ]
+   },
+   "/nix/store/xgs0r5n1g5g6hsaiyvrnn65za4gvjmjr-zlib-1.3.2": {
+    "attr": "zlib",
+    "license": [
+     "Zlib"
+    ]
+   },
+   "/nix/store/xl3n26zm1kv1zhj3mma2x929f4sx3dlh-bash-5.3p20": {
+    "attr": "bashNonInteractive",
+    "license": [
+     "GPL-3.0-or-later"
+    ]
+   },
+   "/nix/store/y4n1vvggynq0h7ki6slb39mp1q65l24i-xxhash-0.8.3": {
     "attr": "xxhash",
     "license": [
      "BSD-2-Clause",
      "GPL-2.0-or-later"
     ]
    },
-   "/nix/store/jmpd1nlwmqxyaqci35i6nm6zh7zxwhcc-libpsl-0.21.5": {
-    "attr": "libpsl",
-    "license": [
-     "MIT"
-    ]
-   },
-   "/nix/store/jvgbq6v334yqdpkqqks9cdiqxla39czz-gmp-with-cxx-6.3.0": {
-    "attr": null,
-    "license": null
-   },
-   "/nix/store/kr996238bp7k7836jhssszq7bc0yj6bb-libcbor-0.14.0": {
-    "attr": "libcbor",
-    "license": [
-     "MIT"
-    ]
-   },
-   "/nix/store/kyc6xi95fbcmb904h346k8k3paygq06l-krb5-1.22.2-lib": {
-    "attr": "krb5",
-    "license": [
-     "MIT"
-    ]
-   },
-   "/nix/store/l8xpwwa62pxa48ng6bzv18qwskp8ln7s-expat-2.9.0": {
-    "attr": "expat",
-    "license": [
-     "MIT"
-    ]
-   },
-   "/nix/store/l9df4rn0y2qi5s1bmysci5zpvra1mrz3-rsync-3.5.0": {
-    "attr": "rsync",
-    "license": [
-     "GPL-3.0-or-later"
-    ]
-   },
-   "/nix/store/linhs507yd8g96sxp5n0lg8x211xxn18-xz-5.8.4": {
-    "attr": "xz",
-    "license": [
-     "GPL-2.0-or-later",
-     "LGPL-2.1-or-later"
-    ]
-   },
-   "/nix/store/m2ar7c5ylhgg8vp7dfdx9bhjfvki5xdg-coreutils-9.12": {
-    "attr": "coreutils",
-    "license": [
-     "GPL-3.0-or-later"
-    ]
-   },
-   "/nix/store/mha227cdls0rb65v203c6wl7mbigqz6v-attr-2.6.0": {
-    "attr": "attr",
-    "license": [
-     "GPL-2.0-or-later"
-    ]
-   },
-   "/nix/store/n08mywvg7fb9p1hzaarvi06iclki4073-libssh2-1.11.1": {
-    "attr": "libssh2",
+   "/nix/store/z4j8flcrz8asydcsqx63jmsqj6m9652h-linux-pam-1.7.2": {
+    "attr": "linux-pam",
     "license": [
      "BSD-3-Clause"
     ]
    },
-   "/nix/store/nhphqkv18x8fpf3flz0bsm1h554pawn7-glibc-2.44-57": {
-    "attr": "glibc",
-    "license": [
-     "LGPL-2.0-or-later"
-    ]
-   },
-   "/nix/store/nhrkwapk0zzzmc8x1f2k24qpyz9gy5qb-gcc-16.2.0-lib": {
-    "attr": "stdenv.cc.cc",
-    "license": [
-     "GPL-3.0-or-later"
-    ]
-   },
-   "/nix/store/nw9zbfc171gdsali7fcgl6rayfy5ykkx-zlib-1.3.2": {
-    "attr": "zlib",
-    "license": [
-     "Zlib"
-    ]
-   },
-   "/nix/store/plwcg1la5xyzi2kykfb95lir2pg54jpn-publicsuffix-list-0-unstable-2026-09-02": {
-    "attr": "publicsuffix-list",
-    "license": [
-     "MPL-2.0"
-    ]
-   },
-   "/nix/store/qh35hki623iqrj2mqfxnzjqawxn93gk7-gettext-1.0": {
-    "attr": "gettext",
-    "license": [
-     "GPL-2.0-or-later"
-    ]
-   },
-   "/nix/store/r5w60683qmv7p1lzdj6xd9i0lms8b42i-curl-8.22.0": {
-    "attr": "curl",
-    "license": [
-     "curl"
-    ]
-   },
-   "/nix/store/sbjfj058xpyrm5wfbwr0kicsgk5iy2bw-libfido2-1.17.0": {
-    "attr": "libfido2",
-    "license": [
-     "BSD-2-Clause"
-    ]
-   },
-   "/nix/store/sc2mdq7cnpwrx63hlyi9nrzrlf91klyw-acl-2.4.0": {
-    "attr": "acl",
-    "license": [
-     "GPL-2.0-or-later"
-    ]
-   },
-   "/nix/store/sylwbbl9zayc3603159mzjnj8fr4bcy5-lz4-1.10.0-lib": {
+   "/nix/store/zg095hlh9d8lnvignhjyqg5xk15n4d15-lz4-1.10.0-lib": {
     "attr": "lz4",
     "license": [
      "BSD-2-Clause",
      "GPL-2.0-or-later"
     ]
    },
-   "/nix/store/vr6k9ydls6wy5ljh7v9g9z77spkfg446-nghttp2-1.70.0-lib": {
-    "attr": "nghttp2",
-    "license": [
-     "MIT"
-    ]
-   },
-   "/nix/store/vr8lx1cjz6zw4xhmb4k405v6cqrkslnk-libunistring-1.4.2": {
-    "attr": "libunistring",
-    "license": [
-     "LGPL-3.0-or-later"
-    ]
-   },
-   "/nix/store/wkj7ccc5s43xany77hs7adqmywc3v9sd-openssh-10.6p1": {
-    "attr": "openssh",
-    "license": [
-     "BSD-2-Clause"
-    ]
-   },
-   "/nix/store/wl3d2qbnjm8h45hi56613zgb1yjd2j0g-zlib-ng-2.3.3": {
-    "attr": "zlib-ng",
-    "license": [
-     "Zlib"
-    ]
-   },
-   "/nix/store/wsn07qxxn13gcdcjw5avz47j8lb2zpdv-libidn2-2.3.8": {
+   "/nix/store/zh4wmlrq51lsfyqwmfjsi95zckq2ijxk-libidn2-2.3.8": {
     "attr": "libidn2",
     "license": [
      "LGPL-3.0-or-later",
      "GPL-2.0-or-later",
      "GPL-3.0-or-later"
-    ]
-   },
-   "/nix/store/wsv7fvzmr9d8didrym4ds4ynjis8v2n1-util-linux-minimal-2.42.4-login": {
-    "attr": null,
-    "license": null
-   },
-   "/nix/store/z34ssr0ajr0a4dsrl7frkvb7sxgdmmif-audit-4.2.1-lib": {
-    "attr": "audit",
-    "license": [
-     "GPL-2.0-or-later"
-    ]
-   },
-   "/nix/store/z8kv2d13nvzcxdlm2b591nbyfccbmryf-libedit-20260508-3.1": {
-    "attr": "libedit",
-    "license": [
-     "BSD-3-Clause"
-    ]
-   },
-   "/nix/store/zg0j268lds4sqcbyzfh3nm42qylriikf-popt-1.19": {
-    "attr": "popt",
-    "license": [
-     "MIT"
-    ]
-   },
-   "/nix/store/zmzhmxp7mc1dbz2v29i7dd185xw0iqgq-keyutils-1.6.3-lib": {
-    "attr": "keyutils",
-    "license": [
-     "GPL-2.0-or-later"
-    ]
-   },
-   "/nix/store/zw9m2pj4lznmkc7k46pcjr8wclkqz4b5-libxcrypt-4.5.2": {
-    "attr": "libxcrypt",
-    "license": [
-     "LGPL-2.1-or-later"
     ]
    }
   }
