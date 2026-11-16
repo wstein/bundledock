@@ -63,7 +63,7 @@ The source inventory below describes the current lock; this publication retains 
 | lsd (`lsd`) | 1.2.0 | [Homepage](https://github.com/lsd-rs/lsd) | [Source](https://github.com/lsd-rs/lsd) |
 | lychee (`lychee`) | 0.24.2 | [Homepage](https://lychee.cli.rs) | [Source](https://github.com/lycheeverse/lychee) |
 | Mike Farah yq (`yq`) | 4.54.3 | [Homepage](https://mikefarah.gitbook.io/yq/) | [Source](https://github.com/mikefarah/yq) |
-| mise (`mise`) | 2026.11.8 | [Homepage](https://mise.jdx.dev) | [Source](https://github.com/jdx/mise) |
+| mise (`mise`) | 2026.11.9 | [Homepage](https://mise.jdx.dev) | [Source](https://github.com/jdx/mise) |
 | misspell (`misspell`) | 0.8.0 | [Homepage](https://github.com/golangci/misspell) | [Source](https://github.com/golangci/misspell) |
 | navi (`navi`) | 2.24.0 | [Homepage](https://github.com/denisidoro/navi) | [Source](https://github.com/denisidoro/navi) |
 | Nushell (`nu`) | 0.117.0 | [Homepage](https://www.nushell.sh/) | [Source](https://github.com/nushell/nushell) |
@@ -77,7 +77,7 @@ The source inventory below describes the current lock; this publication retains 
 | ShellCheck (`shellcheck`) | 0.11.0 | [Homepage](https://www.shellcheck.net) | [Source](https://github.com/koalaman/shellcheck) |
 | shfmt (`shfmt`) | 3.14.1 | [Homepage](https://pkg.go.dev/mvdan.cc/sh/v3) | [Source](https://github.com/mvdan/sh) |
 | SOPS (`sops`) | 3.13.3 | [Homepage](https://github.com/getsops/sops) | [Source](https://github.com/getsops/sops) |
-| SourceSteward (`stw`) | 0.2.0 | [Homepage](https://github.com/wstein/sourcesteward) | [Source](https://github.com/wstein/sourcesteward) |
+| SourceSteward (`stw`) | 0.2.1 | [Homepage](https://github.com/wstein/sourcesteward) | [Source](https://github.com/wstein/sourcesteward) |
 | Spec Kit (`specify`, first-use pip launcher) | 1.1.3 | [Homepage](https://github.github.io/spec-kit/) | [Source](https://github.com/github/spec-kit) |
 | SQLite (`sqlite3`) | 3.54.1 | [Homepage](https://www.sqlite.org/) | [Source](https://www.sqlite.org/download.html) |
 | Starship (`starship`) | 1.27.0 | [Homepage](https://starship.rs) | [Source](https://github.com/starship/starship) |
