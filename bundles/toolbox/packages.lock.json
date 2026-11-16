@@ -189,9 +189,9 @@
         "verification": "publisher-sha256"
       },
       "mise": {
-        "version": "v2026.11.8",
-        "url": "https://github.com/jdx/mise/releases/download/v2026.11.8/mise-v2026.11.8-linux-x64-musl",
-        "sha256": "1fe64489a99b6227b7f7e67ae4dd3293c20ecbbcd74b1367456010359383e712",
+        "version": "v2026.11.9",
+        "url": "https://github.com/jdx/mise/releases/download/v2026.11.9/mise-v2026.11.9-linux-x64-musl",
+        "sha256": "e55de2c37a08a9dfdb3ca95490f90f914b5ef362b62761f1bb2110e5d57210f7",
         "verification": "publisher-sha256"
       },
       "misspell": {
@@ -287,9 +287,9 @@
         "verification": "publisher-sha256"
       },
       "stw": {
-        "version": "v0.2.0",
-        "url": "https://github.com/wstein/sourcesteward/releases/download/v0.2.0/stw_0.2.0_linux_amd64.tar.gz",
-        "sha256": "5fb21024b6c1d545bc8d377597995a8b71e3bcafeea232e9f693525d09de0f1e",
+        "version": "v0.2.1",
+        "url": "https://github.com/wstein/sourcesteward/releases/download/v0.2.1/stw_0.2.1_linux_amd64.tar.gz",
+        "sha256": "33ef6a3610f3d0d3c2371d7f0de780be6d02827bd893d398f47d7c699137ffce",
         "verification": "publisher-sha256"
       },
       "syft": {
@@ -535,9 +535,9 @@
         "verification": "publisher-sha256"
       },
       "mise": {
-        "version": "v2026.11.8",
-        "url": "https://github.com/jdx/mise/releases/download/v2026.11.8/mise-v2026.11.8-linux-arm64-musl",
-        "sha256": "3febd613b6e49f928acdacda006662cee252f160ebc3fc48f5197260e61dc758",
+        "version": "v2026.11.9",
+        "url": "https://github.com/jdx/mise/releases/download/v2026.11.9/mise-v2026.11.9-linux-arm64-musl",
+        "sha256": "b15e52c9285a07854f4e81ec7e281625b56b0c23e4c0e8a553eb0e06fe4ae0a3",
         "verification": "publisher-sha256"
       },
       "misspell": {
@@ -633,9 +633,9 @@
         "verification": "publisher-sha256"
       },
       "stw": {
-        "version": "v0.2.0",
-        "url": "https://github.com/wstein/sourcesteward/releases/download/v0.2.0/stw_0.2.0_linux_arm64.tar.gz",
-        "sha256": "f4cd56d7612da98fb176ffedb36de6c83ba1a54623680ddbd40aec91cf8ad75b",
+        "version": "v0.2.1",
+        "url": "https://github.com/wstein/sourcesteward/releases/download/v0.2.1/stw_0.2.1_linux_arm64.tar.gz",
+        "sha256": "1bcf09c58236085df360b7ca1994db53efe1b140b7589fb300ef6b833caa5ca9",
         "verification": "publisher-sha256"
       },
       "syft": {
