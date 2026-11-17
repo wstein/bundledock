@@ -293,9 +293,9 @@
         "verification": "publisher-sha256"
       },
       "syft": {
-        "version": "v1.57.1",
-        "url": "https://github.com/anchore/syft/releases/download/v1.57.1/syft_1.57.1_linux_amd64.tar.gz",
-        "sha256": "bf52519eb57f675d47c07d43213cb6dff6449f3d6d1147ff6701ed91f44eef0c",
+        "version": "v1.57.2",
+        "url": "https://github.com/anchore/syft/releases/download/v1.57.2/syft_1.57.2_linux_amd64.tar.gz",
+        "sha256": "ad92bd3ec1b94a3df01d4d0aec199afa9c42b72e86da436ff5f837914d32706b",
         "verification": "publisher-sha256"
       },
       "tmux": {
@@ -329,9 +329,9 @@
         "verification": "publisher-sha256"
       },
       "uv": {
-        "version": "0.13.8",
-        "url": "https://github.com/astral-sh/uv/releases/download/0.13.8/uv-x86_64-unknown-linux-musl.tar.gz",
-        "sha256": "61fb26dabc4f0cf1d050fc6c67d40e43e4fae2994af21ebc1e050b233bf2b5ed",
+        "version": "0.13.9",
+        "url": "https://github.com/astral-sh/uv/releases/download/0.13.9/uv-x86_64-unknown-linux-musl.tar.gz",
+        "sha256": "58ccf5f1792b8a5a88d01bc910ea131a8b3db4a319a17ad5fad75e0845a3e271",
         "verification": "publisher-sha256"
       },
       "watchexec": {
@@ -639,9 +639,9 @@
         "verification": "publisher-sha256"
       },
       "syft": {
-        "version": "v1.57.1",
-        "url": "https://github.com/anchore/syft/releases/download/v1.57.1/syft_1.57.1_linux_arm64.tar.gz",
-        "sha256": "aa3d3e07344f590bcce8d31043b752daa76c8a56c2aa34ceeee63c6168152582",
+        "version": "v1.57.2",
+        "url": "https://github.com/anchore/syft/releases/download/v1.57.2/syft_1.57.2_linux_arm64.tar.gz",
+        "sha256": "8efe605309c98798e1ee0cffdcf8c05ca26819b4cd44c0b03650f1e963e9bdb6",
         "verification": "publisher-sha256"
       },
       "tmux": {
@@ -675,9 +675,9 @@
         "verification": "publisher-sha256"
       },
       "uv": {
-        "version": "0.13.8",
-        "url": "https://github.com/astral-sh/uv/releases/download/0.13.8/uv-aarch64-unknown-linux-musl.tar.gz",
-        "sha256": "0c6f8593fcf1eadfc60e663b685c408267559d7c5d61c689bbb9f3a7e369ba32",
+        "version": "0.13.9",
+        "url": "https://github.com/astral-sh/uv/releases/download/0.13.9/uv-aarch64-unknown-linux-musl.tar.gz",
+        "sha256": "37fbb7c5bc66cf99c12aa881949d216181e201dec449772c4329e56487d61179",
         "verification": "publisher-sha256"
       },
       "watchexec": {
