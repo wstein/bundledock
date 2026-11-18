@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "catalog_digest": "b1018f0469f43e90f0b19330d020cd4b4ae0f45065fc29af8a3e99db57b491e7",
+  "catalog_digest": "cb8efe890c4c52a73a8619a2214ded03ab2114f9270ff16a01a204757b85a3f1",
   "platforms": {
     "amd64": {
       "system": "x86_64-linux",
