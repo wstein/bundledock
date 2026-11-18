@@ -48,12 +48,12 @@ The source inventory below describes the current lock; this publication retains 
 | fzf (`fzf`) | 0.75.0 | [Homepage](https://junegunn.github.io/fzf/) | [Source](https://github.com/junegunn/fzf) |
 | Git LFS (`git-lfs`) | 3.8.1 | [Homepage](https://git-lfs.com) | [Source](https://github.com/git-lfs/git-lfs) |
 | git-cliff (`git-cliff`) | 2.14.2 | [Homepage](https://github.com/orhun/git-cliff) | [Source](https://github.com/orhun/git-cliff) |
-| GitHub CLI | 2.104.0 | [Homepage](https://cli.github.com) | [Source](https://github.com/cli/cli) |
+| GitHub CLI | 2.105.0 | [Homepage](https://cli.github.com) | [Source](https://github.com/cli/cli) |
 | GitHub CLI Stacked PRs (`gh stack`) | 0.3.0 | [Homepage](https://gh.io/stacks) | [Source](https://github.com/github/gh-stack) |
 | Gitleaks (`gitleaks`) | 8.30.1 | [Homepage](https://gitleaks.io) | [Source](https://github.com/gitleaks/gitleaks) |
 | Hadolint (`hadolint`) | 2.15.1 | [Homepage](https://github.com/hadolint/hadolint) | [Source](https://github.com/hadolint/hadolint) |
 | Herdr (`herdr`) | 0.9.5 | [Homepage](https://herdr.dev) | [Source](https://github.com/herdrdev/herdr) |
-| Hugo (`hugo`, standard) | 0.170.0 | [Homepage](https://gohugo.io) | [Source](https://github.com/gohugoio/hugo) |
+| Hugo (`hugo`, standard) | 0.170.1 | [Homepage](https://gohugo.io) | [Source](https://github.com/gohugoio/hugo) |
 | hyperfine (`hyperfine`) | 2.0.0 | [Homepage](https://github.com/sharkdp/hyperfine) | [Source](https://github.com/sharkdp/hyperfine) |
 | jq | 1.8.2 | [Homepage](https://jqlang.org) | [Source](https://github.com/jqlang/jq) |
 | jsonschema-cli (`jsonschema-cli`) | 0.58.5 | [Homepage](https://github.com/Stranger6667/jsonschema) | [Source](https://github.com/Stranger6667/jsonschema) |
@@ -63,7 +63,7 @@ The source inventory below describes the current lock; this publication retains 
 | lsd (`lsd`) | 1.2.0 | [Homepage](https://github.com/lsd-rs/lsd) | [Source](https://github.com/lsd-rs/lsd) |
 | lychee (`lychee`) | 0.24.2 | [Homepage](https://lychee.cli.rs) | [Source](https://github.com/lycheeverse/lychee) |
 | Mike Farah yq (`yq`) | 4.54.3 | [Homepage](https://mikefarah.gitbook.io/yq/) | [Source](https://github.com/mikefarah/yq) |
-| mise (`mise`) | 2026.11.9 | [Homepage](https://mise.jdx.dev) | [Source](https://github.com/jdx/mise) |
+| mise (`mise`) | 2026.11.10 | [Homepage](https://mise.jdx.dev) | [Source](https://github.com/jdx/mise) |
 | misspell (`misspell`) | 0.8.0 | [Homepage](https://github.com/golangci/misspell) | [Source](https://github.com/golangci/misspell) |
 | navi (`navi`) | 2.24.0 | [Homepage](https://github.com/denisidoro/navi) | [Source](https://github.com/denisidoro/navi) |
 | Nushell (`nu`) | 0.117.0 | [Homepage](https://www.nushell.sh/) | [Source](https://github.com/nushell/nushell) |
