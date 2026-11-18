@@ -93,9 +93,9 @@
         "verification": "publisher-sha256"
       },
       "gh": {
-        "version": "v2.104.0",
-        "url": "https://github.com/cli/cli/releases/download/v2.104.0/gh_2.104.0_linux_amd64.tar.gz",
-        "sha256": "98cb101ad87dbbd3f6b2f2bfcbd43197ccd07643140121d8a9cfaa91eadbc24e",
+        "version": "v2.105.0",
+        "url": "https://github.com/cli/cli/releases/download/v2.105.0/gh_2.105.0_linux_amd64.tar.gz",
+        "sha256": "79e7ab5db738c48777b696e374f8b428f0647debfb424f44d2f426370407fe2f",
         "verification": "publisher-sha256"
       },
       "gh-stack": {
@@ -135,9 +135,9 @@
         "verification": "publisher-sha256"
       },
       "hugo": {
-        "version": "v0.170.0",
-        "url": "https://github.com/gohugoio/hugo/releases/download/v0.170.0/hugo_0.170.0_linux-amd64.tar.gz",
-        "sha256": "0930754ec22ad2dd1a252f8c31a5e57faccc9d15f1c3d381ddafcb96eeb8aef0",
+        "version": "v0.170.1",
+        "url": "https://github.com/gohugoio/hugo/releases/download/v0.170.1/hugo_0.170.1_linux-amd64.tar.gz",
+        "sha256": "841a5462853aefc9942e4de1e8a5d75584b6a5181941e6ad3f1d745190e03cd8",
         "verification": "publisher-sha256"
       },
       "hyperfine": {
@@ -189,9 +189,9 @@
         "verification": "publisher-sha256"
       },
       "mise": {
-        "version": "v2026.11.9",
-        "url": "https://github.com/jdx/mise/releases/download/v2026.11.9/mise-v2026.11.9-linux-x64-musl",
-        "sha256": "e55de2c37a08a9dfdb3ca95490f90f914b5ef362b62761f1bb2110e5d57210f7",
+        "version": "v2026.11.10",
+        "url": "https://github.com/jdx/mise/releases/download/v2026.11.10/mise-v2026.11.10-linux-x64-musl",
+        "sha256": "ae1f7752483862f46f6eb0ffa58d3bdec8d5af8da78d98b0df477466747cba2b",
         "verification": "publisher-sha256"
       },
       "misspell": {
@@ -439,9 +439,9 @@
         "verification": "publisher-sha256"
       },
       "gh": {
-        "version": "v2.104.0",
-        "url": "https://github.com/cli/cli/releases/download/v2.104.0/gh_2.104.0_linux_arm64.tar.gz",
-        "sha256": "cb34cefc6f4e77b90731374a2b737516bb8f3033c6ca46aa949e5344f68069e3",
+        "version": "v2.105.0",
+        "url": "https://github.com/cli/cli/releases/download/v2.105.0/gh_2.105.0_linux_arm64.tar.gz",
+        "sha256": "b1278c75107423d818f1937fd92cafc9e5e9b606631568f68d7fb816f5885a02",
         "verification": "publisher-sha256"
       },
       "gh-stack": {
@@ -481,9 +481,9 @@
         "verification": "publisher-sha256"
       },
       "hugo": {
-        "version": "v0.170.0",
-        "url": "https://github.com/gohugoio/hugo/releases/download/v0.170.0/hugo_0.170.0_linux-arm64.tar.gz",
-        "sha256": "4ec3acd12ac17dbffb34fa453d3630dc0926a2314c8cd4964a550cfa9a4dbc73",
+        "version": "v0.170.1",
+        "url": "https://github.com/gohugoio/hugo/releases/download/v0.170.1/hugo_0.170.1_linux-arm64.tar.gz",
+        "sha256": "6f57f13bc47c000c0d36c7f5a446d6c06f7956d8e102cc2a13735e0c0225b2d2",
         "verification": "publisher-sha256"
       },
       "hyperfine": {
@@ -535,9 +535,9 @@
         "verification": "publisher-sha256"
       },
       "mise": {
-        "version": "v2026.11.9",
-        "url": "https://github.com/jdx/mise/releases/download/v2026.11.9/mise-v2026.11.9-linux-arm64-musl",
-        "sha256": "b15e52c9285a07854f4e81ec7e281625b56b0c23e4c0e8a553eb0e06fe4ae0a3",
+        "version": "v2026.11.10",
+        "url": "https://github.com/jdx/mise/releases/download/v2026.11.10/mise-v2026.11.10-linux-arm64-musl",
+        "sha256": "d33f9febe2bfd13213f7fe23ba43fffe133b37737d970680c2aeba66366ff9c2",
         "verification": "publisher-sha256"
       },
       "misspell": {
