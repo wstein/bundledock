@@ -71,7 +71,7 @@ The source inventory below describes the current lock; this publication retains 
 | pinact (`pinact`) | 5.0.2 | [Homepage](https://github.com/suzuki-shunsuke/pinact) | [Source](https://github.com/suzuki-shunsuke/pinact) |
 | regctl (`regctl`) | 0.11.7 | [Homepage](https://regclient.org) | [Source](https://github.com/regclient/regclient) |
 | ripgrep (`rg`) | 15.2.0 | [Homepage](https://github.com/BurntSushi/ripgrep) | [Source](https://github.com/BurntSushi/ripgrep) |
-| Ruff (`ruff`) | 0.17.5 | [Homepage](https://docs.astral.sh/ruff) | [Source](https://github.com/astral-sh/ruff) |
+| Ruff (`ruff`) | 0.17.6 | [Homepage](https://docs.astral.sh/ruff) | [Source](https://github.com/astral-sh/ruff) |
 | SCC (`scc`, wstein fork) | 4.1.1 | [Homepage](https://github.com/wstein/scc-fork) | [Source](https://github.com/wstein/scc-fork) |
 | SheetMill (`smill`) | 0.1.1 | [Homepage](https://github.com/wstein/sheetmill) | [Source](https://github.com/wstein/sheetmill) |
 | ShellCheck (`shellcheck`) | 0.11.0 | [Homepage](https://www.shellcheck.net) | [Source](https://github.com/koalaman/shellcheck) |
