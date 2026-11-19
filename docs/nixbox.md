@@ -108,7 +108,7 @@ volume without changing paths.
 | Tool | Pinned version | Homepage | Source |
 | --- | --- | --- | --- |
 | ast-grep (`ast-grep`) | 0.51.3 | [Homepage](https://ast-grep.github.io/) | [Source](https://github.com/ast-grep/ast-grep) |
-| delta (`delta`) | 0.20.1 | [Homepage](https://dandavison.github.io/delta/) | [Source](https://github.com/dandavison/delta) |
+| delta (`delta`) | 0.21.1 | [Homepage](https://dandavison.github.io/delta/) | [Source](https://github.com/dandavison/delta) |
 | Difftastic (`difft`) | 0.72.0 | [Homepage](https://github.com/Wilfred/difftastic) | [Source](https://github.com/Wilfred/difftastic) |
 | Fastfetch (`fastfetch`) | 2.71.0 | [Homepage](https://github.com/fastfetch-cli/fastfetch) | [Source](https://github.com/fastfetch-cli/fastfetch) |
 | Helix (`hx`) | 25.07.1 | [Homepage](https://helix-editor.com) | [Source](https://github.com/helix-editor/helix) |
