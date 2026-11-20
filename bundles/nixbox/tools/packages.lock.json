@@ -11,9 +11,9 @@
         "verification": "publisher-sha256"
       },
       "delta": {
-        "version": "0.21.1",
-        "url": "https://github.com/dandavison/delta/releases/download/0.21.1/delta-0.21.1-x86_64-unknown-linux-musl.tar.gz",
-        "sha256": "5cdb719bf6f7c7503ef8bcf181a31577eeca58a8167234f0955f48dd4a92e989",
+        "version": "0.21.2",
+        "url": "https://github.com/dandavison/delta/releases/download/0.21.2/delta-0.21.2-x86_64-unknown-linux-musl.tar.gz",
+        "sha256": "d4c55c9b9991c308cad84412e8a8afdc990779e4dd021f6ebb277a4249719b9f",
         "verification": "publisher-sha256"
       },
       "difftastic": {
@@ -61,9 +61,9 @@
         "verification": "publisher-sha256"
       },
       "delta": {
-        "version": "0.21.1",
-        "url": "https://github.com/dandavison/delta/releases/download/0.21.1/delta-0.21.1-aarch64-unknown-linux-gnu.tar.gz",
-        "sha256": "efe38626967f550c1d3bbe2014990dff5c8028a0a65a3f9b9b6c4a3bb53bfa28",
+        "version": "0.21.2",
+        "url": "https://github.com/dandavison/delta/releases/download/0.21.2/delta-0.21.2-aarch64-unknown-linux-gnu.tar.gz",
+        "sha256": "36dca3ddb293d2fa635aa2bf9c53c0ba2d38dcd749290d81c6685974cf3799c4",
         "verification": "publisher-sha256"
       },
       "difftastic": {
