@@ -189,9 +189,9 @@
         "verification": "publisher-sha256"
       },
       "mise": {
-        "version": "v2026.11.10",
-        "url": "https://github.com/jdx/mise/releases/download/v2026.11.10/mise-v2026.11.10-linux-x64-musl",
-        "sha256": "ae1f7752483862f46f6eb0ffa58d3bdec8d5af8da78d98b0df477466747cba2b",
+        "version": "v2026.11.11",
+        "url": "https://github.com/jdx/mise/releases/download/v2026.11.11/mise-v2026.11.11-linux-x64-musl",
+        "sha256": "0f16969b570db222ee9e91c8bebe92c7c4cc2aa3a4638890f28a5053a6b63fd6",
         "verification": "publisher-sha256"
       },
       "misspell": {
@@ -311,9 +311,9 @@
         "verification": "publisher-sha256"
       },
       "trufflehog": {
-        "version": "v3.99.9",
-        "url": "https://github.com/trufflesecurity/trufflehog/releases/download/v3.99.9/trufflehog_3.99.9_linux_amd64.tar.gz",
-        "sha256": "12050095c8063bf4d34f9f6cbce6ba9fa8d0deea9d503d0570364feba093658e",
+        "version": "v3.100.0",
+        "url": "https://github.com/trufflesecurity/trufflehog/releases/download/v3.100.0/trufflehog_3.100.0_linux_amd64.tar.gz",
+        "sha256": "b2d85eba59865e98f45c9fc9f77d2c6d62df529fdd5755af121304ea5a7cecbb",
         "verification": "publisher-sha256"
       },
       "typos": {
@@ -535,9 +535,9 @@
         "verification": "publisher-sha256"
       },
       "mise": {
-        "version": "v2026.11.10",
-        "url": "https://github.com/jdx/mise/releases/download/v2026.11.10/mise-v2026.11.10-linux-arm64-musl",
-        "sha256": "d33f9febe2bfd13213f7fe23ba43fffe133b37737d970680c2aeba66366ff9c2",
+        "version": "v2026.11.11",
+        "url": "https://github.com/jdx/mise/releases/download/v2026.11.11/mise-v2026.11.11-linux-arm64-musl",
+        "sha256": "a1515546ef07de23e141aad778f8c1b6e6c95c7a7e47ed9f57c9225ae8be3a4a",
         "verification": "publisher-sha256"
       },
       "misspell": {
@@ -657,9 +657,9 @@
         "verification": "publisher-sha256"
       },
       "trufflehog": {
-        "version": "v3.99.9",
-        "url": "https://github.com/trufflesecurity/trufflehog/releases/download/v3.99.9/trufflehog_3.99.9_linux_arm64.tar.gz",
-        "sha256": "778b1913196dc9b9234e8fd366f64387efeb08c01930a1d2110dcb2ffd07e68b",
+        "version": "v3.100.0",
+        "url": "https://github.com/trufflesecurity/trufflehog/releases/download/v3.100.0/trufflehog_3.100.0_linux_arm64.tar.gz",
+        "sha256": "aa61657049229ae523e8455fcbba87dff57b0a2ba6bdb391a38cf75e6d4016dd",
         "verification": "publisher-sha256"
       },
       "typos": {
