@@ -1,9 +1,9 @@
 {
   "schema": 1,
   "nixpkgs": {
-    "rev": "19cfded70b91ca0981373973c5b1efffdd4d6647",
-    "url": "https://releases.nixos.org/nixpkgs/nixpkgs-26.11pre1124565.19cfded70b91/nixexprs.tar.zst",
-    "narHash": "sha256-iE8oRwNZcE7Mcupd5cNTCWMi4e07CoQIRYUmw5tf+9w="
+    "rev": "680275f0bb6afce84fbac3e75fc47c5f2272400b",
+    "url": "https://releases.nixos.org/nixpkgs/nixpkgs-26.11pre1125786.680275f0bb6a/nixexprs.tar.zst",
+    "narHash": "sha256-VgkIUPnO3Hugu/YIqNH6CmUoFz1rFsswtQ8kT8c2y50="
   },
   "cache": {
     "url": "https://cache.nixos.org",
