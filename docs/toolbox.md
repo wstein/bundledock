@@ -70,7 +70,7 @@ The source inventory below describes the current lock; this publication retains 
 | OpenTofu (`tofu`) | 1.13.9 | [Homepage](https://opentofu.org) | [Source](https://github.com/opentofu/opentofu) |
 | pinact (`pinact`) | 5.0.2 | [Homepage](https://github.com/suzuki-shunsuke/pinact) | [Source](https://github.com/suzuki-shunsuke/pinact) |
 | regctl (`regctl`) | 0.11.7 | [Homepage](https://regclient.org) | [Source](https://github.com/regclient/regclient) |
-| ripgrep (`rg`) | 15.2.0 | [Homepage](https://github.com/BurntSushi/ripgrep) | [Source](https://github.com/BurntSushi/ripgrep) |
+| ripgrep (`rg`) | 16.0.0 | [Homepage](https://github.com/BurntSushi/ripgrep) | [Source](https://github.com/BurntSushi/ripgrep) |
 | Ruff (`ruff`) | 0.17.6 | [Homepage](https://docs.astral.sh/ruff) | [Source](https://github.com/astral-sh/ruff) |
 | SCC (`scc`, wstein fork) | 4.1.1 | [Homepage](https://github.com/wstein/scc-fork) | [Source](https://github.com/wstein/scc-fork) |
 | SheetMill (`smill`) | 0.1.1 | [Homepage](https://github.com/wstein/sheetmill) | [Source](https://github.com/wstein/sheetmill) |
@@ -85,7 +85,7 @@ The source inventory below describes the current lock; this publication retains 
 | tldr (`tldr`, first-use pip launcher) | 3.4.4 | [Homepage](https://pypi.org/project/tldr/) | [Source](https://github.com/tldr-pages/tldr-python-client) |
 | tmux (`tmux`) | 3.8 (official static builds) | [Homepage](https://github.com/tmux/tmux-builds) | [Source](https://github.com/tmux/tmux-builds) |
 | Trivy (`trivy`) | 0.76.2 | [Homepage](https://trivy.dev) | [Source](https://github.com/aquasecurity/trivy) |
-| TruffleHog (`trufflehog`) | 3.100.0 | [Homepage](https://github.com/trufflesecurity/trufflehog) | [Source](https://github.com/trufflesecurity/trufflehog) |
+| TruffleHog (`trufflehog`) | 3.100.1 | [Homepage](https://github.com/trufflesecurity/trufflehog) | [Source](https://github.com/trufflesecurity/trufflehog) |
 | typos (`typos`) | 1.52.2 | [Homepage](https://github.com/crate-ci/typos) | [Source](https://github.com/crate-ci/typos) |
 | Typst (`typst`) | 0.15.1 | [Homepage](https://typst.app) | [Source](https://github.com/typst/typst) |
 | uv (`uv`, `uvx`) | 0.13.9 | [Homepage](https://docs.astral.sh/uv) | [Source](https://github.com/astral-sh/uv) |
