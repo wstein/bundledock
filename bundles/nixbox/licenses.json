@@ -1,5 +1,5 @@
 {
- "nixpkgs_rev": "93a9ed0a866099a230ed5146a5bb7d16fd5c9b14",
+ "nixpkgs_rev": "619c39f6eac5d1ed6b8f073a9414baf7034b2356",
  "platforms": {
   "amd64": {
    "/nix/store/18jady12x8j4qrfw0kbkasd4mkqdq658-publicsuffix-list-0-unstable-2026-09-02": {
