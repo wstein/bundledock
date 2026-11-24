@@ -51,9 +51,9 @@
         "verification": "publisher-sha256"
       },
       "cosign": {
-        "version": "v3.1.4",
-        "url": "https://github.com/sigstore/cosign/releases/download/v3.1.4/cosign-linux-amd64",
-        "sha256": "424e2c97d0b45fd7a6b608a87f090f35633f4c23ece5f092d48bba11aaf4bbfa",
+        "version": "v3.1.5",
+        "url": "https://github.com/sigstore/cosign/releases/download/v3.1.5/cosign-linux-amd64",
+        "sha256": "912502def4baf810eaf36b210a4f51e1da214f9f6d664e2a9a2154cfc67ee0d6",
         "verification": "publisher-sha256"
       },
       "cscribe": {
@@ -189,9 +189,9 @@
         "verification": "publisher-sha256"
       },
       "mise": {
-        "version": "v2026.11.12",
-        "url": "https://github.com/jdx/mise/releases/download/v2026.11.12/mise-v2026.11.12-linux-x64-musl",
-        "sha256": "0c4c697240b178ac8bf4f5e25824fc25d04a47a700f79721cfd1b1fd83c1c905",
+        "version": "v2026.11.14",
+        "url": "https://github.com/jdx/mise/releases/download/v2026.11.14/mise-v2026.11.14-linux-x64-musl",
+        "sha256": "3b2dbc7011bfd96c4b1160db2bca9f0937f226cc61ae5beddfd1fec536e81b2a",
         "verification": "publisher-sha256"
       },
       "misspell": {
@@ -213,9 +213,9 @@
         "verification": "publisher-sha256"
       },
       "opentofu": {
-        "version": "v1.13.9",
-        "url": "https://github.com/opentofu/opentofu/releases/download/v1.13.9/tofu_1.13.9_linux_amd64.tar.gz",
-        "sha256": "b34b327cc1ef07178207b6f2cd1f5276537d3e5b7be316500f6dac50d4c0a857",
+        "version": "v1.13.10",
+        "url": "https://github.com/opentofu/opentofu/releases/download/v1.13.10/tofu_1.13.10_linux_amd64.tar.gz",
+        "sha256": "f606b6117ee03177374806d56d580bde7b512aff69f86d2b9f3148dced4ca375",
         "verification": "publisher-sha256"
       },
       "pinact": {
@@ -397,9 +397,9 @@
         "verification": "publisher-sha256"
       },
       "cosign": {
-        "version": "v3.1.4",
-        "url": "https://github.com/sigstore/cosign/releases/download/v3.1.4/cosign-linux-arm64",
-        "sha256": "ade83b7aac62e131cacfe96d958948b2150cc9efec46a570a2649b8e27dedad2",
+        "version": "v3.1.5",
+        "url": "https://github.com/sigstore/cosign/releases/download/v3.1.5/cosign-linux-arm64",
+        "sha256": "516893301e9ec0f2594edfcf8f943ec3b3ba96f3aad2b507eff2b71e644e5fca",
         "verification": "publisher-sha256"
       },
       "cscribe": {
@@ -535,9 +535,9 @@
         "verification": "publisher-sha256"
       },
       "mise": {
-        "version": "v2026.11.12",
-        "url": "https://github.com/jdx/mise/releases/download/v2026.11.12/mise-v2026.11.12-linux-arm64-musl",
-        "sha256": "aab2e24388543a9bd7d804585d0f129708afe68a3c6bc1020c0c90d3214c6eac",
+        "version": "v2026.11.14",
+        "url": "https://github.com/jdx/mise/releases/download/v2026.11.14/mise-v2026.11.14-linux-arm64-musl",
+        "sha256": "7a5252b6a4f30baa96486234e9f217c9f9aaef2343f32b744cd1a54fb4248268",
         "verification": "publisher-sha256"
       },
       "misspell": {
@@ -559,9 +559,9 @@
         "verification": "publisher-sha256"
       },
       "opentofu": {
-        "version": "v1.13.9",
-        "url": "https://github.com/opentofu/opentofu/releases/download/v1.13.9/tofu_1.13.9_linux_arm64.tar.gz",
-        "sha256": "5dc196dde75b667e4806d358310ec96742774cd0993c54c1237efee5644b69b8",
+        "version": "v1.13.10",
+        "url": "https://github.com/opentofu/opentofu/releases/download/v1.13.10/tofu_1.13.10_linux_arm64.tar.gz",
+        "sha256": "9dcdabf93c5209feaa35a7bb6d41f4d71b0880c4c4dfaf275d612f5b6facc28a",
         "verification": "publisher-sha256"
       },
       "pinact": {
