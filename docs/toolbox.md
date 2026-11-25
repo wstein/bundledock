@@ -42,7 +42,7 @@ The source inventory below describes the current lock; this publication retains 
 | ChartScribe (`cscribe`) | 0.2.0 | [Homepage](https://github.com/wstein/chartscribe) | [Source](https://github.com/wstein/chartscribe) |
 | Cosign (`cosign`) | 3.1.5 | [Homepage](https://github.com/sigstore/cosign) | [Source](https://github.com/sigstore/cosign) |
 | direnv (`direnv`) | 2.38.2 | [Homepage](https://github.com/direnv/direnv) | [Source](https://github.com/direnv/direnv) |
-| dust (`dust`) | 1.2.7 | [Homepage](https://github.com/bootandy/dust) | [Source](https://github.com/bootandy/dust) |
+| dust (`dust`) | 1.2.8 | [Homepage](https://github.com/bootandy/dust) | [Source](https://github.com/bootandy/dust) |
 | fd (`fd`, `fdfind`) | 10.5.2 | [Homepage](https://github.com/sharkdp/fd) | [Source](https://github.com/sharkdp/fd) |
 | Fish (`fish`) | 4.9.3 | [Homepage](https://fishshell.com) | [Source](https://github.com/fish-shell/fish-shell) |
 | fzf (`fzf`) | 0.75.0 | [Homepage](https://junegunn.github.io/fzf/) | [Source](https://github.com/junegunn/fzf) |
@@ -88,7 +88,7 @@ The source inventory below describes the current lock; this publication retains 
 | TruffleHog (`trufflehog`) | 3.100.1 | [Homepage](https://github.com/trufflesecurity/trufflehog) | [Source](https://github.com/trufflesecurity/trufflehog) |
 | typos (`typos`) | 1.52.2 | [Homepage](https://github.com/crate-ci/typos) | [Source](https://github.com/crate-ci/typos) |
 | Typst (`typst`) | 0.15.1 | [Homepage](https://typst.app) | [Source](https://github.com/typst/typst) |
-| uv (`uv`, `uvx`) | 0.13.9 | [Homepage](https://docs.astral.sh/uv) | [Source](https://github.com/astral-sh/uv) |
+| uv (`uv`, `uvx`) | 0.13.10 | [Homepage](https://docs.astral.sh/uv) | [Source](https://github.com/astral-sh/uv) |
 | watchexec (`watchexec`) | 2.8.0 | [Homepage](https://watchexec.github.io) | [Source](https://github.com/watchexec/watchexec) |
 | WorkHarbor (`whr`) | 0.2.0 | [Homepage](https://github.com/wstein/workharbor) | [Source](https://github.com/wstein/workharbor) |
 | xh (`xh`) | 0.26.3 | [Homepage](https://github.com/ducaale/xh) | [Source](https://github.com/ducaale/xh) |
