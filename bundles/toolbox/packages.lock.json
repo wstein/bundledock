@@ -69,9 +69,9 @@
         "verification": "publisher-sha256"
       },
       "dust": {
-        "version": "v1.2.7",
-        "url": "https://github.com/bootandy/dust/releases/download/v1.2.7/dust-v1.2.7-x86_64-unknown-linux-musl.tar.gz",
-        "sha256": "2f1a1106f1f14c0b684b2f0a5f4482c6d53e07a871df4afc11e3b91ade300b55",
+        "version": "v1.2.8",
+        "url": "https://github.com/bootandy/dust/releases/download/v1.2.8/dust-v1.2.8-x86_64-unknown-linux-musl.tar.gz",
+        "sha256": "4480bb9a3936f23cd9a1d5681618821f7f431ae47af0794be99f2baa5a88a60f",
         "verification": "publisher-sha256"
       },
       "fd": {
@@ -329,9 +329,9 @@
         "verification": "publisher-sha256"
       },
       "uv": {
-        "version": "0.13.9",
-        "url": "https://github.com/astral-sh/uv/releases/download/0.13.9/uv-x86_64-unknown-linux-musl.tar.gz",
-        "sha256": "58ccf5f1792b8a5a88d01bc910ea131a8b3db4a319a17ad5fad75e0845a3e271",
+        "version": "0.13.10",
+        "url": "https://github.com/astral-sh/uv/releases/download/0.13.10/uv-x86_64-unknown-linux-musl.tar.gz",
+        "sha256": "5597970380083a340b7983af05a84824b4db1c62b7059c796935b7fd6dc95fd2",
         "verification": "publisher-sha256"
       },
       "watchexec": {
@@ -415,9 +415,9 @@
         "verification": "publisher-sha256"
       },
       "dust": {
-        "version": "v1.2.7",
-        "url": "https://github.com/bootandy/dust/releases/download/v1.2.7/dust-v1.2.7-aarch64-unknown-linux-musl.tar.gz",
-        "sha256": "4c8ebaf224179bfd42db45d8a50fd5304bbd89532eda94db684d309c7b734ed6",
+        "version": "v1.2.8",
+        "url": "https://github.com/bootandy/dust/releases/download/v1.2.8/dust-v1.2.8-aarch64-unknown-linux-musl.tar.gz",
+        "sha256": "02140655d64a490e1b1486ae4b55ff797c2e69666e1993cc3c42a2885e169d3c",
         "verification": "publisher-sha256"
       },
       "fd": {
@@ -675,9 +675,9 @@
         "verification": "publisher-sha256"
       },
       "uv": {
-        "version": "0.13.9",
-        "url": "https://github.com/astral-sh/uv/releases/download/0.13.9/uv-aarch64-unknown-linux-musl.tar.gz",
-        "sha256": "37fbb7c5bc66cf99c12aa881949d216181e201dec449772c4329e56487d61179",
+        "version": "0.13.10",
+        "url": "https://github.com/astral-sh/uv/releases/download/0.13.10/uv-aarch64-unknown-linux-musl.tar.gz",
+        "sha256": "68174084fe40b6300361c5b2038066120dc62c92920c22a0f31f6fc74b066b57",
         "verification": "publisher-sha256"
       },
       "watchexec": {
